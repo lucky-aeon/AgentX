@@ -15,7 +15,7 @@
     <artifactId>agent-x</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>AgentX</name>
-    <description>智能对话系统平台</description>
+    <description>AgentX</description>
 
     <properties>
         <java.version>1.8</java.version>
@@ -25,6 +25,7 @@
         <jjwt.version>0.9.1</jjwt.version>
         <fastjson.version>1.2.83</fastjson.version>
         <hutool.version>5.8.20</hutool.version>
+        <httpclient.version>4.5.14</httpclient.version>
     </properties>
 
     <dependencies>
@@ -32,10 +33,19 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
+            <version>2.7.15</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-validation</artifactId>
+            <version>2.7.15</version>
+        </dependency>
+
+        <!-- 日志依赖 -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>1.7.36</version>
         </dependency>
 
         <!-- MyBatis Plus 依赖 -->
@@ -57,6 +67,13 @@
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt</artifactId>
             <version>${jjwt.version}</version>
+        </dependency>
+
+        <!-- HTTP客户端 -->
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+            <version>${httpclient.version}</version>
         </dependency>
 
         <!-- 工具库 -->

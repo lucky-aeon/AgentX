@@ -5,12 +5,12 @@ server:
 
 spring:
   application:
-    name: agent-x
+    name: AgentX
   datasource:
     driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://localhost:5432/agentx
-    username: postgres
-    password: postgres
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:agentx}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
   jackson:
     date-format: yyyy-MM-dd HH:mm:ss
     time-zone: GMT+8
@@ -27,6 +27,18 @@ mybatis-plus:
       id-type: auto
       logic-delete-value: 1
       logic-not-delete-value: 0
+
+# LLM服务配置
+llm:
+  provider:
+    default: ${LLM_DEFAULT_PROVIDER:siliconflow}
+    providers:
+      siliconflow:
+        name: SiliconFlow
+        api-url: ${SILICONFLOW_API_URL:https://api.siliconflow.cn/v1/chat/completions}
+        api-key: ${SILICONFLOW_API_KEY:}
+        model: ${SILICONFLOW_MODEL:Qwen/Qwen2.5-VL-72B-Instruct}
+        timeout: ${SILICONFLOW_TIMEOUT:30000}
 
 logging:
   level:

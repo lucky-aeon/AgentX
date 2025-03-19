@@ -1,6 +1,92 @@
 # AgentX - 智能对话系统平台
 
-AgentX是一个基于大型语言模型的智能对话系统平台，旨在提供强大、灵活且可扩展的对话能力和工具调用能力。用户可以通过该平台与多种大语言模型进行对话，接入自定义知识库，调用各种工具，并构建个性化的Agent服务。
+AgentX是一个基于大语言模型的智能对话系统平台，支持多种LLM服务商，提供灵活易用的API接口。
+
+## 主要功能
+
+- 支持多种LLM服务商集成（SiliconFlow等）
+- 统一的对话API接口
+- 灵活的会话管理
+- 可扩展的插件系统
+
+## 快速开始
+
+### 环境要求
+
+- JDK 1.8+
+- Maven 3.6+
+- PostgreSQL 12+
+
+### 配置文件
+
+应用配置文件位于 `src/main/resources/application.yml`，主要配置项：
+
+```yaml
+# LLM服务配置
+llm:
+  provider:
+    default: ${LLM_DEFAULT_PROVIDER:siliconflow}  # 默认使用的服务商
+    providers:
+      siliconflow:  # SiliconFlow服务商配置
+        name: SiliconFlow
+        api-url: ${SILICONFLOW_API_URL:https://api.siliconflow.cn/v1/chat/completions}
+        api-key: ${SILICONFLOW_API_KEY:你的API密钥}
+        model: ${SILICONFLOW_MODEL:Qwen/Qwen2.5-VL-72B-Instruct}
+        timeout: ${SILICONFLOW_TIMEOUT:30000}
+```
+
+可以通过环境变量或命令行参数覆盖默认配置：
+
+```bash
+# 设置环境变量
+export SILICONFLOW_API_KEY=你的API密钥
+export SILICONFLOW_MODEL=llama3
+
+# 或者通过命令行参数启动
+java -jar AgentX.jar --SILICONFLOW_API_KEY=你的API密钥 --SILICONFLOW_MODEL=llama3
+```
+
+### API接口
+
+#### 对话接口
+
+```
+POST /api/conversation/chat
+```
+
+请求参数：
+
+```json
+{
+  "message": "你好，请介绍一下自己",
+  "sessionId": "session-123",  // 可选，会话ID
+  "provider": "siliconflow",  // 可选，服务商名称
+  "model": "llama3"  // 可选，模型名称
+}
+```
+
+响应：
+
+```json
+{
+  "code": 200,
+  "message": "操作成功",
+  "data": {
+    "content": "我是一个AI助手...",
+    "sessionId": "session-123",
+    "provider": "SiliconFlow",
+    "model": "llama3",
+    "timestamp": 1623234567890
+  },
+  "timestamp": 1623234567890
+}
+```
+
+## 服务商支持
+
+目前支持以下服务商：
+
+- SiliconFlow
 
 ## 项目结构
 
