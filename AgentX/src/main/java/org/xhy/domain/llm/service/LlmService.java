@@ -3,6 +3,8 @@ package org.xhy.domain.llm.service;
 import org.xhy.domain.llm.model.LlmRequest;
 import org.xhy.domain.llm.model.LlmResponse;
 
+import java.util.List;
+
 /**
  * LLM服务接口
  */
@@ -15,6 +17,14 @@ public interface LlmService {
      * @return LLM响应
      */
     LlmResponse chat(LlmRequest request);
+    
+    /**
+     * 发送流式请求到LLM服务商，返回文本块列表
+     *
+     * @param request LLM请求
+     * @return 文本块列表
+     */
+    List<String> chatStreamList(LlmRequest request);
     
     /**
      * 发送简单的文本请求

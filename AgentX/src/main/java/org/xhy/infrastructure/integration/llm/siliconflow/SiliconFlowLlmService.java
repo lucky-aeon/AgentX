@@ -21,7 +21,11 @@ import org.xhy.domain.llm.model.LlmRequest;
 import org.xhy.domain.llm.model.LlmResponse;
 import org.xhy.infrastructure.integration.llm.AbstractLlmService;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -174,6 +178,197 @@ public class SiliconFlowLlmService extends AbstractLlmService {
             
             HttpEntity responseEntity = response.getEntity();
             return EntityUtils.toString(responseEntity);
+        } finally {
+            httpClient.close();
+        }
+    }
+    
+    /**
+     * 流式响应处理器接口
+     */
+    @FunctionalInterface
+    public interface StreamResponseHandler {
+        /**
+         * 处理每个响应块
+         * @param chunk 响应文本块
+         * @param isLast 是否是最后一个块
+         */
+        void onChunk(String chunk, boolean isLast);
+    }
+    
+    /**
+     * 发送流式请求并通过回调处理每个响应块
+     *
+     * @param request 请求
+     * @param handler 响应处理器
+     */
+    public void streamChat(LlmRequest request, StreamResponseHandler handler) {
+        if (request.getModel() == null || "default".equals(request.getModel())) {
+            logger.info("未指定模型或使用默认模型，使用配置的默认模型: {}", getDefaultModel());
+            request.setModel(getDefaultModel());
+        }
+        
+        try {
+            logger.info("发送流式请求到SiliconFlow服务, 模型: {}, 消息数: {}", 
+                    request.getModel(), request.getMessages().size());
+            
+            // 设置请求为流式
+            request.setStream(true);
+            
+            String requestBody = prepareRequestBody(request);
+            
+            // 使用流式方式处理响应
+            sendStreamHttpRequest(requestBody, handler);
+            
+        } catch (Exception e) {
+            logger.error("调用SiliconFlow流式服务出错", e);
+            handler.onChunk("调用流式服务时发生错误: " + e.getMessage(), true);
+        }
+    }
+    
+    @Override
+    public List<String> chatStreamList(LlmRequest request) {
+        if (request.getModel() == null || "default".equals(request.getModel())) {
+            logger.info("未指定模型或使用默认模型，使用配置的默认模型: {}", getDefaultModel());
+            request.setModel(getDefaultModel());
+        }
+        
+        List<String> chunks = new ArrayList<>();
+        
+        try {
+            logger.info("发送流式请求到SiliconFlow服务, 模型: {}, 消息数: {}", 
+                    request.getModel(), request.getMessages().size());
+            
+            // 设置请求为流式
+            request.setStream(true);
+            
+            String requestBody = prepareRequestBody(request);
+            
+            // 使用带回调的流式处理方式
+            final boolean[] isDone = {false};
+            Object lock = new Object();
+            
+            sendStreamHttpRequest(requestBody, (chunk, isLast) -> {
+                chunks.add(chunk);
+                
+                if (isLast) {
+                    synchronized (lock) {
+                        isDone[0] = true;
+                        lock.notifyAll();
+                    }
+                }
+            });
+            
+            // 等待所有响应完成
+            synchronized (lock) {
+                if (!isDone[0]) {
+                    try {
+                        lock.wait(timeout); // 使用配置的超时时间
+                    } catch (InterruptedException e) {
+                        logger.warn("等待流式响应完成被中断", e);
+                        Thread.currentThread().interrupt();
+                    }
+                }
+            }
+            
+            logger.info("SiliconFlow流式响应完成，共返回 {} 个块", chunks.size());
+            return chunks;
+            
+        } catch (Exception e) {
+            logger.error("调用SiliconFlow流式服务出错", e);
+            chunks.add("调用流式服务时发生错误: " + e.getMessage());
+            return chunks;
+        }
+    }
+    
+    /**
+     * 发送流式HTTP请求到SiliconFlow服务
+     *
+     * @param requestBody 请求体
+     * @param handler 响应处理器
+     * @throws IOException 请求异常
+     */
+    private void sendStreamHttpRequest(String requestBody, StreamResponseHandler handler) throws IOException {
+        RequestConfig requestConfig = RequestConfig.custom()
+                .setConnectTimeout(timeout)
+                .setSocketTimeout(timeout)
+                .build();
+        
+        CloseableHttpClient httpClient = HttpClients.custom()
+                .setDefaultRequestConfig(requestConfig)
+                .build();
+        
+        HttpPost httpPost = new HttpPost(apiUrl);
+        httpPost.setHeader("Content-Type", "application/json");
+        httpPost.setHeader("Authorization", "Bearer " + apiKey);
+        
+        StringEntity entity = new StringEntity(requestBody, ContentType.APPLICATION_JSON);
+        httpPost.setEntity(entity);
+        
+        logger.debug("发送流式HTTP请求到: {}", apiUrl);
+        
+        try (CloseableHttpResponse response = httpClient.execute(httpPost)) {
+            int statusCode = response.getStatusLine().getStatusCode();
+            logger.debug("HTTP响应状态码: {}", statusCode);
+            
+            if (statusCode != 200) {
+                String errorMessage = "HTTP请求失败，状态码: " + statusCode;
+                logger.error(errorMessage);
+                handler.onChunk(errorMessage, true);
+                return;
+            }
+            
+            HttpEntity responseEntity = response.getEntity();
+            
+            // 处理流式响应
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(responseEntity.getContent(), StandardCharsets.UTF_8))) {
+                String line;
+                StringBuilder partialData = new StringBuilder();
+                
+                while ((line = reader.readLine()) != null) {
+                    // 流式响应的每行数据通常以"data: "开头
+                    if (line.startsWith("data: ")) {
+                        String data = line.substring(6); // 去掉"data: "前缀
+                        
+                        // 检查是否是流的结束标记
+                        if ("[DONE]".equals(data)) {
+                            logger.debug("流式响应结束");
+                            // 结束标记，调用处理器并标记为最后一个
+                            if (partialData.length() > 0) {
+                                handler.onChunk(partialData.toString(), true);
+                                partialData.setLength(0);
+                            } else {
+                                handler.onChunk("", true);
+                            }
+                            break;
+                        }
+                        
+                        try {
+                            // 解析JSON数据
+                            JSONObject jsonData = JSON.parseObject(data);
+                            
+                            if (jsonData.containsKey("choices") && !jsonData.getJSONArray("choices").isEmpty()) {
+                                JSONObject choice = jsonData.getJSONArray("choices").getJSONObject(0);
+                                
+                                if (choice.containsKey("delta")) {
+                                    JSONObject delta = choice.getJSONObject("delta");
+                                    
+                                    // 检查是否有content字段
+                                    if (delta.containsKey("content")) {
+                                        String content = delta.getString("content");
+                                        
+                                        // 调用处理器处理内容，标记为非最后一个
+                                        handler.onChunk(content, false);
+                                    }
+                                }
+                            }
+                        } catch (Exception e) {
+                            logger.error("解析流式响应JSON出错", e);
+                            handler.onChunk("解析响应出错: " + e.getMessage(), false);
+                        }
+                    }
+                }
+            }
         } finally {
             httpClient.close();
         }
