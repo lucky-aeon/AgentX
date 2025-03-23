@@ -113,8 +113,12 @@ public class MessageServiceImpl implements MessageService {
             throw new EntityNotFoundException("会话不存在: " + sessionId);
         }
 
-        // 获取会话所有消息并按创建时间排序
-        List<Message> messages = messageRepository.findBySessionIdOrderByCreatedAt(sessionId);
+        // 使用LambdaQueryWrapper获取会话所有消息并按创建时间排序
+        LambdaQueryWrapper<Message> queryWrapper = Wrappers.<Message>lambdaQuery()
+                .eq(Message::getSessionId, sessionId)
+                .orderByAsc(Message::getCreatedAt);
+        
+        List<Message> messages = messageRepository.selectList(queryWrapper);
         return messages.stream()
                 .map(Message::toDTO)
                 .collect(Collectors.toList());
@@ -128,8 +132,13 @@ public class MessageServiceImpl implements MessageService {
             throw new EntityNotFoundException("会话不存在: " + sessionId);
         }
 
-        // 获取会话最近的N条消息，按创建时间倒序
-        List<Message> recentMessages = messageRepository.findTopNBySessionIdOrderByCreatedAtDesc(sessionId, count);
+        // 使用LambdaQueryWrapper获取会话最近的N条消息，使用last方法限制条数
+        LambdaQueryWrapper<Message> queryWrapper = Wrappers.<Message>lambdaQuery()
+                .eq(Message::getSessionId, sessionId)
+                .orderByDesc(Message::getCreatedAt)
+                .last("LIMIT " + count);
+        
+        List<Message> recentMessages = messageRepository.selectList(queryWrapper);
 
         // 我们需要将结果反转为按时间正序
         return recentMessages.stream()

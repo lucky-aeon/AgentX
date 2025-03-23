@@ -21,7 +21,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 const navItems = [
   {
     name: "探索",
-    href: "/",
+    href: "/explore",
     icon: Search,
   },
   {
@@ -44,6 +44,14 @@ const navItems = [
 export function NavigationBar() {
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
+
+  // Check if current path matches the menu item's href
+  const isActiveRoute = (href: string) => {
+    if (href === "/explore" && pathname === "/") {
+      return true // Main page also counts as explore
+    }
+    return pathname === href || pathname.startsWith(`${href}/`)
+  }
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -70,7 +78,7 @@ export function NavigationBar() {
                   onClick={() => setOpen(false)}
                   className={cn(
                     "flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
-                    pathname?.startsWith(item.href) ? "bg-accent text-accent-foreground" : "transparent",
+                    isActiveRoute(item.href) ? "bg-accent text-accent-foreground" : "transparent",
                   )}
                 >
                   <item.icon className="h-5 w-5" />
@@ -92,7 +100,7 @@ export function NavigationBar() {
                 href={item.href}
                 className={cn(
                   "flex items-center gap-1 text-sm font-medium transition-colors",
-                  pathname?.startsWith(item.href)
+                  isActiveRoute(item.href)
                     ? "text-blue-600 font-semibold"
                     : "text-foreground/60 hover:text-foreground/80",
                 )}

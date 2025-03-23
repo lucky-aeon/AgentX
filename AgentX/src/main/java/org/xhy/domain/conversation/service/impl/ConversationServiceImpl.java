@@ -15,6 +15,7 @@ import org.xhy.domain.conversation.service.SessionService;
 import org.xhy.domain.llm.model.LlmMessage;
 import org.xhy.domain.llm.model.LlmRequest;
 import org.xhy.domain.llm.service.LlmService;
+import org.xhy.application.conversation.dto.StreamChatResponse;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -80,14 +81,16 @@ public class ConversationServiceImpl implements ConversationService {
                 // 4. 发送流式请求
                 List<String> responseChunks = llmService.chatStreamList(request);
 
-                // 5. 逐块发送给客户端
+                // 5. 逐块发送给客户端，使用StreamChatResponse格式
                 StringBuilder fullResponse = new StringBuilder();
                 for (String chunk : responseChunks) {
                     fullResponse.append(chunk);
-                    emitter.send(SseEmitter.event()
-                            .id(UUID.randomUUID().toString())
-                            .name("message")
-                            .data(chunk));
+                    StreamChatResponse response = new StreamChatResponse(chunk, false);
+                    response.setSessionId(sessionId);
+                    response.setProvider(llmService.getProviderName());
+                    response.setModel(llmService.getDefaultModel());
+                    response.setTimestamp(System.currentTimeMillis());
+                    emitter.send(response);
                 }
 
                 // 6. 保存完整的助手回复
@@ -100,10 +103,12 @@ public class ConversationServiceImpl implements ConversationService {
                 );
 
                 // 7. 发送完成事件
-                emitter.send(SseEmitter.event()
-                        .id(UUID.randomUUID().toString())
-                        .name("done")
-                        .data(assistantMessageDTO));
+                StreamChatResponse doneResponse = new StreamChatResponse("", true);
+                doneResponse.setSessionId(sessionId);
+                doneResponse.setProvider(llmService.getProviderName());
+                doneResponse.setModel(llmService.getDefaultModel());
+                doneResponse.setTimestamp(System.currentTimeMillis());
+                emitter.send(doneResponse);
 
                 // 8. 完成
                 emitter.complete();
@@ -111,10 +116,9 @@ public class ConversationServiceImpl implements ConversationService {
             } catch (Exception e) {
                 log.error("Stream chat error", e);
                 try {
-                    emitter.send(SseEmitter.event()
-                            .id(UUID.randomUUID().toString())
-                            .name("error")
-                            .data(e.getMessage()));
+                    StreamChatResponse errorResponse = new StreamChatResponse("错误: " + e.getMessage(), true);
+                    errorResponse.setSessionId(sessionId);
+                    emitter.send(errorResponse);
                     emitter.complete();
                 } catch (IOException ex) {
                     emitter.completeWithError(ex);

@@ -1,17 +1,6 @@
-import { DiscoverContent } from "@/components/discover-content"
-import { Sidebar } from "@/components/sidebar"
+import { redirect } from "next/navigation"
 
 export default function HomePage() {
-  return (
-    <div className="flex h-[calc(100vh-3.5rem)]">
-      {/* 左侧边栏 */}
-      <Sidebar />
-
-      {/* 右侧内容区域 */}
-      <div className="flex-1 overflow-auto">
-        <DiscoverContent />
-      </div>
-    </div>
-  )
+  redirect("/explore")
 }
 

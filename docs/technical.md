@@ -104,12 +104,13 @@ AgentX采用分层架构设计，主要包含以下几个层次：
 系统使用PostgreSQL作为主要数据库，并通过pgvector扩展支持向量检索功能。数据库主要包含以下几类数据：
 
 1. **用户数据**：存储用户信息、认证数据、组织信息和API密钥
-2. **对话数据**：保存会话信息、消息内容和上下文
-3. **服务商数据**：管理服务商配置和模型信息
-4. **知识库数据**：存储文档、文档块和向量嵌入
-5. **工具数据**：保存工具定义和执行记录
-6. **计费数据**：记录订阅计划、用户余额、使用量和交易记录
-7. **市场数据**：存储市场项目、评价和安装记录
+2. **Agent数据**：保存Agent信息、配置和与会话的关联
+3. **对话数据**：保存会话信息、消息内容和上下文
+4. **服务商数据**：管理服务商配置和模型信息
+5. **知识库数据**：存储文档、文档块和向量嵌入
+6. **工具数据**：保存工具定义和执行记录
+7. **计费数据**：记录订阅计划、用户余额、使用量和交易记录
+8. **市场数据**：存储市场项目、评价和安装记录
 
 详细的表结构设计将在系统实现阶段逐步完善。
 
@@ -120,6 +121,60 @@ AgentX采用分层架构设计，主要包含以下几个层次：
 - 对JSON字段中常用查询路径创建GIN索引
 - 合理使用联合索引优化复杂查询
 
+### 3.3 Agent数据库表设计
+
+#### 3.3.1 agent表
+
+存储Agent的基本信息和配置。
+
+```sql
+CREATE TABLE agent (
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(50) NOT NULL COMMENT 'Agent名称',
+    avatar VARCHAR(255) COMMENT 'Agent头像URL',
+    description TEXT COMMENT 'Agent描述',
+    system_prompt TEXT COMMENT 'Agent系统提示词',
+    welcome_message TEXT COMMENT '欢迎消息',
+    model_config JSONB COMMENT '模型配置，包含模型类型、温度等参数',
+    tools JSONB COMMENT 'Agent可使用的工具列表',
+    knowledge_base_ids JSONB COMMENT '关联的知识库ID列表',
+    is_private BOOLEAN DEFAULT TRUE COMMENT '是否为私有Agent',
+    user_id BIGINT COMMENT '创建者用户ID',
+    status SMALLINT DEFAULT 1 COMMENT 'Agent状态：0-禁用，1-启用',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP NULL
+);
+
+-- 创建索引
+CREATE INDEX idx_agent_user_id ON agent(user_id);
+CREATE INDEX idx_agent_status ON agent(status);
+CREATE INDEX idx_agent_name ON agent(name);
+```
+
+#### 3.3.2 会话表(conversation)修改
+
+将会话表修改为与Agent关联。
+
+```sql
+CREATE TABLE conversation (
+    id BIGSERIAL PRIMARY KEY,
+    title VARCHAR(100) NOT NULL COMMENT '会话标题',
+    agent_id BIGINT NOT NULL COMMENT '关联的Agent ID',
+    user_id BIGINT NOT NULL COMMENT '所属用户ID',
+    last_message_time TIMESTAMP COMMENT '最后消息时间',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP NULL,
+    FOREIGN KEY (agent_id) REFERENCES agent(id)
+);
+
+-- 创建索引
+CREATE INDEX idx_conversation_agent_id ON conversation(agent_id);
+CREATE INDEX idx_conversation_user_id ON conversation(user_id);
+```
+
+以上是基本的Agent管理相关数据库设计，它定义了Agent实体以及与会话的关联关系。系统将基于这些表结构实现Agent的创建、配置、管理和与会话的关联功能。
 
 ## 4. 核心功能实现
 

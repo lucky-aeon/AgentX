@@ -19,6 +19,18 @@ CREATE TABLE message_groups (
     FOREIGN KEY (session_id) REFERENCES sessions(id)
 );
 
+-- 为message_groups表添加注释
+COMMENT ON TABLE message_groups IS '消息组表，用于定义消息分组';
+COMMENT ON COLUMN message_groups.id IS '消息组唯一ID';
+COMMENT ON COLUMN message_groups.name IS '消息组名称';
+COMMENT ON COLUMN message_groups.description IS '消息组描述';
+COMMENT ON COLUMN message_groups.session_id IS '所属会话ID';
+COMMENT ON COLUMN message_groups.created_at IS '创建时间';
+COMMENT ON COLUMN message_groups.updated_at IS '更新时间';
+COMMENT ON COLUMN message_groups.is_active IS '是否活跃';
+COMMENT ON COLUMN message_groups.user_id IS '创建人ID';
+COMMENT ON COLUMN message_groups.metadata IS '元数据';
+
 -- 创建消息-组关联表（将消息关联到组）
 CREATE TABLE message_group_items (
     id VARCHAR(36) PRIMARY KEY,           -- 关联唯一ID
@@ -31,6 +43,15 @@ CREATE TABLE message_group_items (
     FOREIGN KEY (message_id) REFERENCES messages(id)
 );
 
+-- 为message_group_items表添加注释
+COMMENT ON TABLE message_group_items IS '消息-组关联表，将消息关联到组';
+COMMENT ON COLUMN message_group_items.id IS '关联唯一ID';
+COMMENT ON COLUMN message_group_items.group_id IS '消息组ID';
+COMMENT ON COLUMN message_group_items.message_id IS '消息ID';
+COMMENT ON COLUMN message_group_items.created_at IS '创建时间';
+COMMENT ON COLUMN message_group_items.sort_order IS '排序顺序';
+COMMENT ON COLUMN message_group_items.metadata IS '元数据';
+
 -- 创建组标签表（为消息组添加标签）
 CREATE TABLE message_group_tags (
     id VARCHAR(36) PRIMARY KEY,           -- 标签唯一ID
@@ -39,6 +60,13 @@ CREATE TABLE message_group_tags (
     created_at TIMESTAMP NOT NULL,        -- 创建时间
     FOREIGN KEY (group_id) REFERENCES message_groups(id)
 );
+
+-- 为message_group_tags表添加注释
+COMMENT ON TABLE message_group_tags IS '组标签表，为消息组添加标签';
+COMMENT ON COLUMN message_group_tags.id IS '标签唯一ID';
+COMMENT ON COLUMN message_group_tags.group_id IS '消息组ID';
+COMMENT ON COLUMN message_group_tags.tag_name IS '标签名称';
+COMMENT ON COLUMN message_group_tags.created_at IS '创建时间';
 
 -- 创建话题关联表（用于构建话题树结构）
 CREATE TABLE topic_relations (
@@ -51,6 +79,15 @@ CREATE TABLE topic_relations (
     FOREIGN KEY (parent_id) REFERENCES sessions(id),
     FOREIGN KEY (child_id) REFERENCES sessions(id)
 );
+
+-- 为topic_relations表添加注释
+COMMENT ON TABLE topic_relations IS '话题关联表，用于构建话题树结构';
+COMMENT ON COLUMN topic_relations.id IS '关联唯一ID';
+COMMENT ON COLUMN topic_relations.parent_id IS '父话题ID';
+COMMENT ON COLUMN topic_relations.child_id IS '子话题ID';
+COMMENT ON COLUMN topic_relations.relation_type IS '关联类型';
+COMMENT ON COLUMN topic_relations.created_at IS '创建时间';
+COMMENT ON COLUMN topic_relations.metadata IS '关联元数据';
 
 -- =============================================
 -- 索引定义

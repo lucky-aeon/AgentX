@@ -1,65 +1,90 @@
 package org.xhy.infrastructure.typehandler;
 
-import com.alibaba.fastjson.JSON;
 import org.apache.ibatis.type.BaseTypeHandler;
 import org.apache.ibatis.type.JdbcType;
 import org.apache.ibatis.type.MappedJdbcTypes;
 import org.apache.ibatis.type.MappedTypes;
 import org.postgresql.util.PGobject;
+import org.xhy.domain.agent.model.AgentTool;
+import org.xhy.domain.agent.model.ModelConfig;
+import org.xhy.infrastructure.util.JsonUtils;
 
 import java.sql.CallableStatement;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
- * PostgreSQL JSON类型与Java String类型转换处理器
+ * 自定义JSON类型处理器
+ * 用于将Java对象与数据库中的JSON字符串互相转换
+ * @param <T> 要处理的Java类型
  */
-@MappedTypes(String.class)
 @MappedJdbcTypes(JdbcType.OTHER)
-public class JsonTypeHandler extends BaseTypeHandler<String> {
+@MappedTypes({Object.class, List.class, ModelConfig.class, AgentTool.class})
+public class JsonTypeHandler<T> extends BaseTypeHandler<T> {
+    
+    private final Class<T> clazz;
+    private final boolean isList;
+    private final Class<?> itemClazz;
 
-    @Override
-    public void setNonNullParameter(PreparedStatement ps, int i, String parameter, JdbcType jdbcType)
-            throws SQLException {
-        PGobject pgObject = new PGobject();
-        pgObject.setType("json");
-        pgObject.setValue(parameter);
-        ps.setObject(i, pgObject);
+    public JsonTypeHandler(Class<T> clazz) {
+        this(clazz, false, null);
+    }
+
+    public JsonTypeHandler(Class<T> clazz, boolean isList, Class<?> itemClazz) {
+        if (clazz == null) {
+            throw new IllegalArgumentException("Type argument cannot be null");
+        }
+        this.clazz = clazz;
+        this.isList = isList;
+        this.itemClazz = itemClazz;
+    }
+
+    /**
+     * 默认构造函数
+     */
+    public JsonTypeHandler() {
+        this.clazz = (Class<T>) Object.class;
+        this.isList = false;
+        this.itemClazz = null;
     }
 
     @Override
-    public String getNullableResult(ResultSet rs, String columnName) throws SQLException {
-        Object obj = rs.getObject(columnName);
-        return parseJsonValue(obj);
+    public void setNonNullParameter(PreparedStatement ps, int i, T parameter, JdbcType jdbcType) throws SQLException {
+        // 创建PostgreSQL的JSON对象
+        PGobject jsonObject = new PGobject();
+        jsonObject.setType("json");
+        jsonObject.setValue(JsonUtils.toJsonString(parameter));
+        ps.setObject(i, jsonObject);
     }
 
     @Override
-    public String getNullableResult(ResultSet rs, int columnIndex) throws SQLException {
-        Object obj = rs.getObject(columnIndex);
-        return parseJsonValue(obj);
+    public T getNullableResult(ResultSet rs, String columnName) throws SQLException {
+        return parse(rs.getString(columnName));
     }
 
     @Override
-    public String getNullableResult(CallableStatement cs, int columnIndex) throws SQLException {
-        Object obj = cs.getObject(columnIndex);
-        return parseJsonValue(obj);
+    public T getNullableResult(ResultSet rs, int columnIndex) throws SQLException {
+        return parse(rs.getString(columnIndex));
     }
 
-    private String parseJsonValue(Object obj) {
-        if (obj == null) {
+    @Override
+    public T getNullableResult(CallableStatement cs, int columnIndex) throws SQLException {
+        return parse(cs.getString(columnIndex));
+    }
+
+    private T parse(String json) {
+        if (json == null || json.isEmpty()) {
             return null;
         }
-
-        if (obj instanceof PGobject) {
-            return ((PGobject) obj).getValue();
+        
+        if (isList && itemClazz != null) {
+            List<?> list = JsonUtils.parseArray(json, itemClazz);
+            return (T) list;
+        } else {
+            return JsonUtils.parseObject(json, clazz);
         }
-
-        if (obj instanceof String) {
-            return (String) obj;
-        }
-
-        // 如果是其他类型，尝试转换为JSON字符串
-        return JSON.toJSONString(obj);
     }
 }

@@ -1,4 +1,4 @@
-package org.xhy.interfaces.api.conversation;
+package org.xhy.interfaces.api.portal.conversation;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,13 +18,13 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * 对话控制器
+ * 前台用户对话控制器
  */
 @RestController
 @RequestMapping("/conversation")
-public class ConversationController {
+public class PortalConversationController {
 
-    private final Logger logger = LoggerFactory.getLogger(ConversationController.class);
+    private final Logger logger = LoggerFactory.getLogger(PortalConversationController.class);
 
     private final ExecutorService executorService = Executors.newCachedThreadPool();
 
@@ -152,4 +152,4 @@ public class ConversationController {
         // 调用POST方法处理
         return chatStream(request);
     }
-}
+} 

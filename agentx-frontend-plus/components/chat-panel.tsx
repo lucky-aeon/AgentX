@@ -7,45 +7,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { streamChat } from "@/lib/api"
 import { toast } from "@/components/ui/use-toast"
-
-// 对话数据
-const conversations = [
-  {
-    id: "conv-1",
-    workspaceId: "workspace-3",
-    name: "聊天测试",
-    icon: "📝",
-    messages: [{ id: "m1", role: "assistant", content: "你好！我是你的 AI 助手。有什么可以帮助你的吗？" }],
-  },
-  {
-    id: "conv-2",
-    workspaceId: "workspace-3",
-    name: "1",
-    icon: "📝",
-    messages: [{ id: "m2", role: "assistant", content: "这是测试助手1。请问有什么需要帮助的吗?" }],
-  },
-  {
-    id: "conv-3",
-    workspaceId: "workspace-3",
-    name: "测试工具",
-    icon: "🔧",
-    messages: [{ id: "m3", role: "assistant", content: "这是测试工具助手。我可以帮助您测试各种功能。" }],
-  },
-  {
-    id: "conv-4",
-    workspaceId: "workspace-1",
-    name: "图像生成",
-    icon: "🖼️",
-    messages: [{ id: "m4", role: "assistant", content: "你好！我是文生图助理。请告诉我你想要生成什么样的图像。" }],
-  },
-  {
-    id: "conv-5",
-    workspaceId: "workspace-2",
-    name: "网络搜索",
-    icon: "🔍",
-    messages: [{ id: "m5", role: "assistant", content: "你好！我是深度搜索助理。我可以帮你搜索和分析网络上的信息。" }],
-  },
-]
+import { getSession } from "@/lib/api-services"
+import type { Session } from "@/types/conversation"
 
 interface ChatPanelProps {
   conversationId: string
@@ -71,20 +34,110 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
   const [isTyping, setIsTyping] = useState(false)
   const [messages, setMessages] = useState<Message[]>([])
   const [streamingContent, setStreamingContent] = useState("")
+  const [displayedContent, setDisplayedContent] = useState("") // 用于打字机效果
+  const [session, setSession] = useState<Session | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
+  const typewriterTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const retryCountRef = useRef(0)
 
-  // 获取当前对话
-  const conversation = conversations.find((c) => c.id === conversationId)
-
-  // 当对话ID变化时，更新消息列表
+  // 获取会话详情
   useEffect(() => {
-    if (conversation) {
-      setMessages([...conversation.messages])
-    } else {
-      setMessages([])
+    const fetchSession = async () => {
+      try {
+        setLoading(true)
+        setError(null)
+
+        const response = await getSession(conversationId)
+
+        if (response.code === 200 && response.data) {
+          setSession(response.data)
+          // 设置默认欢迎消息
+          setMessages([
+            {
+              id: `welcome-${conversationId}`,
+              role: "assistant",
+              content: `欢迎来到 "${response.data.title}" 会话。有什么可以帮助您的吗？`,
+            },
+          ])
+        } else {
+          // 处理API返回的错误
+          const errorMessage = response.message || "获取会话详情失败"
+          console.error(errorMessage)
+          setError(errorMessage)
+
+          // 使用会话ID作为标题的回退方案
+          setSession({
+            id: conversationId,
+            title: `会话 ${conversationId.substring(0, 8)}`,
+            description: null,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            archived: false,
+          })
+
+          // 设置默认欢迎消息
+          setMessages([
+            {
+              id: `welcome-${conversationId}`,
+              role: "assistant",
+              content: "欢迎来到新会话。有什么可以帮助您的吗？",
+            },
+          ])
+
+          toast({
+            title: "获取会话详情失败",
+            description: errorMessage,
+            variant: "destructive",
+          })
+        }
+      } catch (error) {
+        console.error("获取会话详情错误:", error)
+        const errorMessage = error instanceof Error ? error.message : "未知错误"
+        setError(errorMessage)
+
+        // 使用会话ID作为标题的回退方案
+        setSession({
+          id: conversationId,
+          title: `会话 ${conversationId.substring(0, 8)}`,
+          description: null,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          archived: false,
+        })
+
+        // 设置默认欢迎消息
+        setMessages([
+          {
+            id: `welcome-${conversationId}`,
+            role: "assistant",
+            content: "欢迎来到新会话。有什么可以帮助您的吗？",
+          },
+        ])
+
+        toast({
+          title: "获取会话详情失败",
+          description: errorMessage,
+          variant: "destructive",
+        })
+      } finally {
+        setLoading(false)
+      }
     }
-  }, [conversationId, conversation])
+
+    if (conversationId) {
+      fetchSession()
+    }
+  }, [conversationId, retryCountRef.current])
+
+  // 重试获取会话详情
+  const retryFetchSession = () => {
+    retryCountRef.current += 1
+    setError(null)
+    setLoading(true)
+  }
 
   // 自动滚动到底部
   const scrollToBottom = () => {
@@ -93,7 +146,37 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
 
   useEffect(() => {
     scrollToBottom()
-  }, [messages, streamingContent])
+  }, [messages, displayedContent])
+
+  // 打字机效果
+  useEffect(() => {
+    if (streamingContent === "") {
+      setDisplayedContent("")
+      return
+    }
+
+    // 清除之前的定时器
+    if (typewriterTimerRef.current) {
+      clearTimeout(typewriterTimerRef.current)
+    }
+
+    let currentIndex = 0
+    const typeNextChar = () => {
+      if (currentIndex < streamingContent.length) {
+        setDisplayedContent(streamingContent.substring(0, currentIndex + 1))
+        currentIndex++
+        typewriterTimerRef.current = setTimeout(typeNextChar, 10) // 调整速度
+      }
+    }
+
+    typeNextChar()
+
+    return () => {
+      if (typewriterTimerRef.current) {
+        clearTimeout(typewriterTimerRef.current)
+      }
+    }
+  }, [streamingContent])
 
   // 处理SSE格式的流式响应
   const handleSSEResponse = async (response: Response) => {
@@ -241,7 +324,7 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
         // 显示错误提示
         toast({
           title: "发送消息失败",
-          description: error.message || "请检查网络连接并稍后再试",
+          description: error instanceof Error ? error.message : "请检查网络连接并稍后再试",
           variant: "destructive",
         })
 
@@ -268,19 +351,59 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
     }
     setIsTyping(false)
     setStreamingContent("")
+
+    // 清除打字机效果定时器
+    if (typewriterTimerRef.current) {
+      clearTimeout(typewriterTimerRef.current)
+      typewriterTimerRef.current = null
+    }
   }
 
-  if (!conversation) return null
+  // 如果是加载状态，显示加载指示器
+  if (loading) {
+    return (
+      <div className="flex-1 flex items-center justify-center bg-gray-50 w-full">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-muted-foreground">加载会话中...</p>
+        </div>
+      </div>
+    )
+  }
 
+  // 如果有错误但有回退会话，仍然显示聊天界面
+  // 如果会话不存在且没有回退，显示错误信息
+  if (!session) {
+    return (
+      <div className="flex-1 flex items-center justify-center bg-gray-50 w-full">
+        <div className="text-center">
+          <div className="text-red-500 mb-4">会话不存在或已被删除</div>
+          <Button variant="outline" onClick={() => window.history.back()}>
+            返回
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  // 渲染聊天面板
   return (
-    <div className="flex-1 flex flex-col">
+    <div className="flex-1 flex flex-col w-full">
       <div className="flex items-center justify-between border-b px-4 py-2 bg-gray-50">
         <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center">{conversation.icon}</div>
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-blue-900">
+            {session.title.charAt(0).toUpperCase()}
+          </div>
           <div>
-            <h1 className="text-lg font-medium">{conversation.name}</h1>
+            <h1 className="text-lg font-medium">{session.title}</h1>
+            {session.description && <p className="text-xs text-muted-foreground">{session.description}</p>}
           </div>
         </div>
+        {error && (
+          <Button variant="outline" size="sm" onClick={retryFetchSession} className="mr-2">
+            重试加载
+          </Button>
+        )}
         <Button variant="ghost" size="icon" className="h-8 w-8">
           <FileText className="h-4 w-4" />
         </Button>
@@ -288,11 +411,17 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
 
       <div className="flex-1 overflow-auto p-4 bg-gray-50">
         <div className="mx-auto max-w-3xl space-y-6">
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-md p-3 text-sm text-red-600 mb-4">
+              加载会话详情时出错: {error}
+            </div>
+          )}
+
           {messages.map((message) => (
             <div key={message.id} className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
               {message.role === "assistant" && (
                 <div className="mr-2 h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-sm">
-                  {conversation.icon}
+                  {session.title.charAt(0).toUpperCase()}
                 </div>
               )}
               <div
@@ -311,13 +440,16 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
             </div>
           ))}
 
-          {/* 流式响应显示 */}
+          {/* 流式响应显示 - 使用打字机效果 */}
           {streamingContent && (
             <div className="flex justify-start">
               <div className="mr-2 h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-sm">
-                {conversation.icon}
+                {session.title.charAt(0).toUpperCase()}
               </div>
-              <div className="rounded-lg px-4 py-2 max-w-[80%] bg-white border">{streamingContent}</div>
+              <div className="rounded-lg px-4 py-2 max-w-[80%] bg-white border">
+                {displayedContent}
+                <span className="animate-pulse">|</span>
+              </div>
             </div>
           )}
 
@@ -325,7 +457,7 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
           {isTyping && !streamingContent && (
             <div className="flex justify-start">
               <div className="mr-2 h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-sm">
-                {conversation.icon}
+                {session.title.charAt(0).toUpperCase()}
               </div>
               <div className="rounded-lg px-4 py-2 bg-white border">
                 <div className="flex space-x-1">
