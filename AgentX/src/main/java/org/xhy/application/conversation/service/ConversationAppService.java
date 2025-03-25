@@ -1,14 +1,20 @@
 package org.xhy.application.conversation.service;
 
+import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import org.springframework.stereotype.Service;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-import org.xhy.application.conversation.dto.ChatRequest;
-import org.xhy.application.conversation.dto.ChatResponse;
 import org.xhy.application.conversation.dto.StreamChatRequest;
 import org.xhy.application.conversation.dto.StreamChatResponse;
-import org.xhy.domain.conversation.model.MessageDTO;
-import org.xhy.domain.conversation.service.ConversationService;
+import org.xhy.domain.agent.dto.AgentDTO;
+import org.xhy.domain.agent.dto.AgentVersionDTO;
+import org.xhy.domain.agent.service.AgentDomainService;
+import org.xhy.domain.conversation.dto.MessageDTO;
+import org.xhy.domain.conversation.model.MessageEntity;
+import org.xhy.domain.conversation.model.SessionEntity;
+import org.xhy.domain.conversation.service.ConversationDomainService;
+import org.xhy.domain.conversation.service.SessionDomainService;
+import org.xhy.infrastructure.exception.BusinessException;
 
+import java.util.List;
 import java.util.function.BiConsumer;
 
 /**
@@ -17,55 +23,63 @@ import java.util.function.BiConsumer;
 @Service
 public class ConversationAppService {
 
-    private final ConversationService conversationService;
-    private final org.xhy.application.conversation.service.ConversationService applicationConversationService;
+    private final ConversationDomainService conversationDomainService;
+
+    private final SessionDomainService sessionDomainService;
+
 
     public ConversationAppService(
-            ConversationService conversationService,
-            org.xhy.application.conversation.service.ConversationService applicationConversationService) {
-        this.conversationService = conversationService;
-        this.applicationConversationService = applicationConversationService;
-    }
+            ConversationDomainService conversationDomainService,
+            SessionDomainService sessionDomainService,
+            AgentDomainService agentDomainService
+            ) {
+        this.conversationDomainService = conversationDomainService;
+        this.sessionDomainService = sessionDomainService;
 
-    /**
-     * 发送消息并获取流式回复
-     */
-    public SseEmitter chat(String sessionId, String content) {
-        return conversationService.chat(sessionId, content);
-    }
-
-    /**
-     * 发送消息并获取同步回复（非流式）
-     */
-    public MessageDTO chatSync(String sessionId, String content) {
-        return conversationService.chatSync(sessionId, content);
-    }
-
-    /**
-     * 创建新会话并发送第一条消息
-     */
-    public SseEmitter createSessionAndChat(String title, String userId, String content) {
-        return conversationService.createSessionAndChat(title, userId, content);
-    }
-
-    /**
-     * 清除会话上下文
-     */
-    public void clearContext(String sessionId) {
-        conversationService.clearContext(sessionId);
-    }
-
-    /**
-     * 处理聊天请求
-     */
-    public ChatResponse chat(ChatRequest request) {
-        return applicationConversationService.chat(request);
     }
 
     /**
      * 处理流式聊天请求
      */
     public void chatStream(StreamChatRequest request, BiConsumer<StreamChatResponse, Boolean> responseHandler) {
-        applicationConversationService.chatStream(request, responseHandler);
+        conversationDomainService.chatStream(request, responseHandler);
+    }
+
+    public MessageEntity saveAssistantMessage(String sessionId, String content,
+            String provider, String model, Integer tokenCount) {
+        return conversationDomainService.saveAssistantMessage(sessionId, content, provider, model, tokenCount);
+    }
+
+    /**
+     * 发送消息 - 保存用户消息并创建或更新上下文
+     *
+     * @param sessionId 会话id
+     * @param userId    用户id
+     * @param message   消息内容
+     * @param modelName 模型名称
+     * @return 保存的用户消息实体
+     */
+    public MessageEntity sendMessage(String sessionId, String userId, String message, String modelName) {
+        return conversationDomainService.sendMessage(sessionId, userId, message, modelName);
+    }
+
+
+    /**
+     * 获取会话中的消息列表
+     *
+     * @param sessionId 会话id
+     * @param userId    用户id
+     * @return 消息列表
+     */
+    public List<MessageDTO> getConversationMessages(String sessionId, String userId) {
+
+        // 查询对应会话是否存在
+        SessionEntity sessionEntity = sessionDomainService.find(sessionId, userId);
+
+        if (sessionEntity == null){
+            throw new BusinessException("会话不存在");
+        }
+
+        return conversationDomainService.getConversationMessages(sessionId);
     }
 }

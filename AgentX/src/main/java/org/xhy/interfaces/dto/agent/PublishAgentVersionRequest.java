@@ -1,6 +1,7 @@
 package org.xhy.interfaces.dto.agent;
 
 import java.util.regex.Pattern;
+import org.xhy.infrastructure.exception.ParamValidationException;
 
 /**
  * 发布Agent版本请求
@@ -26,16 +27,16 @@ public class PublishAgentVersionRequest {
      */
     public void validate() {
         if (versionNumber == null || versionNumber.trim().isEmpty()) {
-            throw new IllegalArgumentException("版本号不能为空");
+            throw new ParamValidationException("versionNumber", "版本号不能为空");
         }
 
         // 验证版本号格式
         if (!VERSION_PATTERN.matcher(versionNumber).matches()) {
-            throw new IllegalArgumentException("版本号必须遵循 x.y.z 格式");
+            throw new ParamValidationException("versionNumber", "版本号必须遵循 x.y.z 格式");
         }
 
         if (changeLog == null || changeLog.trim().isEmpty()) {
-            throw new IllegalArgumentException("变更日志不能为空");
+            throw new ParamValidationException("changeLog", "变更日志不能为空");
         }
     }
 
@@ -70,7 +71,7 @@ public class PublishAgentVersionRequest {
         // 确保两个版本号都符合格式
         if (!VERSION_PATTERN.matcher(versionNumber).matches() ||
                 !VERSION_PATTERN.matcher(lastVersion).matches()) {
-            throw new IllegalArgumentException("版本号必须遵循 x.y.z 格式");
+            throw new ParamValidationException("versionNumber", "版本号必须遵循 x.y.z 格式");
         }
 
         // 分割版本号

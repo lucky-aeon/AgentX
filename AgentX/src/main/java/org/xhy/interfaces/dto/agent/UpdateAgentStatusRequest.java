@@ -1,6 +1,6 @@
 package org.xhy.interfaces.dto.agent;
 
-import org.xhy.domain.common.util.ValidationUtils;
+import org.xhy.infrastructure.util.ValidationUtils;
 
 /**
  * 更新Agent状态的请求对象

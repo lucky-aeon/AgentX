@@ -1,9 +1,12 @@
 "use client"
 
-import type React from "react"
+// 注意: 在未来的 Next.js 版本中，params 将会是一个 Promise 对象
+// 届时需要使用 React.use(params) 解包后再访问其属性
+
+import React from "react"
 
 import { useEffect, useState, useRef } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useParams } from "next/navigation"
 import Link from "next/link"
 import {
   MessageCircle,
@@ -51,6 +54,9 @@ import {
   deleteAgent,
   toggleAgentStatus,
   getAgentVersions,
+  updateAgentWithToast,
+  publishAgentVersionWithToast,
+  deleteAgentWithToast,
 } from "@/lib/agent-service"
 import { PublishStatus } from "@/types/agent"
 import type { AgentVersion } from "@/types/agent"
@@ -104,8 +110,11 @@ interface AgentFormData {
   agentType: number
 }
 
-export default function EditAgentPage({ params }: { params: { id: string } }) {
+export default function EditAgentPage() {
   const router = useRouter()
+  const params = useParams()
+  const agentId = params.id as string
+  
   const [selectedType, setSelectedType] = useState<AgentType>("chat")
   const [activeTab, setActiveTab] = useState("basic")
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -147,7 +156,7 @@ export default function EditAgentPage({ params }: { params: { id: string } }) {
     async function fetchAgentDetail() {
       try {
         setIsLoading(true)
-        const response = await getAgentDetail(params.id)
+        const response = await getAgentDetail(agentId)
 
         if (response.code === 200 && response.data) {
           const agent = response.data
@@ -194,7 +203,7 @@ export default function EditAgentPage({ params }: { params: { id: string } }) {
     }
 
     fetchAgentDetail()
-  }, [params.id, router])
+  }, [agentId, router])
 
   // 更新表单字段
   const updateFormField = (field: string, value: any) => {
@@ -319,30 +328,21 @@ export default function EditAgentPage({ params }: { params: { id: string } }) {
           }
         }),
         knowledgeBaseIds: selectedType === "chat" ? formData.knowledgeBaseIds : [],
+        enabled: formData.enabled,
+        agentType: formData.agentType,
       }
 
       // 调用API更新助理
-      const response = await updateAgent(params.id, agentData)
+      const response = await updateAgentWithToast(agentId, agentData)
 
       if (response.code === 200) {
-        toast({
-          title: "更新成功",
-          description: `已更新${selectedType === "chat" ? "聊天助理" : "功能性助理"}: ${formData.name}`,
-        })
+        // toast已通过withToast处理，此处不需要额外的toast
       } else {
-        toast({
-          title: "更新失败",
-          description: response.message,
-          variant: "destructive",
-        })
+        // 错误也已由withToast处理
       }
     } catch (error) {
       console.error("更新失败:", error)
-      toast({
-        title: "更新失败",
-        description: "请稍后再试",
-        variant: "destructive",
-      })
+      // 错误已由withToast处理
     } finally {
       setIsSubmitting(false)
     }
@@ -353,28 +353,17 @@ export default function EditAgentPage({ params }: { params: { id: string } }) {
     setIsDeleting(true)
 
     try {
-      const response = await deleteAgent(params.id)
+      const response = await deleteAgentWithToast(agentId)
 
       if (response.code === 200) {
-        toast({
-          title: "删除成功",
-          description: "助理已成功删除",
-        })
+        // toast已通过withToast处理
         router.push("/studio")
       } else {
-        toast({
-          title: "删除失败",
-          description: response.message,
-          variant: "destructive",
-        })
+        // 错误已由withToast处理
       }
     } catch (error) {
       console.error("删除失败:", error)
-      toast({
-        title: "删除失败",
-        description: "请稍后再试",
-        variant: "destructive",
-      })
+      // 错误已由withToast处理
     } finally {
       setIsDeleting(false)
       setShowDeleteDialog(false)
@@ -383,35 +372,15 @@ export default function EditAgentPage({ params }: { params: { id: string } }) {
 
   // 处理切换助理状态
   const handleToggleStatus = async () => {
-    setIsTogglingStatus(true)
-
-    try {
-      const response = await toggleAgentStatus(params.id)
-
-      if (response.code === 200) {
-        toast({
-          title: response.data.enabled ? "已启用" : "已禁用",
-          description: `助理 "${formData.name}" ${response.data.enabled ? "已启用" : "已禁用"}`,
-        })
-        // 更新表单数据
-        updateFormField("enabled", response.data.enabled)
-      } else {
-        toast({
-          title: "操作失败",
-          description: response.message,
-          variant: "destructive",
-        })
-      }
-    } catch (error) {
-      console.error("操作失败:", error)
-      toast({
-        title: "操作失败",
-        description: "请稍后再试",
-        variant: "destructive",
-      })
-    } finally {
-      setIsTogglingStatus(false)
-    }
+    // 不发送网络请求，只更新本地状态
+    const newEnabledStatus = !formData.enabled;
+    
+    updateFormField("enabled", newEnabledStatus);
+    
+    toast({
+      title: newEnabledStatus ? "已启用" : "已禁用",
+      description: `助理 "${formData.name}" ${newEnabledStatus ? "已启用" : "已禁用"}`,
+    });
   }
 
   // 处理发布助理版本
@@ -427,7 +396,7 @@ export default function EditAgentPage({ params }: { params: { id: string } }) {
     setIsPublishing(true)
 
     try {
-      const response = await publishAgentVersion(params.id, {
+      const response = await publishAgentVersionWithToast(agentId, {
         versionNumber,
         changeLog: changeLog || `发布 ${versionNumber} 版本`,
         systemPrompt: formData.systemPrompt,
@@ -445,27 +414,16 @@ export default function EditAgentPage({ params }: { params: { id: string } }) {
       })
 
       if (response.code === 200) {
-        toast({
-          title: "发布成功",
-          description: `已发布版本 ${versionNumber}`,
-        })
+        // toast已通过withToast处理
         setShowPublishDialog(false)
         setVersionNumber("")
         setChangeLog("")
       } else {
-        toast({
-          title: "发布失败",
-          description: response.message,
-          variant: "destructive",
-        })
+        // 错误已由withToast处理
       }
     } catch (error) {
       console.error("发布失败:", error)
-      toast({
-        title: "发布失败",
-        description: "请稍后再试",
-        variant: "destructive",
-      })
+      // 错误已由withToast处理
     } finally {
       setIsPublishing(false)
     }
@@ -477,7 +435,7 @@ export default function EditAgentPage({ params }: { params: { id: string } }) {
     setVersions([])
 
     try {
-      const response = await getAgentVersions(params.id)
+      const response = await getAgentVersions(agentId)
 
       if (response.code === 200) {
         setVersions(response.data)
@@ -659,14 +617,8 @@ export default function EditAgentPage({ params }: { params: { id: string } }) {
               <Button
                 variant={formData.enabled ? "outline" : "default"}
                 onClick={handleToggleStatus}
-                disabled={isTogglingStatus}
               >
-                {isTogglingStatus ? (
-                  <>
-                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                    处理中...
-                  </>
-                ) : formData.enabled ? (
+                {formData.enabled ? (
                   <>
                     <PowerOff className="mr-2 h-4 w-4" />
                     禁用
@@ -678,6 +630,10 @@ export default function EditAgentPage({ params }: { params: { id: string } }) {
                   </>
                 )}
               </Button>
+              <div className="flex items-center mt-1 mb-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-500 mr-1"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                <p className="text-xs text-muted-foreground">启用/禁用状态更改需要点击保存按钮才会生效</p>
+              </div>
               <Button variant="destructive" onClick={() => setShowDeleteDialog(true)}>
                 删除
               </Button>
@@ -835,7 +791,6 @@ export default function EditAgentPage({ params }: { params: { id: string } }) {
                   <div className="flex justify-between">
                     <span className="text-sm">精确</span>
                     <span className="text-sm font-medium">{formData.modelConfig.temperature.toFixed(1)}</span>
-                    <span className="text-sm">创意</span>
                   </div>
                   <Slider
                     value={[formData.modelConfig.temperature]}

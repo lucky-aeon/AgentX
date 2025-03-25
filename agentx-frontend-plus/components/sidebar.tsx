@@ -4,14 +4,23 @@ import type React from "react"
 
 import { useState, useEffect } from "react"
 import { useRouter, usePathname } from "next/navigation"
-import { ChevronDown, ChevronRight, Compass, FolderOpen, Bot, RefreshCw } from "lucide-react"
+import { ChevronDown, ChevronRight, Compass, FolderOpen, Bot, RefreshCw, MoreHorizontal, Trash2 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { useWorkspace } from "@/contexts/workspace-context"
-import { getUserAgents } from "@/lib/agent-service"
+import { getUserAgents, deleteWorkspaceAgent } from "@/lib/agent-service"
 import { Skeleton } from "@/components/ui/skeleton"
 import type { Agent } from "@/types/agent"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
 type SidebarItem = {
   title: string
@@ -34,29 +43,106 @@ type WorkspaceItemProps = {
 }
 
 function WorkspaceItem({ id, name, icon, avatar, onClick }: WorkspaceItemProps) {
-  const { selectedWorkspaceId } = useWorkspace()
+  const { selectedWorkspaceId, setSelectedWorkspaceId, setSelectedConversationId } = useWorkspace()
   const isActive = selectedWorkspaceId === id
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const router = useRouter()
+
+  // Handle delete workspace assistant
+  const handleDeleteWorkspace = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setShowDeleteDialog(true)
+  }
+
+  // Confirm delete workspace assistant
+  const confirmDeleteWorkspace = async () => {
+    try {
+      setIsDeleting(true)
+      const response = await deleteWorkspaceAgent(id)
+
+      if (response.code === 200) {
+        // If the deleted workspace was selected, clear the selection
+        if (selectedWorkspaceId === id) {
+          setSelectedWorkspaceId(null)
+          setSelectedConversationId(null)
+          router.push("/explore")
+        }
+
+        // Refresh the sidebar
+        window.location.reload()
+      } else {
+        throw new Error(response.message || "删除失败")
+      }
+    } catch (error) {
+      console.error("删除工作区助理错误:", error)
+      alert("删除失败: " + (error instanceof Error ? error.message : "未知错误"))
+    } finally {
+      setIsDeleting(false)
+      setShowDeleteDialog(false)
+    }
+  }
 
   return (
-    <Button
-      variant="ghost"
-      className={cn(
-        "w-full justify-start px-2 py-1.5 text-sm font-medium pl-8 hover:bg-accent hover:text-accent-foreground",
-        isActive && "bg-accent text-accent-foreground",
-      )}
-      onClick={onClick}
-    >
-      {avatar ? (
-        <div className="w-5 h-5 rounded-full overflow-hidden mr-2 flex-shrink-0">
-          <img src={avatar || "/placeholder.svg"} alt={name} className="w-full h-full object-cover" />
-        </div>
-      ) : icon ? (
-        <span className="mr-2">{icon}</span>
-      ) : (
-        <Bot className="mr-2 h-4 w-4" />
-      )}
-      <span className="truncate">{name}</span>
-    </Button>
+    <div className="relative group">
+      <Button
+        variant="ghost"
+        className={cn(
+          "w-full justify-start px-2 py-1.5 text-sm font-medium pl-8 hover:bg-accent hover:text-accent-foreground",
+          isActive && "bg-accent text-accent-foreground",
+        )}
+        onClick={onClick}
+      >
+        {avatar ? (
+          <div className="w-5 h-5 rounded-full overflow-hidden mr-2 flex-shrink-0">
+            <img src={avatar || "/placeholder.svg"} alt={name} className="w-full h-full object-cover" />
+          </div>
+        ) : icon ? (
+          <span className="mr-2">{icon}</span>
+        ) : (
+          <Bot className="mr-2 h-4 w-4" />
+        )}
+        <span className="truncate">{name}</span>
+      </Button>
+
+      {/* Three-dot menu that appears on hover */}
+      <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-7 w-7">
+              <MoreHorizontal className="h-4 w-4" />
+              <span className="sr-only">操作</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem className="text-red-600" onClick={handleDeleteWorkspace}>
+              <Trash2 className="mr-2 h-4 w-4" />
+              <span>从工作区移除</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      {/* Delete confirmation dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>确认移除</DialogTitle>
+            <DialogDescription>
+              您确定要将助理 "{name}" 从工作区移除吗？此操作不会删除助理，但会移除与此助理的关联。
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
+              取消
+            </Button>
+            <Button variant="destructive" onClick={confirmDeleteWorkspace} disabled={isDeleting}>
+              {isDeleting ? "移除中..." : "确认移除"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
   )
 }
 
@@ -152,7 +238,7 @@ export function Sidebar() {
       try {
         setLoading(true)
         setError(null)
-        const response = await getUserAgents({ userId: "1" })
+        const response = await getUserAgents()
 
         if (response.code === 200) {
           setAgents(response.data)

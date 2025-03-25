@@ -12,7 +12,7 @@ CREATE TABLE sessions (
     created_at TIMESTAMP NOT NULL,        -- 创建时间
     updated_at TIMESTAMP NOT NULL,        -- 最后更新时间
     user_id VARCHAR(36) NOT NULL,         -- 所属用户ID
-    agent_id VARCHAR(36),                 -- 关联的Agent ID
+    agent_id VARCHAR(36),         -- 关联的agentId
     is_archived BOOLEAN DEFAULT FALSE,    -- 是否归档
     description TEXT,                     -- 会话描述
     metadata JSON                         -- 会话元数据，可存储其他自定义信息
@@ -25,7 +25,7 @@ COMMENT ON COLUMN sessions.title IS '会话标题';
 COMMENT ON COLUMN sessions.created_at IS '创建时间';
 COMMENT ON COLUMN sessions.updated_at IS '最后更新时间';
 COMMENT ON COLUMN sessions.user_id IS '所属用户ID';
-COMMENT ON COLUMN sessions.agent_id IS '关联的Agent ID';
+COMMENT ON COLUMN sessions.agent_id IS '关联的agentId';
 COMMENT ON COLUMN sessions.is_archived IS '是否归档';
 COMMENT ON COLUMN sessions.description IS '会话描述';
 COMMENT ON COLUMN sessions.metadata IS '会话元数据，可存储其他自定义信息';
@@ -82,7 +82,7 @@ COMMENT ON COLUMN context.updated_at IS '最后更新时间';
 CREATE INDEX idx_sessions_user_id ON sessions(user_id);
 CREATE INDEX idx_sessions_created_at ON sessions(created_at);
 CREATE INDEX idx_sessions_updated_at ON sessions(updated_at);
-CREATE INDEX idx_sessions_agent_id ON sessions(agent_id);
+CREATE INDEX idx_sessions_agent_version_id ON sessions(agent_version_id);
 
 -- 创建消息查询索引
 CREATE INDEX idx_messages_session_id ON messages(session_id);

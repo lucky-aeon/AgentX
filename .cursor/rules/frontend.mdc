@@ -1,0 +1,500 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+ # AgentX 前端项目开发规范
+
+## 1. 项目架构规范
+
+### 1.1 目录结构
+
+```
+agentx-frontend-plus
+  ├── app/                   # Next.js 应用入口及页面组件
+  │   ├── (auth)/           # 认证相关页面
+  │   ├── (dashboard)/      # 应用主体页面
+  │   ├── api/              # API 路由
+  │   └── globals.css       # 全局样式
+  │
+  ├── components/            # 可复用组件
+  │   ├── ui/               # UI 基础组件
+  │   ├── forms/            # 表单相关组件
+  │   └── {业务模块}/       # 业务相关组件
+  │
+  ├── contexts/              # React Context
+  │
+  ├── hooks/                 # 自定义 Hooks
+  │
+  ├── lib/                   # 工具库和服务
+  │   ├── api-services.ts    # API 服务
+  │   ├── http-client.ts     # HTTP 客户端
+  │   └── utils.ts           # 工具函数
+  │
+  ├── public/                # 静态资源
+  │
+  ├── styles/                # 样式定义
+  │
+  └── types/                 # TypeScript 类型定义
+```
+
+### 1.2 分层职责
+
+- **pages**: 页面组件，负责布局和组合组件
+- **components**: 可复用组件，专注于 UI 呈现
+- **contexts**: 状态管理，提供跨组件共享状态
+- **hooks**: 业务逻辑封装，提高代码复用性
+- **lib**: 工具函数和服务，与 UI 无关的逻辑
+- **types**: 类型定义，确保类型安全
+
+## 2. 组件规范
+
+### 2.1 组件目录结构
+
+每个组件应该遵循以下结构：
+
+```
+ComponentName/
+  ├── index.tsx      # 主组件文件
+  ├── styles.module.css  # 组件样式 (可选)
+  └── ComponentName.test.tsx  # 组件测试 (可选)
+```
+
+### 2.2 组件命名
+
+- 使用 PascalCase 命名组件文件和组件名
+- 组件文件名应与组件名相同
+- 组件应使用函数组件和 React Hooks
+- 使用具备描述性的名称，如 `UserProfileCard` 而非 `Card`
+
+### 2.3 组件实现规范
+
+```typescript
+// 推荐的组件实现方式
+import React from 'react';
+import { cn } from "@/lib/utils";
+
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: 'default' | 'primary' | 'secondary';
+  size?: 'sm' | 'md' | 'lg';
+}
+
+export function Button({
+  variant = 'default',
+  size = 'md',
+  className,
+  children,
+  ...props
+}: ButtonProps) {
+  return (
+    <button
+      className={cn(
+        "rounded-md font-medium",
+        {
+          "bg-primary text-white": variant === 'primary',
+          "bg-secondary text-white": variant === 'secondary',
+          "bg-gray-100 text-gray-900": variant === 'default',
+        },
+        {
+          "px-2 py-1 text-sm": size === 'sm',
+          "px-4 py-2": size === 'md',
+          "px-6 py-3 text-lg": size === 'lg',
+        },
+        className
+      )}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+}
+```
+
+### 2.4 组件属性
+
+- 使用解构赋值提取 props
+- 为所有 props 提供类型
+- 为可选 props 提供默认值
+- 使用 `...props` 传递剩余属性
+
+## 3. 样式规范
+
+### 3.1 使用 Tailwind CSS
+
+- 优先使用 Tailwind 类名进行样式设置
+- 使用 `cn` 工具函数合并类名
+- 遵循响应式设计原则
+
+```tsx
+// 推荐的样式使用方式
+import { cn } from "@/lib/utils";
+
+function Card({ className, ...props }) {
+  return (
+    <div 
+      className={cn(
+        "rounded-lg p-4 shadow-md bg-white",
+        "dark:bg-gray-800 dark:text-white",
+        "md:p-6 lg:p-8",
+        className
+      )}
+      {...props}
+    />
+  );
+}
+```
+
+### 3.2 避免内联样式
+
+- 不使用内联样式（`style` 属性）
+- 不使用 !important
+
+### 3.3 主题和变量
+
+- 使用 CSS 变量定义主题颜色
+- 通过 `next-themes` 支持暗黑模式
+- 遵循设计系统的颜色和间距规范
+
+## 4. 状态管理规范
+
+### 4.1 使用 React Hooks
+
+- 使用 `useState` 管理组件局部状态
+- 使用 `useReducer` 管理复杂状态逻辑
+- 使用 Context API 进行跨组件状态共享
+
+### 4.2 Context 创建规范
+
+```typescript
+// 推荐的 Context 实现方式
+import React, { createContext, useContext, useReducer } from 'react';
+
+// 定义状态类型
+interface AuthState {
+  user: User | null;
+  isLoading: boolean;
+  error: string | null;
+}
+
+// 定义 Action 类型
+type AuthAction = 
+  | { type: 'LOGIN_START' }
+  | { type: 'LOGIN_SUCCESS', payload: User }
+  | { type: 'LOGIN_FAILURE', payload: string }
+  | { type: 'LOGOUT' };
+
+// 创建初始状态
+const initialState: AuthState = {
+  user: null,
+  isLoading: false,
+  error: null
+};
+
+// 创建 Context
+const AuthContext = createContext<{
+  state: AuthState;
+  dispatch: React.Dispatch<AuthAction>;
+} | undefined>(undefined);
+
+// 创建 reducer
+function authReducer(state: AuthState, action: AuthAction): AuthState {
+  switch (action.type) {
+    case 'LOGIN_START':
+      return { ...state, isLoading: true, error: null };
+    case 'LOGIN_SUCCESS':
+      return { ...state, isLoading: false, user: action.payload };
+    case 'LOGIN_FAILURE':
+      return { ...state, isLoading: false, error: action.payload };
+    case 'LOGOUT':
+      return { ...state, user: null };
+    default:
+      return state;
+  }
+}
+
+// 创建 Provider
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [state, dispatch] = useReducer(authReducer, initialState);
+  
+  return (
+    <AuthContext.Provider value={{ state, dispatch }}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+// 创建 Hook
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+}
+```
+
+## 5. API 调用规范
+
+### 5.1 使用 HTTP 客户端
+
+- 使用项目中的 `http-client.ts` 进行 API 调用
+- 不直接使用 `fetch` 或 `axios`
+- 集中管理 API 端点和服务
+
+### 5.2 API 服务封装
+
+```typescript
+// 推荐的 API 服务实现方式
+import { httpClient } from './http-client';
+import { ApiResponse } from '@/types/api';
+
+// 类型定义
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+}
+
+export interface CreateUserRequest {
+  name: string;
+  email: string;
+  password: string;
+}
+
+// API 服务
+export const userService = {
+  // 获取用户列表
+  getUsers: () => 
+    httpClient.get<ApiResponse<User[]>>('/users'),
+  
+  // 获取单个用户
+  getUser: (id: string) => 
+    httpClient.get<ApiResponse<User>>(`/users/${id}`),
+  
+  // 创建用户
+  createUser: (data: CreateUserRequest) => 
+    httpClient.post<ApiResponse<User>>('/users', data),
+  
+  // 更新用户
+  updateUser: (id: string, data: Partial<CreateUserRequest>) => 
+    httpClient.put<ApiResponse<User>>(`/users/${id}`, data),
+  
+  // 删除用户
+  deleteUser: (id: string) => 
+    httpClient.delete<ApiResponse<void>>(`/users/${id}`),
+};
+
+// 带 Toast 提示的服务封装
+import { withToast } from '@/lib/toast-utils';
+
+export const createUserWithToast = withToast(
+  (data: CreateUserRequest) => userService.createUser(data),
+  { 
+    successTitle: '用户创建成功',
+    errorTitle: '用户创建失败' 
+  }
+);
+```
+
+### 5.3 错误处理
+
+- 统一使用 Toast 提示处理 API 错误
+- 使用 try/catch 捕获异常
+- 提供有意义的错误信息
+
+## 6. TypeScript 规范
+
+### 6.1 类型定义
+
+- 为所有变量、函数参数和返回值提供类型
+- 使用接口而不是类型别名定义对象类型
+- 使用 enum 定义有限的选项集合
+- 使用 type 定义联合类型和复杂类型
+
+### 6.2 类型文件组织
+
+- 业务模型类型定义放在 `types` 目录下
+- 组件 Props 类型定义在组件文件内
+- API 请求响应类型定义在 API 服务文件内
+
+### 6.3 命名约定
+
+- 接口名称使用 `I` 前缀或描述性名称
+- 类型别名使用 `T` 前缀或描述性名称
+- 枚举类型使用名词
+
+```typescript
+// 类型命名示例
+// 接口
+interface User {
+  id: string;
+  name: string;
+}
+
+// 类型别名
+type UserRole = 'admin' | 'editor' | 'viewer';
+
+// 枚举
+enum HttpStatus {
+  OK = 200,
+  BAD_REQUEST = 400,
+  UNAUTHORIZED = 401,
+  FORBIDDEN = 403,
+  NOT_FOUND = 404,
+  INTERNAL_SERVER_ERROR = 500
+}
+```
+
+## 7. UI 组件库使用规范
+
+### 7.1 PrimeVue 组件使用规则
+
+- 必须使用 PrimeVue 组件库，不允许自行安装其他组件库
+- 优先使用 PrimeVue 提供的组件，避免重复造轮子
+- 使用 PrimeVue 的主题管理功能
+
+### 7.2 Shadcn/ui 组件使用规则
+
+- 在 PrimeVue 不满足需求时，可以使用项目中的 Shadcn/ui 组件
+- 不修改 Shadcn/ui 的源码，而是通过扩展方式添加功能
+- 保持组件样式的一致性
+
+## 8. 性能优化规范
+
+### 8.1 React 性能优化
+
+- 合理使用 `React.memo` 避免不必要的重渲染
+- 使用 `useCallback` 和 `useMemo` 缓存函数和计算结果
+- 使用 `useEffect` 的依赖数组避免不必要的副作用
+
+```typescript
+// 性能优化示例
+import React, { useCallback, useMemo } from 'react';
+
+function UserList({ users, onUserSelect }) {
+  // 使用 useCallback 缓存函数
+  const handleUserClick = useCallback((userId) => {
+    onUserSelect(userId);
+  }, [onUserSelect]);
+  
+  // 使用 useMemo 缓存计算结果
+  const sortedUsers = useMemo(() => {
+    return [...users].sort((a, b) => a.name.localeCompare(b.name));
+  }, [users]);
+  
+  return (
+    <ul>
+      {sortedUsers.map(user => (
+        <li 
+          key={user.id} 
+          onClick={() => handleUserClick(user.id)}
+        >
+          {user.name}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+// 使用 React.memo 避免不必要的重渲染
+export default React.memo(UserList);
+```
+
+### 8.2 加载优化
+
+- 使用 Next.js 的动态导入 (`next/dynamic`)
+- 实现组件懒加载
+- 使用 Next.js 的图片优化组件 (`next/image`)
+
+### 8.3 代码分割
+
+- 使用路由级别的代码分割
+- 大型组件使用动态导入
+- 第三方库使用按需导入
+
+## 9. 代码质量规范
+
+### 9.1 命名规范
+
+- 使用有意义的、描述性的命名
+- 变量和函数使用 camelCase (如 `getUserData`)
+- 组件使用 PascalCase (如 `UserProfile`)
+- 常量使用 UPPER_SNAKE_CASE (如 `MAX_RETRY_COUNT`)
+
+### 9.2 代码格式
+
+- 使用项目配置的 ESLint 规则
+- 使用 Prettier 进行代码格式化
+- 保持一致的缩进和空格
+
+### 9.3 注释规范
+
+- 为复杂逻辑添加注释
+- 为公共函数提供 JSDoc 注释
+- 避免不必要的注释
+
+```typescript
+/**
+ * 格式化日期为本地时间字符串
+ * @param date - 需要格式化的日期
+ * @param format - 格式选项 (short, medium, long)
+ * @returns 格式化后的日期字符串
+ */
+function formatDate(date: Date, format: 'short' | 'medium' | 'long' = 'medium'): string {
+  // 实现...
+}
+```
+
+## 10. 安全规范
+
+### 10.1 输入验证
+
+- 所有用户输入必须验证
+- 使用适当的表单验证库（如 zod, yup 或 react-hook-form）
+- 防止 XSS 攻击
+
+### 10.2 敏感信息处理
+
+- 不在前端存储敏感信息
+- 使用环境变量存储配置信息
+- API Key 等敏感信息只在服务端使用
+
+
+## 11. 文档规范
+
+### 11.1 组件文档
+
+- 使用 JSDoc 或注释描述组件的用途
+- 说明组件的 props 和使用示例
+- 记录任何特殊行为或注意事项
+
+### 11.2 README
+
+- 项目 README 应包含项目介绍、安装步骤和使用说明
+- 记录项目依赖和版本要求
+- 提供常见问题解答
+
+## 12. Git 提交规范
+
+### 12.1 提交信息
+
+格式: `类型(范围): 简短描述`
+
+类型:
+- feat: 新功能
+- fix: 修复bug
+- docs: 文档更新
+- style: 代码风格调整
+- refactor: 重构
+- test: 测试相关
+- chore: 构建/依赖/工具等
+
+例: `feat(auth): 添加用户登录功能`
+
+### 12.2 分支管理
+
+- main: 主分支，稳定版本
+- develop: 开发分支
+- feature/*: 功能分支
+- bugfix/*: 问题修复分支
+- release/*: 版本发布分支

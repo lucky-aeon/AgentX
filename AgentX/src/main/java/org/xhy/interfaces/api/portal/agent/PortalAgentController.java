@@ -2,9 +2,9 @@ package org.xhy.interfaces.api.portal.agent;
 
 import org.springframework.web.bind.annotation.*;
 import org.xhy.application.agent.service.AgentAppService;
-import org.xhy.domain.agent.model.AgentDTO;
-import org.xhy.domain.agent.model.AgentStatus;
-import org.xhy.domain.agent.model.AgentVersionDTO;
+import org.xhy.domain.agent.dto.AgentDTO;
+import org.xhy.domain.agent.dto.AgentVersionDTO;
+import org.xhy.infrastructure.auth.UserContext;
 import org.xhy.interfaces.api.common.Result;
 import org.xhy.interfaces.dto.agent.*;
 
@@ -28,7 +28,8 @@ public class PortalAgentController {
      */
     @PostMapping
     public Result<AgentDTO> createAgent(@RequestBody CreateAgentRequest request) {
-        AgentDTO agent = agentAppService.createAgent(request);
+        String userId = UserContext.getCurrentUserId();
+        AgentDTO agent = agentAppService.createAgent(request, userId);
         return Result.success(agent);
     }
 
@@ -37,18 +38,17 @@ public class PortalAgentController {
      */
     @GetMapping("/{agentId}")
     public Result<AgentDTO> getAgent(@PathVariable String agentId) {
-        return Result.success(agentAppService.getAgent(agentId));
+        String userId = UserContext.getCurrentUserId();
+        return Result.success(agentAppService.getAgent(agentId, userId));
     }
 
     /**
      * 获取用户的Agent列表，支持可选的状态和名称过滤
      */
-    @GetMapping("/user/{userId}")
+    @GetMapping("/user")
     public Result<List<AgentDTO>> getUserAgents(
-            @PathVariable String userId,
-            SearchAgentsRequest searchAgentsRequest
-            ) {
-
+            SearchAgentsRequest searchAgentsRequest) {
+        String userId = UserContext.getCurrentUserId();
         return Result.success(agentAppService.getUserAgents(userId, searchAgentsRequest));
     }
 
@@ -66,7 +66,8 @@ public class PortalAgentController {
     @PutMapping("/{agentId}")
     public Result<AgentDTO> updateAgent(@PathVariable String agentId,
             @RequestBody UpdateAgentRequest request) {
-        return Result.success(agentAppService.updateAgent(agentId, request));
+        String userId = UserContext.getCurrentUserId();
+        return Result.success(agentAppService.updateAgent(agentId, request, userId));
     }
 
     /**
@@ -82,11 +83,10 @@ public class PortalAgentController {
      */
     @DeleteMapping("/{agentId}")
     public Result<Void> deleteAgent(@PathVariable String agentId) {
-        agentAppService.deleteAgent(agentId);
+        String userId = UserContext.getCurrentUserId();
+        agentAppService.deleteAgent(agentId, userId);
         return Result.success(null);
     }
-
-
 
     /**
      * 发布Agent版本
@@ -94,7 +94,8 @@ public class PortalAgentController {
     @PostMapping("/{agentId}/publish")
     public Result<AgentVersionDTO> publishAgentVersion(@PathVariable String agentId,
             @RequestBody PublishAgentVersionRequest request) {
-        return Result.success(agentAppService.publishAgentVersion(agentId, request));
+        String userId = UserContext.getCurrentUserId();
+        return Result.success(agentAppService.publishAgentVersion(agentId, request, userId));
     }
 
     /**
@@ -102,7 +103,8 @@ public class PortalAgentController {
      */
     @GetMapping("/{agentId}/versions")
     public Result<List<AgentVersionDTO>> getAgentVersions(@PathVariable String agentId) {
-        return Result.success(agentAppService.getAgentVersions(agentId));
+        String userId = UserContext.getCurrentUserId();
+        return Result.success(agentAppService.getAgentVersions(agentId, userId));
     }
 
     /**

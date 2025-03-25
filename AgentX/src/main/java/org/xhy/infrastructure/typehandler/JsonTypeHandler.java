@@ -8,23 +8,24 @@ import org.postgresql.util.PGobject;
 import org.xhy.domain.agent.model.AgentTool;
 import org.xhy.domain.agent.model.ModelConfig;
 import org.xhy.infrastructure.util.JsonUtils;
+import org.xhy.infrastructure.exception.ParamValidationException;
 
 import java.sql.CallableStatement;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
  * 自定义JSON类型处理器
  * 用于将Java对象与数据库中的JSON字符串互相转换
+ * 
  * @param <T> 要处理的Java类型
  */
 @MappedJdbcTypes(JdbcType.OTHER)
-@MappedTypes({Object.class, List.class, ModelConfig.class, AgentTool.class})
+@MappedTypes({ Object.class, List.class, ModelConfig.class, AgentTool.class })
 public class JsonTypeHandler<T> extends BaseTypeHandler<T> {
-    
+
     private final Class<T> clazz;
     private final boolean isList;
     private final Class<?> itemClazz;
@@ -35,7 +36,7 @@ public class JsonTypeHandler<T> extends BaseTypeHandler<T> {
 
     public JsonTypeHandler(Class<T> clazz, boolean isList, Class<?> itemClazz) {
         if (clazz == null) {
-            throw new IllegalArgumentException("Type argument cannot be null");
+            throw new ParamValidationException("clazz", "Type argument cannot be null");
         }
         this.clazz = clazz;
         this.isList = isList;
@@ -79,7 +80,7 @@ public class JsonTypeHandler<T> extends BaseTypeHandler<T> {
         if (json == null || json.isEmpty()) {
             return null;
         }
-        
+
         if (isList && itemClazz != null) {
             List<?> list = JsonUtils.parseArray(json, itemClazz);
             return (T) list;

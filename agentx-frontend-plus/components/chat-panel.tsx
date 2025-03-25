@@ -1,14 +1,18 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { FileText, Send } from "lucide-react"
+import { FileText, Send } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { streamChat } from "@/lib/api"
 import { toast } from "@/components/ui/use-toast"
-import { getSession } from "@/lib/api-services"
-import type { Session } from "@/types/conversation"
+import { getSessionMessages, getSessionMessagesWithToast, type MessageDTO } from "@/lib/session-message-service"
+import { Skeleton } from "@/components/ui/skeleton"
+import ReactMarkdown from "react-markdown"
+import remarkGfm from "remark-gfm"
+import { Highlight, themes } from "prism-react-renderer"
 
 interface ChatPanelProps {
   conversationId: string
@@ -31,207 +35,138 @@ interface StreamData {
 
 export function ChatPanel({ conversationId }: ChatPanelProps) {
   const [input, setInput] = useState("")
-  const [isTyping, setIsTyping] = useState(false)
   const [messages, setMessages] = useState<Message[]>([])
-  const [streamingContent, setStreamingContent] = useState("")
-  const [displayedContent, setDisplayedContent] = useState("") // 用于打字机效果
-  const [session, setSession] = useState<Session | null>(null)
+  const [isTyping, setIsTyping] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const abortControllerRef = useRef<AbortController | null>(null)
-  const typewriterTimerRef = useRef<NodeJS.Timeout | null>(null)
-  const retryCountRef = useRef(0)
 
-  // 获取会话详情
+  // 获取会话消息
   useEffect(() => {
-    const fetchSession = async () => {
+    const fetchSessionMessages = async () => {
+      if (!conversationId) return
+      
       try {
         setLoading(true)
         setError(null)
-
-        const response = await getSession(conversationId)
-
-        if (response.code === 200 && response.data) {
-          setSession(response.data)
-          // 设置默认欢迎消息
-          setMessages([
-            {
-              id: `welcome-${conversationId}`,
-              role: "assistant",
-              content: `欢迎来到 "${response.data.title}" 会话。有什么可以帮助您的吗？`,
-            },
-          ])
+        // 清空之前的消息，避免显示上一个会话的内容
+        setMessages([])
+        
+        // 获取会话消息
+        const messagesResponse = await getSessionMessagesWithToast(conversationId)
+        
+        if (messagesResponse.code === 200 && messagesResponse.data) {
+          // 转换消息格式
+          const formattedMessages = messagesResponse.data.map((msg: MessageDTO) => ({
+            id: msg.id,
+            role: msg.role as "user" | "assistant",
+            content: msg.content,
+          }))
+          
+          setMessages(formattedMessages)
         } else {
-          // 处理API返回的错误
-          const errorMessage = response.message || "获取会话详情失败"
+          const errorMessage = messagesResponse.message || "获取会话消息失败"
           console.error(errorMessage)
           setError(errorMessage)
-
-          // 使用会话ID作为标题的回退方案
-          setSession({
-            id: conversationId,
-            title: `会话 ${conversationId.substring(0, 8)}`,
-            description: null,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            archived: false,
-          })
-
-          // 设置默认欢迎消息
-          setMessages([
-            {
-              id: `welcome-${conversationId}`,
-              role: "assistant",
-              content: "欢迎来到新会话。有什么可以帮助您的吗？",
-            },
-          ])
-
-          toast({
-            title: "获取会话详情失败",
-            description: errorMessage,
-            variant: "destructive",
-          })
         }
       } catch (error) {
-        console.error("获取会话详情错误:", error)
-        const errorMessage = error instanceof Error ? error.message : "未知错误"
-        setError(errorMessage)
-
-        // 使用会话ID作为标题的回退方案
-        setSession({
-          id: conversationId,
-          title: `会话 ${conversationId.substring(0, 8)}`,
-          description: null,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          archived: false,
-        })
-
-        // 设置默认欢迎消息
-        setMessages([
-          {
-            id: `welcome-${conversationId}`,
-            role: "assistant",
-            content: "欢迎来到新会话。有什么可以帮助您的吗？",
-          },
-        ])
-
-        toast({
-          title: "获取会话详情失败",
-          description: errorMessage,
-          variant: "destructive",
-        })
+        console.error("获取会话消息错误:", error)
+        setError(error instanceof Error ? error.message : "获取会话消息时发生未知错误")
       } finally {
         setLoading(false)
       }
     }
 
-    if (conversationId) {
-      fetchSession()
-    }
-  }, [conversationId, retryCountRef.current])
+    fetchSessionMessages()
+  }, [conversationId])
 
-  // 重试获取会话详情
-  const retryFetchSession = () => {
-    retryCountRef.current += 1
-    setError(null)
-    setLoading(true)
-  }
-
-  // 自动滚动到底部
-  const scrollToBottom = () => {
+  // 滚动到底部
+  useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }
+  }, [messages, isTyping])
 
-  useEffect(() => {
-    scrollToBottom()
-  }, [messages, displayedContent])
+  // 处理发送消息
+  const handleSendMessage = async () => {
+    if (!input.trim() || !conversationId) return
 
-  // 打字机效果
-  useEffect(() => {
-    if (streamingContent === "") {
-      setDisplayedContent("")
-      return
-    }
+    const userMessage = input.trim()
+    setInput("")
+    setIsTyping(true)
 
-    // 清除之前的定时器
-    if (typewriterTimerRef.current) {
-      clearTimeout(typewriterTimerRef.current)
-    }
-
-    let currentIndex = 0
-    const typeNextChar = () => {
-      if (currentIndex < streamingContent.length) {
-        setDisplayedContent(streamingContent.substring(0, currentIndex + 1))
-        currentIndex++
-        typewriterTimerRef.current = setTimeout(typeNextChar, 10) // 调整速度
-      }
-    }
-
-    typeNextChar()
-
-    return () => {
-      if (typewriterTimerRef.current) {
-        clearTimeout(typewriterTimerRef.current)
-      }
-    }
-  }, [streamingContent])
-
-  // 处理SSE格式的流式响应
-  const handleSSEResponse = async (response: Response) => {
-    if (!response.body) {
-      throw new Error("Response body is null")
-    }
-
-    const reader = response.body.getReader()
-    const decoder = new TextDecoder()
-    let buffer = ""
-    let streamedText = ""
-
-    setStreamingContent("")
+    // 添加用户消息到消息列表
+    const userMessageId = `user-${Date.now()}`
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: userMessageId,
+        role: "user",
+        content: userMessage,
+      },
+    ])
 
     try {
-      while (true) {
-        const { value, done } = await reader.read()
+      // 发送消息到服务器并获取流式响应
+      const response = await streamChat(userMessage, conversationId)
 
+      if (!response.ok) {
+        throw new Error(`Stream chat failed with status ${response.status}`)
+      }
+
+      const reader = response.body?.getReader()
+      if (!reader) {
+        throw new Error("No reader available")
+      }
+
+      // 添加助理消息到消息列表 - 使用固定的ID以便于更新
+      const assistantMessageId = `assistant-${Date.now()}`
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: assistantMessageId,
+          role: "assistant",
+          content: "",
+        },
+      ])
+
+      let accumulatedContent = ""
+      const decoder = new TextDecoder()
+      
+      // 用于解析SSE格式数据的变量
+      let buffer = ""
+
+      while (true) {
+        const { done, value } = await reader.read()
         if (done) break
 
-        // 解码当前块并添加到缓冲区
+        // 解码数据块并添加到缓冲区
         buffer += decoder.decode(value, { stream: true })
-
-        // 处理缓冲区中的所有完整行
-        const lines = buffer.split("\n")
-        buffer = lines.pop() || "" // 保留最后一个不完整的行
-
+        
+        // 处理缓冲区中的SSE数据
+        const lines = buffer.split("\n\n")
+        // 保留最后一个可能不完整的行
+        buffer = lines.pop() || ""
+        
         for (const line of lines) {
           if (line.startsWith("data:")) {
             try {
-              // 提取JSON部分
-              const jsonStr = line.slice(5)
-              const data: StreamData = JSON.parse(jsonStr)
-
-              // 只处理内容部分
+              // 提取JSON部分（去掉前缀"data:"）
+              const jsonStr = line.substring(5)
+              const data = JSON.parse(jsonStr) as StreamData
+              
               if (data.content) {
-                streamedText += data.content
-                setStreamingContent(streamedText)
+                accumulatedContent += data.content
+                
+                // 更新现有的助手消息
+                setMessages((prev) =>
+                  prev.map((msg) =>
+                    msg.id === assistantMessageId ? { ...msg, content: accumulatedContent } : msg,
+                  ),
+                )
               }
-
-              // 如果done为true，表示流结束
+              
+              // 如果返回了done标记，则结束处理
               if (data.done) {
-                // 流式响应结束，将内容添加到消息列表
-                if (streamedText) {
-                  const assistantMessage: Message = {
-                    id: `m${Date.now() + 1}`,
-                    role: "assistant",
-                    content: streamedText,
-                  }
-
-                  setMessages((prev) => [...prev, assistantMessage])
-                  setStreamingContent("")
-                }
-                setIsTyping(false)
-                return
+                console.log("Stream completed with done flag")
               }
             } catch (e) {
               console.error("Error parsing SSE data:", e, line)
@@ -239,281 +174,195 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
           }
         }
       }
-
-      // 处理最后可能的不完整行
-      if (buffer.startsWith("data:")) {
-        try {
-          const jsonStr = buffer.slice(5)
-          const data: StreamData = JSON.parse(jsonStr)
-
-          if (data.content) {
-            streamedText += data.content
-            setStreamingContent(streamedText)
-          }
-
-          if (data.done && streamedText) {
-            const assistantMessage: Message = {
-              id: `m${Date.now() + 1}`,
-              role: "assistant",
-              content: streamedText,
-            }
-
-            setMessages((prev) => [...prev, assistantMessage])
-            setStreamingContent("")
-          }
-        } catch (e) {
-          console.error("Error parsing final SSE data:", e, buffer)
-        }
-      }
-
-      // 如果到这里还没有结束，也将累积的内容添加到消息列表
-      if (streamedText) {
-        const assistantMessage: Message = {
-          id: `m${Date.now() + 1}`,
-          role: "assistant",
-          content: streamedText,
-        }
-
-        setMessages((prev) => [...prev, assistantMessage])
-        setStreamingContent("")
-      }
     } catch (error) {
-      console.error("Error reading stream:", error)
-      // 如果是用户主动中断，不显示错误
-      if (error.name !== "AbortError") {
-        toast({
-          title: "读取响应时出错",
-          description: "请稍后再试",
-          variant: "destructive",
-        })
-      }
+      console.error("Error in stream chat:", error)
+      toast({
+        description: error instanceof Error ? error.message : "未知错误",
+        variant: "destructive",
+      })
     } finally {
       setIsTyping(false)
-      abortControllerRef.current = null
     }
   }
 
-  // 发送消息
-  const sendMessage = async () => {
-    if (!input.trim() || !conversationId || isTyping) return
-
-    // 添加用户消息
-    const userMessage: Message = {
-      id: `m${Date.now()}`,
-      role: "user",
-      content: input,
-    }
-
-    setMessages((prev) => [...prev, userMessage])
-    const sentMessage = input
-    setInput("")
-    setIsTyping(true)
-
-    try {
-      // 创建 AbortController 用于取消请求
-      abortControllerRef.current = new AbortController()
-
-      // 调用API获取流式响应
-      const response = await streamChat(sentMessage, conversationId)
-      await handleSSEResponse(response)
-    } catch (error) {
-      console.error("Error sending message:", error)
-
-      // 如果不是用户主动中断，则显示错误消息
-      if (error.name !== "AbortError") {
-        // 显示错误提示
-        toast({
-          title: "发送消息失败",
-          description: error instanceof Error ? error.message : "请检查网络连接并稍后再试",
-          variant: "destructive",
-        })
-
-        // 添加错误消息到对话
-        const errorMessage: Message = {
-          id: `m${Date.now() + 1}`,
-          role: "assistant",
-          content: "抱歉，发生了错误，请稍后再试。",
-        }
-
-        setMessages((prev) => [...prev, errorMessage])
-      }
-    } finally {
-      setIsTyping(false)
-      abortControllerRef.current = null
+  // 处理按键事件
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault()
+      handleSendMessage()
     }
   }
 
-  // 停止响应
-  const stopResponse = () => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort()
-      abortControllerRef.current = null
-    }
-    setIsTyping(false)
-    setStreamingContent("")
-
-    // 清除打字机效果定时器
-    if (typewriterTimerRef.current) {
-      clearTimeout(typewriterTimerRef.current)
-      typewriterTimerRef.current = null
-    }
-  }
-
-  // 如果是加载状态，显示加载指示器
-  if (loading) {
-    return (
-      <div className="flex-1 flex items-center justify-center bg-gray-50 w-full">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-muted-foreground">加载会话中...</p>
-        </div>
-      </div>
-    )
-  }
-
-  // 如果有错误但有回退会话，仍然显示聊天界面
-  // 如果会话不存在且没有回退，显示错误信息
-  if (!session) {
-    return (
-      <div className="flex-1 flex items-center justify-center bg-gray-50 w-full">
-        <div className="text-center">
-          <div className="text-red-500 mb-4">会话不存在或已被删除</div>
-          <Button variant="outline" onClick={() => window.history.back()}>
-            返回
-          </Button>
-        </div>
-      </div>
-    )
-  }
-
-  // 渲染聊天面板
   return (
-    <div className="flex-1 flex flex-col w-full">
-      <div className="flex items-center justify-between border-b px-4 py-2 bg-gray-50">
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-blue-900">
-            {session.title.charAt(0).toUpperCase()}
+    <div className="flex flex-col h-full w-full">
+      {/* 消息列表 */}
+      <div className="flex-1 overflow-y-auto p-2 bg-white">
+        {loading ? (
+          // 加载状态
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-2 border-gray-200 border-t-blue-500 mb-2"></div>
+              <p className="text-gray-500">正在加载消息...</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-lg font-medium">{session.title}</h1>
-            {session.description && <p className="text-xs text-muted-foreground">{session.description}</p>}
-          </div>
-        </div>
-        {error && (
-          <Button variant="outline" size="sm" onClick={retryFetchSession} className="mr-2">
-            重试加载
-          </Button>
-        )}
-        <Button variant="ghost" size="icon" className="h-8 w-8">
-          <FileText className="h-4 w-4" />
-        </Button>
-      </div>
-
-      <div className="flex-1 overflow-auto p-4 bg-gray-50">
-        <div className="mx-auto max-w-3xl space-y-6">
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-md p-3 text-sm text-red-600 mb-4">
-              加载会话详情时出错: {error}
-            </div>
-          )}
-
-          {messages.map((message) => (
-            <div key={message.id} className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
-              {message.role === "assistant" && (
-                <div className="mr-2 h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-sm">
-                  {session.title.charAt(0).toUpperCase()}
-                </div>
-              )}
-              <div
-                className={`rounded-lg px-4 py-2 max-w-[80%] ${
-                  message.role === "user" ? "bg-blue-100 text-blue-900" : "bg-white border"
-                }`}
-              >
-                {message.content}
+        ) : (
+          <div className="space-y-4 max-w-5xl mx-auto">
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-md p-3 text-sm text-red-600">
+                {error}
               </div>
-              {message.role === "user" && (
-                <Avatar className="ml-2 h-8 w-8">
-                  <AvatarImage src="/placeholder.svg?height=32&width=32" alt="User" />
-                  <AvatarFallback className="bg-blue-500 text-white">U</AvatarFallback>
-                </Avatar>
-              )}
-            </div>
-          ))}
-
-          {/* 流式响应显示 - 使用打字机效果 */}
-          {streamingContent && (
-            <div className="flex justify-start">
-              <div className="mr-2 h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-sm">
-                {session.title.charAt(0).toUpperCase()}
-              </div>
-              <div className="rounded-lg px-4 py-2 max-w-[80%] bg-white border">
-                {displayedContent}
-                <span className="animate-pulse">|</span>
-              </div>
-            </div>
-          )}
-
-          {/* 打字指示器 */}
-          {isTyping && !streamingContent && (
-            <div className="flex justify-start">
-              <div className="mr-2 h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-sm">
-                {session.title.charAt(0).toUpperCase()}
-              </div>
-              <div className="rounded-lg px-4 py-2 bg-white border">
-                <div className="flex space-x-1">
-                  <div
-                    className="h-2 w-2 rounded-full bg-gray-300 animate-bounce"
-                    style={{ animationDelay: "0ms" }}
-                  ></div>
-                  <div
-                    className="h-2 w-2 rounded-full bg-gray-300 animate-bounce"
-                    style={{ animationDelay: "150ms" }}
-                  ></div>
-                  <div
-                    className="h-2 w-2 rounded-full bg-gray-300 animate-bounce"
-                    style={{ animationDelay: "300ms" }}
-                  ></div>
-                </div>
-              </div>
-            </div>
-          )}
-          <div ref={messagesEndRef} />
-        </div>
-      </div>
-
-      <div className="border-t p-4 bg-white">
-        <div className="mx-auto max-w-3xl">
-          <form
-            onSubmit={(e) => {
-              e.preventDefault()
-              sendMessage()
-            }}
-            className="flex items-center gap-2"
-          >
-            <Input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="和机器人聊天"
-              className="flex-1 border-gray-300"
-              disabled={isTyping}
-            />
-            <Button
-              type="submit"
-              size="icon"
-              className="bg-blue-500 hover:bg-blue-600 text-white rounded-full h-10 w-10"
-              disabled={!input.trim() || isTyping}
-            >
-              <Send className="h-5 w-5" />
-              <span className="sr-only">发送</span>
-            </Button>
-          </form>
-          <div className="mt-2 text-center">
-            {isTyping && (
-              <Button variant="outline" size="sm" className="text-xs text-gray-500" onClick={stopResponse}>
-                停止响应
-              </Button>
             )}
+
+            {/* 消息内容 */}
+            <div className="space-y-3">
+              {messages.map((message) => (
+                <div
+                  key={message.id}
+                  className={`flex ${message.role === "user" ? "justify-end" : "justify-start"} mb-3`}
+                >
+                  {message.role === "assistant" && (
+                    <div className="mr-2 h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm shadow-sm flex-shrink-0">
+                      A
+                    </div>
+                  )}
+                  <div
+                    className={`rounded-2xl px-3.5 py-2.5 ${
+                      message.role === "user"
+                        ? "bg-blue-500 text-white shadow-sm"
+                        : "bg-gray-100 border border-gray-200 shadow-sm"
+                    }`}
+                    style={{ 
+                      wordWrap: 'break-word', 
+                      overflowWrap: 'break-word', 
+                      maxWidth: 'min(90%, 800px)',
+                      position: 'relative'
+                    }}
+                  >
+                    {message.content ? (
+                      <div 
+                        className={`prose prose-sm max-w-none break-words overflow-hidden ${
+                          message.role === "user" 
+                            ? "prose-invert" 
+                            : "prose-headings:text-gray-800"
+                        }`} 
+                        style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}
+                      >
+                        <ReactMarkdown 
+                          remarkPlugins={[remarkGfm]}
+                          components={{
+                            code({node, inline, className, children, ...props}: any) {
+                              const match = /language-(\w+)/.exec(className || '')
+                              const language = match ? match[1] : ''
+                              
+                              return !inline ? (
+                                <div className="overflow-x-auto my-3 rounded-lg" style={{ maxWidth: '100%' }}>
+                                  <Highlight
+                                    theme={message.role === "user" ? themes.vsLight : themes.github}
+                                    code={String(children).replace(/\n$/, '')}
+                                    language={language || 'text'}
+                                  >
+                                    {({className, style, tokens, getLineProps, getTokenProps}) => (
+                                      <pre className="p-3 rounded-lg" style={{
+                                        ...style,
+                                        overflowX: 'auto',
+                                        margin: 0,
+                                        maxWidth: '100%',
+                                        whiteSpace: 'pre-wrap',
+                                        wordBreak: 'break-word',
+                                        backgroundColor: message.role === "user" ? 'rgba(59, 130, 246, 0.15)' : 'rgba(0, 0, 0, 0.04)'
+                                      }}>
+                                        {tokens.map((line, i) => (
+                                          <div key={i} {...getLineProps({line})} style={{ overflowWrap: 'break-word', wordBreak: 'break-all' }}>
+                                            {line.map((token, key) => (
+                                              <span key={key} {...getTokenProps({token})} />
+                                            ))}
+                                          </div>
+                                        ))}
+                                      </pre>
+                                    )}
+                                  </Highlight>
+                                </div>
+                              ) : (
+                                <code className={`${message.role === "user" ? "bg-blue-400/30" : "bg-gray-200"} px-1.5 py-0.5 rounded-md text-sm font-mono`} {...props}>
+                                  {children}
+                                </code>
+                              )
+                            },
+                            pre({children}: any) {
+                              return <div className="overflow-x-auto" style={{ maxWidth: '100%' }}>{children}</div>
+                            },
+                            p({children}: any) {
+                              return <div className="break-words whitespace-normal my-2" style={{ overflowWrap: 'break-word', wordBreak: 'break-word' }}>{children}</div>
+                            },
+                            li({children}: any) {
+                              return <li className="my-1">{children}</li>
+                            },
+                            ul({children}: any) {
+                              return <ul className="list-disc pl-5 my-2">{children}</ul>
+                            },
+                            ol({children}: any) {
+                              return <ol className="list-decimal pl-5 my-2">{children}</ol>
+                            },
+                            blockquote({children}: any) {
+                              return <div className="border-l-4 border-gray-200 pl-4 my-2 italic" style={{ overflowWrap: 'break-word', wordBreak: 'break-word' }}>{children}</div>
+                            },
+                            table({children}: any) {
+                              return <div className="overflow-x-auto my-2" style={{ maxWidth: '100%' }}><table className="border-collapse border border-gray-300">{children}</table></div>
+                            },
+                            a({node, children, href, ...props}: any) {
+                              return <a href={href} className="break-all" style={{ wordBreak: 'break-all' }} {...props}>{children}</a>
+                            }
+                          }}
+                        >
+                          {message.content}
+                        </ReactMarkdown>
+                      </div>
+                    ) : (
+                      message.role === "assistant" && isTyping ? (
+                        <div className="flex space-x-2">
+                          <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" />
+                          <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce delay-100" />
+                          <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce delay-200" />
+                        </div>
+                      ) : null
+                    )}
+                  </div>
+                  {message.role === "user" && (
+                    <div className="ml-2 h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm shadow-sm flex-shrink-0">
+                      U
+                    </div>
+                  )}
+                </div>
+              ))}
+              <div ref={messagesEndRef} />
+            </div>
           </div>
+        )}
+      </div>
+
+      {/* 输入框 */}
+      <div className="border-t p-2 bg-white">
+        <div className="flex items-end gap-2 max-w-5xl mx-auto">
+          <Textarea
+            placeholder="输入消息...(Shift+Enter换行, Enter发送)"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                handleSendMessage();
+              }
+            }}
+            className="min-h-[56px] flex-1 resize-none overflow-hidden rounded-xl bg-white px-3 py-2 font-normal border-gray-200 shadow-sm focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-opacity-50"
+            rows={Math.min(5, Math.max(2, input.split('\n').length))}
+          />
+          <Button 
+            onClick={handleSendMessage} 
+            disabled={!input.trim()} 
+            className="h-10 w-10 rounded-xl bg-blue-500 hover:bg-blue-600 shadow-sm"
+          >
+            <Send className="h-5 w-5" />
+          </Button>
         </div>
       </div>
     </div>

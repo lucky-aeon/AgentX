@@ -17,8 +17,7 @@ export function EmptyState({ title, description, actionLabel, onAction }: EmptyS
       <p className="text-gray-500 mb-4">{description}</p>
       {actionLabel && (
         <Button
-          variant="outline"
-          className="justify-center items-center gap-2 text-blue-600 border-blue-200 bg-blue-50"
+          className="justify-center items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-full shadow-sm hover:shadow-md transform hover:scale-105 transition-all duration-200"
           onClick={onAction}
         >
           <Plus className="h-4 w-4" />

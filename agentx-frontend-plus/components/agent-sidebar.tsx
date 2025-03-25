@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Skeleton } from "@/components/ui/skeleton"
-import { getSessions } from "@/lib/api-services"
+import { getSessions, getSessionsWithToast } from "@/lib/api-services"
 import { toast } from "@/components/ui/use-toast"
 import type { Session } from "@/types/conversation"
 
@@ -39,28 +39,18 @@ export function AgentSidebar() {
       setLoading(true)
       setError(null)
       // 使用固定的userId=1
-      const response = await getSessions({ userId: "1" })
+      const response = await getSessionsWithToast({ userId: "1" })
       if (response.code === 200) {
         // 将会话转换为代理
         const agentList = response.data.filter((session) => !session.archived).map(sessionToAgent)
         setAgents(agentList)
       } else {
         setError(response.message || "获取代理列表失败")
-        toast({
-          title: "获取代理列表失败",
-          description: response.message,
-          variant: "destructive",
-        })
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "未知错误"
       console.error("获取代理列表错误:", error)
       setError(`获取代理列表失败: ${errorMessage}`)
-      toast({
-        title: "获取代理列表失败",
-        description: errorMessage,
-        variant: "destructive",
-      })
     } finally {
       setLoading(false)
     }

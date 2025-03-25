@@ -2,7 +2,7 @@ package org.xhy.interfaces.dto.agent;
 
 import org.xhy.domain.agent.model.AgentTool;
 import org.xhy.domain.agent.model.ModelConfig;
-import org.xhy.domain.common.util.ValidationUtils;
+import org.xhy.infrastructure.util.ValidationUtils;
 
 import java.util.List;
 
@@ -16,7 +16,8 @@ public class UpdateAgentRequest {
     private String name;
     private String avatar;
     private String description;
-    
+    private Boolean enabled;
+
     // 配置信息字段
     private String systemPrompt;
     private String welcomeMessage;
@@ -53,7 +54,15 @@ public class UpdateAgentRequest {
         ValidationUtils.notEmpty(name, "name");
         ValidationUtils.length(name, 1, 50, "name");
     }
-    
+
+    public Boolean getEnabled() {
+        return enabled;
+    }
+
+    public void setEnabled(Boolean enabled) {
+        this.enabled = enabled;
+    }
+
     // Getter和Setter方法
     public String getName() {
         return name;

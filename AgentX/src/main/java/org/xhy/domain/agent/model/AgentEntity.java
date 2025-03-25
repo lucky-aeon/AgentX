@@ -7,6 +7,8 @@ import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.extension.activerecord.Model;
 import org.apache.ibatis.type.JdbcType;
+import org.xhy.domain.agent.constant.AgentType;
+import org.xhy.domain.agent.dto.AgentDTO;
 import org.xhy.infrastructure.typehandler.JsonTypeHandler;
 
 import java.time.LocalDateTime;

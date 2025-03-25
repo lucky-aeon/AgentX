@@ -2,8 +2,7 @@ package org.xhy.interfaces.dto.agent;
 
 import org.xhy.domain.agent.model.AgentTool;
 import org.xhy.domain.agent.model.ModelConfig;
-import org.xhy.domain.common.exception.ParamValidationException;
-import org.xhy.domain.common.util.ValidationUtils;
+import org.xhy.infrastructure.util.ValidationUtils;
 
 import java.util.List;
 

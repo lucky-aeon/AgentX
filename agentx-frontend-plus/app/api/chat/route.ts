@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 
 // 直接使用环境变量，不再附加"/api"
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://68c8ff2.r3.cpolar.top/api"
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080/api"
 
 export async function GET(request: NextRequest) {
   try {

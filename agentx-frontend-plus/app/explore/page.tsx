@@ -12,6 +12,7 @@ import { toast } from "@/components/ui/use-toast"
 import { getPublishedAgents } from "@/lib/agent-service"
 import type { AgentVersion } from "@/types/agent"
 import { Sidebar } from "@/components/sidebar"
+import Link from "next/link"
 
 export default function ExplorePage() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -195,10 +196,10 @@ export default function ExplorePage() {
 
                           <div className="mt-4 opacity-0 group-hover:opacity-100 transition-opacity">
                             <Button className="w-full bg-blue-500 hover:bg-blue-600 text-white" asChild>
-                              <a href={`/explore/chat/${agent.agentId}`}>
+                              <Link href={`/explore/chat/${agent.agentId}`}>
                                 <Plus className="h-4 w-4 mr-2" />
                                 添加到工作区
-                              </a>
+                              </Link>
                             </Button>
                           </div>
                         </div>

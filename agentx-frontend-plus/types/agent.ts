@@ -80,6 +80,8 @@ export interface UpdateAgentRequest {
   modelConfig?: ModelConfig
   tools?: AgentTool[]
   knowledgeBaseIds?: string[]
+  agentType?: number
+  enabled?: boolean
 }
 
 // 发布助理版本请求参数

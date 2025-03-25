@@ -6,6 +6,8 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.extension.activerecord.Model;
 import org.apache.ibatis.type.JdbcType;
+import org.xhy.domain.agent.constant.PublishStatus;
+import org.xhy.domain.agent.dto.AgentVersionDTO;
 import org.xhy.infrastructure.typehandler.JsonTypeHandler;
 
 import java.time.LocalDateTime;
@@ -408,34 +410,5 @@ public class AgentVersionEntity extends Model<AgentVersionEntity> {
         version.setPublishStatus(PublishStatus.REVIEWING.getCode());
         version.setReviewTime(now);
         return version;
-    }
-
-    /**
-     * 转换为DTO对象
-     */
-    public AgentVersionDTO toDTO() {
-        AgentVersionDTO dto = new AgentVersionDTO();
-        dto.setId(this.id);
-        dto.setAgentId(this.agentId);
-        dto.setName(this.name);
-        dto.setAvatar(this.avatar);
-        dto.setDescription(this.description);
-        dto.setVersionNumber(this.versionNumber);
-        dto.setSystemPrompt(this.systemPrompt);
-        dto.setWelcomeMessage(this.welcomeMessage);
-        dto.setModelConfig(this.modelConfig);
-        dto.setTools(this.tools);
-        dto.setKnowledgeBaseIds(this.knowledgeBaseIds);
-        dto.setChangeLog(this.changeLog);
-        dto.setAgentType(this.agentType);
-        dto.setPublishStatus(this.publishStatus);
-        dto.setRejectReason(this.rejectReason);
-        dto.setReviewTime(this.reviewTime);
-        dto.setPublishedAt(this.publishedAt);
-        dto.setUserId(this.userId);
-        dto.setCreatedAt(this.createdAt);
-        dto.setUpdatedAt(this.updatedAt);
-        dto.setDeletedAt(this.deletedAt);
-        return dto;
     }
 }

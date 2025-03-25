@@ -16,7 +16,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { toast } from "@/components/ui/use-toast"
-import { getUserAgents, deleteAgent, toggleAgentStatus } from "@/lib/agent-service"
+import { 
+  getUserAgents, 
+  deleteAgent, 
+  toggleAgentStatus,
+  deleteAgentWithToast,
+  toggleAgentStatusWithToast,
+  getUserAgentsWithToast
+} from "@/lib/agent-service"
 import type { Agent } from "@/types/agent"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Input } from "@/components/ui/input"
@@ -55,26 +62,18 @@ export default function StudioPage() {
         setLoading(true)
         setError(null)
 
-        const response = await getUserAgents({ name: debouncedQuery })
+        const response = await getUserAgentsWithToast({ name: debouncedQuery })
 
         if (response.code === 200) {
           setAgents(response.data)
         } else {
           setError(response.message)
-          toast({
-            title: "获取助理列表失败",
-            description: response.message,
-            variant: "destructive",
-          })
+          // toast已由withToast处理
         }
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : "未知错误"
         setError(errorMessage)
-        toast({
-          title: "获取助理列表失败",
-          description: errorMessage,
-          variant: "destructive",
-        })
+        // toast已由withToast处理
       } finally {
         setLoading(false)
       }
@@ -89,29 +88,17 @@ export default function StudioPage() {
 
     try {
       setIsDeleting(true)
-      const response = await deleteAgent(agentToDelete.id)
+      const response = await deleteAgentWithToast(agentToDelete.id)
 
       if (response.code === 200) {
-        toast({
-          title: "删除成功",
-          description: `助理 "${agentToDelete.name}" 已成功删除`,
-        })
+        // toast已由withToast处理
         // 更新列表，移除已删除的助理
         setAgents(agents.filter((agent) => agent.id !== agentToDelete.id))
       } else {
-        toast({
-          title: "删除失败",
-          description: response.message,
-          variant: "destructive",
-        })
+        // 错误已由withToast处理
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "未知错误"
-      toast({
-        title: "删除失败",
-        description: errorMessage,
-        variant: "destructive",
-      })
+      // 错误已由withToast处理
     } finally {
       setIsDeleting(false)
       setAgentToDelete(null)
@@ -122,29 +109,17 @@ export default function StudioPage() {
   const handleToggleStatus = async (agent: Agent) => {
     try {
       setIsTogglingStatus(agent.id)
-      const response = await toggleAgentStatus(agent.id)
+      const response = await toggleAgentStatusWithToast(agent.id)
 
       if (response.code === 200) {
-        toast({
-          title: response.data.enabled ? "已启用" : "已禁用",
-          description: `助理 "${agent.name}" ${response.data.enabled ? "已启用" : "已禁用"}`,
-        })
+        // toast已由withToast处理
         // 更新列表中的助理状态
         setAgents(agents.map((a) => (a.id === agent.id ? response.data : a)))
       } else {
-        toast({
-          title: "操作失败",
-          description: response.message,
-          variant: "destructive",
-        })
+        // 错误已由withToast处理
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "未知错误"
-      toast({
-        title: "操作失败",
-        description: errorMessage,
-        variant: "destructive",
-      })
+      // 错误已由withToast处理
     } finally {
       setIsTogglingStatus(null)
     }
@@ -326,20 +301,6 @@ export default function StudioPage() {
               <CardContent>
                 <p className="text-sm text-muted-foreground">{agent.description || "无描述"}</p>
               </CardContent>
-              <CardFooter className="flex justify-between">
-                <Button variant="outline" size="sm" asChild>
-                  <Link href={`/studio/edit/${agent.id}`}>
-                    <Edit className="mr-2 h-4 w-4" />
-                    编辑
-                  </Link>
-                </Button>
-                <Button size="sm" asChild disabled={!agent.enabled} variant={agent.enabled ? "default" : "outline"}>
-                  <Link href={`/explore/chat/${agent.id}`}>
-                    <Bot className="mr-2 h-4 w-4" />
-                    对话
-                  </Link>
-                </Button>
-              </CardFooter>
             </Card>
           ))}
         </div>

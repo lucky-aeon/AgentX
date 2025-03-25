@@ -36,7 +36,7 @@ public class LlmRequest {
     public LlmRequest() {
         this.messages = new ArrayList<>();
         this.temperature = 0.7;
-        this.stream = false;
+        this.stream = true;
     }
 
     /**
