@@ -28,9 +28,7 @@
   - [x] Agent创建、修改、删除、查询API
   - [x] Agent与会话关联关系实现
 - [ ] Agent高级功能
-  - [ ] Agent配置管理（性格、知识领域等）
   - [ ] Agent记忆管理
-  - [ ] Agent能力扩展（工具集成）
 - [x] Agent界面
   - [x] Agent列表与详情页面
   - [x] Agent创建与编辑界面

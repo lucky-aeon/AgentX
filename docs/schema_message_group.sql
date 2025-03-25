@@ -15,8 +15,7 @@ CREATE TABLE message_groups (
     updated_at TIMESTAMP NOT NULL,        -- 更新时间
     is_active BOOLEAN DEFAULT TRUE,       -- 是否活跃
     user_id VARCHAR(36) NOT NULL,         -- 创建人ID
-    metadata JSON,                        -- 元数据
-    FOREIGN KEY (session_id) REFERENCES sessions(id)
+    metadata JSON                        -- 元数据
 );
 
 -- 为message_groups表添加注释
@@ -39,8 +38,6 @@ CREATE TABLE message_group_items (
     created_at TIMESTAMP NOT NULL,        -- 创建时间
     sort_order INTEGER DEFAULT 0,         -- 排序顺序
     metadata JSON,                        -- 元数据
-    FOREIGN KEY (group_id) REFERENCES message_groups(id),
-    FOREIGN KEY (message_id) REFERENCES messages(id)
 );
 
 -- 为message_group_items表添加注释
@@ -58,7 +55,6 @@ CREATE TABLE message_group_tags (
     group_id VARCHAR(36) NOT NULL,        -- 消息组ID
     tag_name VARCHAR(100) NOT NULL,       -- 标签名称
     created_at TIMESTAMP NOT NULL,        -- 创建时间
-    FOREIGN KEY (group_id) REFERENCES message_groups(id)
 );
 
 -- 为message_group_tags表添加注释
@@ -75,9 +71,7 @@ CREATE TABLE topic_relations (
     child_id VARCHAR(36) NOT NULL,        -- 子话题ID
     relation_type VARCHAR(50),            -- 关联类型
     created_at TIMESTAMP NOT NULL,        -- 创建时间
-    metadata JSON,                        -- 关联元数据
-    FOREIGN KEY (parent_id) REFERENCES sessions(id),
-    FOREIGN KEY (child_id) REFERENCES sessions(id)
+    metadata JSON                        -- 关联元数据
 );
 
 -- 为topic_relations表添加注释

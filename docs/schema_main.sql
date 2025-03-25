@@ -40,8 +40,7 @@ CREATE TABLE messages (
     token_count INTEGER,                  -- Token数量(可选，用于统计)
     provider VARCHAR(50),                 -- 服务提供商
     model VARCHAR(50),                    -- 使用的模型
-    metadata JSON,                        -- 消息元数据
-    FOREIGN KEY (session_id) REFERENCES sessions(id)
+    metadata JSON                        -- 消息元数据
 );
 
 -- 为messages表添加注释
@@ -62,8 +61,7 @@ CREATE TABLE context (
     session_id VARCHAR(36) NOT NULL,      -- 所属会话ID
     active_messages JSON,                 -- 活跃消息ID列表，当前包含在上下文中的消息
     summary TEXT,                         -- 可选，当前上下文的摘要信息
-    updated_at TIMESTAMP NOT NULL,        -- 最后更新时间
-    FOREIGN KEY (session_id) REFERENCES sessions(id)
+    updated_at TIMESTAMP NOT NULL        -- 最后更新时间
 );
 
 -- 为context表添加注释
@@ -144,8 +142,7 @@ CREATE TABLE agent_versions (
     knowledge_base_ids JSON,
     agent_type SMALLINT DEFAULT 1,
     change_log TEXT,
-    published_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (agent_id) REFERENCES agents(id)
+    published_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- 为agent_versions表添加注释
@@ -167,7 +164,6 @@ CREATE TABLE agent_workspace (
     agent_id VARCHAR(36) NOT NULL,
     user_id VARCHAR(36) NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (agent_id) REFERENCES agents(id),
     UNIQUE (agent_id, user_id)
 );
 

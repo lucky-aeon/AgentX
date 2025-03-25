@@ -51,8 +51,7 @@ CREATE TABLE agent_versions (
     knowledge_base_ids JSON,
     agent_type SMALLINT DEFAULT 1,
     change_log TEXT,
-    published_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (agent_id) REFERENCES agents(id)
+    published_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- 为agent_versions表添加注释
@@ -74,7 +73,6 @@ CREATE TABLE agent_workspace (
     agent_id VARCHAR(36) NOT NULL,
     user_id VARCHAR(36) NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (agent_id) REFERENCES agents(id),
     UNIQUE (agent_id, user_id)
 );
 
