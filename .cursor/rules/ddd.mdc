@@ -1,15 +1,15 @@
 ---
 description: 
 globs: 
-alwaysApply: false
+alwaysApply: true
 ---
 # AgentX 开发规范
 ## 依赖规范
 ### 后端
 1.不允许使用lombok依赖！
 2.添加依赖时需要遵循我的意见
-
-
+3.代码在AgentX目录下
+4.sql和文档在 docs 下，如果添加新的字段或者表需要新创建一个sql以及在main中也要添加
 
 ## 1. DDD架构规范
 
@@ -197,7 +197,7 @@ org.xhy
 
 ### 5.4 单元测试
 
-- 保持测试覆盖率
+- 使用 springboot test 进行测试
 - 测试方法命名: `test{被测方法}_{测试场景}`
 - 遵循AAA原则: Arrange-Act-Assert
 

@@ -7,13 +7,13 @@ import org.xhy.application.conversation.dto.StreamChatResponse;
 import org.xhy.application.conversation.service.ConversationAppService;
 import org.xhy.domain.conversation.dto.MessageDTO;
 import org.xhy.domain.conversation.dto.SessionDTO;
-import org.xhy.domain.conversation.service.ConversationDomainService;
 import org.xhy.infrastructure.auth.UserContext;
 import org.xhy.interfaces.api.common.Result;
 import org.xhy.interfaces.dto.conversation.ConversationRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -34,24 +34,17 @@ public class PortalAgentSessionController {
         this.conversationAppService = conversationAppService;
     }
 
-
     /**
      * 获取会话中的消息列表
-     * 
-     * @return
      */
-   @GetMapping("/{sessionId}/messages")
-   public Result<List<MessageDTO>> getConversationMessages(@PathVariable String sessionId) {
-       String userId = UserContext.getCurrentUserId();
-       return Result.success(conversationAppService.getConversationMessages(sessionId, userId));
-   }
-
+    @GetMapping("/{sessionId}/messages")
+    public Result<List<MessageDTO>> getConversationMessages(@PathVariable String sessionId) {
+        String userId = UserContext.getCurrentUserId();
+        return Result.success(conversationAppService.getConversationMessages(sessionId, userId));
+    }
 
     /**
      * 获取助理会话列表
-     *
-     * @param agentId 助理id
-     * @return 会话列表
      */
     @GetMapping("/{agentId}")
     public Result<List<SessionDTO>> getAgentSessionList(@PathVariable String agentId) {
@@ -61,9 +54,6 @@ public class PortalAgentSessionController {
 
     /**
      * 创建会话
-     * 
-     * @param agentId 助理id
-     * @return 会话
      */
     @PostMapping("/{agentId}")
     public Result<SessionDTO> createSession(@PathVariable String agentId) {
@@ -73,9 +63,6 @@ public class PortalAgentSessionController {
 
     /**
      * 更新会话
-     * 
-     * @param id    会话id
-     * @param title 标题
      */
     @PutMapping("/{id}")
     public Result<Void> updateSession(@PathVariable String id, @RequestParam String title) {
@@ -86,8 +73,6 @@ public class PortalAgentSessionController {
 
     /**
      * 删除会话
-     * 
-     * @param id 会话id
      */
     @DeleteMapping("/{id}")
     public Result<Void> deleteSession(@PathVariable String id) {

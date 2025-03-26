@@ -294,4 +294,15 @@ public class ConversationDomainService {
     public void deleteConversationMessages(List<String> sessionIds) {
         messageRepository.delete(Wrappers.<MessageEntity>lambdaQuery().in(MessageEntity::getSessionId, sessionIds));
     }
+
+    /**
+     * 更新消息的token数量
+     * 
+     * @param message 消息实体
+     */
+    @Transactional
+    public void updateMessageTokenCount(MessageEntity message) {
+        logger.info("更新消息token数量，消息ID: {}, token数量: {}", message.getId(), message.getTokenCount());
+        messageRepository.updateById(message);
+    }
 }

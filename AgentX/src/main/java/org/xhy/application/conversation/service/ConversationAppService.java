@@ -1,7 +1,10 @@
 package org.xhy.application.conversation.service;
 
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import org.xhy.application.conversation.dto.StreamChatRequest;
 import org.xhy.application.conversation.dto.StreamChatResponse;
 import org.xhy.domain.agent.dto.AgentDTO;
@@ -12,10 +15,21 @@ import org.xhy.domain.conversation.model.MessageEntity;
 import org.xhy.domain.conversation.model.SessionEntity;
 import org.xhy.domain.conversation.service.ConversationDomainService;
 import org.xhy.domain.conversation.service.SessionDomainService;
+import org.xhy.domain.token.model.TokenMessage;
+import org.xhy.domain.token.model.TokenProcessResult;
+import org.xhy.domain.token.model.config.TokenOverflowConfig;
+import org.xhy.domain.token.model.enums.TokenOverflowStrategyEnum;
+import org.xhy.domain.token.service.TokenDomainService;
 import org.xhy.infrastructure.exception.BusinessException;
+import org.xhy.interfaces.dto.conversation.ConversationRequest;
 
+import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.BiConsumer;
+import java.util.ArrayList;
 
 /**
  * 对话应用服务，用于适配域层的对话服务
@@ -23,19 +37,22 @@ import java.util.function.BiConsumer;
 @Service
 public class ConversationAppService {
 
+    private final Logger logger = LoggerFactory.getLogger(ConversationAppService.class);
+    private final ExecutorService executorService = Executors.newCachedThreadPool();
     private final ConversationDomainService conversationDomainService;
-
     private final SessionDomainService sessionDomainService;
-
+    private final TokenDomainService tokenDomainService;
+    private final AgentDomainService agentDomainService;
 
     public ConversationAppService(
             ConversationDomainService conversationDomainService,
             SessionDomainService sessionDomainService,
-            AgentDomainService agentDomainService
-            ) {
+            TokenDomainService tokenDomainService,
+            AgentDomainService agentDomainService) {
         this.conversationDomainService = conversationDomainService;
         this.sessionDomainService = sessionDomainService;
-
+        this.tokenDomainService = tokenDomainService;
+        this.agentDomainService = agentDomainService;
     }
 
     /**
