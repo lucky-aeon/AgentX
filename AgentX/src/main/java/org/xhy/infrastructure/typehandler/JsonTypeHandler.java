@@ -1,14 +1,15 @@
 package org.xhy.infrastructure.typehandler;
 
+import com.alibaba.fastjson.JSON;
 import org.apache.ibatis.type.BaseTypeHandler;
 import org.apache.ibatis.type.JdbcType;
 import org.apache.ibatis.type.MappedJdbcTypes;
 import org.apache.ibatis.type.MappedTypes;
-import org.postgresql.util.PGobject;
 import org.xhy.domain.agent.model.AgentTool;
 import org.xhy.domain.agent.model.ModelConfig;
 import org.xhy.infrastructure.util.JsonUtils;
 import org.xhy.infrastructure.exception.ParamValidationException;
+import org.postgresql.util.PGobject;
 
 import java.sql.CallableStatement;
 import java.sql.PreparedStatement;
@@ -54,38 +55,39 @@ public class JsonTypeHandler<T> extends BaseTypeHandler<T> {
 
     @Override
     public void setNonNullParameter(PreparedStatement ps, int i, T parameter, JdbcType jdbcType) throws SQLException {
-        // 创建PostgreSQL的JSON对象
         PGobject jsonObject = new PGobject();
         jsonObject.setType("json");
-        jsonObject.setValue(JsonUtils.toJsonString(parameter));
+        jsonObject.setValue(parameter instanceof String ? (String) parameter : JSON.toJSONString(parameter));
         ps.setObject(i, jsonObject);
     }
 
     @Override
     public T getNullableResult(ResultSet rs, String columnName) throws SQLException {
-        return parse(rs.getString(columnName));
+        String jsonString = rs.getString(columnName);
+        return parseJson(jsonString);
     }
 
     @Override
     public T getNullableResult(ResultSet rs, int columnIndex) throws SQLException {
-        return parse(rs.getString(columnIndex));
+        String jsonString = rs.getString(columnIndex);
+        return parseJson(jsonString);
     }
 
     @Override
     public T getNullableResult(CallableStatement cs, int columnIndex) throws SQLException {
-        return parse(cs.getString(columnIndex));
+        String jsonString = cs.getString(columnIndex);
+        return parseJson(jsonString);
     }
 
-    private T parse(String json) {
-        if (json == null || json.isEmpty()) {
+    private T parseJson(String jsonString) {
+        if (jsonString == null) {
             return null;
         }
-
-        if (isList && itemClazz != null) {
-            List<?> list = JsonUtils.parseArray(json, itemClazz);
-            return (T) list;
-        } else {
-            return JsonUtils.parseObject(json, clazz);
+        
+        try {
+            return JSON.parseObject(jsonString, clazz);
+        } catch (Exception e) {
+            throw new RuntimeException("Error parsing JSON string: " + jsonString, e);
         }
     }
 }

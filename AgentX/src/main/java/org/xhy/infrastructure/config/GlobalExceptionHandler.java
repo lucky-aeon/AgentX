@@ -1,5 +1,6 @@
 package org.xhy.infrastructure.config;
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -14,7 +15,6 @@ import org.xhy.infrastructure.exception.EntityNotFoundException;
 import org.xhy.infrastructure.exception.ParamValidationException;
 import org.xhy.interfaces.api.common.Result;
 
-import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.stream.Collectors;
 
