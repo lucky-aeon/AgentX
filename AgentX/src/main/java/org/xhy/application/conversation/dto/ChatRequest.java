@@ -1,16 +1,11 @@
 package org.xhy.application.conversation.dto;
 
-import javax.validation.constraints.NotBlank;
 
 /**
  * 聊天请求DTO
  */
 public class ChatRequest {
     
-    /**
-     * 用户输入的消息内容
-     */
-    @NotBlank(message = "消息内容不能为空")
     private String message;
     
     /**
