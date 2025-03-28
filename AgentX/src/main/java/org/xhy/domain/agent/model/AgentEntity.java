@@ -8,7 +8,6 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.extension.activerecord.Model;
 import org.apache.ibatis.type.JdbcType;
 import org.xhy.domain.agent.constant.AgentType;
-import org.xhy.domain.agent.dto.AgentDTO;
 import org.xhy.infrastructure.typehandler.JsonTypeHandler;
 
 import java.time.LocalDateTime;
@@ -349,29 +348,6 @@ public class AgentEntity extends Model<AgentEntity> {
      */
     public void delete() {
         this.deletedAt = LocalDateTime.now();
-    }
-
-    /**
-     * 转换为DTO对象
-     */
-    public AgentDTO toDTO() {
-        AgentDTO dto = new AgentDTO();
-        dto.setId(this.id);
-        dto.setName(this.name);
-        dto.setAvatar(this.avatar);
-        dto.setDescription(this.description);
-        dto.setSystemPrompt(this.systemPrompt);
-        dto.setWelcomeMessage(this.welcomeMessage);
-        dto.setModelConfig(this.modelConfig);
-        dto.setTools(this.tools);
-        dto.setKnowledgeBaseIds(this.knowledgeBaseIds);
-        dto.setPublishedVersion(this.publishedVersion);
-        dto.setEnabled(this.enabled);
-        dto.setAgentType(this.agentType);
-        dto.setUserId(this.userId);
-        dto.setCreatedAt(this.createdAt);
-        dto.setUpdatedAt(this.updatedAt);
-        return dto;
     }
 
     /**

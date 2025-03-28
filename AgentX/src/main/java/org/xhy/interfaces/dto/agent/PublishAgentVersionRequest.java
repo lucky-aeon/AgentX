@@ -3,10 +3,13 @@ package org.xhy.interfaces.dto.agent;
 import java.util.regex.Pattern;
 import org.xhy.infrastructure.exception.ParamValidationException;
 
+import javax.validation.constraints.NotBlank;
+
 /**
  * 发布Agent版本请求
  */
 public class PublishAgentVersionRequest {
+    @NotBlank(message = "版本号不能为空")
     private String versionNumber;
     private String changeLog;
 
@@ -26,10 +29,6 @@ public class PublishAgentVersionRequest {
      * 校验请求参数
      */
     public void validate() {
-        if (versionNumber == null || versionNumber.trim().isEmpty()) {
-            throw new ParamValidationException("versionNumber", "版本号不能为空");
-        }
-
         // 验证版本号格式
         if (!VERSION_PATTERN.matcher(versionNumber).matches()) {
             throw new ParamValidationException("versionNumber", "版本号必须遵循 x.y.z 格式");

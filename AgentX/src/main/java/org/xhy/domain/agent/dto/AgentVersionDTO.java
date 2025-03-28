@@ -115,11 +115,6 @@ public class AgentVersionDTO {
     private LocalDateTime updatedAt;
 
     /**
-     * 删除时间（软删除）
-     */
-    private LocalDateTime deletedAt;
-
-    /**
      * 无参构造函数
      */
     public AgentVersionDTO() {
@@ -157,7 +152,6 @@ public class AgentVersionDTO {
         this.userId = userId;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
-        this.deletedAt = deletedAt;
     }
 
     // Getter和Setter方法
@@ -326,14 +320,6 @@ public class AgentVersionDTO {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
-    }
-
-    public LocalDateTime getDeletedAt() {
-        return deletedAt;
-    }
-
-    public void setDeletedAt(LocalDateTime deletedAt) {
-        this.deletedAt = deletedAt;
     }
 
     /**

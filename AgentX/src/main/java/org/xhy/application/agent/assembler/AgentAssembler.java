@@ -3,13 +3,17 @@ package org.xhy.application.agent.assembler;
 import org.xhy.domain.agent.model.AgentEntity;
 import org.xhy.domain.agent.constant.AgentType;
 import org.xhy.domain.agent.dto.AgentDTO;
+import org.xhy.domain.agent.model.AgentVersionEntity;
 import org.xhy.domain.agent.model.ModelConfig;
 import org.xhy.interfaces.dto.agent.CreateAgentRequest;
+import org.xhy.interfaces.dto.agent.SearchAgentsRequest;
 import org.xhy.interfaces.dto.agent.UpdateAgentRequest;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Agent领域对象组装器
@@ -104,24 +108,17 @@ public class AgentAssembler {
         
         return dto;
     }
-    
 
-    
-    /**
-     * 将AgentEntity列表转换为AgentDTO列表
-     */
-    public static List<AgentDTO> toDTOList(List<AgentEntity> entities) {
-        if (entities == null) {
-            return new ArrayList<>();
+    public static List<AgentDTO> toDTOs(List<AgentEntity> agents) {
+        if (agents == null || agents.isEmpty()) {
+            return Collections.emptyList();
         }
-        
-        List<AgentDTO> dtoList = new ArrayList<>(entities.size());
-        for (AgentEntity entity : entities) {
-            dtoList.add(toDTO(entity));
-        }
-        
-        return dtoList;
+        return agents.stream().map(AgentAssembler::toDTO).collect(Collectors.toList());
     }
-    
 
-} 
+    public static AgentEntity toEntity(SearchAgentsRequest searchAgentsRequest) {
+        AgentEntity agentEntity = new AgentEntity();
+        agentEntity.setName(searchAgentsRequest.getName());
+        return agentEntity;
+    }
+}

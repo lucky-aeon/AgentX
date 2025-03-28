@@ -1,5 +1,6 @@
 package org.xhy.interfaces.api.portal.agent;
 
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.xhy.application.agent.service.AgentAppService;
 import org.xhy.domain.agent.dto.AgentDTO;
@@ -27,7 +28,7 @@ public class PortalAgentController {
      * 创建新Agent
      */
     @PostMapping
-    public Result<AgentDTO> createAgent(@RequestBody CreateAgentRequest request) {
+    public Result<AgentDTO> createAgent(@RequestBody @Validated CreateAgentRequest request) {
         String userId = UserContext.getCurrentUserId();
         AgentDTO agent = agentAppService.createAgent(request, userId);
         return Result.success(agent);
@@ -65,7 +66,7 @@ public class PortalAgentController {
      */
     @PutMapping("/{agentId}")
     public Result<AgentDTO> updateAgent(@PathVariable String agentId,
-            @RequestBody UpdateAgentRequest request) {
+            @RequestBody @Validated UpdateAgentRequest request) {
         String userId = UserContext.getCurrentUserId();
         return Result.success(agentAppService.updateAgent(agentId, request, userId));
     }

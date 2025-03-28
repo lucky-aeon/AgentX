@@ -4,6 +4,7 @@ import org.xhy.domain.agent.model.AgentTool;
 import org.xhy.domain.agent.model.ModelConfig;
 import org.xhy.infrastructure.util.ValidationUtils;
 
+import javax.validation.constraints.NotBlank;
 import java.util.List;
 
 /**
@@ -12,7 +13,7 @@ import java.util.List;
  */
 public class UpdateAgentRequest {
     
-    // 基本信息字段
+    @NotBlank(message = "助理名称不可为空")
     private String name;
     private String avatar;
     private String description;

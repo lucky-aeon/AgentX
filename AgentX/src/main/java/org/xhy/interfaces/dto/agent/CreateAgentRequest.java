@@ -5,6 +5,7 @@ import org.xhy.domain.agent.constant.AgentType;
 import org.xhy.domain.agent.model.ModelConfig;
 import org.xhy.infrastructure.util.ValidationUtils;
 
+import javax.validation.constraints.NotBlank;
 import java.util.List;
 
 /**
@@ -12,6 +13,7 @@ import java.util.List;
  */
 public class CreateAgentRequest {
 
+    @NotBlank(message = "助理名称不可为空")
     private String name;
     private String description;
     private String avatar;
@@ -25,43 +27,6 @@ public class CreateAgentRequest {
     // 构造方法
     public CreateAgentRequest() {
     }
-
-    public CreateAgentRequest(String name, String description, String avatar, AgentType agentType,
-            String systemPrompt, String welcomeMessage, ModelConfig modelConfig,
-            List<AgentTool> tools, List<String> knowledgeBaseIds, String userId) {
-        this.name = name;
-        this.description = description;
-        this.avatar = avatar;
-        this.agentType = agentType;
-        this.systemPrompt = systemPrompt;
-        this.welcomeMessage = welcomeMessage;
-        this.modelConfig = modelConfig;
-        this.tools = tools;
-        this.knowledgeBaseIds = knowledgeBaseIds;
-    }
-
-    // 兼容旧构造方法
-    public CreateAgentRequest(String name, String description, String avatar, Integer agentTypeCode,
-            String systemPrompt, String welcomeMessage, ModelConfig modelConfig,
-            List<AgentTool> tools, List<String> knowledgeBaseIds, String userId) {
-        this(name, description, avatar,
-                agentTypeCode != null ? AgentType.fromCode(agentTypeCode) : AgentType.CHAT_ASSISTANT,
-                systemPrompt, welcomeMessage, modelConfig, tools, knowledgeBaseIds, userId);
-    }
-
-    /**
-     * 校验请求参数
-     */
-    public void validate() {
-        ValidationUtils.notEmpty(name, "name");
-        ValidationUtils.length(name, 1, 50, "name");
-
-        // Agent类型校验，如果不提供，默认为聊天助手
-        if (agentType == null) {
-            agentType = AgentType.CHAT_ASSISTANT;
-        }
-    }
-
     // Getter和Setter
     public String getName() {
         return name;

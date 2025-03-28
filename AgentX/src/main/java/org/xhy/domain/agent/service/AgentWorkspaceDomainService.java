@@ -30,7 +30,7 @@ public class AgentWorkspaceDomainService {
         this.agentRepository = agentRepository;
     }
 
-    public List<AgentDTO> getWorkspaceAgents(String userId) {
+    public List<AgentEntity> getWorkspaceAgents(String userId) {
 
         LambdaQueryWrapper<AgentWorkspaceEntity> wrapper = Wrappers.<AgentWorkspaceEntity>lambdaQuery()
                 .eq(AgentWorkspaceEntity::getUserId, userId).select(AgentWorkspaceEntity::getAgentId);
@@ -41,9 +41,8 @@ public class AgentWorkspaceDomainService {
         if (agentIds.isEmpty()) {
             return Collections.emptyList();
         }
-        List<AgentEntity> agents = agentRepository.selectBatchIds(agentIds);
-        return agents.stream().map(AgentAssembler::toDTO).collect(Collectors.toList());
-        
+        return agentRepository.selectBatchIds(agentIds);
+
     }
 
     public boolean checkAgentWorkspaceExist(String agentId, String userId) {
