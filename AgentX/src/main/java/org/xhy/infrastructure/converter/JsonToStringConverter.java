@@ -4,7 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.ibatis.type.BaseTypeHandler;
 import org.apache.ibatis.type.JdbcType;
-import org.apache.ibatis.type.MappedTypes;
+import org.apache.ibatis.type.MappedJdbcTypes;
+import org.postgresql.util.PGobject;
 
 import java.sql.CallableStatement;
 import java.sql.PreparedStatement;
@@ -12,49 +13,62 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 /**
- * JSON类型转换器，用于处理配置对象的序列化和反序列化
- * @param <T> 配置对象类型
+ * JSON类型转换器
+ * 用于处理数据库JSONB类型和Java对象之间的转换
+ * @param <T> 要转换的对象类型
  */
-@MappedTypes({Object.class})
-public class JsonToStringConverter<T> extends BaseTypeHandler<T> {
-
+@MappedJdbcTypes(JdbcType.OTHER)
+public abstract class JsonToStringConverter<T> extends BaseTypeHandler<T> {
+    
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private final Class<T> type;
-
-    public JsonToStringConverter(Class<T> type) {
-        if (type == null) throw new IllegalArgumentException("Type argument cannot be null");
+    
+    protected JsonToStringConverter(Class<T> type) {
+        if (type == null) {
+            throw new IllegalArgumentException("Type argument cannot be null");
+        }
         this.type = type;
     }
-
+    
     @Override
-    public void setNonNullParameter(PreparedStatement ps, int i, T parameter, JdbcType jdbcType) throws SQLException {
+    public void setNonNullParameter(PreparedStatement ps, int i, T parameter, JdbcType jdbcType)
+            throws SQLException {
+        PGobject jsonObject = new PGobject();
+        jsonObject.setType("jsonb");
         try {
-            ps.setString(i, MAPPER.writeValueAsString(parameter));
+            jsonObject.setValue(MAPPER.writeValueAsString(parameter));
         } catch (JsonProcessingException e) {
-            throw new SQLException("Error converting object to json string", e);
+            throw new SQLException("Error converting object to JSON", e);
         }
+        ps.setObject(i, jsonObject);
     }
-
+    
     @Override
     public T getNullableResult(ResultSet rs, String columnName) throws SQLException {
-        return parseJson(rs.getString(columnName));
+        String json = rs.getString(columnName);
+        return parseJson(json);
     }
-
+    
     @Override
     public T getNullableResult(ResultSet rs, int columnIndex) throws SQLException {
-        return parseJson(rs.getString(columnIndex));
+        String json = rs.getString(columnIndex);
+        return parseJson(json);
     }
-
+    
     @Override
     public T getNullableResult(CallableStatement cs, int columnIndex) throws SQLException {
-        return parseJson(cs.getString(columnIndex));
+        String json = cs.getString(columnIndex);
+        return parseJson(json);
     }
-
+    
     private T parseJson(String json) throws SQLException {
         try {
-            return json == null ? null : MAPPER.readValue(json, type);
+            if (json == null) {
+                return null;
+            }
+            return MAPPER.readValue(json, type);
         } catch (JsonProcessingException e) {
-            throw new SQLException("Error parsing json string", e);
+            throw new SQLException("Error parsing JSON", e);
         }
     }
 } 

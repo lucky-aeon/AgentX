@@ -1,13 +1,15 @@
 package org.xhy.infrastructure.converter;
 
-import org.xhy.domain.llm.model.config.ModelConfig;
+import org.apache.ibatis.type.MappedTypes;
+import org.xhy.domain.llm.model.config.LLMModelConfig;
 
 /**
- * Model配置转换器
+ * 模型配置转换器
  */
-public class ModelConfigConverter extends JsonToStringConverter<ModelConfig> {
+@MappedTypes(LLMModelConfig.class)
+public class ModelConfigConverter extends JsonToStringConverter<LLMModelConfig> {
     
     public ModelConfigConverter() {
-        super(ModelConfig.class);
+        super(LLMModelConfig.class);
     }
 } 

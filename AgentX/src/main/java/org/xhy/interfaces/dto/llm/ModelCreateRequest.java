@@ -1,6 +1,6 @@
 package org.xhy.interfaces.dto.llm;
 
-import org.xhy.domain.llm.model.config.ModelConfig;
+import org.xhy.domain.llm.model.config.LLMModelConfig;
 import org.xhy.domain.llm.model.enums.ModelType;
 
 /**
@@ -8,14 +8,35 @@ import org.xhy.domain.llm.model.enums.ModelType;
  */
 public class ModelCreateRequest {
     
+    /**
+     * 服务商ID
+     */
     private String providerId;
-    private String code;
+
+    /**
+     * 模型id
+     */
+    private String modelId;
+
+    /**
+     * 模型名称
+     */
     private String name;
+
+    /**
+     * 模型描述
+     */
     private String description;
+
+    /**
+     * 模型类型
+     */
     private ModelType type;
-    private ModelConfig config;
-    private Boolean isOfficial = false;
-    private Boolean status = true;
+
+    /**
+     * 模型配置
+     */
+    private LLMModelConfig config;
     
     public String getProviderId() {
         return providerId;
@@ -25,12 +46,12 @@ public class ModelCreateRequest {
         this.providerId = providerId;
     }
     
-    public String getCode() {
-        return code;
+    public String getModelId() {
+        return modelId;
     }
     
-    public void setCode(String code) {
-        this.code = code;
+    public void setModelId(String modelId) {
+        this.modelId = modelId;
     }
     
     public String getName() {
@@ -57,27 +78,12 @@ public class ModelCreateRequest {
         this.type = type;
     }
     
-    public ModelConfig getConfig() {
+    public LLMModelConfig getConfig() {
         return config;
     }
     
-    public void setConfig(ModelConfig config) {
+    public void setConfig(LLMModelConfig config) {
         this.config = config;
     }
-    
-    public Boolean getIsOfficial() {
-        return isOfficial;
-    }
-    
-    public void setIsOfficial(Boolean isOfficial) {
-        this.isOfficial = isOfficial;
-    }
-    
-    public Boolean getStatus() {
-        return status;
-    }
-    
-    public void setStatus(Boolean status) {
-        this.status = status;
-    }
-} 
+
+}

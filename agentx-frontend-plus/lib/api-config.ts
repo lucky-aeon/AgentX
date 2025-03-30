@@ -24,6 +24,13 @@ export const API_ENDPOINTS = {
   AGENT_VERSION_DETAIL: (id: string, version: string) => `/agent/${id}/versions/${version}`,
   PUBLISH_AGENT_VERSION: (id: string) => `/agent/${id}/publish`,
   PUBLISHED_AGENTS: "/agent/published",
+  
+  // LLM相关
+  PROVIDERS: "/llm/providers",
+  PROVIDER_DETAIL: (id: string) => `/llm/providers/${id}`,
+  CREATE_PROVIDER: "/llm/providers",
+  UPDATE_PROVIDER: "/llm/providers",
+  DELETE_PROVIDER: (id: string) => `/llm/providers/${id}`,
 }
 
 // 构建完整的API URL

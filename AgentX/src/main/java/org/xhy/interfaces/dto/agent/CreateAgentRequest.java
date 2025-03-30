@@ -1,11 +1,10 @@
 package org.xhy.interfaces.dto.agent;
 
+import jakarta.validation.constraints.NotBlank;
+import org.xhy.domain.agent.model.AgentModelConfig;
 import org.xhy.domain.agent.model.AgentTool;
 import org.xhy.domain.agent.constant.AgentType;
-import org.xhy.domain.agent.model.ModelConfig;
-import org.xhy.infrastructure.util.ValidationUtils;
 
-import javax.validation.constraints.NotBlank;
 import java.util.List;
 
 /**
@@ -20,7 +19,7 @@ public class CreateAgentRequest {
     private AgentType agentType = AgentType.CHAT_ASSISTANT;
     private String systemPrompt;
     private String welcomeMessage;
-    private ModelConfig modelConfig;
+    private AgentModelConfig modelConfig;
     private List<AgentTool> tools;
     private List<String> knowledgeBaseIds;
 
@@ -60,15 +59,6 @@ public class CreateAgentRequest {
         this.agentType = agentType;
     }
 
-    // 为了兼容旧代码，提供Integer getter/setter
-    public Integer getAgentTypeCode() {
-        return agentType != null ? agentType.getCode() : null;
-    }
-
-    public void setAgentTypeCode(Integer agentTypeCode) {
-        this.agentType = AgentType.fromCode(agentTypeCode);
-    }
-
     public String getSystemPrompt() {
         return systemPrompt;
     }
@@ -85,11 +75,11 @@ public class CreateAgentRequest {
         this.welcomeMessage = welcomeMessage;
     }
 
-    public ModelConfig getModelConfig() {
+    public AgentModelConfig getModelConfig() {
         return modelConfig;
     }
 
-    public void setModelConfig(ModelConfig modelConfig) {
+    public void setModelConfig(AgentModelConfig modelConfig) {
         this.modelConfig = modelConfig;
     }
 

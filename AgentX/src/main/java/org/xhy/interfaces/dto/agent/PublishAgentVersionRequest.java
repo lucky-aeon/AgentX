@@ -1,9 +1,10 @@
 package org.xhy.interfaces.dto.agent;
 
 import java.util.regex.Pattern;
+
+import jakarta.validation.constraints.NotBlank;
 import org.xhy.infrastructure.exception.ParamValidationException;
 
-import javax.validation.constraints.NotBlank;
 
 /**
  * 发布Agent版本请求

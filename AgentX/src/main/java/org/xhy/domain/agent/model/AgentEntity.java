@@ -60,7 +60,7 @@ public class AgentEntity extends Model<AgentEntity> {
      * 模型配置，包含模型类型、温度等参数
      */
     @TableField(value = "model_config", typeHandler = JsonTypeHandler.class, jdbcType = JdbcType.OTHER)
-    private ModelConfig modelConfig;
+    private AgentModelConfig modelConfig;
 
     /**
      * Agent可使用的工具列表
@@ -121,7 +121,7 @@ public class AgentEntity extends Model<AgentEntity> {
      * 无参构造函数
      */
     public AgentEntity() {
-        this.modelConfig = ModelConfig.createDefault();
+        this.modelConfig = AgentModelConfig.createDefault();
         this.tools = new ArrayList<>();
         this.knowledgeBaseIds = new ArrayList<>();
     }
@@ -130,7 +130,7 @@ public class AgentEntity extends Model<AgentEntity> {
      * 全参构造函数
      */
     public AgentEntity(String id, String name, String avatar, String description, String systemPrompt,
-                String welcomeMessage, ModelConfig modelConfig, List<AgentTool> tools, List<String> knowledgeBaseIds,
+                String welcomeMessage, AgentModelConfig modelConfig, List<AgentTool> tools, List<String> knowledgeBaseIds,
                 String publishedVersion, Boolean enabled, Integer agentType, String userId, 
                 LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime deletedAt) {
         this.id = id;
@@ -200,11 +200,11 @@ public class AgentEntity extends Model<AgentEntity> {
         this.welcomeMessage = welcomeMessage;
     }
 
-    public ModelConfig getModelConfig() {
-        return modelConfig != null ? modelConfig : ModelConfig.createDefault();
+    public AgentModelConfig getModelConfig() {
+        return modelConfig != null ? modelConfig : AgentModelConfig.createDefault();
     }
 
-    public void setModelConfig(ModelConfig modelConfig) {
+    public void setModelConfig(AgentModelConfig modelConfig) {
         this.modelConfig = modelConfig;
     }
 
@@ -309,7 +309,7 @@ public class AgentEntity extends Model<AgentEntity> {
     /**
      * 更新Agent配置
      */
-    public void updateConfig(String systemPrompt, String welcomeMessage, ModelConfig modelConfig, 
+    public void updateConfig(String systemPrompt, String welcomeMessage, AgentModelConfig modelConfig,
                             List<AgentTool> tools, List<String> knowledgeBaseIds) {
         this.systemPrompt = systemPrompt;
         this.welcomeMessage = welcomeMessage;

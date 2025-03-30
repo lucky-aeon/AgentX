@@ -2,9 +2,8 @@ package org.xhy.application.agent.assembler;
 
 import org.xhy.domain.agent.model.AgentEntity;
 import org.xhy.domain.agent.constant.AgentType;
-import org.xhy.domain.agent.dto.AgentDTO;
-import org.xhy.domain.agent.model.AgentVersionEntity;
-import org.xhy.domain.agent.model.ModelConfig;
+import org.xhy.application.agent.dto.AgentDTO;
+import org.xhy.domain.agent.model.AgentModelConfig;
 import org.xhy.interfaces.dto.agent.CreateAgentRequest;
 import org.xhy.interfaces.dto.agent.SearchAgentsRequest;
 import org.xhy.interfaces.dto.agent.UpdateAgentRequest;
@@ -44,7 +43,7 @@ public class AgentAssembler {
         if (request.getModelConfig() != null) {
             entity.setModelConfig(request.getModelConfig());
         } else {
-            entity.setModelConfig(ModelConfig.createDefault());
+            entity.setModelConfig(AgentModelConfig.createDefault());
         }
         
         // 设置工具和知识库ID

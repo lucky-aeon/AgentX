@@ -1,4 +1,4 @@
-package org.xhy.domain.agent.dto;
+package org.xhy.application.agent.dto;
 
 import org.xhy.domain.agent.constant.AgentStatus;
 import org.xhy.domain.agent.constant.AgentType;
@@ -46,7 +46,7 @@ public class AgentDTO {
     /**
      * 模型配置，包含模型类型、温度等参数
      */
-    private ModelConfig modelConfig;
+    private AgentModelConfig modelConfig;
 
     /**
      * Agent可使用的工具列表
@@ -92,7 +92,7 @@ public class AgentDTO {
      * 无参构造函数
      */
     public AgentDTO() {
-        this.modelConfig = ModelConfig.createDefault();
+        this.modelConfig = AgentModelConfig.createDefault();
         this.tools = new ArrayList<>();
         this.knowledgeBaseIds = new ArrayList<>();
     }
@@ -146,11 +146,11 @@ public class AgentDTO {
         this.welcomeMessage = welcomeMessage;
     }
 
-    public ModelConfig getModelConfig() {
+    public AgentModelConfig getModelConfig() {
         return modelConfig;
     }
 
-    public void setModelConfig(ModelConfig modelConfig) {
+    public void setModelConfig(AgentModelConfig modelConfig) {
         this.modelConfig = modelConfig;
     }
 

@@ -1,7 +1,7 @@
 package org.xhy.application.llm.assembler;
 
-import org.springframework.stereotype.Component;
 import org.xhy.application.llm.dto.ProviderDTO;
+import org.xhy.domain.llm.model.ProviderAggregate;
 import org.xhy.domain.llm.model.ProviderEntity;
 import org.xhy.interfaces.dto.llm.ProviderCreateRequest;
 import org.xhy.interfaces.dto.llm.ProviderUpdateRequest;
@@ -13,11 +13,10 @@ import java.util.stream.Collectors;
 /**
  * 服务提供商对象转换器
  */
-@Component
 public class ProviderAssembler {
     
     /**
-     * 将领域对象转换为DTO
+     * 将实体转换为DTO，并进行敏感信息脱敏
      */
     public static ProviderDTO toDTO(ProviderEntity provider) {
         if (provider == null) {
@@ -26,54 +25,107 @@ public class ProviderAssembler {
         
         ProviderDTO dto = new ProviderDTO();
         dto.setId(provider.getId());
-        dto.setUserId(provider.getUserId());
-        dto.setCode(provider.getCode());
+        dto.setProtocol(provider.getProtocol());
         dto.setName(provider.getName());
         dto.setDescription(provider.getDescription());
-        dto.setConfig(provider.getConfig());
+        dto.setConfig(provider.getEncryptedConfig());
         dto.setIsOfficial(provider.getIsOfficial());
         dto.setStatus(provider.getStatus());
         dto.setCreatedAt(provider.getCreatedAt());
         dto.setUpdatedAt(provider.getUpdatedAt());
         
+        // 脱敏处理（针对返回前端的场景）
+        dto.maskSensitiveInfo();
+        
         return dto;
     }
     
     /**
-     * 将多个领域对象转换为DTO列表
+     * 将多个聚合根转换为DTO列表
      */
-    public static List<ProviderDTO> toDTOList(List<ProviderEntity> providers) {
+    public static List<ProviderDTO> toDTOList(List<ProviderAggregate> providers) {
         return providers.stream()
                 .map(ProviderAssembler::toDTO)
                 .collect(Collectors.toList());
     }
     
     /**
-     * 将创建请求转换为领域对象
+     * 将多个实体转换为DTO列表
+     */
+    public static List<ProviderDTO> toDTOListFromEntities(List<ProviderEntity> providers) {
+        return providers.stream()
+                .map(ProviderAssembler::toDTO)
+                .collect(Collectors.toList());
+    }
+    
+    /**
+     * 将创建请求转换为实体
      */
     public static ProviderEntity toEntity(ProviderCreateRequest request, String userId) {
         ProviderEntity provider = new ProviderEntity();
         provider.setUserId(userId);
-        provider.setCode(request.getCode());
+        provider.setProtocol(request.getProtocol());
         provider.setName(request.getName());
         provider.setDescription(request.getDescription());
-        provider.setConfig(request.getConfig());
-        provider.setIsOfficial(request.getIsOfficial());
+        provider.setConfig(request.getConfig());  // 会自动加密
         provider.setStatus(request.getStatus());
         provider.setCreatedAt(LocalDateTime.now());
         provider.setUpdatedAt(LocalDateTime.now());
         
         return provider;
     }
-
+    /**
+     * 将更新请求转换为实体
+     */
     public static ProviderEntity toEntity(ProviderUpdateRequest request, String userId) {
         ProviderEntity provider = new ProviderEntity();
+        provider.setId(request.getId());
         provider.setUserId(userId);
+        provider.setProtocol(request.getProtocol());
         provider.setName(request.getName());
         provider.setDescription(request.getDescription());
-        provider.setConfig(request.getConfig());
+        provider.setConfig(request.getConfig());  // 会自动加密
         provider.setStatus(request.getStatus());
         provider.setUpdatedAt(LocalDateTime.now());
         return provider;
     }
+    
+    /**
+     * 根据更新请求更新实体
+     */
+    public static void updateEntity(ProviderEntity entity, ProviderUpdateRequest request) {
+        if (entity == null || request == null) {
+            return;
+        }
+        
+        if (request.getName() != null) {
+            entity.setName(request.getName());
+        }
+        
+        if (request.getDescription() != null) {
+            entity.setDescription(request.getDescription());
+        }
+        
+        if (request.getConfig() != null) {
+            entity.setConfig(request.getConfig());  // 会自动加密
+        }
+        
+        if (request.getStatus() != null) {
+            entity.setStatus(request.getStatus());
+        }
+        
+        entity.setUpdatedAt(LocalDateTime.now());
+    }
+    
+
+    // 将聚合根转换为dto
+    public static ProviderDTO toDTO(ProviderAggregate provider) {
+        if (provider == null) {
+            return null;
+        }
+        ProviderDTO dto = toDTO(provider.getEntity());
+        dto.setModels(ModelAssembler.toDTOs(provider.getModels()));
+        return dto;
+    }
+    
 }

@@ -1,4 +1,4 @@
-package org.xhy.domain.conversation.dto;
+package org.xhy.application.conversation.dto;
 
 import org.xhy.domain.conversation.model.MessageEntity;
 
@@ -8,11 +8,29 @@ import java.time.LocalDateTime;
  * 消息DTO，用于API响应
  */
 public class MessageDTO {
+    /**
+     * 消息ID
+     */
     private String id;
+    /**
+     * 消息角色
+     */
     private String role;
+    /**
+     * 消息内容
+     */
     private String content;
+    /**
+     * 创建时间
+     */
     private LocalDateTime createdAt;
+    /**
+     * 提供商
+     */
     private String provider;
+    /**
+     * 模型
+     */
     private String model;
 
     /**

@@ -1,7 +1,8 @@
 package org.xhy.domain.llm.model;
 
 import com.baomidou.mybatisplus.annotation.*;
-import org.xhy.domain.llm.model.config.ModelConfig;
+import org.apache.ibatis.type.JdbcType;
+import org.xhy.domain.llm.model.config.LLMModelConfig;
 import org.xhy.domain.llm.model.enums.ModelType;
 import org.xhy.infrastructure.converter.ModelConfigConverter;
 import org.xhy.infrastructure.converter.ModelTypeConverter;
@@ -19,17 +20,16 @@ public class ModelEntity {
     
     private String userId;
     private String providerId;
-    private String code;
+    private String modelId;
     private String name;
     private String description;
     
-    @TableField(typeHandler = ModelTypeConverter.class)
+    @TableField(typeHandler = ModelTypeConverter.class, jdbcType = JdbcType.VARCHAR)
     private ModelType type;
     
     @TableField(typeHandler = ModelConfigConverter.class)
-    private ModelConfig config;
+    private LLMModelConfig config;
     
-    private Boolean isOfficial;
     private Boolean status;
     
     @TableField(fill = FieldFill.INSERT)
@@ -65,12 +65,12 @@ public class ModelEntity {
         this.providerId = providerId;
     }
 
-    public String getCode() {
-        return code;
+    public String getModelId() {
+        return modelId;
     }
 
-    public void setCode(String code) {
-        this.code = code;
+    public void setModelId(String modelId) {
+        this.modelId = modelId;
     }
 
     public String getName() {
@@ -97,20 +97,12 @@ public class ModelEntity {
         this.type = type;
     }
 
-    public ModelConfig getConfig() {
+    public LLMModelConfig getConfig() {
         return config;
     }
 
-    public void setConfig(ModelConfig config) {
+    public void setConfig(LLMModelConfig config) {
         this.config = config;
-    }
-
-    public Boolean getIsOfficial() {
-        return isOfficial;
-    }
-
-    public void setIsOfficial(Boolean official) {
-        isOfficial = official;
     }
 
     public Boolean getStatus() {

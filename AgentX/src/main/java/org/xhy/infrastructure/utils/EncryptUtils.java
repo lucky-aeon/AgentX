@@ -1,8 +1,5 @@
 package org.xhy.infrastructure.utils;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
@@ -11,43 +8,48 @@ import java.util.Base64;
 /**
  * 加密工具类
  */
-@Component
-public class EncryptionUtil {
-
-    private final String key;
+public class EncryptUtils {
+    
     private static final String ALGORITHM = "AES";
-
-    public EncryptionUtil(@Value("${app.encryption.key}") String key) {
-        // 确保key是16位
-        if (key.length() < 16) {
-            key = String.format("%-16s", key).replace(' ', '0');
-        } else if (key.length() > 16) {
-            key = key.substring(0, 16);
-        }
-        this.key = key;
+    private static final String SECRET_KEY = "1234567890123456"; // 16位密钥
+    
+    private EncryptUtils() {
+        // 私有构造函数，防止实例化
     }
-
+    
     /**
      * 加密字符串
+     *
+     * @param data 待加密的字符串
+     * @return 加密后的字符串
      */
-    public String encrypt(String data) {
+    public static String encrypt(String data) {
         try {
-            SecretKeySpec secretKey = new SecretKeySpec(key.getBytes(StandardCharsets.UTF_8), ALGORITHM);
+            if (data == null) {
+                return null;
+            }
+            SecretKeySpec secretKey = new SecretKeySpec(SECRET_KEY.getBytes(StandardCharsets.UTF_8), ALGORITHM);
             Cipher cipher = Cipher.getInstance(ALGORITHM);
             cipher.init(Cipher.ENCRYPT_MODE, secretKey);
             byte[] encryptedBytes = cipher.doFinal(data.getBytes());
             return Base64.getEncoder().encodeToString(encryptedBytes);
         } catch (Exception e) {
-            throw new RuntimeException("加密失败", e);
+            throw new RuntimeException("加密失败"+e.getMessage(), e);
         }
     }
-
+    
     /**
      * 解密字符串
+     *
+     * @param encryptedData 已加密的字符串
+     * @return 解密后的字符串
      */
-    public String decrypt(String encryptedData) {
+    public static String decrypt(String encryptedData) {
         try {
-            SecretKeySpec secretKey = new SecretKeySpec(key.getBytes(StandardCharsets.UTF_8), ALGORITHM);
+            if (encryptedData == null) {
+                return null;
+            }
+            SecretKeySpec secretKey = new SecretKeySpec(SECRET_KEY.getBytes(StandardCharsets.UTF_8), ALGORITHM);
             Cipher cipher = Cipher.getInstance(ALGORITHM);
             cipher.init(Cipher.DECRYPT_MODE, secretKey);
             byte[] decryptedBytes = cipher.doFinal(Base64.getDecoder().decode(encryptedData));

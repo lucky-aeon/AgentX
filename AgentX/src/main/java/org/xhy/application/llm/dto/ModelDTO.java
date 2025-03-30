@@ -1,6 +1,6 @@
 package org.xhy.application.llm.dto;
 
-import org.xhy.domain.llm.model.config.ModelConfig;
+import org.xhy.domain.llm.model.config.LLMModelConfig;
 import org.xhy.domain.llm.model.enums.ModelType;
 
 import java.time.LocalDateTime;
@@ -10,18 +10,57 @@ import java.time.LocalDateTime;
  */
 public class ModelDTO {
     
+    /**
+     * 模型id
+     */
     private String id;
+    /**
+     * 用户id
+     */
     private String userId;
+    /**
+     * 服务商id
+     */
     private String providerId;
+    /**
+     * 服务商名称
+     */
     private String providerName; // 额外添加，便于前端显示
-    private String code;
+    /**
+     * 模型id
+     */
+    private String modelId;
+    /**
+     * 模型名称
+     */
     private String name;
+    /**
+     * 模型描述
+     */
     private String description;
+    /**
+     * 模型类型
+     */
     private ModelType type;
-    private ModelConfig config;
+    /**
+     * 模型配置
+     */
+    private LLMModelConfig config;
+    /**
+     * 是否官方
+     */
     private Boolean isOfficial;
+    /**
+     * 模型状态
+     */
     private Boolean status;
+    /**
+     * 创建时间
+     */
     private LocalDateTime createdAt;
+    /**
+     * 更新时间
+     */
     private LocalDateTime updatedAt;
     
     public String getId() {
@@ -56,12 +95,12 @@ public class ModelDTO {
         this.providerName = providerName;
     }
     
-    public String getCode() {
-        return code;
+    public String getModelId() {
+        return modelId;
     }
     
-    public void setCode(String code) {
-        this.code = code;
+    public void setModelId(String modelId) {
+        this.modelId = modelId;
     }
     
     public String getName() {
@@ -88,11 +127,11 @@ public class ModelDTO {
         this.type = type;
     }
     
-    public ModelConfig getConfig() {
+    public LLMModelConfig getConfig() {
         return config;
     }
     
-    public void setConfig(ModelConfig config) {
+    public void setConfig(LLMModelConfig config) {
         this.config = config;
     }
     

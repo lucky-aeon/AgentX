@@ -7,7 +7,6 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.extension.activerecord.Model;
 import org.apache.ibatis.type.JdbcType;
 import org.xhy.domain.agent.constant.PublishStatus;
-import org.xhy.domain.agent.dto.AgentVersionDTO;
 import org.xhy.infrastructure.typehandler.JsonTypeHandler;
 
 import java.time.LocalDateTime;
@@ -72,7 +71,7 @@ public class AgentVersionEntity extends Model<AgentVersionEntity> {
      * 模型配置，包含模型类型、温度等参数
      */
     @TableField(value = "model_config", typeHandler = JsonTypeHandler.class, jdbcType = JdbcType.OTHER)
-    private ModelConfig modelConfig;
+    private AgentModelConfig modelConfig;
 
     /**
      * Agent可使用的工具列表
@@ -150,7 +149,7 @@ public class AgentVersionEntity extends Model<AgentVersionEntity> {
      * 无参构造函数
      */
     public AgentVersionEntity() {
-        this.modelConfig = ModelConfig.createDefault();
+        this.modelConfig = AgentModelConfig.createDefault();
         this.tools = new ArrayList<>();
         this.knowledgeBaseIds = new ArrayList<>();
     }
@@ -160,7 +159,7 @@ public class AgentVersionEntity extends Model<AgentVersionEntity> {
      */
     public AgentVersionEntity(String id, String agentId, String name, String avatar, String description,
             String versionNumber, String systemPrompt, String welcomeMessage,
-            ModelConfig modelConfig, List<AgentTool> tools, List<String> knowledgeBaseIds,
+                              AgentModelConfig modelConfig, List<AgentTool> tools, List<String> knowledgeBaseIds,
             String changeLog, Integer agentType, String userId,
             LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime deletedAt,
             Integer publishStatus, String rejectReason, LocalDateTime reviewTime,
@@ -229,11 +228,11 @@ public class AgentVersionEntity extends Model<AgentVersionEntity> {
         this.welcomeMessage = welcomeMessage;
     }
 
-    public ModelConfig getModelConfig() {
-        return modelConfig != null ? modelConfig : ModelConfig.createDefault();
+    public AgentModelConfig getModelConfig() {
+        return modelConfig != null ? modelConfig : AgentModelConfig.createDefault();
     }
 
-    public void setModelConfig(ModelConfig modelConfig) {
+    public void setModelConfig(AgentModelConfig modelConfig) {
         this.modelConfig = modelConfig;
     }
 

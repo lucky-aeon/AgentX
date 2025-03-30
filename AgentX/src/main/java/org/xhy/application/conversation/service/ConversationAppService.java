@@ -4,7 +4,7 @@ import org.springframework.stereotype.Service;
 import org.xhy.application.conversation.assembler.MessageAssembler;
 import org.xhy.application.conversation.dto.StreamChatRequest;
 import org.xhy.application.conversation.dto.StreamChatResponse;
-import org.xhy.domain.conversation.dto.MessageDTO;
+import org.xhy.application.conversation.dto.MessageDTO;
 import org.xhy.domain.conversation.model.MessageEntity;
 import org.xhy.domain.conversation.model.SessionEntity;
 import org.xhy.domain.conversation.service.ConversationDomainService;

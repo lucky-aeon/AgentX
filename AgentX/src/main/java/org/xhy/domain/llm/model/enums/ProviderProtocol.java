@@ -1,8 +1,8 @@
 package org.xhy.domain.llm.model.enums;
 
-public enum ProviderCode {
+public enum ProviderProtocol {
 
-    OPenAI
+    OpenAI
 
 
 }

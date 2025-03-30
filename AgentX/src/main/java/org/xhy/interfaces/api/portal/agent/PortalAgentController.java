@@ -3,8 +3,8 @@ package org.xhy.interfaces.api.portal.agent;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.xhy.application.agent.service.AgentAppService;
-import org.xhy.domain.agent.dto.AgentDTO;
-import org.xhy.domain.agent.dto.AgentVersionDTO;
+import org.xhy.application.agent.dto.AgentDTO;
+import org.xhy.application.agent.dto.AgentVersionDTO;
 import org.xhy.infrastructure.auth.UserContext;
 import org.xhy.interfaces.api.common.Result;
 import org.xhy.interfaces.dto.agent.*;
@@ -12,7 +12,7 @@ import org.xhy.interfaces.dto.agent.*;
 import java.util.List;
 
 /**
- * 前台用户Agent管理API控制器
+ * 用户Agent管理
  */
 @RestController
 @RequestMapping("/agent")

@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
  * Agent模型配置类，用于表示大语言模型的相关配置参数
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class ModelConfig {
+public class AgentModelConfig {
     
     /**
      * 模型名称，如：gpt-4-0125-preview, claude-3-opus-20240229等
@@ -41,13 +41,13 @@ public class ModelConfig {
     /**
      * 无参构造函数
      */
-    public ModelConfig() {
+    public AgentModelConfig() {
     }
     
     /**
      * 全参构造函数
      */
-    public ModelConfig(String modelName, Double temperature, Double topP, Integer maxTokens, Boolean loadMemory, String systemMessage) {
+    public AgentModelConfig(String modelName, Double temperature, Double topP, Integer maxTokens, Boolean loadMemory, String systemMessage) {
         this.modelName = modelName;
         this.temperature = temperature;
         this.topP = topP;
@@ -59,8 +59,8 @@ public class ModelConfig {
     /**
      * 创建默认配置
      */
-    public static ModelConfig createDefault() {
-        ModelConfig config = new ModelConfig();
+    public static AgentModelConfig createDefault() {
+        AgentModelConfig config = new AgentModelConfig();
         config.setModelName("gpt-3.5-turbo");
         config.setTemperature(0.7);
         config.setTopP(1.0);

@@ -1,8 +1,8 @@
-package org.xhy.domain.agent.dto;
+package org.xhy.application.agent.dto;
 
 import org.xhy.domain.agent.constant.AgentType;
+import org.xhy.domain.agent.model.AgentModelConfig;
 import org.xhy.domain.agent.model.AgentTool;
-import org.xhy.domain.agent.model.ModelConfig;
 import org.xhy.domain.agent.constant.PublishStatus;
 
 import java.time.LocalDateTime;
@@ -57,7 +57,7 @@ public class AgentVersionDTO {
     /**
      * 模型配置，包含模型类型、温度等参数
      */
-    private ModelConfig modelConfig;
+    private AgentModelConfig modelConfig;
 
     /**
      * Agent可使用的工具列表
@@ -118,7 +118,7 @@ public class AgentVersionDTO {
      * 无参构造函数
      */
     public AgentVersionDTO() {
-        this.modelConfig = ModelConfig.createDefault();
+        this.modelConfig = AgentModelConfig.createDefault();
         this.tools = new ArrayList<>();
         this.knowledgeBaseIds = new ArrayList<>();
     }
@@ -128,7 +128,7 @@ public class AgentVersionDTO {
      */
     public AgentVersionDTO(String id, String agentId, String name, String avatar, String description,
             String versionNumber, String systemPrompt, String welcomeMessage,
-            ModelConfig modelConfig, List<AgentTool> tools, List<String> knowledgeBaseIds,
+                           AgentModelConfig modelConfig, List<AgentTool> tools, List<String> knowledgeBaseIds,
             String changeLog, Integer agentType, Integer publishStatus,
             String rejectReason, LocalDateTime reviewTime, LocalDateTime publishedAt,
             String userId, LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime deletedAt) {
@@ -219,11 +219,11 @@ public class AgentVersionDTO {
         this.welcomeMessage = welcomeMessage;
     }
 
-    public ModelConfig getModelConfig() {
+    public AgentModelConfig getModelConfig() {
         return modelConfig;
     }
 
-    public void setModelConfig(ModelConfig modelConfig) {
+    public void setModelConfig(AgentModelConfig modelConfig) {
         this.modelConfig = modelConfig;
     }
 

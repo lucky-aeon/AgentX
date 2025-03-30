@@ -313,7 +313,7 @@ public class AgentDomainService {
      * 根据 agentIds 获取 agents
      */
     public List<AgentEntity> getAgentsByIds(List<String> agentIds) {
-        return agentRepository.selectBatchIds(agentIds);
+        return agentRepository.selectByIds(agentIds);
     }
 
     public AgentEntity getAgentById(String agentId) {

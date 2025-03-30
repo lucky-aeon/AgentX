@@ -30,8 +30,7 @@ mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
     cache-enabled: false
-    default-enum-type-handler: org.apache.ibatis.type.EnumOrdinalTypeHandler
-    type-handlers-package: org.xhy.infrastructure.typehandler
+    type-handlers-package: org.xhy.infrastructure.converter
   global-config:
     db-config:
       id-type: auto

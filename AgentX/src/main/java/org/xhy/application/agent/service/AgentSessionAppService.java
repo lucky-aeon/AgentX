@@ -1,21 +1,14 @@
 package org.xhy.application.agent.service;
 
-import java.beans.Transient;
-import java.util.Collections;
 import java.util.List;
 
-import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.xhy.application.conversation.assembler.SessionAssembler;
-import org.xhy.domain.agent.dto.AgentDTO;
-import org.xhy.domain.agent.dto.AgentVersionDTO;
 import org.xhy.domain.agent.model.AgentEntity;
-import org.xhy.domain.agent.model.ModelConfig;
 import org.xhy.domain.agent.service.AgentDomainService;
 import org.xhy.domain.agent.service.AgentWorkspaceDomainService;
-import org.xhy.domain.conversation.dto.MessageDTO;
-import org.xhy.domain.conversation.dto.SessionDTO;
+import org.xhy.application.conversation.dto.SessionDTO;
 import org.xhy.domain.conversation.model.SessionEntity;
 import org.xhy.domain.conversation.service.ConversationDomainService;
 import org.xhy.domain.conversation.service.SessionDomainService;

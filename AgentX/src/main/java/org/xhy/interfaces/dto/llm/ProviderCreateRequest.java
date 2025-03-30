@@ -6,20 +6,38 @@ import org.xhy.domain.llm.model.config.ProviderConfig;
  * 服务提供商创建请求
  */
 public class ProviderCreateRequest {
-    
-    private String code;
+
+    /**
+     * 服务商代码
+     */ 
+    private String protocol;
+
+    /**
+     * 服务商名称
+     */
     private String name;
+
+    /**
+     * 服务商描述
+     */
     private String description;
+
+    /**
+     * 服务商配置
+     */
     private ProviderConfig config;
-    private Boolean isOfficial = false;
+
+    /**
+     * 服务商状态
+     */
     private Boolean status = true;
-    
-    public String getCode() {
-        return code;
+
+    public String getProtocol() {
+        return protocol;
     }
     
-    public void setCode(String code) {
-        this.code = code;
+    public void setProtocol(String protocol) {
+        this.protocol = protocol;
     }
     
     public String getName() {
@@ -45,15 +63,7 @@ public class ProviderCreateRequest {
     public void setConfig(ProviderConfig config) {
         this.config = config;
     }
-    
-    public Boolean getIsOfficial() {
-        return isOfficial;
-    }
-    
-    public void setIsOfficial(Boolean isOfficial) {
-        this.isOfficial = isOfficial;
-    }
-    
+
     public Boolean getStatus() {
         return status;
     }

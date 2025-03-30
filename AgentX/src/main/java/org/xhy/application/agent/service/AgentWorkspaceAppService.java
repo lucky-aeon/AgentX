@@ -3,7 +3,7 @@ package org.xhy.application.agent.service;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.xhy.application.agent.assembler.AgentAssembler;
-import org.xhy.domain.agent.dto.AgentDTO;
+import org.xhy.application.agent.dto.AgentDTO;
 import org.xhy.domain.agent.model.AgentEntity;
 import org.xhy.domain.agent.service.AgentDomainService;
 import org.xhy.domain.agent.service.AgentWorkspaceDomainService;
@@ -11,7 +11,6 @@ import org.xhy.domain.conversation.model.SessionEntity;
 import org.xhy.domain.conversation.service.ConversationDomainService;
 import org.xhy.domain.conversation.service.SessionDomainService;
 import org.xhy.infrastructure.exception.BusinessException;
-import org.xhy.interfaces.dto.agent.SearchAgentsRequest;
 
 import java.util.List;
 import java.util.stream.Collectors;

@@ -3,22 +3,66 @@ package org.xhy.application.llm.dto;
 import org.xhy.domain.llm.model.config.ProviderConfig;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
- * 服务提供商数据传输对象
+ * 服务提供商DTO
  */
 public class ProviderDTO {
     
+    /**
+     * 服务商id
+     */
     private String id;
-    private String userId;
-    private String code;
+    /**
+     * 服务商协议
+     */
+    private String protocol;
+    /**
+     * 服务商名称
+     */
     private String name;
+    /**
+     * 服务商描述
+     */
     private String description;
+    /**
+     * 服务商配置
+     */
     private ProviderConfig config;
+    /**
+     * 是否官方
+     */
     private Boolean isOfficial;
+    /**
+     * 服务商状态
+     */
     private Boolean status;
+    /**
+     * 创建时间
+     */
     private LocalDateTime createdAt;
+   
+    /**
+     * 更新时间
+     */
     private LocalDateTime updatedAt;
+    /**
+     * 模型列表
+     */
+    private List<ModelDTO> models;
+    
+    /**
+     * 脱敏配置信息（用于返回前端）
+     */
+    public void maskSensitiveInfo() {
+        if (this.config != null) {
+            // 如果有API Key，则脱敏处理
+            if (this.config.getApiKey() != null && !this.config.getApiKey().isEmpty()) {
+                this.config.setApiKey("***********");
+            }
+        }
+    }
     
     public String getId() {
         return id;
@@ -28,20 +72,12 @@ public class ProviderDTO {
         this.id = id;
     }
     
-    public String getUserId() {
-        return userId;
+    public String getProtocol() {
+        return protocol;
     }
     
-    public void setUserId(String userId) {
-        this.userId = userId;
-    }
-    
-    public String getCode() {
-        return code;
-    }
-    
-    public void setCode(String code) {
-        this.code = code;
+    public void setProtocol(String protocol) {
+        this.protocol = protocol;
     }
     
     public String getName() {
@@ -98,5 +134,13 @@ public class ProviderDTO {
     
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public List<ModelDTO> getModels() {
+        return models;
+    }
+
+    public void setModels(List<ModelDTO> models) {
+        this.models = models;
     }
 } 

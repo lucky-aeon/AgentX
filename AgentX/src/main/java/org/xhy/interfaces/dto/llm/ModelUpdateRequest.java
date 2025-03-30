@@ -1,18 +1,41 @@
 package org.xhy.interfaces.dto.llm;
 
-import org.xhy.domain.llm.model.config.ModelConfig;
+
+import org.xhy.domain.llm.model.config.LLMModelConfig;
 
 /**
  * 模型更新请求
  */
 public class ModelUpdateRequest {
     
+    /**
+     * 模型ID
+     */
     private String id;
+
+    /**
+     * 模型id
+     */
+    private String modelId;
+
+    /**
+     * 模型名称
+     */
     private String name;
+
+    /**
+     * 模型描述
+     */
     private String description;
-    private ModelConfig config;
-    private Boolean status;
-    
+
+    /**
+     * 模型配置
+     */
+    private LLMModelConfig config;
+
+    /**
+     * 模型状态
+     */
     public String getId() {
         return id;
     }
@@ -37,19 +60,19 @@ public class ModelUpdateRequest {
         this.description = description;
     }
     
-    public ModelConfig getConfig() {
+    public LLMModelConfig getConfig() {
         return config;
     }
     
-    public void setConfig(ModelConfig config) {
+    public void setConfig(LLMModelConfig config) {
         this.config = config;
     }
-    
-    public Boolean getStatus() {
-        return status;
+
+    public String getModelId() {
+        return modelId;
     }
-    
-    public void setStatus(Boolean status) {
-        this.status = status;
+
+    public void setModelId(String modelId) {
+        this.modelId = modelId;
     }
-} 
+}
