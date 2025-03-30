@@ -1,45 +1,154 @@
-HELP.md
+# Node.js
+node_modules/
+npm-debug.log
+yarn-error.log
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# 编译后的文件和构建工具
+dist/
+public/build/
+dist/
 target/
+
+# IDE 和编辑器文件
+.app/
+.vscode/
+.idea/
+.gradle/
+/.npmrc
+/*.suo
+*.log
+*.log.*
+*.bak
+*.swp
+*.iml
+*.DS_Store
+Thumbs.db
+/.next/
+/.refresh/
+/.apt_generated/
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache/
+
+# 容器构建缓存
+_coverage/
+coverage/
+
+# 测试报告
+/reports/
+/tests/
+
+# 使用工具生成的文件
+/.ngsw.json
+/manifest.json
+/*.orig
+/*.rej
+/*/*.mo
+/*/*.meta
+
+# HTML 文件中的临时文件
+/temp/
+/*.tmp
+/*.html~
+
+# 自动化构建工具
+/babel-cache/
+/.cache/
+
+# 模板文件
+/*.html*
+/*.tpl*
+/*.pug*
+/*.jade*
+
+# Java
+/build/
+/target/
+/*.jar
+/*.war
+/*.ear
+/*.class
+*.log
+/*.iml
+*.suo
+*.orig
+*.rej
+/*.hprof
+
+# Git相关文件
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
 
-### STS ###
+# STS
 .apt_generated
 .classpath
 .factorypath
 .project
 .settings
 .springBeans
-.sts4-cache
+.sts4-cache/
 
-### IntelliJ IDEA ###
+# IntelliJ IDEA
 .idea
 *.iws
 *.iml
 *.ipr
 
-### NetBeans ###
+# NetBeans
 /nbproject/private/
 /nbbuild/
 /dist/
 /nbdist/
 /.nb-gradle/
-build/
-!**/src/main/**/build/
-!**/src/test/**/build/
+/build/
 
-### VS Code ###
+# VS Code
 .vscode/
+.windsurf/
+.cursor/
 
-### Logs ###
+# Logs
 logs/
 *.log
 
-### Environment ###
+# Environment
 .env
 .env.local
 
-### System Files ###
+# System Files
 .DS_Store
 Thumbs.db
+
+
+# dependencies
+node_modules
+
+# next.js
+.next/
+out/
+
+# production
+build
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files
+.env*
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
