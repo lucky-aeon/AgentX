@@ -5,11 +5,14 @@ import org.springframework.transaction.annotation.Transactional;
 import org.xhy.application.agent.assembler.AgentAssembler;
 import org.xhy.application.agent.dto.AgentDTO;
 import org.xhy.domain.agent.model.AgentEntity;
+import org.xhy.domain.agent.model.AgentWorkspaceEntity;
 import org.xhy.domain.agent.service.AgentDomainService;
 import org.xhy.domain.agent.service.AgentWorkspaceDomainService;
 import org.xhy.domain.conversation.model.SessionEntity;
 import org.xhy.domain.conversation.service.ConversationDomainService;
 import org.xhy.domain.conversation.service.SessionDomainService;
+import org.xhy.domain.llm.model.ModelEntity;
+import org.xhy.domain.llm.service.LlmDomainService;
 import org.xhy.infrastructure.exception.BusinessException;
 
 import java.util.List;
@@ -33,13 +36,15 @@ public class AgentWorkspaceAppService {
     private final SessionDomainService sessionDomainService;
 
     private final ConversationDomainService conversationDomainService;
+    private final LlmDomainService llmDomainService;
 
     public AgentWorkspaceAppService(AgentWorkspaceDomainService agentWorkspaceDomainService,
-                                    AgentDomainService agentServiceDomainService, SessionDomainService sessionDomainService, ConversationDomainService conversationDomainService) {
+                                    AgentDomainService agentServiceDomainService, SessionDomainService sessionDomainService, ConversationDomainService conversationDomainService, LlmDomainService llmDomainService) {
         this.agentWorkspaceDomainService = agentWorkspaceDomainService;
         this.agentServiceDomainService = agentServiceDomainService;
         this.sessionDomainService = sessionDomainService;
         this.conversationDomainService = conversationDomainService;
+        this.llmDomainService = llmDomainService;
     }
 
     /**
@@ -77,5 +82,24 @@ public class AgentWorkspaceAppService {
         }
         sessionDomainService.deleteSessions(sessionIds);
         conversationDomainService.deleteConversationMessages(sessionIds);
+    }
+
+    /**
+     * 保存模型
+     * @param agentId agentId
+     * @param userId 用户id
+     * @param modelId 模型id
+     */
+    public void saveModel(String agentId, String userId, String modelId) {
+
+        // 模型是否是自己的 or 官方的
+        ModelEntity model = llmDomainService.getModelById(modelId);
+        if (!model.getOfficial() && !model.getUserId().equals(userId)) {
+            throw new BusinessException("模型不存在");
+        }
+
+        AgentWorkspaceEntity workspace = agentWorkspaceDomainService.getWorkspace(agentId, userId);
+        workspace.setModelId(modelId);
+        agentWorkspaceDomainService.save(workspace);
     }
 }

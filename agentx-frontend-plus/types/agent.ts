@@ -34,6 +34,8 @@ export interface Agent {
   updatedAt: string
   statusText?: string
   agentTypeText?: string
+  modelId?: string // 关联的模型ID
+  modelName?: string // 关联的模型名称
 }
 
 // API响应基本结构

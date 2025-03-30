@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { MoreHorizontal, Plus, Edit, Trash, Power, PowerOff, Loader2 } from "lucide-react"
+import { MoreHorizontal, Plus, Edit, Trash, Power, PowerOff, Loader2, RefreshCw, PlusCircle, Settings2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -20,7 +20,20 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-import { getProviders } from "@/lib/api-services"
+import { 
+  getProviders, 
+  getProviderDetail, 
+  deleteProviderWithToast, 
+  toggleProviderStatusWithToast,
+  deleteModelWithToast,
+  toggleModelStatusWithToast
+} from "@/lib/api-services"
+import { ProviderDialog } from "@/components/provider-dialog"
+import { ModelDialog } from "@/components/model-dialog"
+import { toast } from "@/components/ui/use-toast"
+import { Separator } from "@/components/ui/separator"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Switch } from "@/components/ui/switch"
 
 // 服务提供商接口
 interface Model {
@@ -59,47 +72,247 @@ export default function ProvidersPage() {
   const [providers, setProviders] = useState<Provider[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [detailLoading, setDetailLoading] = useState(false)
+  const [showProviderDialog, setShowProviderDialog] = useState(false)
+  const [editingProvider, setEditingProvider] = useState<Provider | null>(null)
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [isTogglingStatus, setIsTogglingStatus] = useState(false)
+  
+  // 模型管理相关状态
+  const [selectedModel, setSelectedModel] = useState<Model | null>(null)
+  const [showModelDialog, setShowModelDialog] = useState(false)
+  const [editingModel, setEditingModel] = useState<Model | null>(null)
+  const [deleteModelConfirmOpen, setDeleteModelConfirmOpen] = useState(false)
+  const [isDeletingModel, setIsDeletingModel] = useState(false)
+  const [isTogglingModelStatus, setIsTogglingModelStatus] = useState(false)
   
   // 加载服务提供商数据
-  useEffect(() => {
-    async function loadProviders() {
-      setLoading(true)
-      try {
-        const response = await getProviders()
-        if (response.code === 200) {
-          console.log("服务提供商数据:", response.data)
-          setProviders(response.data)
-        } else {
-          setError(response.message || "获取服务提供商列表失败")
-        }
-      } catch (err) {
-        console.error("获取服务提供商错误:", err)
-        setError("获取服务提供商数据失败")
-      } finally {
-        setLoading(false)
+  const loadProviders = async () => {
+    setLoading(true)
+    try {
+      let type: string | undefined;
+      if (activeTab === "官方服务") {
+        type = "official";
+      } else if (activeTab === "自定义服务") {
+        type = "user";
       }
+      
+      const response = await getProviders(type);
+      if (response.code === 200) {
+        console.log("服务提供商数据:", response.data)
+        setProviders(response.data)
+      } else {
+        setError(response.message || "获取服务提供商列表失败")
+      }
+    } catch (err) {
+      console.error("获取服务提供商错误:", err)
+      setError("获取服务提供商数据失败")
+    } finally {
+      setLoading(false)
     }
-    
-    loadProviders()
-  }, [])
+  }
   
-  // 根据标签筛选服务提供商
-  const filteredProviders = activeTab === "全部"
-    ? providers
-    : activeTab === "官方服务"
-      ? providers.filter(p => p.isOfficial)
-      : providers.filter(p => !p.isOfficial)
+  // 当标签变化时重新加载数据
+  useEffect(() => {
+    loadProviders()
+  }, [activeTab])
+  
+  // 根据标签筛选服务提供商（已通过API过滤，无需本地再次过滤）
+  const filteredProviders = providers;
 
-  // 打开详情弹窗
-  const openDetail = (provider: Provider) => {
+  // 打开详情弹窗并获取详细信息
+  const openDetail = async (provider: Provider) => {
     setSelectedProvider(provider)
     setShowDetailDialog(true)
+    
+    // 获取服务提供商详情
+    setDetailLoading(true)
+    try {
+      const response = await getProviderDetail(provider.id);
+      if (response.code === 200) {
+        setSelectedProvider(response.data);
+        // 不再需要单独加载模型列表，因为服务提供商详情已包含models数组
+      }
+    } catch (err) {
+      console.error("获取服务提供商详情错误:", err);
+    } finally {
+      setDetailLoading(false);
+    }
   }
   
   // 关闭详情弹窗
   const closeDetail = () => {
     setShowDetailDialog(false)
     setSelectedProvider(null)
+  }
+  
+  // 打开编辑弹窗
+  const openEditDialog = async (provider: Provider, e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+    
+    // 获取服务提供商详情
+    try {
+      const response = await getProviderDetail(provider.id);
+      if (response.code === 200) {
+        setEditingProvider(response.data);
+        setShowProviderDialog(true);
+      } else {
+        toast({
+          title: "获取提供商详情失败",
+          description: response.message,
+          variant: "destructive"
+        });
+      }
+    } catch (err) {
+      console.error("获取服务提供商详情错误:", err);
+      toast({
+        title: "获取提供商详情失败",
+        description: "请稍后重试",
+        variant: "destructive"
+      });
+    }
+  }
+  
+  // 打开添加弹窗
+  const openAddDialog = () => {
+    setEditingProvider(null);
+    setShowProviderDialog(true);
+  }
+  
+  // 打开删除确认
+  const openDeleteConfirm = (provider: Provider, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedProvider(provider);
+    setDeleteConfirmOpen(true);
+  }
+  
+  // 确认删除
+  const confirmDelete = async () => {
+    if (!selectedProvider) return;
+    
+    setIsDeleting(true);
+    try {
+      const response = await deleteProviderWithToast(selectedProvider.id);
+      if (response.code === 200) {
+        setDeleteConfirmOpen(false);
+        loadProviders();
+      }
+    } catch (error) {
+      console.error("删除服务提供商失败:", error);
+    } finally {
+      setIsDeleting(false);
+    }
+  }
+  
+  // 切换服务提供商状态
+  const toggleProviderStatus = async (provider: Provider, e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    
+    setIsTogglingStatus(true);
+    try {
+      const response = await toggleProviderStatusWithToast(provider.id);
+      if (response.code === 200) {
+        // 更新本地状态
+        if (selectedProvider && selectedProvider.id === provider.id) {
+          setSelectedProvider({
+            ...selectedProvider,
+            status: !selectedProvider.status
+          });
+        }
+        // 更新列表
+        setProviders(prev => prev.map(p => {
+          if (p.id === provider.id) {
+            return { ...p, status: !p.status };
+          }
+          return p;
+        }));
+      }
+    } catch (error) {
+      console.error("切换服务提供商状态失败:", error);
+    } finally {
+      setIsTogglingStatus(false);
+    }
+  }
+  
+  // 打开添加模型对话框
+  const openAddModelDialog = () => {
+    setEditingModel(null);
+    setShowModelDialog(true);
+  }
+  
+  // 打开编辑模型对话框
+  const openEditModelDialog = (model: Model) => {
+    setEditingModel(model);
+    setShowModelDialog(true);
+  }
+  
+  // 打开删除模型确认
+  const openDeleteModelConfirm = (model: Model) => {
+    setSelectedModel(model);
+    setDeleteModelConfirmOpen(true);
+  }
+  
+  // 确认删除模型
+  const confirmDeleteModel = async () => {
+    if (!selectedModel) return;
+    
+    setIsDeletingModel(true);
+    try {
+      const response = await deleteModelWithToast(selectedModel.id);
+      if (response.code === 200) {
+        setDeleteModelConfirmOpen(false);
+        
+        // 更新服务商详情中的模型列表
+        if (selectedProvider) {
+          try {
+            const detailResponse = await getProviderDetail(selectedProvider.id);
+            if (detailResponse.code === 200) {
+              setSelectedProvider(detailResponse.data);
+            }
+          } catch (error) {
+            console.error("刷新服务商详情失败:", error);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("删除模型失败:", error);
+    } finally {
+      setIsDeletingModel(false);
+    }
+  }
+  
+  // 切换模型状态
+  const toggleModelStatus = async (model: Model) => {
+    setIsTogglingModelStatus(true);
+    try {
+      const response = await toggleModelStatusWithToast(model.id);
+      if (response.code === 200) {
+        // 更新本地状态，不再重新加载模型列表
+        if (selectedProvider) {
+          setSelectedProvider(prev => {
+            if (!prev) return prev;
+            
+            const updatedModels = prev.models.map(m => 
+              m.id === model.id ? { ...m, status: !m.status } : m
+            );
+            
+            return {
+              ...prev,
+              models: updatedModels
+            };
+          });
+        }
+      }
+    } catch (error) {
+      console.error("切换模型状态失败:", error);
+    } finally {
+      setIsTogglingModelStatus(false);
+    }
   }
   
   // 显示加载中状态
@@ -138,7 +351,7 @@ export default function ProvidersPage() {
           <h1 className="text-3xl font-bold tracking-tight">服务提供商</h1>
           <p className="text-muted-foreground">管理您的AI服务提供商和API密钥</p>
         </div>
-        <Button className="flex items-center gap-2">
+        <Button className="flex items-center gap-2" onClick={openAddDialog}>
           <Plus className="h-4 w-4" />
           添加服务提供商
         </Button>
@@ -191,15 +404,18 @@ export default function ProvidersPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
+                            <DropdownMenuItem onClick={(e) => openEditDialog(provider, e)}>
                               <Edit className="mr-2 h-4 w-4" />
                               编辑
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
+                            <DropdownMenuItem onClick={(e) => openDeleteConfirm(provider, e)}>
                               <Trash className="mr-2 h-4 w-4" />
                               删除
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
+                            <DropdownMenuItem 
+                              onClick={(e) => toggleProviderStatus(provider, e)}
+                              disabled={isTogglingStatus}
+                            >
                               {provider.status ? (
                                 <>
                                   <PowerOff className="mr-2 h-4 w-4" />
@@ -260,133 +476,273 @@ export default function ProvidersPage() {
       {/* 服务提供商详情弹窗 */}
       {selectedProvider && (
         <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
-          <DialogContent className="max-w-3xl">
+          <DialogContent className="max-w-4xl max-h-[80vh] flex flex-col overflow-hidden">
             <DialogHeader>
-              <DialogTitle>服务提供商详情</DialogTitle>
+              <DialogTitle className="flex justify-between items-center">
+                <span>服务提供商详情</span>
+              </DialogTitle>
               <DialogDescription>
-                查看服务提供商的详细配置和可用模型
+                查看和管理服务提供商的详细信息和模型配置
               </DialogDescription>
             </DialogHeader>
             
-            <div className="space-y-6 py-4">
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-md bg-blue-100 text-blue-600">
-                  {selectedProvider.protocol.charAt(0).toUpperCase()}
-                </div>
-                <div>
-                  <h3 className="text-xl font-semibold">{selectedProvider.name}</h3>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-sm text-muted-foreground">{selectedProvider.protocol}</span>
-                    {selectedProvider.isOfficial && (
-                      <Badge variant="outline">官方</Badge>
-                    )}
-                    {selectedProvider.status ? (
-                      <Badge variant="outline" className="bg-green-50 text-green-600 border-green-200">
-                        已启用
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline" className="bg-red-50 text-red-600 border-red-200">
-                        已禁用
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-                
-                {!selectedProvider.isOfficial && (
-                  <div className="ml-auto">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">打开菜单</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem>
-                          <Edit className="mr-2 h-4 w-4" />
-                          编辑
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <Trash className="mr-2 h-4 w-4" />
-                          删除
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          {selectedProvider.status ? (
-                            <>
-                              <PowerOff className="mr-2 h-4 w-4" />
-                              禁用
-                            </>
-                          ) : (
-                            <>
-                              <Power className="mr-2 h-4 w-4" />
-                              启用
-                            </>
-                          )}
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                )}
+            {detailLoading ? (
+              <div className="flex justify-center py-10">
+                <Loader2 className="h-6 w-6 animate-spin" />
               </div>
-              
-              <div className="space-y-2">
-                <h4 className="font-medium">描述</h4>
-                <p className="text-sm text-muted-foreground">
-                  {selectedProvider.description || "无描述"}
-                </p>
-              </div>
-              
-              <div className="space-y-2">
-                <h4 className="font-medium">可用模型</h4>
-                {selectedProvider.models && selectedProvider.models.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    {selectedProvider.models.map((model, index) => (
-                      <div key={index} className="p-3 bg-gray-50 rounded-md text-sm flex items-center gap-2">
-                        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-blue-600 text-xs">
-                          {model.name.charAt(0).toUpperCase()}
-                        </div>
-                        {model.name}
-                        {model.type && <span className="text-xs text-muted-foreground ml-auto">{model.type}</span>}
-                      </div>
-                    ))}
+            ) : selectedProvider ? (
+              <div className="flex flex-col space-y-4 h-full overflow-hidden">
+                <div className="flex items-center gap-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-md bg-blue-100 text-blue-600">
+                    {selectedProvider.protocol.charAt(0).toUpperCase()}
                   </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground">暂无可用模型</p>
-                )}
-              </div>
-              
-              {!selectedProvider.isOfficial && (
-                <div className="space-y-2">
-                  <h4 className="font-medium">API配置</h4>
-                  <div className="p-3 bg-gray-50 rounded-md">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium">API Key:</span>
-                      <span className="text-sm text-muted-foreground">******************************</span>
+                  <div>
+                    <h3 className="text-xl font-semibold">{selectedProvider.name}</h3>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-sm text-muted-foreground">{selectedProvider.protocol}</span>
+                      {selectedProvider.isOfficial && (
+                        <Badge variant="outline">官方</Badge>
+                      )}
+                      {selectedProvider.status ? (
+                        <Badge variant="outline" className="bg-green-50 text-green-600 border-green-200">
+                          已启用
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="bg-red-50 text-red-600 border-red-200">
+                          已禁用
+                        </Badge>
+                      )}
                     </div>
                   </div>
+                  
+                  {!selectedProvider.isOfficial && (
+                    <div className="ml-auto">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreHorizontal className="h-4 w-4" />
+                            <span className="sr-only">打开菜单</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => openEditDialog(selectedProvider)}>
+                            <Edit className="mr-2 h-4 w-4" />
+                            编辑
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={(e) => openDeleteConfirm(selectedProvider, e)}>
+                            <Trash className="mr-2 h-4 w-4" />
+                            删除
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={(e) => toggleProviderStatus(selectedProvider, e)}
+                            disabled={isTogglingStatus}
+                          >
+                            {selectedProvider.status ? (
+                              <>
+                                <PowerOff className="mr-2 h-4 w-4" />
+                                禁用
+                              </>
+                            ) : (
+                              <>
+                                <Power className="mr-2 h-4 w-4" />
+                                启用
+                              </>
+                            )}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  )}
                 </div>
-              )}
-              
-              <div className="space-y-2">
-                <h4 className="font-medium">创建时间</h4>
-                <p className="text-sm text-muted-foreground">
-                  {new Date(selectedProvider.createdAt).toLocaleString("zh-CN")}
-                </p>
+                
+                <div className="space-y-2">
+                  <h4 className="font-medium">描述</h4>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedProvider.description || "无描述"}
+                  </p>
+                </div>
+                
+                <Separator />
+                
+                {/* 模型列表 */}
+                <div className="flex-1 overflow-hidden flex flex-col">
+                  <div className="flex justify-between items-center mb-2">
+                    <h3 className="text-lg font-semibold">模型列表</h3>
+                    <Button variant="outline" size="sm" onClick={openAddModelDialog}>
+                      <PlusCircle className="h-4 w-4 mr-1" />
+                      添加模型
+                    </Button>
+                  </div>
+                  
+                  <ScrollArea className="flex-1">
+                    {!selectedProvider.models || selectedProvider.models.length === 0 ? (
+                      <div className="text-center py-6 text-muted-foreground">
+                        暂无模型，点击添加按钮创建模型
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {selectedProvider.models.map((model: Model) => (
+                          <Card key={model.id} className="p-3">
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <div className="font-medium">{model.name}</div>
+                                <div className="text-sm text-muted-foreground flex items-center space-x-2">
+                                  <span>ID: {model.modelId}</span>
+                                  <span>·</span>
+                                  <span>类型: {model.type}</span>
+                                </div>
+                                {model.description && (
+                                  <div className="text-sm mt-1">{model.description}</div>
+                                )}
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <Switch 
+                                  checked={model.status}
+                                  onCheckedChange={() => {}}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toggleModelStatus(model);
+                                  }}
+                                />
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon"
+                                  className="h-8 w-8" 
+                                  onClick={() => openEditModelDialog(model)}
+                                >
+                                  <Settings2 className="h-4 w-4" />
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon"
+                                  className="h-8 w-8 text-destructive" 
+                                  onClick={() => openDeleteModelConfirm(model)}
+                                >
+                                  <svg
+                                    width="15"
+                                    height="15"
+                                    viewBox="0 0 15 15"
+                                    fill="none"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className="h-4 w-4"
+                                  >
+                                    <path
+                                      d="M5.5 1C5.22386 1 5 1.22386 5 1.5C5 1.77614 5.22386 2 5.5 2H9.5C9.77614 2 10 1.77614 10 1.5C10 1.22386 9.77614 1 9.5 1H5.5ZM3 3.5C3 3.22386 3.22386 3 3.5 3H11.5C11.7761 3 12 3.22386 12 3.5C12 3.77614 11.7761 4 11.5 4H3.5C3.22386 4 3 3.77614 3 3.5ZM3.5 5C3.22386 5 3 5.22386 3 5.5C3 5.77614 3.22386 6 3.5 6H4V12C4 12.5523 4.44772 13 5 13H10C10.5523 13 11 12.5523 11 12V6H11.5C11.7761 6 12 5.77614 12 5.5C12 5.22386 11.7761 5 11.5 5H3.5ZM5 6H10V12H5V6Z"
+                                      fill="currentColor"
+                                      fillRule="evenodd"
+                                      clipRule="evenodd"
+                                    ></path>
+                                  </svg>
+                                </Button>
+                              </div>
+                            </div>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
+                  </ScrollArea>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="text-center py-10 text-muted-foreground">
+                无法加载服务商详情
+              </div>
+            )}
             
             <DialogFooter>
               <Button variant="outline" onClick={closeDetail}>
                 关闭
               </Button>
-              {!selectedProvider.isOfficial && (
-                <Button variant="default">
-                  编辑配置
-                </Button>
-              )}
+              <Button 
+                onClick={() => selectedProvider && openEditDialog(selectedProvider)}
+                disabled={!selectedProvider}
+              >
+                编辑配置
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
+      )}
+      
+      {/* 删除确认对话框 */}
+      <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>删除服务提供商</DialogTitle>
+            <DialogDescription>
+              您确定要删除此服务提供商吗？此操作无法撤销。
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteConfirmOpen(false)} disabled={isDeleting}>
+              取消
+            </Button>
+            <Button variant="destructive" onClick={confirmDelete} disabled={isDeleting}>
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  删除中...
+                </>
+              ) : "确认删除"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* 添加/编辑服务提供商对话框 */}
+      <ProviderDialog 
+        open={showProviderDialog} 
+        onOpenChange={setShowProviderDialog}
+        provider={editingProvider}
+        onSuccess={loadProviders}
+      />
+      
+      {/* 删除模型确认对话框 */}
+      <Dialog open={deleteModelConfirmOpen} onOpenChange={setDeleteModelConfirmOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>删除模型</DialogTitle>
+            <DialogDescription>
+              您确定要删除此模型吗？此操作无法撤销。
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteModelConfirmOpen(false)} disabled={isDeletingModel}>
+              取消
+            </Button>
+            <Button variant="destructive" onClick={confirmDeleteModel} disabled={isDeletingModel}>
+              {isDeletingModel ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  删除中...
+                </>
+              ) : "确认删除"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* 添加/编辑模型对话框 */}
+      {selectedProvider && (
+        <ModelDialog
+          open={showModelDialog}
+          onOpenChange={setShowModelDialog}
+          providerId={selectedProvider.id}
+          providerName={selectedProvider.name}
+          model={editingModel}
+          onSuccess={async () => {
+            if (selectedProvider) {
+              try {
+                const response = await getProviderDetail(selectedProvider.id);
+                if (response.code === 200) {
+                  setSelectedProvider(response.data);
+                }
+              } catch (error) {
+                console.error("刷新服务商详情失败:", error);
+              }
+            }
+          }}
+        />
       )}
     </div>
   )

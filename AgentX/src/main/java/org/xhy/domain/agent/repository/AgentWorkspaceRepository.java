@@ -14,5 +14,5 @@ import org.xhy.domain.agent.model.AgentWorkspaceEntity;
 public interface AgentWorkspaceRepository extends BaseMapper<AgentWorkspaceEntity> {
 
     @Select("SELECT EXISTS(SELECT 1 FROM agent_workspace WHERE agent_id = #{agentId} AND user_id = #{userId})")
-    boolean checkAgentWorkspaceExist(@Param("agentId") String agentId, @Param("userId") String userId);
+    boolean exist(@Param("agentId") String agentId, @Param("userId") String userId);
 }

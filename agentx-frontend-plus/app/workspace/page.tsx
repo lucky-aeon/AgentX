@@ -8,10 +8,10 @@ import { EmptyState } from "@/components/empty-state"
 import { ConversationList } from "@/components/conversation-list"
 import { useWorkspace } from "@/contexts/workspace-context"
 import { getWorkspaceAgents, deleteWorkspaceAgent, deleteWorkspaceAgentWithToast } from "@/lib/agent-service"
-import { getAgentSessions, createAgentSession, type SessionDTO, getAgentSessionsWithToast, createAgentSessionWithToast } from "@/lib/agent-session-service"
+import { getAgentSessions, createAgentSession, type SessionDTO, getAgentSessionsWithToast, createAgentSessionWithToast, updateAgentSessionWithToast } from "@/lib/agent-session-service"
 import type { Agent } from "@/types/agent"
 import { toast } from "@/components/ui/use-toast"
-import { MoreHorizontal, Trash2 } from 'lucide-react'
+import { MoreHorizontal, Trash2, Settings, Grid, Terminal } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -28,6 +28,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 
+// 导入模型选择对话框组件
+import { ModelSelectDialog } from "../../components/model-select-dialog"
+
 export default function WorkspacePage() {
   const { selectedWorkspaceId, selectedConversationId, setSelectedWorkspaceId, setSelectedConversationId } =
     useWorkspace()
@@ -40,6 +43,10 @@ export default function WorkspacePage() {
   const [loadingSessions, setLoadingSessions] = useState(false)
   const [agentToDelete, setAgentToDelete] = useState<Agent | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  
+  // 模型选择相关状态
+  const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null)
+  const [modelDialogOpen, setModelDialogOpen] = useState(false)
 
   // 如果URL中有工作区ID，则设置为当前选中的工作区
   useEffect(() => {
@@ -104,6 +111,10 @@ export default function WorkspacePage() {
         
         // Select the new session
         setSelectedConversationId(response.data.id)
+        
+        // 如果会话创建成功，使用默认标题"新会话"更新会话
+        const defaultTitle = "新会话"
+        await updateAgentSessionWithToast(response.data.id, defaultTitle)
       }
     } catch (error) {
       console.error("Error creating agent session:", error)
@@ -143,6 +154,11 @@ export default function WorkspacePage() {
   // Find the current session title
   const currentSession = sessions.find(session => session.id === selectedConversationId)
   const sessionTitle = currentSession?.title || `会话 ${selectedConversationId?.substring(0, 8) || ''}`
+
+  // 当模型设置成功后重新加载agent列表
+  const handleModelSetSuccess = () => {
+    fetchAgents()
+  }
 
   return (
     <div className="flex h-[calc(100vh-3.5rem)] w-full">
@@ -211,8 +227,48 @@ export default function WorkspacePage() {
                       <div className="flex-1">
                         <div className="font-medium">{agent.name}</div>
                         <div className="text-xs text-muted-foreground truncate">{agent.description || "无描述"}</div>
+                        {agent.modelId && (
+                          <div className="mt-1 flex items-center text-xs">
+                            <Terminal className="h-3 w-3 mr-1" />
+                            <span className="text-muted-foreground">
+                              模型: {agent.modelName || agent.modelId || "未设置"}
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </div>
+                    
+                    {/* 操作菜单 */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                          <MoreHorizontal className="h-4 w-4" />
+                          <span className="sr-only">菜单</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedAgent(agent);
+                            setModelDialogOpen(true);
+                          }}
+                        >
+                          <Settings className="mr-2 h-4 w-4" />
+                          设置模型
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setAgentToDelete(agent);
+                          }}
+                          className="text-red-500 focus:text-red-500"
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          移除
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 ))}
               </div>
@@ -246,6 +302,16 @@ export default function WorkspacePage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      {/* 模型选择对话框 */}
+      <ModelSelectDialog
+        open={modelDialogOpen}
+        onOpenChange={setModelDialogOpen}
+        agentId={selectedAgent?.id || ""}
+        agentName={selectedAgent?.name}
+        currentModelId={selectedAgent?.modelId}
+        onSuccess={handleModelSetSuccess}
+      />
     </div>
   )
 }

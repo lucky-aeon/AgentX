@@ -298,7 +298,7 @@ public class AgentDomainService {
     /**
      * 校验 agent 是否存在
      */
-    public boolean checkAgentExist(String agentId, String userId) {
+    public boolean exist(String agentId, String userId) {
 
         LambdaQueryWrapper<AgentEntity> wrapper = Wrappers.<AgentEntity>lambdaQuery()
                 .eq(AgentEntity::getId, agentId)
@@ -323,9 +323,9 @@ public class AgentDomainService {
     public AgentEntity getAgentWithPermissionCheck(String agentId, String userId) {
         
         // 检查工作区是否存在
-        boolean b1 = agentWorkspaceRepository.checkAgentWorkspaceExist(agentId, userId);
+        boolean b1 = agentWorkspaceRepository.exist(agentId, userId);
 
-        boolean b2 = checkAgentExist(agentId, userId);
+        boolean b2 = exist(agentId, userId);
         if (!b1 && !b2){
             throw new BusinessException("助理不存在");
         }

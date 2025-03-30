@@ -3,6 +3,7 @@ package org.xhy.application.llm.dto;
 import org.xhy.domain.llm.model.config.ProviderConfig;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -50,7 +51,7 @@ public class ProviderDTO {
     /**
      * 模型列表
      */
-    private List<ModelDTO> models;
+    private List<ModelDTO> models = new ArrayList<>();
     
     /**
      * 脱敏配置信息（用于返回前端）

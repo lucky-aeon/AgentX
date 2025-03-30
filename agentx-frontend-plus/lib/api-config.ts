@@ -24,6 +24,7 @@ export const API_ENDPOINTS = {
   AGENT_VERSION_DETAIL: (id: string, version: string) => `/agent/${id}/versions/${version}`,
   PUBLISH_AGENT_VERSION: (id: string) => `/agent/${id}/publish`,
   PUBLISHED_AGENTS: "/agent/published",
+  SET_AGENT_MODEL: (agentId: string, modelId: string) => `/agent/workspace/${agentId}/model/${modelId}`,
   
   // LLM相关
   PROVIDERS: "/llm/providers",
@@ -31,6 +32,18 @@ export const API_ENDPOINTS = {
   CREATE_PROVIDER: "/llm/providers",
   UPDATE_PROVIDER: "/llm/providers",
   DELETE_PROVIDER: (id: string) => `/llm/providers/${id}`,
+  PROVIDER_PROTOCOLS: "/llm/providers/protocols",
+  TOGGLE_PROVIDER_STATUS: (id: string) => `/llm/providers/${id}/status`,
+  
+  // 模型相关
+  // 注意：'/llm/models' 路径不可用
+  // MODELS: "/llm/models",
+  MODEL_DETAIL: (id: string) => `/llm/models/${id}`,
+  CREATE_MODEL: "/llm/models",
+  UPDATE_MODEL: "/llm/models",
+  DELETE_MODEL: (id: string) => `/llm/models/${id}`,
+  TOGGLE_MODEL_STATUS: (id: string) => `/llm/models/${id}/status`,
+  MODEL_TYPES: "/llm/models/types",
 }
 
 // 构建完整的API URL

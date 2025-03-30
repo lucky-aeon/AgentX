@@ -232,11 +232,12 @@ export const deleteSessionWithToast = withToast(deleteSession, {
 })
 
 // 获取服务提供商列表
-export async function getProviders(): Promise<ApiResponse<any[]>> {
+export async function getProviders(type?: string): Promise<ApiResponse<any[]>> {
   try {
-    console.log(`Fetching providers`)
+    console.log(`Fetching providers, type: ${type || 'all'}`)
     
-    const response = await httpClient.get<ApiResponse<any[]>>(API_ENDPOINTS.PROVIDERS);
+    const params = type ? { type } : undefined;
+    const response = await httpClient.get<ApiResponse<any[]>>(API_ENDPOINTS.PROVIDERS, { params });
     
     return response;
   } catch (error) {
@@ -251,8 +252,347 @@ export async function getProviders(): Promise<ApiResponse<any[]>> {
   }
 }
 
+// 获取服务提供商详情
+export async function getProviderDetail(providerId: string): Promise<ApiResponse<any>> {
+  try {
+    console.log(`Fetching provider detail for: ${providerId}`)
+    
+    const response = await httpClient.get<ApiResponse<any>>(API_ENDPOINTS.PROVIDER_DETAIL(providerId));
+    
+    return response;
+  } catch (error) {
+    console.error("获取服务提供商详情错误:", error)
+    // 返回格式化的错误响应
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : "未知错误",
+      data: null,
+      timestamp: Date.now(),
+    }
+  }
+}
+
+// 获取服务提供商协议列表
+export async function getProviderProtocols(): Promise<ApiResponse<string[]>> {
+  try {
+    console.log('Fetching provider protocols')
+    
+    const response = await httpClient.get<ApiResponse<string[]>>(API_ENDPOINTS.PROVIDER_PROTOCOLS);
+    
+    return response;
+  } catch (error) {
+    console.error("获取服务提供商协议列表错误:", error)
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : "未知错误",
+      data: [],
+      timestamp: Date.now(),
+    }
+  }
+}
+
+// 创建服务提供商
+export async function createProvider(data: any): Promise<ApiResponse<any>> {
+  try {
+    console.log('Creating provider:', data)
+    
+    const response = await httpClient.post<ApiResponse<any>>(API_ENDPOINTS.CREATE_PROVIDER, data);
+    
+    return response;
+  } catch (error) {
+    console.error("创建服务提供商错误:", error)
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : "未知错误",
+      data: null,
+      timestamp: Date.now(),
+    }
+  }
+}
+
+// 更新服务提供商
+export async function updateProvider(data: any): Promise<ApiResponse<any>> {
+  try {
+    console.log('Updating provider:', data)
+    
+    const response = await httpClient.put<ApiResponse<any>>(API_ENDPOINTS.UPDATE_PROVIDER, data);
+    
+    return response;
+  } catch (error) {
+    console.error("更新服务提供商错误:", error)
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : "未知错误",
+      data: null,
+      timestamp: Date.now(),
+    }
+  }
+}
+
+// 删除服务提供商
+export async function deleteProvider(providerId: string): Promise<ApiResponse<null>> {
+  try {
+    console.log(`Deleting provider: ${providerId}`)
+    
+    const response = await httpClient.delete<ApiResponse<null>>(API_ENDPOINTS.DELETE_PROVIDER(providerId));
+    
+    return response;
+  } catch (error) {
+    console.error("删除服务提供商错误:", error)
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : "未知错误",
+      data: null,
+      timestamp: Date.now(),
+    }
+  }
+}
+
+// 切换服务提供商状态
+export async function toggleProviderStatus(providerId: string): Promise<ApiResponse<null>> {
+  try {
+    console.log(`Toggling provider status: ${providerId}`)
+    
+    const response = await httpClient.post<ApiResponse<null>>(API_ENDPOINTS.TOGGLE_PROVIDER_STATUS(providerId));
+    
+    return response;
+  } catch (error) {
+    console.error("切换服务提供商状态错误:", error)
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : "未知错误",
+      data: null,
+      timestamp: Date.now(),
+    }
+  }
+}
+
 export const getProvidersWithToast = withToast(getProviders, {
   showSuccessToast: false,
   showErrorToast: true,
   errorTitle: "获取服务提供商列表失败"
+})
+
+export const getProviderDetailWithToast = withToast(getProviderDetail, {
+  showSuccessToast: false,
+  showErrorToast: true,
+  errorTitle: "获取服务提供商详情失败"
+})
+
+export const getProviderProtocolsWithToast = withToast(getProviderProtocols, {
+  showSuccessToast: false,
+  showErrorToast: true,
+  errorTitle: "获取服务提供商协议列表失败"
+})
+
+export const createProviderWithToast = withToast(createProvider, {
+  showSuccessToast: true,
+  showErrorToast: true,
+  successTitle: "创建服务提供商成功",
+  errorTitle: "创建服务提供商失败"
+})
+
+export const updateProviderWithToast = withToast(updateProvider, {
+  showSuccessToast: true,
+  showErrorToast: true,
+  successTitle: "更新服务提供商成功",
+  errorTitle: "更新服务提供商失败"
+})
+
+export const deleteProviderWithToast = withToast(deleteProvider, {
+  showSuccessToast: true,
+  showErrorToast: true,
+  successTitle: "删除服务提供商成功",
+  errorTitle: "删除服务提供商失败"
+})
+
+export const toggleProviderStatusWithToast = withToast(toggleProviderStatus, {
+  showSuccessToast: true,
+  showErrorToast: true,
+  successTitle: "切换服务提供商状态成功",
+  errorTitle: "切换服务提供商状态失败"
+})
+
+// 模型管理相关API函数
+
+// 获取模型列表
+export async function getModels(type?: string): Promise<ApiResponse<any[]>> {
+  try {
+    console.log(`Fetching models, type: ${type || 'user'}`)
+    
+    // type参数可能值: all-所有，official-官方，user-用户的（默认）
+    const params = type ? { type } : undefined;
+    const response = await httpClient.get<ApiResponse<any[]>>('/llm/models', { params });
+    
+    return response;
+  } catch (error) {
+    console.error("获取模型列表错误:", error)
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : "未知错误",
+      data: [],
+      timestamp: Date.now(),
+    }
+  }
+}
+
+export const getModelsWithToast = withToast(getModels, {
+  showSuccessToast: false,
+  showErrorToast: true,
+  errorTitle: "获取模型列表失败"
+})
+
+// 设置agent的模型
+export async function setAgentModel(agentId: string, modelId: string): Promise<ApiResponse<null>> {
+  try {
+    console.log(`Setting model ${modelId} for agent ${agentId}`)
+    
+    const response = await httpClient.put<ApiResponse<null>>(API_ENDPOINTS.SET_AGENT_MODEL(agentId, modelId));
+    
+    return response;
+  } catch (error) {
+    console.error("设置agent模型错误:", error)
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : "未知错误",
+      data: null,
+      timestamp: Date.now(),
+    }
+  }
+}
+
+export const setAgentModelWithToast = withToast(setAgentModel, {
+  showSuccessToast: true,
+  showErrorToast: true,
+  successTitle: "设置模型成功",
+  errorTitle: "设置模型失败"
+})
+
+// 创建模型
+export async function createModel(data: any): Promise<ApiResponse<any>> {
+  try {
+    console.log('Creating model:', data)
+    
+    const response = await httpClient.post<ApiResponse<any>>(API_ENDPOINTS.CREATE_MODEL, data);
+    
+    return response;
+  } catch (error) {
+    console.error("创建模型错误:", error)
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : "未知错误",
+      data: null,
+      timestamp: Date.now(),
+    }
+  }
+}
+
+// 更新模型
+export async function updateModel(data: any): Promise<ApiResponse<any>> {
+  try {
+    console.log('Updating model:', data)
+    
+    const response = await httpClient.put<ApiResponse<any>>(API_ENDPOINTS.UPDATE_MODEL, data);
+    
+    return response;
+  } catch (error) {
+    console.error("更新模型错误:", error)
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : "未知错误",
+      data: null,
+      timestamp: Date.now(),
+    }
+  }
+}
+
+// 删除模型
+export async function deleteModel(modelId: string): Promise<ApiResponse<null>> {
+  try {
+    console.log(`Deleting model: ${modelId}`)
+    
+    const response = await httpClient.delete<ApiResponse<null>>(API_ENDPOINTS.DELETE_MODEL(modelId));
+    
+    return response;
+  } catch (error) {
+    console.error("删除模型错误:", error)
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : "未知错误",
+      data: null,
+      timestamp: Date.now(),
+    }
+  }
+}
+
+// 切换模型状态
+export async function toggleModelStatus(modelId: string): Promise<ApiResponse<null>> {
+  try {
+    console.log(`Toggling model status: ${modelId}`)
+    
+    const response = await httpClient.put<ApiResponse<null>>(API_ENDPOINTS.TOGGLE_MODEL_STATUS(modelId));
+    
+    return response;
+  } catch (error) {
+    console.error("切换模型状态错误:", error)
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : "未知错误",
+      data: null,
+      timestamp: Date.now(),
+    }
+  }
+}
+
+export const createModelWithToast = withToast(createModel, {
+  showSuccessToast: true,
+  showErrorToast: true,
+  successTitle: "创建模型成功",
+  errorTitle: "创建模型失败"
+})
+
+export const updateModelWithToast = withToast(updateModel, {
+  showSuccessToast: true,
+  showErrorToast: true,
+  successTitle: "更新模型成功",
+  errorTitle: "更新模型失败"
+})
+
+export const deleteModelWithToast = withToast(deleteModel, {
+  showSuccessToast: true,
+  showErrorToast: true,
+  successTitle: "删除模型成功",
+  errorTitle: "删除模型失败"
+})
+
+export const toggleModelStatusWithToast = withToast(toggleModelStatus, {
+  showSuccessToast: true,
+  showErrorToast: true,
+  successTitle: "切换模型状态成功",
+  errorTitle: "切换模型状态失败"
+})
+
+// 获取模型类型列表
+export async function getModelTypes(): Promise<ApiResponse<string[]>> {
+  try {
+    console.log('Fetching model types')
+    
+    const response = await httpClient.get<ApiResponse<string[]>>(API_ENDPOINTS.MODEL_TYPES);
+    
+    return response;
+  } catch (error) {
+    console.error("获取模型类型列表错误:", error)
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : "未知错误",
+      data: [],
+      timestamp: Date.now(),
+    }
+  }
+}
+
+export const getModelTypesWithToast = withToast(getModelTypes, {
+  showSuccessToast: false,
+  showErrorToast: true,
+  errorTitle: "获取模型类型列表失败"
 })

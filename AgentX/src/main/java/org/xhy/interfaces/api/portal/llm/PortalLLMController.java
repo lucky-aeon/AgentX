@@ -1,6 +1,7 @@
 package org.xhy.interfaces.api.portal.llm;
 
 
+import java.util.Arrays;
 import java.util.List;
 
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.xhy.application.llm.dto.ModelDTO;
 import org.xhy.application.llm.dto.ProviderDTO;
 import org.xhy.application.llm.service.LLMAppService;
+import org.xhy.domain.llm.model.enums.ModelType;
 import org.xhy.domain.llm.model.enums.ProviderProtocol;
 import org.xhy.domain.llm.model.enums.ProviderType;
 import org.xhy.infrastructure.auth.UserContext;
@@ -109,7 +111,7 @@ public class PortalLLMController {
     /**
      * 获取服务提供商列表
      */
-    @GetMapping("/providers/code")
+    @GetMapping("/providers/protocols")
     public Result<List<ProviderProtocol>> getProviders() {
         return Result.success(llmAppService.getUserProviderProtocols());
     }
@@ -155,5 +157,28 @@ public class PortalLLMController {
         llmAppService.updateModelStatus(modelId, userId);
         return Result.success();
     }
-    
+
+    /**
+     * 获取模型类型
+     * @return
+     */
+    @GetMapping("/models/types")
+    public Result<List<ModelType>> getModelTypes() {
+        return Result.success(Arrays.asList(ModelType.values()));
+    }
+
+
+    /**
+     * 获取所有模型
+     * @param type 服务商类型：all-所有，official-官方，user-用户的（默认）
+     * @return 模型列表
+     */
+    @GetMapping("/models")
+    public Result<List<ModelDTO>> getModels(
+            @RequestParam(required = false, defaultValue = "all") String type) {
+
+        ProviderType providerType = ProviderType.fromCode(type);
+        String userId = UserContext.getCurrentUserId();
+        return Result.success(llmAppService.getModelsByType(providerType, userId));
+    }
 }

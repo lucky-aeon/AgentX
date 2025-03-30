@@ -5,19 +5,17 @@ package org.xhy.application.conversation.dto;
  * 聊天请求DTO
  */
 public class ChatRequest {
-    
+
+    /**
+     * 消息内容
+     */
     private String message;
     
     /**
      * 会话ID，可选
      */
     private String sessionId;
-    
-    /**
-     * 使用的服务商，可选
-     */
-    private String provider;
-    
+
     /**
      * 使用的模型，可选
      */
@@ -37,14 +35,6 @@ public class ChatRequest {
     
     public void setSessionId(String sessionId) {
         this.sessionId = sessionId;
-    }
-    
-    public String getProvider() {
-        return provider;
-    }
-    
-    public void setProvider(String provider) {
-        this.provider = provider;
     }
     
     public String getModel() {

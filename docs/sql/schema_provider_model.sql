@@ -37,6 +37,7 @@ CREATE TABLE IF NOT EXISTS models (
     name VARCHAR(100) NOT NULL,
     description TEXT,
     type VARCHAR(20) NOT NULL,
+    is_official BOOLEAN NOT NULL DEFAULT FALSE,
     config JSONB,
     status BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -51,6 +52,7 @@ COMMENT ON COLUMN models.user_id IS '用户ID，官方模型为NULL';
 COMMENT ON COLUMN models.provider_id IS '服务商ID';
 COMMENT ON COLUMN models.model_id IS '模型id，例如：gpt-4、claude-3';
 COMMENT ON COLUMN models.name IS '模型名称';
+COMMENT ON COLUMN models.is_official IS '是否官方服务商';
 COMMENT ON COLUMN models.description IS '模型描述';
 COMMENT ON COLUMN models.type IS '模型类型：CHAT-对话模型，EMBEDDING-嵌入模型';
 COMMENT ON COLUMN models.config IS '模型配置参数，包含：max_context_length-最大上下文长度, temperature-温度等';

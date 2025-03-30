@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.activerecord.Model;
 import org.springframework.transaction.annotation.Transactional;
 import org.xhy.domain.llm.model.ModelEntity;
 import org.xhy.domain.llm.model.ProviderAggregate;
@@ -180,13 +181,7 @@ public class LlmDomainService {
         if (provider == null) {
             throw new BusinessException("服务商不存在");
         }
-        // 解密
-        ProviderConfig config = provider.getConfig();
-        if (config != null) {
-            String decryptedConfig = EncryptUtils.decrypt(config.getApiKey());
-            config.setApiKey(decryptedConfig);
-            provider.setConfig(config);
-        }
+        // 配置在 getConfig() 中已经自动解密，无需再次处理
         return provider;
     }
 
@@ -373,5 +368,13 @@ public class LlmDomainService {
         if(providerRepository.update(null, updateWrapper) == 0){
             throw new BusinessException("修改失败");
         }
+    }
+
+    public ModelEntity getModelById(String modelId) {
+        ModelEntity modelEntity = modelRepository.selectById(modelId);
+        if (modelEntity == null){
+            throw new BusinessException("模型不存在");
+        }
+        return modelEntity;
     }
 }

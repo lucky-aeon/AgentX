@@ -16,6 +16,7 @@ import org.xhy.interfaces.dto.llm.ModelUpdateRequest;
 import org.xhy.interfaces.dto.llm.ProviderCreateRequest;
 import org.xhy.interfaces.dto.llm.ProviderUpdateRequest;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -138,6 +139,8 @@ public class LLMAppService {
      */
     public ModelDTO createModel(ModelCreateRequest modelCreateRequest, String userId) {
         ModelEntity model = ModelAssembler.toEntity(modelCreateRequest, userId);
+        // 用户创建默认是非官方
+        model.setOfficial(false);
         llmDomainService.checkProviderExists(modelCreateRequest.getProviderId(),userId);
         llmDomainService.createModel(model);
         return ModelAssembler.toDTO(model);
@@ -194,5 +197,18 @@ public class LLMAppService {
      */
     public void updateProviderStatus(String providerId, String userId) {
         llmDomainService.updateProviderStatus(providerId,userId);
+    }
+
+    /**
+     * 获取所有模型
+     * @param providerType 类型
+     * @param userId 用户id
+     * @return
+     */
+    public List<ModelDTO> getModelsByType(ProviderType providerType, String userId) {
+        return llmDomainService.getProvidersByType(providerType, userId).stream()
+                .map(ProviderAssembler::toDTO)
+                .flatMap(providerDTO -> providerDTO.getModels().stream())
+                .collect(Collectors.toList());
     }
 }

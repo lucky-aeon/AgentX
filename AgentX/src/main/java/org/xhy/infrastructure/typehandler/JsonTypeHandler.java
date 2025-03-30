@@ -1,20 +1,15 @@
 package org.xhy.infrastructure.typehandler;
 
-import com.alibaba.fastjson.JSON;
 import org.apache.ibatis.type.BaseTypeHandler;
 import org.apache.ibatis.type.JdbcType;
 import org.apache.ibatis.type.MappedJdbcTypes;
 import org.apache.ibatis.type.MappedTypes;
-import org.xhy.domain.agent.model.AgentModelConfig;
-import org.xhy.domain.agent.model.AgentTool;
-import org.xhy.infrastructure.exception.ParamValidationException;
-import org.postgresql.util.PGobject;
+import org.xhy.infrastructure.util.JsonUtils;
 
 import java.sql.CallableStatement;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.List;
 
 /**
  * 自定义JSON类型处理器
@@ -22,71 +17,44 @@ import java.util.List;
  * 
  * @param <T> 要处理的Java类型
  */
-@MappedJdbcTypes(JdbcType.OTHER)
-@MappedTypes({ Object.class, List.class, AgentModelConfig.class, AgentTool.class })
+@MappedJdbcTypes({JdbcType.VARCHAR, JdbcType.OTHER})
+@MappedTypes({ Object.class})
 public class JsonTypeHandler<T> extends BaseTypeHandler<T> {
 
-    private final Class<T> clazz;
-    private final boolean isList;
-    private final Class<?> itemClazz;
+    private final Class<T> type;
 
-    public JsonTypeHandler(Class<T> clazz) {
-        this(clazz, false, null);
-    }
-
-    public JsonTypeHandler(Class<T> clazz, boolean isList, Class<?> itemClazz) {
-        if (clazz == null) {
-            throw new ParamValidationException("clazz", "Type argument cannot be null");
-        }
-        this.clazz = clazz;
-        this.isList = isList;
-        this.itemClazz = itemClazz;
-    }
-
-    /**
-     * 默认构造函数
-     */
-    public JsonTypeHandler() {
-        this.clazz = (Class<T>) Object.class;
-        this.isList = false;
-        this.itemClazz = null;
+    public JsonTypeHandler(Class<T> type) {
+        this.type = type;
     }
 
     @Override
     public void setNonNullParameter(PreparedStatement ps, int i, T parameter, JdbcType jdbcType) throws SQLException {
-        PGobject jsonObject = new PGobject();
-        jsonObject.setType("json");
-        jsonObject.setValue(parameter instanceof String ? (String) parameter : JSON.toJSONString(parameter));
-        ps.setObject(i, jsonObject);
+        String json = JsonUtils.toJsonString(parameter);
+        ps.setString(i, json);
     }
 
     @Override
     public T getNullableResult(ResultSet rs, String columnName) throws SQLException {
-        String jsonString = rs.getString(columnName);
-        return parseJson(jsonString);
+        String json = rs.getString(columnName);
+        return parseJson(json);
     }
 
     @Override
     public T getNullableResult(ResultSet rs, int columnIndex) throws SQLException {
-        String jsonString = rs.getString(columnIndex);
-        return parseJson(jsonString);
+        String json = rs.getString(columnIndex);
+        return parseJson(json);
     }
 
     @Override
     public T getNullableResult(CallableStatement cs, int columnIndex) throws SQLException {
-        String jsonString = cs.getString(columnIndex);
-        return parseJson(jsonString);
+        String json = cs.getString(columnIndex);
+        return parseJson(json);
     }
 
-    private T parseJson(String jsonString) {
-        if (jsonString == null) {
+    private T parseJson(String json) throws SQLException {
+        if (json == null || json.isEmpty()) {
             return null;
         }
-        
-        try {
-            return JSON.parseObject(jsonString, clazz);
-        } catch (Exception e) {
-            throw new RuntimeException("Error parsing JSON string: " + jsonString, e);
-        }
+        return JsonUtils.parseObject(json,type);
     }
 }

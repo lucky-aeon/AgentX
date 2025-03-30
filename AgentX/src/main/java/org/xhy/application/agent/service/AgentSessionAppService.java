@@ -46,8 +46,8 @@ public class AgentSessionAppService {
     public List<SessionDTO> getAgentSessionList(String userId, String agentId) {
 
         // 校验该 agent 是否被添加了工作区，判断条件：是否是自己的助理 or 在工作区中
-        boolean b = agentServiceDomainService.checkAgentExist(agentId, userId);
-        boolean b1 = agentWorkspaceDomainService.checkAgentWorkspaceExist(agentId, userId);
+        boolean b = agentServiceDomainService.exist(agentId, userId);
+        boolean b1 = agentWorkspaceDomainService.exist(agentId, userId);
 
         if (!b && !b1){
             throw new BusinessException("助理不存在");
