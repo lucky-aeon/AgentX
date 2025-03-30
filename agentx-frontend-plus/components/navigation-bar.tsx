@@ -154,6 +154,12 @@ export function NavigationBar() {
                     API 密钥管理
                   </Link>
                 </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/settings/providers">
+                    <Settings className="mr-2 h-4 w-4" />
+                    服务提供商
+                  </Link>
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem>退出登录</DropdownMenuItem>
               </DropdownMenuContent>

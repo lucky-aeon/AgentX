@@ -1,9 +1,9 @@
 package org.xhy.interfaces.dto.agent;
 
+import jakarta.validation.constraints.NotBlank;
+import org.xhy.domain.agent.model.AgentModelConfig;
 import org.xhy.domain.agent.model.AgentTool;
 import org.xhy.domain.agent.constant.AgentType;
-import org.xhy.domain.agent.model.ModelConfig;
-import org.xhy.infrastructure.util.ValidationUtils;
 
 import java.util.List;
 
@@ -12,56 +12,20 @@ import java.util.List;
  */
 public class CreateAgentRequest {
 
+    @NotBlank(message = "助理名称不可为空")
     private String name;
     private String description;
     private String avatar;
     private AgentType agentType = AgentType.CHAT_ASSISTANT;
     private String systemPrompt;
     private String welcomeMessage;
-    private ModelConfig modelConfig;
+    private AgentModelConfig modelConfig;
     private List<AgentTool> tools;
     private List<String> knowledgeBaseIds;
 
     // 构造方法
     public CreateAgentRequest() {
     }
-
-    public CreateAgentRequest(String name, String description, String avatar, AgentType agentType,
-            String systemPrompt, String welcomeMessage, ModelConfig modelConfig,
-            List<AgentTool> tools, List<String> knowledgeBaseIds, String userId) {
-        this.name = name;
-        this.description = description;
-        this.avatar = avatar;
-        this.agentType = agentType;
-        this.systemPrompt = systemPrompt;
-        this.welcomeMessage = welcomeMessage;
-        this.modelConfig = modelConfig;
-        this.tools = tools;
-        this.knowledgeBaseIds = knowledgeBaseIds;
-    }
-
-    // 兼容旧构造方法
-    public CreateAgentRequest(String name, String description, String avatar, Integer agentTypeCode,
-            String systemPrompt, String welcomeMessage, ModelConfig modelConfig,
-            List<AgentTool> tools, List<String> knowledgeBaseIds, String userId) {
-        this(name, description, avatar,
-                agentTypeCode != null ? AgentType.fromCode(agentTypeCode) : AgentType.CHAT_ASSISTANT,
-                systemPrompt, welcomeMessage, modelConfig, tools, knowledgeBaseIds, userId);
-    }
-
-    /**
-     * 校验请求参数
-     */
-    public void validate() {
-        ValidationUtils.notEmpty(name, "name");
-        ValidationUtils.length(name, 1, 50, "name");
-
-        // Agent类型校验，如果不提供，默认为聊天助手
-        if (agentType == null) {
-            agentType = AgentType.CHAT_ASSISTANT;
-        }
-    }
-
     // Getter和Setter
     public String getName() {
         return name;
@@ -95,15 +59,6 @@ public class CreateAgentRequest {
         this.agentType = agentType;
     }
 
-    // 为了兼容旧代码，提供Integer getter/setter
-    public Integer getAgentTypeCode() {
-        return agentType != null ? agentType.getCode() : null;
-    }
-
-    public void setAgentTypeCode(Integer agentTypeCode) {
-        this.agentType = AgentType.fromCode(agentTypeCode);
-    }
-
     public String getSystemPrompt() {
         return systemPrompt;
     }
@@ -120,11 +75,11 @@ public class CreateAgentRequest {
         this.welcomeMessage = welcomeMessage;
     }
 
-    public ModelConfig getModelConfig() {
+    public AgentModelConfig getModelConfig() {
         return modelConfig;
     }
 
-    public void setModelConfig(ModelConfig modelConfig) {
+    public void setModelConfig(AgentModelConfig modelConfig) {
         this.modelConfig = modelConfig;
     }
 

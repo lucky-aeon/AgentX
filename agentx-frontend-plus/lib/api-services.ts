@@ -6,6 +6,8 @@ import type {
   UpdateSessionParams,
 } from "@/types/conversation"
 import { withToast } from "./toast-utils"
+import { httpClient } from "@/lib/http-client"
+import { API_CONFIG, API_ENDPOINTS } from "@/lib/api-config"
 
 // 构建查询字符串
 function buildQueryString(params: Record<string, any>): string {
@@ -227,4 +229,30 @@ export const deleteSessionWithToast = withToast(deleteSession, {
   showErrorToast: true,
   successTitle: "删除会话成功",
   errorTitle: "删除会话失败"
+})
+
+// 获取服务提供商列表
+export async function getProviders(): Promise<ApiResponse<any[]>> {
+  try {
+    console.log(`Fetching providers`)
+    
+    const response = await httpClient.get<ApiResponse<any[]>>(API_ENDPOINTS.PROVIDERS);
+    
+    return response;
+  } catch (error) {
+    console.error("获取服务提供商列表错误:", error)
+    // 返回格式化的错误响应
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : "未知错误",
+      data: [],
+      timestamp: Date.now(),
+    }
+  }
+}
+
+export const getProvidersWithToast = withToast(getProviders, {
+  showSuccessToast: false,
+  showErrorToast: true,
+  errorTitle: "获取服务提供商列表失败"
 })

@@ -1,0 +1,14 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Java开发规范
+
+1.不要使用lombok
+2.不要自行下载依赖
+3.sql使用mybatis plus 的写法
+3.涉及到数据库字段为json的需要在代码层面实体类使用对应对象进行接收
+4.使用自定义异常类进行抛出
+
+

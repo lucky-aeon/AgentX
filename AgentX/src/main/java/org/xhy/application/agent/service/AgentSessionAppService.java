@@ -1,19 +1,14 @@
 package org.xhy.application.agent.service;
 
-import java.beans.Transient;
-import java.util.Collections;
 import java.util.List;
 
-import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.xhy.domain.agent.dto.AgentDTO;
-import org.xhy.domain.agent.dto.AgentVersionDTO;
-import org.xhy.domain.agent.model.ModelConfig;
+import org.xhy.application.conversation.assembler.SessionAssembler;
+import org.xhy.domain.agent.model.AgentEntity;
 import org.xhy.domain.agent.service.AgentDomainService;
 import org.xhy.domain.agent.service.AgentWorkspaceDomainService;
-import org.xhy.domain.conversation.dto.MessageDTO;
-import org.xhy.domain.conversation.dto.SessionDTO;
+import org.xhy.application.conversation.dto.SessionDTO;
 import org.xhy.domain.conversation.model.SessionEntity;
 import org.xhy.domain.conversation.service.ConversationDomainService;
 import org.xhy.domain.conversation.service.SessionDomainService;
@@ -59,14 +54,14 @@ public class AgentSessionAppService {
         }
 
         // 获取对应的会话列表
-        List<SessionDTO> sessions = sessionDomainService.getSessionsByAgentId(agentId);
+        List<SessionEntity> sessions = sessionDomainService.getSessionsByAgentId(agentId);
         if (sessions.isEmpty()) {
             // 如果会话列表为空，则新创建一个并且返回
-            SessionDTO session = sessionDomainService.createSession(agentId, userId);
-            return Collections.singletonList(session);
+            SessionEntity session = sessionDomainService.createSession(agentId, userId);
+            sessions.add(session);
         }
+        return SessionAssembler.toDTOs(sessions);
 
-        return sessions;
     }
 
     /**
@@ -77,11 +72,11 @@ public class AgentSessionAppService {
      * @return 会话
      */
     public SessionDTO createSession(String userId, String agentId) {
-        SessionDTO session = sessionDomainService.createSession(agentId, userId);
-        AgentDTO agentDTO = agentServiceDomainService.getAgentWithPermissionCheck(agentId, userId);
-        String welcomeMessage = agentDTO.getWelcomeMessage();
+        SessionEntity session = sessionDomainService.createSession(agentId, userId);
+        AgentEntity agent = agentServiceDomainService.getAgentWithPermissionCheck(agentId, userId);
+        String welcomeMessage = agent.getWelcomeMessage();
         conversationDomainService.saveAssistantMessage(session.getId(),welcomeMessage,"","",0);
-        return session;
+        return SessionAssembler.toDTO(session);
     }
 
 

@@ -1,7 +1,7 @@
 package org.xhy.application.conversation.assembler;
 
 import org.xhy.domain.conversation.model.MessageEntity;
-import org.xhy.domain.conversation.dto.MessageDTO;
+import org.xhy.application.conversation.dto.MessageDTO;
 
 import java.util.Collections;
 import java.util.List;
@@ -38,7 +38,7 @@ public class MessageAssembler {
      * @param messages 消息实体列表
      * @return 消息DTO列表
      */
-    public static List<MessageDTO> toDTOList(List<MessageEntity> messages) {
+    public static List<MessageDTO> toDTOs(List<MessageEntity> messages) {
         if (messages == null) {
             return Collections.emptyList();
         }

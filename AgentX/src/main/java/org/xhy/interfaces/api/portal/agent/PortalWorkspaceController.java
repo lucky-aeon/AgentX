@@ -2,14 +2,14 @@ package org.xhy.interfaces.api.portal.agent;
 
 import org.springframework.web.bind.annotation.*;
 import org.xhy.application.agent.service.AgentWorkspaceAppService;
-import org.xhy.domain.agent.dto.AgentDTO;
+import org.xhy.application.agent.dto.AgentDTO;
 import org.xhy.infrastructure.auth.UserContext;
 import org.xhy.interfaces.api.common.Result;
 
 import java.util.List;
 
 /**
- * Agent会话关联接口
+ * Agent工作区
  */
 @RestController
 @RequestMapping("/agent/workspace")

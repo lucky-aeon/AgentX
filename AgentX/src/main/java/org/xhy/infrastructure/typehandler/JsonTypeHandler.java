@@ -5,9 +5,8 @@ import org.apache.ibatis.type.BaseTypeHandler;
 import org.apache.ibatis.type.JdbcType;
 import org.apache.ibatis.type.MappedJdbcTypes;
 import org.apache.ibatis.type.MappedTypes;
+import org.xhy.domain.agent.model.AgentModelConfig;
 import org.xhy.domain.agent.model.AgentTool;
-import org.xhy.domain.agent.model.ModelConfig;
-import org.xhy.infrastructure.util.JsonUtils;
 import org.xhy.infrastructure.exception.ParamValidationException;
 import org.postgresql.util.PGobject;
 
@@ -24,7 +23,7 @@ import java.util.List;
  * @param <T> 要处理的Java类型
  */
 @MappedJdbcTypes(JdbcType.OTHER)
-@MappedTypes({ Object.class, List.class, ModelConfig.class, AgentTool.class })
+@MappedTypes({ Object.class, List.class, AgentModelConfig.class, AgentTool.class })
 public class JsonTypeHandler<T> extends BaseTypeHandler<T> {
 
     private final Class<T> clazz;

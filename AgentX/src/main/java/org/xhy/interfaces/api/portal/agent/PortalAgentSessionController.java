@@ -3,10 +3,9 @@ package org.xhy.interfaces.api.portal.agent;
 import org.springframework.web.bind.annotation.*;
 import org.xhy.application.agent.service.AgentSessionAppService;
 import org.xhy.application.conversation.dto.StreamChatRequest;
-import org.xhy.application.conversation.dto.StreamChatResponse;
 import org.xhy.application.conversation.service.ConversationAppService;
-import org.xhy.domain.conversation.dto.MessageDTO;
-import org.xhy.domain.conversation.dto.SessionDTO;
+import org.xhy.application.conversation.dto.MessageDTO;
+import org.xhy.application.conversation.dto.SessionDTO;
 import org.xhy.infrastructure.auth.UserContext;
 import org.xhy.interfaces.api.common.Result;
 import org.xhy.interfaces.dto.conversation.ConversationRequest;
@@ -19,6 +18,9 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+/**
+ * Agent会话管理
+ */
 @RestController
 @RequestMapping("/agent/session")
 public class PortalAgentSessionController {

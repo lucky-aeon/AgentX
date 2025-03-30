@@ -1,7 +1,8 @@
 package org.xhy.interfaces.dto.agent;
 
+import jakarta.validation.constraints.NotBlank;
+import org.xhy.domain.agent.model.AgentModelConfig;
 import org.xhy.domain.agent.model.AgentTool;
-import org.xhy.domain.agent.model.ModelConfig;
 import org.xhy.infrastructure.util.ValidationUtils;
 
 import java.util.List;
@@ -12,7 +13,7 @@ import java.util.List;
  */
 public class UpdateAgentRequest {
     
-    // 基本信息字段
+    @NotBlank(message = "助理名称不可为空")
     private String name;
     private String avatar;
     private String description;
@@ -21,7 +22,7 @@ public class UpdateAgentRequest {
     // 配置信息字段
     private String systemPrompt;
     private String welcomeMessage;
-    private ModelConfig modelConfig;
+    private AgentModelConfig modelConfig;
     private List<AgentTool> tools;
     private List<String> knowledgeBaseIds;
     
@@ -34,7 +35,7 @@ public class UpdateAgentRequest {
      */
     public UpdateAgentRequest(String name, String avatar, String description, 
                               String systemPrompt, String welcomeMessage, 
-                              ModelConfig modelConfig, List<AgentTool> tools, 
+                              AgentModelConfig modelConfig, List<AgentTool> tools,
                               List<String> knowledgeBaseIds) {
         this.name = name;
         this.avatar = avatar;
@@ -104,11 +105,11 @@ public class UpdateAgentRequest {
         this.welcomeMessage = welcomeMessage;
     }
     
-    public ModelConfig getModelConfig() {
+    public AgentModelConfig getModelConfig() {
         return modelConfig;
     }
     
-    public void setModelConfig(ModelConfig modelConfig) {
+    public void setModelConfig(AgentModelConfig modelConfig) {
         this.modelConfig = modelConfig;
     }
     

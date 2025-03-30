@@ -2,14 +2,15 @@ package org.xhy.application.agent.service;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.xhy.domain.agent.dto.AgentDTO;
+import org.xhy.application.agent.assembler.AgentAssembler;
+import org.xhy.application.agent.dto.AgentDTO;
+import org.xhy.domain.agent.model.AgentEntity;
 import org.xhy.domain.agent.service.AgentDomainService;
 import org.xhy.domain.agent.service.AgentWorkspaceDomainService;
-import org.xhy.domain.conversation.dto.SessionDTO;
+import org.xhy.domain.conversation.model.SessionEntity;
 import org.xhy.domain.conversation.service.ConversationDomainService;
 import org.xhy.domain.conversation.service.SessionDomainService;
 import org.xhy.infrastructure.exception.BusinessException;
-import org.xhy.interfaces.dto.agent.SearchAgentsRequest;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -45,18 +46,18 @@ public class AgentWorkspaceAppService {
      * 获取工作区下的助理
      * 
      * @param  userId 用户id
-     * @return
+     * @return AgentDTO
      */
     public List<AgentDTO> getAgents(String userId) {
         // 1.获取当前用户的所有助理
-        List<AgentDTO> userAents = agentServiceDomainService.getUserAgents(userId, new SearchAgentsRequest());
+        List<AgentEntity> userAgents = agentServiceDomainService.getUserAgents(userId, new AgentEntity());
 
         // 2.获取已添加到工作区的助理
-        List<AgentDTO> workspaceAgents = agentWorkspaceDomainService.getWorkspaceAgents(userId);
+        List<AgentEntity> workspaceAgents = agentWorkspaceDomainService.getWorkspaceAgents(userId);
 
         // 合并两个列表
-        userAents.addAll(workspaceAgents);
-        return userAents;
+        userAgents.addAll(workspaceAgents);
+        return AgentAssembler.toDTOs(userAgents);
     }
 
     /**
@@ -70,15 +71,11 @@ public class AgentWorkspaceAppService {
         if (!deleteAgent){
             throw new BusinessException("删除助理失败");
         }
-        // 查出会话列表,收集 sessionIds
-        
-        List<String> sessionIds = sessionDomainService.getSessionsByAgentId(agentId).stream().map(SessionDTO::getId).collect(Collectors.toList());
+        List<String> sessionIds = sessionDomainService.getSessionsByAgentId(agentId).stream().map(SessionEntity::getId).collect(Collectors.toList());
         if (sessionIds.isEmpty()){
             return;
         }
         sessionDomainService.deleteSessions(sessionIds);
-        // 删除agent下的会话
-        // 删除会话下的所有消息
         conversationDomainService.deleteConversationMessages(sessionIds);
     }
 }
