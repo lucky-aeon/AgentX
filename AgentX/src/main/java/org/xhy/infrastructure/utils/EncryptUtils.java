@@ -55,7 +55,7 @@ public class EncryptUtils {
             byte[] decryptedBytes = cipher.doFinal(Base64.getDecoder().decode(encryptedData));
             return new String(decryptedBytes);
         } catch (Exception e) {
-            throw new RuntimeException("解密失败", e);
+            throw new RuntimeException("解密失败:"+e.getMessage(), e);
         }
     }
 } 

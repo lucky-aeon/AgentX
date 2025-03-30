@@ -1,14 +1,25 @@
 package org.xhy.application.conversation.service;
 
+import dev.langchain4j.model.openai.OpenAiChatModel;
+import org.apache.catalina.User;
 import org.springframework.stereotype.Service;
 import org.xhy.application.conversation.assembler.MessageAssembler;
+import org.xhy.application.conversation.dto.ChatRequest;
 import org.xhy.application.conversation.dto.StreamChatRequest;
 import org.xhy.application.conversation.dto.StreamChatResponse;
 import org.xhy.application.conversation.dto.MessageDTO;
+import org.xhy.domain.agent.model.AgentEntity;
+import org.xhy.domain.agent.model.AgentVersionEntity;
+import org.xhy.domain.agent.model.AgentWorkspaceEntity;
+import org.xhy.domain.agent.service.AgentDomainService;
+import org.xhy.domain.agent.service.AgentWorkspaceDomainService;
 import org.xhy.domain.conversation.model.MessageEntity;
 import org.xhy.domain.conversation.model.SessionEntity;
 import org.xhy.domain.conversation.service.ConversationDomainService;
 import org.xhy.domain.conversation.service.SessionDomainService;
+import org.xhy.domain.llm.model.ModelEntity;
+import org.xhy.domain.llm.model.ProviderEntity;
+import org.xhy.domain.llm.service.LlmDomainService;
 import org.xhy.infrastructure.exception.BusinessException;
 
 import java.util.List;
@@ -22,12 +33,18 @@ public class ConversationAppService {
 
     private final ConversationDomainService conversationDomainService;
     private final SessionDomainService sessionDomainService;
+    private final AgentDomainService agentDomainService;
+    private final AgentWorkspaceDomainService agentWorkspaceDomainService;
+    private final LlmDomainService llmDomainService;
 
     public ConversationAppService(
             ConversationDomainService conversationDomainService,
-            SessionDomainService sessionDomainService) {
+            SessionDomainService sessionDomainService, AgentDomainService agentDomainService, AgentWorkspaceDomainService agentWorkspaceDomainService, LlmDomainService llmDomainService) {
         this.conversationDomainService = conversationDomainService;
         this.sessionDomainService = sessionDomainService;
+        this.agentDomainService = agentDomainService;
+        this.agentWorkspaceDomainService = agentWorkspaceDomainService;
+        this.llmDomainService = llmDomainService;
     }
 
     /**
@@ -74,5 +91,37 @@ public class ConversationAppService {
 
         List<MessageEntity> conversationMessages = conversationDomainService.getConversationMessages(sessionId);
         return MessageAssembler.toDTOs(conversationMessages);
+    }
+
+
+    public void chat(ChatRequest chatRequest, String userId){
+
+        // 获取会话
+        String sessionId = chatRequest.getSessionId();
+        SessionEntity session = sessionDomainService.getSession(sessionId, userId);
+        String agentId = session.getAgentId();
+
+        // 获取对应agent是否可以使用：如果 userId 不同并且是禁用，则不可对话
+        AgentEntity agent = agentDomainService.getAgentById(agentId);
+        if (!agent.getUserId().equals(userId) && !agent.getEnabled()){
+            throw new BusinessException("agent已被禁用");
+        }
+
+        // 从工作区中获取对应的模型信息
+        AgentWorkspaceEntity workspace = agentWorkspaceDomainService.getWorkspace(agentId, userId);
+        String modelId = workspace.getModelId();
+        ModelEntity model = llmDomainService.getModelById(modelId);
+
+        model.isActive();
+
+        // 获取服务商信息
+        ProviderEntity provider = llmDomainService.getProvider(model.getProviderId(), userId);
+        provider.isActive();
+
+        // 对话
+
+    }
+
+    private void chatStream(){
     }
 }

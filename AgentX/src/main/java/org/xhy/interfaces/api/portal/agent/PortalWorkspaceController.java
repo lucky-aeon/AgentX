@@ -45,4 +45,16 @@ public class PortalWorkspaceController {
         return Result.success();
     }
 
+    /**
+     * 设置agent的模型
+     * @param modelId 模型id
+     * @param agentId agentId
+     * @return
+     */
+    @PutMapping("/{agentId}/model/{modelId}")
+    public Result<Void> saveModelId(@PathVariable String modelId,@PathVariable String agentId){
+        String userId = UserContext.getCurrentUserId();
+        agentWorkspaceAppService.saveModel(agentId,userId,modelId);
+        return Result.success();
+    }
 }

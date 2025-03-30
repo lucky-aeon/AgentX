@@ -36,6 +36,7 @@ public class ModelAssembler {
         dto.setStatus(model.getStatus());
         dto.setCreatedAt(model.getCreatedAt());
         dto.setUpdatedAt(model.getUpdatedAt());
+        dto.setIsOfficial(model.getOfficial());
         return dto;
     }
     

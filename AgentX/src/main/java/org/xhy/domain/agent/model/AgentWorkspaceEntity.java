@@ -33,33 +33,16 @@ public class AgentWorkspaceEntity {
     private String userId;
 
     /**
+     * 模型id
+     */
+    @TableField("model_id")
+    private String modelId;
+
+    /**
      * 创建时间
      */
     @TableField("created_at")
     private LocalDateTime createdAt;
-
-    /**
-     * 默认构造函数
-     */
-    public AgentWorkspaceEntity() {
-    }
-
-    /**
-     * 带参数的构造函数
-     *
-     * @param id        主键ID
-     * @param agentId   Agent ID
-     * @param userId    用户ID
-     * @param createdAt 创建时间
-     */
-    public AgentWorkspaceEntity(String id, String agentId, String userId, LocalDateTime createdAt) {
-        this.id = id;
-        this.agentId = agentId;
-        this.userId = userId;
-        this.createdAt = createdAt;
-    }
-
-    // Getter 和 Setter 方法
 
     public String getId() {
         return id;
@@ -91,5 +74,13 @@ public class AgentWorkspaceEntity {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public String getModelId() {
+        return modelId;
+    }
+
+    public void setModelId(String modelId) {
+        this.modelId = modelId;
     }
 }

@@ -1,9 +1,11 @@
 package org.xhy.domain.llm.model.config;
 
+import java.io.Serializable;
+
 /**
  * 服务商配置
  */
-public class ProviderConfig {
+public class ProviderConfig implements Serializable {
     
     private String apiKey;
     private String baseUrl;

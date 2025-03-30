@@ -93,4 +93,13 @@ public class SessionDomainService {
         sessionRepository.delete(Wrappers.<SessionEntity>lambdaQuery()
                 .in(SessionEntity::getId, sessionIds));
     }
+
+    public SessionEntity getSession(String sessionId, String userId) {
+        SessionEntity session = sessionRepository.selectOne(Wrappers.<SessionEntity>lambdaQuery()
+                .eq(SessionEntity::getId, sessionId).eq(SessionEntity::getUserId, userId));
+        if (session == null) {
+            throw new BusinessException("会话不存在");
+        }
+        return session;
+    }
 }

@@ -53,6 +53,7 @@ export function ConversationList({ workspaceId }: ConversationListProps) {
   const [renameTitle, setRenameTitle] = useState("")
   const [sessionToDelete, setSessionToDelete] = useState<string | null>(null)
   const [isDeletingSession, setIsDeletingSession] = useState(false)
+  const [searchText, setSearchText] = useState("")
 
   // 获取会话列表
   const fetchSessions = async () => {
@@ -184,40 +185,59 @@ export function ConversationList({ workspaceId }: ConversationListProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workspaceId])
 
+  // 快速创建新会话，无需对话框
+  const handleQuickCreateSession = async () => {
+    try {
+      // 直接创建新会话
+      const response = await createAgentSessionWithToast(workspaceId)
+
+      if (response.code === 200) {
+        // 使用默认标题"新会话"更新会话
+        const defaultTitle = "新会话"
+        const updateResponse = await updateAgentSessionWithToast(response.data.id, defaultTitle)
+
+        if (updateResponse.code === 200) {
+          // 重新获取会话列表
+          fetchSessions()
+          // 选中新创建的会话
+          setSelectedConversationId(response.data.id)
+        }
+      }
+    } catch (error) {
+      console.error("创建会话错误:", error)
+    }
+  }
+
   return (
     <div className="w-[320px] border-r flex flex-col h-full bg-white">
       <div className="p-4 border-b">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">会话列表</h2>
-          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-            <DialogTrigger asChild>
-              <Button size="icon" variant="ghost">
-                <Plus className="h-4 w-4" />
-                <span className="sr-only">新建会话</span>
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>新建会话</DialogTitle>
-                <DialogDescription>创建一个新的会话。</DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="title">会话标题</Label>
-                  <Input
-                    id="title"
-                    placeholder="输入会话标题..."
-                    value={newSessionTitle}
-                    onChange={(e) => setNewSessionTitle(e.target.value)}
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button onClick={() => setIsCreateDialogOpen(false)} variant="outline">取消</Button>
-                <Button onClick={handleCreateSession}>创建</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <Button size="icon" variant="ghost" onClick={() => handleQuickCreateSession()}>
+            <Plus className="h-4 w-4" />
+            <span className="sr-only">新建会话</span>
+          </Button>
+        </div>
+        <div className="relative">
+          <Input
+            placeholder="搜索会话..."
+            className="pl-8"
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+          />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground"
+          >
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
         </div>
       </div>
       <ScrollArea className="flex-1">
