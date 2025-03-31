@@ -1,5 +1,6 @@
 package org.xhy.application.conversation.dto;
 
+import org.xhy.domain.conversation.constant.Role;
 import org.xhy.domain.conversation.model.MessageEntity;
 
 import java.time.LocalDateTime;
@@ -15,7 +16,7 @@ public class MessageDTO {
     /**
      * 消息角色
      */
-    private String role;
+    private Role role;
     /**
      * 消息内容
      */
@@ -39,18 +40,6 @@ public class MessageDTO {
     public MessageDTO() {
     }
 
-    /**
-     * 全参构造函数
-     */
-    public MessageDTO(String id, String role, String content, LocalDateTime createdAt,
-            String provider, String model) {
-        this.id = id;
-        this.role = role;
-        this.content = content;
-        this.createdAt = createdAt;
-        this.provider = provider;
-        this.model = model;
-    }
 
     // Getter和Setter方法
     public String getId() {
@@ -61,11 +50,11 @@ public class MessageDTO {
         this.id = id;
     }
 
-    public String getRole() {
+    public Role getRole() {
         return role;
     }
 
-    public void setRole(String role) {
+    public void setRole(Role role) {
         this.role = role;
     }
 

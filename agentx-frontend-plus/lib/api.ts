@@ -3,8 +3,8 @@ export async function streamChat(message: string, sessionId?: string) {
     throw new Error("Session ID is required")
   }
 
-  // 构建完整的API URL
-  const url = new URL(`/api/proxy/agent/session/${sessionId}/message`, window.location.origin)
+  // 构建完整的API URL - 通过本地Next.js API路由代理请求
+  const url = new URL(`/api/agent/session/chat`, window.location.origin)
 
   // 发送请求
   try {
@@ -15,7 +15,10 @@ export async function streamChat(message: string, sessionId?: string) {
         "Content-Type": "application/json",
         Accept: "*/*",
       },
-      body: JSON.stringify({ message }),
+      body: JSON.stringify({ 
+        message, 
+        sessionId  // 将sessionId作为请求体的一部分发送
+      }),
     })
 
     if (!response.ok) {

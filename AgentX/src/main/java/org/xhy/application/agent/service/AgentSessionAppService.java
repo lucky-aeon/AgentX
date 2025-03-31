@@ -9,6 +9,8 @@ import org.xhy.domain.agent.model.AgentEntity;
 import org.xhy.domain.agent.service.AgentDomainService;
 import org.xhy.domain.agent.service.AgentWorkspaceDomainService;
 import org.xhy.application.conversation.dto.SessionDTO;
+import org.xhy.domain.conversation.constant.Role;
+import org.xhy.domain.conversation.model.MessageEntity;
 import org.xhy.domain.conversation.model.SessionEntity;
 import org.xhy.domain.conversation.service.ConversationDomainService;
 import org.xhy.domain.conversation.service.SessionDomainService;
@@ -75,7 +77,11 @@ public class AgentSessionAppService {
         SessionEntity session = sessionDomainService.createSession(agentId, userId);
         AgentEntity agent = agentServiceDomainService.getAgentWithPermissionCheck(agentId, userId);
         String welcomeMessage = agent.getWelcomeMessage();
-        conversationDomainService.saveAssistantMessage(session.getId(),welcomeMessage,"","",0);
+        MessageEntity messageEntity = new MessageEntity();
+        messageEntity.setRole(Role.SYSTEM);
+        messageEntity.setContent(welcomeMessage);
+        messageEntity.setSessionId(session.getId());
+        conversationDomainService.saveMessage(messageEntity);
         return SessionAssembler.toDTO(session);
     }
 

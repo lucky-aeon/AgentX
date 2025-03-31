@@ -418,9 +418,10 @@ export const toggleProviderStatusWithToast = withToast(toggleProviderStatus, {
 // 获取模型列表
 export async function getModels(type?: string): Promise<ApiResponse<any[]>> {
   try {
-    console.log(`Fetching models, type: ${type || 'user'}`)
+    console.log(`Fetching models, type: ${type || 'all'}`)
     
-    // type参数可能值: all-所有，official-官方，user-用户的（默认）
+    // type参数值: all-所有(默认)，official-官方，custom-用户自定义
+    // 注意: 不支持通过此参数过滤模型类型如"CHAT"，需要在前端过滤
     const params = type ? { type } : undefined;
     const response = await httpClient.get<ApiResponse<any[]>>('/llm/models', { params });
     
@@ -595,4 +596,78 @@ export const getModelTypesWithToast = withToast(getModelTypes, {
   showSuccessToast: false,
   showErrorToast: true,
   errorTitle: "获取模型类型列表失败"
+})
+
+// 获取Agent当前设置的模型ID
+export async function getAgentModel(agentId: string): Promise<ApiResponse<{ modelId: string }>> {
+  try {
+    console.log(`Fetching model for agent: ${agentId}`)
+    
+    const response = await httpClient.get<ApiResponse<{ modelId: string }>>(`/agent/workspace/${agentId}/model`);
+    
+    return response;
+  } catch (error) {
+    console.error("获取Agent模型错误:", error)
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : "未知错误",
+      data: { modelId: '' },
+      timestamp: Date.now(),
+    }
+  }
+}
+
+export const getAgentModelWithToast = withToast(getAgentModel, {
+  showSuccessToast: false,
+  showErrorToast: true,
+  errorTitle: "获取Agent模型失败"
+})
+
+// 从工作区移除Agent
+export async function removeAgentFromWorkspace(agentId: string): Promise<ApiResponse<void>> {
+  try {
+    console.log(`Removing agent ${agentId} from workspace`)
+    
+    const response = await httpClient.delete<ApiResponse<void>>(`/agent/workspace/${agentId}`);
+    
+    return response;
+  } catch (error) {
+    console.error("从工作区移除Agent错误:", error)
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : "未知错误",
+      data: undefined,
+      timestamp: Date.now(),
+    }
+  }
+}
+
+export const removeAgentFromWorkspaceWithToast = withToast(removeAgentFromWorkspace, {
+  successTitle: "移除成功",
+  errorTitle: "移除失败"
+})
+
+// 获取工作区Agent列表
+export async function getWorkspaceAgents(): Promise<ApiResponse<any[]>> {
+  try {
+    console.log('Fetching workspace agents')
+    
+    const response = await httpClient.get<ApiResponse<any[]>>('/agent/workspace/agents');
+    
+    return response;
+  } catch (error) {
+    console.error("获取工作区Agent列表错误:", error)
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : "未知错误",
+      data: [],
+      timestamp: Date.now(),
+    }
+  }
+}
+
+export const getWorkspaceAgentsWithToast = withToast(getWorkspaceAgents, {
+  showSuccessToast: false,
+  showErrorToast: true,
+  errorTitle: "获取工作区Agent列表失败"
 })

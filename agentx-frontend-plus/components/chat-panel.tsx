@@ -20,7 +20,7 @@ interface ChatPanelProps {
 
 interface Message {
   id: string
-  role: "user" | "assistant"
+  role: "USER" | "SYSTEM"
   content: string
 }
 
@@ -59,7 +59,7 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
           // 转换消息格式
           const formattedMessages = messagesResponse.data.map((msg: MessageDTO) => ({
             id: msg.id,
-            role: msg.role as "user" | "assistant",
+            role: msg.role as "USER" | "SYSTEM",
             content: msg.content,
           }))
           
@@ -99,7 +99,7 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
       ...prev,
       {
         id: userMessageId,
-        role: "user",
+        role: "USER",
         content: userMessage,
       },
     ])
@@ -218,16 +218,16 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
               {messages.map((message) => (
                 <div
                   key={message.id}
-                  className={`flex ${message.role === "user" ? "justify-end" : "justify-start"} mb-3`}
+                  className={`flex ${message.role === "USER" ? "justify-end" : "justify-start"} mb-3`}
                 >
-                  {message.role === "assistant" && (
+                  {message.role !== "USER" && (
                     <div className="mr-2 h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm shadow-sm flex-shrink-0">
                       A
                     </div>
                   )}
                   <div
                     className={`rounded-2xl px-3.5 py-2.5 ${
-                      message.role === "user"
+                      message.role === "USER"
                         ? "bg-blue-500 text-white shadow-sm"
                         : "bg-gray-100 border border-gray-200 shadow-sm"
                     }`}
@@ -241,7 +241,7 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
                     {message.content ? (
                       <div 
                         className={`prose prose-sm max-w-none break-words overflow-hidden ${
-                          message.role === "user" 
+                          message.role === "USER" 
                             ? "prose-invert" 
                             : "prose-headings:text-gray-800"
                         }`} 
@@ -257,7 +257,7 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
                               return !inline ? (
                                 <div className="overflow-x-auto my-3 rounded-lg" style={{ maxWidth: '100%' }}>
                                   <Highlight
-                                    theme={message.role === "user" ? themes.vsLight : themes.github}
+                                    theme={message.role === "USER" ? themes.vsLight : themes.github}
                                     code={String(children).replace(/\n$/, '')}
                                     language={language || 'text'}
                                   >
@@ -269,7 +269,7 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
                                         maxWidth: '100%',
                                         whiteSpace: 'pre-wrap',
                                         wordBreak: 'break-word',
-                                        backgroundColor: message.role === "user" ? 'rgba(59, 130, 246, 0.15)' : 'rgba(0, 0, 0, 0.04)'
+                                        backgroundColor: message.role === "USER" ? 'rgba(59, 130, 246, 0.15)' : 'rgba(0, 0, 0, 0.04)'
                                       }}>
                                         {tokens.map((line, i) => (
                                           <div key={i} {...getLineProps({line})} style={{ overflowWrap: 'break-word', wordBreak: 'break-all' }}>
@@ -283,7 +283,7 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
                                   </Highlight>
                                 </div>
                               ) : (
-                                <code className={`${message.role === "user" ? "bg-blue-400/30" : "bg-gray-200"} px-1.5 py-0.5 rounded-md text-sm font-mono`} {...props}>
+                                <code className={`${message.role === "USER" ? "bg-blue-400/30" : "bg-gray-200"} px-1.5 py-0.5 rounded-md text-sm font-mono`} {...props}>
                                   {children}
                                 </code>
                               )
@@ -318,7 +318,7 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
                         </ReactMarkdown>
                       </div>
                     ) : (
-                      message.role === "assistant" && isTyping ? (
+                      message.role === "SYSTEM" && isTyping ? (
                         <div className="flex space-x-2">
                           <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" />
                           <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce delay-100" />
@@ -327,7 +327,7 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
                       ) : null
                     )}
                   </div>
-                  {message.role === "user" && (
+                  {message.role === "USER" && (
                     <div className="ml-2 h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm shadow-sm flex-shrink-0">
                       U
                     </div>

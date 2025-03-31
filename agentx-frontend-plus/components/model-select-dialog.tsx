@@ -11,10 +11,10 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { Badge } from "@/components/ui/badge"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Label } from "@/components/ui/label"
-import { getModels, setAgentModelWithToast } from "@/lib/api-services"
-import { Loader2, Check } from "lucide-react"
+import { getModels, setAgentModelWithToast, getAgentModel } from "@/lib/api-services"
+import { Loader2, CheckCircle, Settings, ZapIcon } from "lucide-react"
 
 interface Model {
   id: string;
@@ -54,28 +54,40 @@ export function ModelSelectDialog({
   const [selectedModelId, setSelectedModelId] = useState<string | null>(currentModelId || null);
   const [saving, setSaving] = useState(false);
 
-  // 加载模型列表
+  // 加载当前Agent的模型ID和模型列表
   useEffect(() => {
-    async function loadModels() {
+    async function loadData() {
       setLoading(true);
       try {
-        const response = await getModels("CHAT");
-        if (response.code === 200 && Array.isArray(response.data)) {
-          // 过滤出已启用的模型
-          const enabledModels = response.data.filter(model => model.status);
-          setModels(enabledModels);
+        // 并行加载模型列表和当前模型ID
+        const [modelsResponse, currentModelResponse] = await Promise.all([
+          getModels("all"),
+          getAgentModel(agentId)
+        ]);
+
+        // 处理模型列表
+        if (modelsResponse.code === 200 && Array.isArray(modelsResponse.data)) {
+          const chatModels = modelsResponse.data.filter(model => 
+            model.type === "CHAT"
+          );
+          setModels(chatModels);
+        }
+
+        // 处理当前模型ID
+        if (currentModelResponse.code === 200 && currentModelResponse.data?.modelId) {
+          setSelectedModelId(currentModelResponse.data.modelId);
         }
       } catch (error) {
-        console.error("获取模型列表失败:", error);
+        console.error("加载数据失败:", error);
       } finally {
         setLoading(false);
       }
     }
     
     if (open) {
-      loadModels();
+      loadData();
     }
-  }, [open]);
+  }, [open, agentId]);
   
   // 保存选择的模型
   const handleSave = async () => {
@@ -85,7 +97,7 @@ export function ModelSelectDialog({
     try {
       const response = await setAgentModelWithToast(agentId, selectedModelId);
       if (response.code === 200) {
-        if (onSuccess) onSuccess();
+        // 直接关闭对话框，不触发onSuccess回调
         onOpenChange(false);
       }
     } catch (error) {
@@ -95,16 +107,31 @@ export function ModelSelectDialog({
     }
   };
 
+  // 按提供商分组
+  const modelsByProvider = models.reduce((groups, model) => {
+    const provider = model.providerName || '其他';
+    if (!groups[provider]) {
+      groups[provider] = [];
+    }
+    groups[provider].push(model);
+    return groups;
+  }, {} as Record<string, Model[]>);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col overflow-hidden">
+      <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col overflow-hidden">
         <DialogHeader>
-          <DialogTitle>选择模型</DialogTitle>
-          <DialogDescription>
-            {agentName 
-              ? `为助理 "${agentName}" 选择一个模型`
-              : "选择要使用的模型"}
-          </DialogDescription>
+          <div className="flex items-center">
+            <Settings className="h-6 w-6 mr-2 text-primary" />
+            <div>
+              <DialogTitle className="text-xl">配置对话模型</DialogTitle>
+              <DialogDescription className="mt-1">
+                {agentName 
+                  ? `为助理 "${agentName}" 选择合适的大语言模型`
+                  : "选择合适的大语言模型"}
+              </DialogDescription>
+            </div>
+          </div>
         </DialogHeader>
         
         {loading ? (
@@ -116,65 +143,99 @@ export function ModelSelectDialog({
             暂无可用模型，请先在设置中添加模型
           </div>
         ) : (
-          <ScrollArea className="flex-1 overflow-auto my-4">
-            <RadioGroup
-              value={selectedModelId || ""}
+          <ScrollArea className="flex-1 overflow-auto pr-4 mt-4" style={{maxHeight: "60vh"}}>
+            <RadioGroup 
+              value={selectedModelId || ""} 
               onValueChange={setSelectedModelId}
-              className="space-y-3"
+              className="space-y-6"
             >
-              {models.map(model => (
-                <div key={model.id} className="flex items-center">
-                  <RadioGroupItem
-                    value={model.id}
-                    id={model.id}
-                    className="peer sr-only"
-                  />
-                  <Label
-                    htmlFor={model.id}
-                    className="flex flex-1 p-3 border rounded-md cursor-pointer hover:border-primary peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5"
-                  >
-                    <div className="flex-1">
-                      <div className="font-medium flex items-center">
-                        {model.name || model.modelId}
-                        {model.isOfficial && (
-                          <span className="ml-2 text-xs bg-blue-100 text-blue-800 py-0.5 px-2 rounded-full">官方</span>
-                        )}
+              {Object.entries(modelsByProvider).map(([provider, providerModels]) => (
+                <div key={provider} className="space-y-3">
+                  <h3 className="font-medium text-sm text-muted-foreground uppercase tracking-wider">
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {providerModels.map(model => (
+                      <div 
+                        key={model.id}
+                        className={`
+                          relative border rounded-lg p-4 transition-colors cursor-pointer
+                          ${selectedModelId === model.id ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'border-border hover:border-primary/50'}
+                          ${!model.status ? 'opacity-60' : ''}
+                        `}
+                      >
+                        <RadioGroupItem 
+                          value={model.id} 
+                          id={model.id} 
+                          className="sr-only"
+                          disabled={!model.status}
+                        />
+                        <label 
+                          htmlFor={model.id}
+                          className="flex flex-col h-full cursor-pointer"
+                        >
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex items-center">
+                              <span className="font-medium text-base">
+                                {model.name || model.modelId}
+                              </span>
+                              <div className="flex items-center ml-2 space-x-1">
+                                {model.isOfficial && (
+                                  <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100">
+                                    官方
+                                  </Badge>
+                                )}
+                                {!model.status && (
+                                  <Badge variant="outline" className="text-gray-500 border-gray-300">
+                                    未激活
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                            {selectedModelId === model.id && (
+                              <CheckCircle className="h-5 w-5 text-primary" />
+                            )}
+                          </div>
+                          
+                          <div className="text-sm text-muted-foreground mb-2 flex-1">
+                            {model.description} 
+                          </div>
+                          
+                          <div className="flex items-center text-xs text-muted-foreground mt-auto">
+                            <div className="flex items-center">
+                              <span className="mr-3">模型ID: {model.modelId}</span>
+                             
+                            </div>
+                          </div>
+                        </label>
                       </div>
-                      {model.description && (
-                        <div className="text-sm text-muted-foreground mt-1">{model.description}</div>
-                      )}
-                      <div className="text-xs text-muted-foreground mt-2 flex items-center space-x-2">
-                        <span>提供者: {model.providerName || "未知"}</span>
-                        <span>•</span>
-                        <span>型号: {model.modelId}</span>
-                      </div>
-                    </div>
-                    <div className="ml-2 flex items-center justify-center">
-                      {selectedModelId === model.id && (
-                        <Check className="h-5 w-5 text-primary" />
-                      )}
-                    </div>
-                  </Label>
+                    ))}
+                  </div>
                 </div>
               ))}
             </RadioGroup>
           </ScrollArea>
         )}
         
-        <DialogFooter>
+        <DialogFooter className="mt-4 pt-4 border-t">
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
             取消
           </Button>
           <Button 
             onClick={handleSave} 
-            disabled={!selectedModelId || saving || loading || models.length === 0}
+            disabled={!selectedModelId || saving || loading}
+            className="gap-1"
           >
             {saving ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin" />
                 保存中...
               </>
-            ) : "保存"}
+            ) : (
+              <>
+                <CheckCircle className="h-4 w-4" />
+                保存
+              </>
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

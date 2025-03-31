@@ -15,7 +15,6 @@ import java.time.LocalDateTime;
  */
 @TableName("providers")
 public class ProviderEntity {
-    private static final Logger log = LoggerFactory.getLogger(ProviderEntity.class);
 
     @TableId(type = IdType.ASSIGN_UUID)
     private String id;
@@ -40,110 +39,12 @@ public class ProviderEntity {
     @TableLogic
     private LocalDateTime deletedAt;
 
-    /**
-     * 设置配置并自动加密敏感信息
-     *
-     * @param config 未加密的配置
-     */
     public void setConfig(ProviderConfig config) {
         this.config = config;
-        if (config != null) {
-            log.debug("设置配置: apiKey={}, baseUrl={}", 
-                config.getApiKey() != null ? "非空" : "null", 
-                config.getBaseUrl() != null ? "非空" : "null");
-            encryptConfigFields();
-        } else {
-            log.debug("设置配置: null");
-        }
     }
 
-    /**
-     * 获取原始配置（不解密）
-     *
-     * @return 原始配置（可能已加密）
-     */
-    public ProviderConfig getEncryptedConfig() {
-        if (this.config != null) {
-            log.debug("获取加密配置: apiKey={}, baseUrl={}", 
-                this.config.getApiKey() != null ? "非空" : "null", 
-                this.config.getBaseUrl() != null ? "非空" : "null");
-        } else {
-            log.debug("获取加密配置: null");
-        }
-        return this.config;
-    }
-
-    /**
-     * 获取配置（自动解密敏感信息）
-     *
-     * @return 解密后的配置
-     */
     public ProviderConfig getConfig() {
-        ProviderConfig decryptedConfig = getDecryptedConfig();
-        if (decryptedConfig != null) {
-            log.debug("获取解密配置: apiKey={}, baseUrl={}", 
-                decryptedConfig.getApiKey() != null ? "非空" : "null", 
-                decryptedConfig.getBaseUrl() != null ? "非空" : "null");
-        } else {
-            log.debug("获取解密配置: null");
-        }
-        return decryptedConfig;
-    }
-
-    /**
-     * 加密配置中的敏感字段
-     */
-    private void encryptConfigFields() {
-        if (config != null) {
-            if (config.getApiKey() != null && !isEncrypted(config.getApiKey())) {
-                log.debug("加密apiKey: 原始长度={}", config.getApiKey().length());
-                config.setApiKey(EncryptUtils.encrypt(config.getApiKey()));
-                log.debug("加密后长度={}", config.getApiKey().length());
-            }
-        }
-    }
-
-    /**
-     * 简单判断字符串是否已加密
-     */
-    private boolean isEncrypted(String str) {
-        // 简单判断：如果长度很长且包含特定字符组合，可能是已加密的
-        return str != null && str.length() > 20 && str.contains("==");
-    }
-
-    /**
-     * 解密配置中的敏感字段
-     *
-     * @return 解密后的配置对象的副本
-     */
-    public ProviderConfig getDecryptedConfig() {
-        if (config != null) {
-            ProviderConfig decryptedConfig = new ProviderConfig();
-            // 复制基本属性
-            decryptedConfig.setBaseUrl(this.config.getBaseUrl());
-
-            // 解密敏感信息
-            if (this.config.getApiKey() != null) {
-                try {
-                    String apiKey = this.config.getApiKey();
-                    // 如果看起来像已加密的内容，则解密
-                    if (isEncrypted(apiKey)) {
-                        log.debug("解密apiKey: 加密长度={}", apiKey.length());
-                        decryptedConfig.setApiKey(EncryptUtils.decrypt(apiKey));
-                        log.debug("解密后长度={}", decryptedConfig.getApiKey().length());
-                    } else {
-                        // 否则直接使用原始值
-                        log.debug("apiKey未加密，直接使用原值");
-                        decryptedConfig.setApiKey(apiKey);
-                    }
-                } catch (Exception e) {
-                    log.error("解密失败，使用原始值", e);
-                    decryptedConfig.setApiKey(this.config.getApiKey());
-                }
-            }
-            return decryptedConfig;
-        }
-        return null;
+        return config;
     }
 
     public String getId() {

@@ -22,6 +22,10 @@ import {
 } from "@/components/ui/dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { ModelSelectDialog } from "../components/model-select-dialog"
+import { 
+  getWorkspaceAgentsWithToast, 
+  removeAgentFromWorkspaceWithToast 
+} from "@/lib/api-services"
 
 type SidebarItem = {
   title: string
@@ -278,33 +282,40 @@ function SidebarItemComponent({ item, depth = 0 }: SidebarItemProps) {
 export function Sidebar() {
   const [agents, setAgents] = useState<Agent[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [retryCount, setRetryCount] = useState(0)
+  const [modelDialogOpen, setModelDialogOpen] = useState(false)
+  const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null)
 
-  // Fetch user agents
-  useEffect(() => {
-    async function fetchAgents() {
-      try {
-        setLoading(true)
-        setError(null)
-        const response = await getUserAgents()
-
-        if (response.code === 200) {
-          setAgents(response.data)
-        } else {
-          setError(response.message || "获取助理列表失败")
-        }
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : "未知错误"
-        console.error("获取助理列表错误:", error)
-        setError(`获取助理列表失败: ${errorMessage}`)
-      } finally {
-        setLoading(false)
+  // 加载工作区Agent列表
+  const loadWorkspaceAgents = async () => {
+    setLoading(true)
+    try {
+      const response = await getWorkspaceAgentsWithToast()
+      if (response.code === 200 && Array.isArray(response.data)) {
+        setAgents(response.data)
       }
+    } catch (error) {
+      console.error("加载工作区Agent失败:", error)
+    } finally {
+      setLoading(false)
     }
+  }
 
-    fetchAgents()
-  }, [retryCount])
+  useEffect(() => {
+    loadWorkspaceAgents()
+  }, [])
+
+  // 处理移除Agent
+  const handleRemoveAgent = async (agentId: string) => {
+    try {
+      const response = await removeAgentFromWorkspaceWithToast(agentId)
+      if (response.code === 200) {
+        // 重新加载工作区Agent列表
+        await loadWorkspaceAgents()
+      }
+    } catch (error) {
+      console.error("移除Agent失败:", error)
+    }
+  }
 
   // Create sidebar items with real agent data
   const sidebarItems: SidebarItem[] = [
@@ -344,17 +355,6 @@ export function Sidebar() {
                   <Skeleton className="h-4 w-24" />
                 </div>
               ))}
-            </div>
-          )}
-
-          {/* Show error state with retry button */}
-          {error && (
-            <div className="px-2 py-2 text-sm text-red-500">
-              <p className="mb-2">{error}</p>
-              <Button variant="outline" size="sm" onClick={() => setRetryCount((prev) => prev + 1)} className="w-full">
-                <RefreshCw className="mr-2 h-3 w-3" />
-                重试
-              </Button>
             </div>
           )}
         </div>

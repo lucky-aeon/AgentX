@@ -45,8 +45,7 @@ public class ProviderConfigConverter extends BaseTypeHandler<ProviderConfig> {
 
     @Override
     public ProviderConfig getNullableResult(ResultSet rs, int columnIndex) throws SQLException {
-        String encryptedStr = rs.getString(columnIndex);
-        return parseEncryptedJson(encryptedStr);
+        return null;
     }
 
     @Override

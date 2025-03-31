@@ -4,19 +4,16 @@ import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.baomidou.mybatisplus.extension.activerecord.Model;
 import org.springframework.transaction.annotation.Transactional;
 import org.xhy.domain.llm.model.ModelEntity;
 import org.xhy.domain.llm.model.ProviderAggregate;
 import org.xhy.domain.llm.model.ProviderEntity;
-import org.xhy.domain.llm.model.config.ProviderConfig;
-import org.xhy.domain.llm.model.enums.ProviderProtocol;
+import org.xhy.infrastructure.llm.protocol.enums.ProviderProtocol;
 import org.xhy.domain.llm.model.enums.ProviderType;
 import org.xhy.domain.llm.repository.ModelRepository;
 import org.xhy.domain.llm.repository.ProviderRepository;
 import org.springframework.stereotype.Service;
 import org.xhy.infrastructure.exception.BusinessException;
-import org.xhy.infrastructure.utils.EncryptUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -181,7 +178,6 @@ public class LlmDomainService {
         if (provider == null) {
             throw new BusinessException("服务商不存在");
         }
-        // 配置在 getConfig() 中已经自动解密，无需再次处理
         return provider;
     }
 
@@ -370,6 +366,10 @@ public class LlmDomainService {
         }
     }
 
+    /**
+     * 获取模型
+     * @param modelId 模型id
+     */
     public ModelEntity getModelById(String modelId) {
         ModelEntity modelEntity = modelRepository.selectById(modelId);
         if (modelEntity == null){

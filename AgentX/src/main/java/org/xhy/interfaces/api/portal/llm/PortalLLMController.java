@@ -4,6 +4,7 @@ package org.xhy.interfaces.api.portal.llm;
 import java.util.Arrays;
 import java.util.List;
 
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -17,7 +18,7 @@ import org.xhy.application.llm.dto.ModelDTO;
 import org.xhy.application.llm.dto.ProviderDTO;
 import org.xhy.application.llm.service.LLMAppService;
 import org.xhy.domain.llm.model.enums.ModelType;
-import org.xhy.domain.llm.model.enums.ProviderProtocol;
+import org.xhy.infrastructure.llm.protocol.enums.ProviderProtocol;
 import org.xhy.domain.llm.model.enums.ProviderType;
 import org.xhy.infrastructure.auth.UserContext;
 import org.xhy.interfaces.api.common.Result;
@@ -131,7 +132,7 @@ public class PortalLLMController {
      * @param modelUpdateRequest ModelUpdateRequest
      */
     @PutMapping("/models")
-    public Result<ModelDTO> updateModel(@RequestBody ModelUpdateRequest modelUpdateRequest) {
+    public Result<ModelDTO> updateModel(@RequestBody @Validated ModelUpdateRequest modelUpdateRequest) {
         String userId = UserContext.getCurrentUserId();
         return Result.success(llmAppService.updateModel(modelUpdateRequest, userId));
     }
@@ -169,16 +170,14 @@ public class PortalLLMController {
 
 
     /**
-     * 获取所有模型
-     * @param type 服务商类型：all-所有，official-官方，user-用户的（默认）
+     * 获取所有激活模型
+     * @param modelType 模型类型（可选），不传则查询所有类型
      * @return 模型列表
      */
     @GetMapping("/models")
-    public Result<List<ModelDTO>> getModels(
-            @RequestParam(required = false, defaultValue = "all") String type) {
-
-        ProviderType providerType = ProviderType.fromCode(type);
+    public Result<List<ModelDTO>> getModels(@RequestParam(required = false) String modelType) {
         String userId = UserContext.getCurrentUserId();
-        return Result.success(llmAppService.getModelsByType(providerType, userId));
+        ModelType type = modelType != null ? ModelType.fromCode(modelType) : null;
+        return Result.success(llmAppService.getActiveModelsByType(ProviderType.ALL, userId, type));
     }
 }

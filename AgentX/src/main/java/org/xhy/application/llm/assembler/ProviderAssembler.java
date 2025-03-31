@@ -30,7 +30,7 @@ public class ProviderAssembler {
         dto.setProtocol(provider.getProtocol());
         dto.setName(provider.getName());
         dto.setDescription(provider.getDescription());
-        dto.setConfig(provider.getEncryptedConfig());
+        dto.setConfig(provider.getConfig());
         dto.setIsOfficial(provider.getIsOfficial());
         dto.setStatus(provider.getStatus());
         dto.setCreatedAt(provider.getCreatedAt());

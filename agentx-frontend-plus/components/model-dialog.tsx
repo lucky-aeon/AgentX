@@ -195,7 +195,6 @@ export function ModelDialog({
               onChange={handleInputChange}
               placeholder="例如：gpt-3.5-turbo"
               required
-              disabled={isEditMode}
             />
           </div>
           
