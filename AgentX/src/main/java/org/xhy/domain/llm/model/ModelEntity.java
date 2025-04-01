@@ -6,6 +6,7 @@ import org.xhy.domain.llm.model.config.LLMModelConfig;
 import org.xhy.domain.llm.model.enums.ModelType;
 import org.xhy.infrastructure.converter.ModelConfigConverter;
 import org.xhy.infrastructure.converter.ModelTypeConverter;
+import org.xhy.infrastructure.entity.BaseEntity;
 import org.xhy.infrastructure.exception.BusinessException;
 
 import java.time.LocalDateTime;
@@ -14,7 +15,7 @@ import java.time.LocalDateTime;
  * 模型领域模型
  */
 @TableName("models")
-public class ModelEntity {
+public class ModelEntity extends BaseEntity {
     
     @TableId(type = IdType.ASSIGN_UUID)
     private String id;
@@ -35,14 +36,7 @@ public class ModelEntity {
     
     private Boolean status;
     
-    @TableField(fill = FieldFill.INSERT)
-    private LocalDateTime createdAt;
-    
-    @TableField(fill = FieldFill.INSERT_UPDATE)
-    private LocalDateTime updatedAt;
-    
-    @TableLogic
-    private LocalDateTime deletedAt;
+
 
     public String getId() {
         return id;
@@ -114,30 +108,6 @@ public class ModelEntity {
 
     public void setStatus(Boolean status) {
         this.status = status;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-    public LocalDateTime getDeletedAt() {
-        return deletedAt;
-    }
-
-    public void setDeletedAt(LocalDateTime deletedAt) {
-        this.deletedAt = deletedAt;
     }
 
     public Boolean getOfficial() {

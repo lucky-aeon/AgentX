@@ -8,6 +8,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.extension.activerecord.Model;
 import org.apache.ibatis.type.JdbcType;
 import org.xhy.domain.agent.constant.AgentType;
+import org.xhy.infrastructure.entity.BaseEntity;
 import org.xhy.infrastructure.typehandler.JsonTypeHandler;
 
 import java.time.LocalDateTime;
@@ -18,7 +19,7 @@ import java.util.List;
  * Agent实体类，代表一个AI助手
  */
 @TableName(value = "agents", autoResultMap = true)
-public class AgentEntity extends Model<AgentEntity> {
+public class AgentEntity extends BaseEntity {
 
     /**
      * Agent唯一ID
@@ -98,24 +99,6 @@ public class AgentEntity extends Model<AgentEntity> {
     @TableField("user_id")
     private String userId;
 
-    /**
-     * 创建时间
-     */
-    @TableField("created_at")
-    private LocalDateTime createdAt;
-
-    /**
-     * 最后更新时间
-     */
-    @TableField("updated_at")
-    private LocalDateTime updatedAt;
-
-    /**
-     * 删除时间（软删除）
-     */
-    @TableField("deleted_at")
-    @TableLogic
-    private LocalDateTime deletedAt;
 
     /**
      * 无参构造函数
@@ -254,30 +237,6 @@ public class AgentEntity extends Model<AgentEntity> {
 
     public void setUserId(String userId) {
         this.userId = userId;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-    public LocalDateTime getDeletedAt() {
-        return deletedAt;
-    }
-
-    public void setDeletedAt(LocalDateTime deletedAt) {
-        this.deletedAt = deletedAt;
     }
 
     /**

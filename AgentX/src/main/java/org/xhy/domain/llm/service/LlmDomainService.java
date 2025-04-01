@@ -4,19 +4,16 @@ import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.baomidou.mybatisplus.extension.activerecord.Model;
 import org.springframework.transaction.annotation.Transactional;
 import org.xhy.domain.llm.model.ModelEntity;
 import org.xhy.domain.llm.model.ProviderAggregate;
 import org.xhy.domain.llm.model.ProviderEntity;
-import org.xhy.domain.llm.model.config.ProviderConfig;
-import org.xhy.domain.llm.model.enums.ProviderProtocol;
+import org.xhy.infrastructure.llm.protocol.enums.ProviderProtocol;
 import org.xhy.domain.llm.model.enums.ProviderType;
 import org.xhy.domain.llm.repository.ModelRepository;
 import org.xhy.domain.llm.repository.ProviderRepository;
 import org.springframework.stereotype.Service;
 import org.xhy.infrastructure.exception.BusinessException;
-import org.xhy.infrastructure.utils.EncryptUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -49,7 +46,7 @@ public class LlmDomainService {
      * @param provider 服务商信息
      * @return 创建后的服务商ID
      */
-    public ProviderEntity createCommonProvider(ProviderEntity provider) {
+    public ProviderEntity createProvider(ProviderEntity provider) {
         validateProviderProtocol(provider.getProtocol());
         provider.setIsOfficial(false);
         providerRepository.insert(provider);
@@ -58,29 +55,13 @@ public class LlmDomainService {
     }
 
     /**
-     * 创建官方服务商
-     * @param provider 服务商信息
-     * @return 创建后的服务商ID
-     */
-    public ProviderEntity createOfficeProvider(ProviderEntity provider) {
-        validateProviderProtocol(provider.getProtocol());
-        provider.setIsOfficial(true);
-        providerRepository.insert(provider);
-
-        return provider;
-    }
-
-
-    /**
      * 更新服务商
      * @param provider 服务商信息
      */
     public void updateProvider(ProviderEntity provider) {
-        // 1. 验证服务商协议是否支持
         validateProviderProtocol(provider.getProtocol());
-
-        // 3. 更新服务商信息
-        providerRepository.updateById(provider);
+        LambdaUpdateWrapper<ProviderEntity> wrapper = Wrappers.<ProviderEntity>lambdaUpdate().eq(ProviderEntity::getId, provider.getId()).eq(ProviderEntity::getUserId, provider.getUserId());
+        providerRepository.update(provider,wrapper);
     }
 
     /**
@@ -181,7 +162,6 @@ public class LlmDomainService {
         if (provider == null) {
             throw new BusinessException("服务商不存在");
         }
-        // 配置在 getConfig() 中已经自动解密，无需再次处理
         return provider;
     }
 
@@ -370,6 +350,10 @@ public class LlmDomainService {
         }
     }
 
+    /**
+     * 获取模型
+     * @param modelId 模型id
+     */
     public ModelEntity getModelById(String modelId) {
         ModelEntity modelEntity = modelRepository.selectById(modelId);
         if (modelEntity == null){

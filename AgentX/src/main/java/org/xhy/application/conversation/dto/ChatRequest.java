@@ -1,6 +1,8 @@
 package org.xhy.application.conversation.dto;
 
 
+import jakarta.validation.constraints.NotBlank;
+
 /**
  * 聊天请求DTO
  */
@@ -9,18 +11,15 @@ public class ChatRequest {
     /**
      * 消息内容
      */
+    @NotBlank(message = "消息内容不可为空")
     private String message;
     
     /**
-     * 会话ID，可选
+     * 会话ID
      */
+    @NotBlank(message = "会话id不可为空")
     private String sessionId;
 
-    /**
-     * 使用的模型，可选
-     */
-    private String model;
-    
     public String getMessage() {
         return message;
     }
@@ -35,13 +34,5 @@ public class ChatRequest {
     
     public void setSessionId(String sessionId) {
         this.sessionId = sessionId;
-    }
-    
-    public String getModel() {
-        return model;
-    }
-    
-    public void setModel(String model) {
-        this.model = model;
     }
 }

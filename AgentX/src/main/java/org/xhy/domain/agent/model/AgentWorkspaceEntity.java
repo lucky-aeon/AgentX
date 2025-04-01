@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import org.xhy.infrastructure.entity.BaseEntity;
 
 import java.time.LocalDateTime;
 
@@ -12,12 +13,12 @@ import java.time.LocalDateTime;
  * 用于记录用户添加到工作区的Agent
  */
 @TableName("agent_workspace")
-public class AgentWorkspaceEntity {
+public class AgentWorkspaceEntity extends BaseEntity {
 
     /**
      * 主键ID
      */
-    @TableId(value = "id", type = IdType.INPUT)
+    @TableId(value = "id", type = IdType.ASSIGN_UUID)
     private String id;
 
     /**
@@ -38,11 +39,7 @@ public class AgentWorkspaceEntity {
     @TableField("model_id")
     private String modelId;
 
-    /**
-     * 创建时间
-     */
-    @TableField("created_at")
-    private LocalDateTime createdAt;
+
 
     public String getId() {
         return id;
@@ -66,14 +63,6 @@ public class AgentWorkspaceEntity {
 
     public void setUserId(String userId) {
         this.userId = userId;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
     }
 
     public String getModelId() {

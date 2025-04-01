@@ -268,7 +268,6 @@ export function ConversationList({ workspaceId }: ConversationListProps) {
                   transition: 'background-color 0.2s',
                 }}
                 onClick={() => selectConversation(session.id)}
-                onMouseEnter={() => console.log('鼠标进入:', session.id)}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={{ flex: 1, minWidth: 0, marginRight: '8px' }}>

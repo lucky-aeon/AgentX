@@ -69,9 +69,16 @@ public class AgentWorkspaceDomainService {
         return agentWorkspaceEntity;
     }
 
+    public AgentWorkspaceEntity findWorkspace(String agentId, String userId) {
+        Wrapper<AgentWorkspaceEntity> wrapper = Wrappers.<AgentWorkspaceEntity>lambdaQuery()
+                .eq(AgentWorkspaceEntity::getAgentId, agentId)
+                .eq(AgentWorkspaceEntity::getUserId, userId);
+        return agentWorkspaceRepository.selectOne(wrapper);
+    }
+
     public void save(AgentWorkspaceEntity workspace) {
-        int i = agentWorkspaceRepository.updateById(workspace);
-        if (i ==0){
+        boolean b = agentWorkspaceRepository.insertOrUpdate(workspace);
+        if (!b){
             throw new BusinessException("保存失败");
         }
     }

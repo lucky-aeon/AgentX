@@ -8,7 +8,8 @@ import org.xhy.application.llm.dto.ProviderDTO;
 import org.xhy.domain.llm.model.ModelEntity;
 import org.xhy.domain.llm.model.ProviderAggregate;
 import org.xhy.domain.llm.model.ProviderEntity;
-import org.xhy.domain.llm.model.enums.ProviderProtocol;
+import org.xhy.domain.llm.model.enums.ModelType;
+import org.xhy.infrastructure.llm.protocol.enums.ProviderProtocol;
 import org.xhy.domain.llm.model.enums.ProviderType;
 import org.xhy.domain.llm.service.LlmDomainService;
 import org.xhy.interfaces.dto.llm.ModelCreateRequest;
@@ -16,7 +17,6 @@ import org.xhy.interfaces.dto.llm.ModelUpdateRequest;
 import org.xhy.interfaces.dto.llm.ProviderCreateRequest;
 import org.xhy.interfaces.dto.llm.ProviderUpdateRequest;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -48,7 +48,8 @@ public class LLMAppService {
      */
     public ProviderDTO createProvider(ProviderCreateRequest providerCreateRequest,String userId) {
         ProviderEntity provider = ProviderAssembler.toEntity(providerCreateRequest, userId);
-        llmDomainService.createCommonProvider(provider);
+        provider.setIsOfficial(false);
+        llmDomainService.createProvider(provider);
         return ProviderAssembler.toDTO(provider);
     }
 
@@ -200,15 +201,18 @@ public class LLMAppService {
     }
 
     /**
-     * 获取所有模型
-     * @param providerType 类型
+     * 获取所有激活模型
+     * @param providerType 服务商类型
      * @param userId 用户id
-     * @return
+     * @param modelType 模型类型（可选）
+     * @return 模型列表
      */
-    public List<ModelDTO> getModelsByType(ProviderType providerType, String userId) {
+    public List<ModelDTO> getActiveModelsByType(ProviderType providerType, String userId, ModelType modelType) {
         return llmDomainService.getProvidersByType(providerType, userId).stream()
-                .map(ProviderAssembler::toDTO)
-                .flatMap(providerDTO -> providerDTO.getModels().stream())
+                .filter(ProviderAggregate::getStatus)
+                .flatMap(provider -> provider.getModels().stream())
+                .filter(model -> modelType == null || model.getType() == modelType)
+                .map(ModelAssembler::toDTO)
                 .collect(Collectors.toList());
     }
 }

@@ -2,6 +2,7 @@ package org.xhy.domain.conversation.model;
 
 import com.baomidou.mybatisplus.annotation.*;
 import com.baomidou.mybatisplus.extension.activerecord.Model;
+import org.xhy.infrastructure.entity.BaseEntity;
 
 import java.time.LocalDateTime;
 
@@ -9,7 +10,7 @@ import java.time.LocalDateTime;
  * 会话实体类，代表一个独立的对话会话/主题
  */
 @TableName("sessions")
-public class SessionEntity extends Model<SessionEntity> {
+public class SessionEntity extends BaseEntity {
 
     /**
      * 会话唯一ID
@@ -42,18 +43,6 @@ public class SessionEntity extends Model<SessionEntity> {
     private String description;
 
     /**
-     * 创建时间
-     */
-    @TableField(value = "created_at", fill = FieldFill.INSERT)
-    private LocalDateTime createdAt;
-
-    /**
-     * 最后更新时间
-     */
-    @TableField(value = "updated_at", fill = FieldFill.INSERT_UPDATE)
-    private LocalDateTime updatedAt;
-
-    /**
      * 是否归档
      */
     @TableField("is_archived")
@@ -69,23 +58,6 @@ public class SessionEntity extends Model<SessionEntity> {
      * 无参构造函数
      */
     public SessionEntity() {
-    }
-
-    /**
-     * 全参构造函数
-     */
-    public SessionEntity(String id, String title, String userId, String agentVersionId, String description,
-            LocalDateTime createdAt, LocalDateTime updatedAt,
-            boolean isArchived, String metadata) {
-        this.id = id;
-        this.title = title;
-        this.userId = userId;
-        this.agentId = agentVersionId;
-        this.description = description;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.isArchived = isArchived;
-        this.metadata = metadata;
     }
 
     // Getter和Setter方法
@@ -127,22 +99,6 @@ public class SessionEntity extends Model<SessionEntity> {
 
     public void setDescription(String description) {
         this.description = description;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
     }
 
     public boolean isArchived() {

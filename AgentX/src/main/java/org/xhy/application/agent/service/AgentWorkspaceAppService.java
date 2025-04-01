@@ -54,15 +54,8 @@ public class AgentWorkspaceAppService {
      * @return AgentDTO
      */
     public List<AgentDTO> getAgents(String userId) {
-        // 1.获取当前用户的所有助理
-        List<AgentEntity> userAgents = agentServiceDomainService.getUserAgents(userId, new AgentEntity());
-
-        // 2.获取已添加到工作区的助理
         List<AgentEntity> workspaceAgents = agentWorkspaceDomainService.getWorkspaceAgents(userId);
-
-        // 合并两个列表
-        userAgents.addAll(workspaceAgents);
-        return AgentAssembler.toDTOs(userAgents);
+        return AgentAssembler.toDTOs(workspaceAgents);
     }
 
     /**
@@ -72,6 +65,13 @@ public class AgentWorkspaceAppService {
      */
     @Transactional
     public void deleteAgent(String agentId, String userId) {
+
+        // agent如果是自己的则不允许删除
+        AgentEntity agent = agentServiceDomainService.getAgentById(agentId);
+        if (agent.getUserId().equals(userId)){
+            throw new BusinessException("该助理属于自己，不允许删除");
+        }
+
         boolean deleteAgent = agentWorkspaceDomainService.deleteAgent(agentId, userId);
         if (!deleteAgent){
             throw new BusinessException("删除助理失败");
@@ -98,8 +98,17 @@ public class AgentWorkspaceAppService {
             throw new BusinessException("模型不存在");
         }
 
-        AgentWorkspaceEntity workspace = agentWorkspaceDomainService.getWorkspace(agentId, userId);
+        AgentWorkspaceEntity workspace = agentWorkspaceDomainService.findWorkspace(agentId, userId);
+        if (workspace == null){
+            workspace = new AgentWorkspaceEntity();
+            workspace.setAgentId(agentId);
+            workspace.setUserId(userId);
+        }
         workspace.setModelId(modelId);
         agentWorkspaceDomainService.save(workspace);
+    }
+
+    public String getConfiguredModelId(String agentId, String userId) {
+        return agentWorkspaceDomainService.getWorkspace(agentId,userId).getModelId();
     }
 }
