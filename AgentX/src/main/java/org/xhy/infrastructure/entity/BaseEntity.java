@@ -19,8 +19,12 @@ public class BaseEntity {
     protected LocalDateTime deletedAt;
 
     @TableField(exist = false)
-    private Operator operatedBy;
+    private Operator operatedBy = Operator.USER;
 
+
+    public boolean needCheckUserId(){
+        return this.operatedBy == Operator.USER;
+    }
 
     public LocalDateTime getCreatedAt() {
         return createdAt;
