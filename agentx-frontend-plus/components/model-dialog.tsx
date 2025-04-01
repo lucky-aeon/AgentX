@@ -163,7 +163,9 @@ export function ModelDialog({
       }
       
       if (response.code === 200) {
+        // 关闭对话框
         onOpenChange(false);
+        // 然后调用onSuccess回调来刷新数据
         if (onSuccess) onSuccess();
       }
     } catch (error) {

@@ -1,6 +1,7 @@
 package org.xhy.domain.llm.model;
 
 import org.xhy.domain.llm.model.config.ProviderConfig;
+import org.xhy.infrastructure.llm.protocol.enums.ProviderProtocol;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -13,11 +14,13 @@ import java.util.List;
 public class ProviderAggregate {
     
     private ProviderEntity entity;
-    private List<ModelEntity> models;
+    private List<ModelEntity> models = new ArrayList<>();
 
     public ProviderAggregate(ProviderEntity entity, List<ModelEntity> models) {
         this.entity = entity;
-        this.models = models;
+        if (models != null){
+            this.models = models;
+        }
     }
 
     /**
@@ -67,11 +70,11 @@ public class ProviderAggregate {
         return entity.getUserId();
     }
     
-    public String getCode() {
+    public ProviderProtocol getProtocol() {
         return entity.getProtocol();
     }
     
-    public void setCode(String code) {
+    public void setProtocol(ProviderProtocol code) {
         entity.setProtocol(code);
     }
     

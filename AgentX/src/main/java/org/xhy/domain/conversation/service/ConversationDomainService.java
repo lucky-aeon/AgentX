@@ -95,11 +95,11 @@ public class ConversationDomainService {
      * @param sessionId 会话id
      */
     public void deleteConversationMessages(String sessionId) {
-        messageRepository.delete(Wrappers.<MessageEntity>lambdaQuery().eq(MessageEntity::getSessionId, sessionId));
+        messageRepository.checkedDelete(Wrappers.<MessageEntity>lambdaQuery().eq(MessageEntity::getSessionId, sessionId));
     }
 
     public void deleteConversationMessages(List<String> sessionIds) {
-        messageRepository.delete(Wrappers.<MessageEntity>lambdaQuery().in(MessageEntity::getSessionId, sessionIds));
+        messageRepository.checkedDelete(Wrappers.<MessageEntity>lambdaQuery().in(MessageEntity::getSessionId, sessionIds));
     }
 
     /**
@@ -110,6 +110,6 @@ public class ConversationDomainService {
     @Transactional
     public void updateMessageTokenCount(MessageEntity message) {
         logger.info("更新消息token数量，消息ID: {}, token数量: {}", message.getId(), message.getTokenCount());
-        messageRepository.updateById(message);
+        messageRepository.checkedUpdateById(message);
     }
 }

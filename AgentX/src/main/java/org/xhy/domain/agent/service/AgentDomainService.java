@@ -96,13 +96,13 @@ public class AgentDomainService {
      * 更新Agent信息（基本信息和配置合并更新）
      */
     @Transactional
-    public AgentEntity updateAgent(String agentId, AgentEntity updateEntity) {
+    public AgentEntity updateAgent(AgentEntity updateEntity) {
 
         // 需要根据 agentId 和 userId 作为条件进行修改
         LambdaUpdateWrapper<AgentEntity> wrapper = Wrappers.<AgentEntity>lambdaUpdate()
-                .eq(AgentEntity::getId, agentId)
+                .eq(AgentEntity::getId, updateEntity.getId())
                 .eq(AgentEntity::getUserId, updateEntity.getUserId());
-        agentRepository.update(updateEntity, wrapper);
+        agentRepository.checkedUpdate(updateEntity, wrapper);
         return updateEntity;
     }
 
@@ -124,7 +124,7 @@ public class AgentDomainService {
             agent.enable();
         }
 
-        agentRepository.updateById(agent);
+        agentRepository.checkedUpdateById(agent);
         return agent;
     }
 
@@ -137,9 +137,9 @@ public class AgentDomainService {
         LambdaQueryWrapper<AgentEntity> wrapper = Wrappers.<AgentEntity>lambdaQuery()
                 .eq(AgentEntity::getId, agentId)
                 .eq(AgentEntity::getUserId, userId);
-        agentRepository.delete(wrapper);
+        agentRepository.checkedDelete(wrapper);
         // 删除版本
-        agentVersionRepository.delete(Wrappers.<AgentVersionEntity>lambdaQuery()
+        agentVersionRepository.checkedDelete(Wrappers.<AgentVersionEntity>lambdaQuery()
                 .eq(AgentVersionEntity::getAgentId, agentId)
                 .eq(AgentVersionEntity::getUserId, userId));
     }
@@ -212,7 +212,7 @@ public class AgentDomainService {
             AgentEntity agent = agentRepository.selectById(version.getAgentId());
             if (agent != null) {
                 agent.publishVersion(versionId);
-                agentRepository.updateById(agent);
+                agentRepository.checkedUpdateById(agent);
             }
         }
 
@@ -231,7 +231,7 @@ public class AgentDomainService {
 
         // 拒绝版本发布
         version.reject(reason);
-        agentVersionRepository.updateById(version);
+        agentVersionRepository.checkedUpdateById(version);
 
         return version;
     }

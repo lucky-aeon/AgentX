@@ -105,10 +105,8 @@ public class AgentSessionAppService {
      */
     @Transactional
     public void deleteSession(String id, String userId) {
-        boolean deleteSession = sessionDomainService.deleteSession(id, userId);
-        if (!deleteSession){
-            throw new BusinessException("删除会话失败");
-        }
+        sessionDomainService.deleteSession(id, userId);
+
         // 删除会话下的消息
         conversationDomainService.deleteConversationMessages(id);
     }

@@ -68,7 +68,8 @@ public class PortalAgentController {
     public Result<AgentDTO> updateAgent(@PathVariable String agentId,
             @RequestBody @Validated UpdateAgentRequest request) {
         String userId = UserContext.getCurrentUserId();
-        return Result.success(agentAppService.updateAgent(agentId, request, userId));
+        request.setAgentId(agentId);
+        return Result.success(agentAppService.updateAgent(request, userId));
     }
 
     /**

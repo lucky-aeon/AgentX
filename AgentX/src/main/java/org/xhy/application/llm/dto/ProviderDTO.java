@@ -1,6 +1,7 @@
 package org.xhy.application.llm.dto;
 
 import org.xhy.domain.llm.model.config.ProviderConfig;
+import org.xhy.infrastructure.llm.protocol.enums.ProviderProtocol;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -18,7 +19,7 @@ public class ProviderDTO {
     /**
      * 服务商协议
      */
-    private String protocol;
+    private ProviderProtocol protocol;
     /**
      * 服务商名称
      */
@@ -73,11 +74,11 @@ public class ProviderDTO {
         this.id = id;
     }
     
-    public String getProtocol() {
+    public ProviderProtocol getProtocol() {
         return protocol;
     }
     
-    public void setProtocol(String protocol) {
+    public void setProtocol(ProviderProtocol protocol) {
         this.protocol = protocol;
     }
     

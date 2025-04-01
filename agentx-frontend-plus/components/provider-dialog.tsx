@@ -28,14 +28,14 @@ interface ProtocolConfigFields {
   }[];
 }
 
-// 服务提供商配置类型
+// 服务商配置类型
 interface ProviderConfig {
   apiKey: string;
   baseUrl?: string;
   [key: string]: string | undefined;
 }
 
-// 服务提供商表单数据类型
+// 服务商表单数据类型
 interface ProviderFormData {
   id: string;
   protocol: string;
@@ -74,6 +74,11 @@ interface ProviderDialogProps {
 
 export function ProviderDialog({ open, onOpenChange, provider, onSuccess }: ProviderDialogProps) {
   const isEditMode = !!provider;
+  const isOfficialProvider = provider?.isOfficial || false;
+  
+  // 如果是官方服务商，则只提供查看功能，不允许编辑
+  const isReadOnly = isOfficialProvider;
+  
   const [formData, setFormData] = useState<ProviderFormData>({
     id: "",
     protocol: "",
@@ -235,7 +240,7 @@ export function ProviderDialog({ open, onOpenChange, provider, onSuccess }: Prov
         if (onSuccess) onSuccess();
       }
     } catch (error) {
-      console.error("提交服务提供商失败:", error);
+      console.error("提交服务商失败:", error);
     } finally {
       setLoading(false);
     }
@@ -245,27 +250,29 @@ export function ProviderDialog({ open, onOpenChange, provider, onSuccess }: Prov
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>{isEditMode ? "编辑服务提供商" : "添加服务提供商"}</DialogTitle>
+          <DialogTitle>{isEditMode ? (isReadOnly ? "查看服务商" : "编辑服务商") : "添加服务商"}</DialogTitle>
           <DialogDescription>
-            {isEditMode 
-              ? "修改服务提供商配置信息" 
-              : "添加新的AI服务提供商以连接到您的账户"}
+            {isReadOnly 
+              ? "查看官方服务商信息" 
+              : (isEditMode 
+                  ? "编辑服务商配置信息" 
+                  : "添加新的服务商，选择协议并配置连接信息")}
           </DialogDescription>
         </DialogHeader>
         
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label htmlFor="protocol">协议</Label>
+            <Label htmlFor="protocol">协议 <span className="text-red-500">*</span></Label>
             <Select 
               value={formData.protocol} 
               onValueChange={handleProtocolChange}
-              disabled={isEditMode || protocolsLoading}
+              disabled={isEditMode || isReadOnly || protocolsLoading}
             >
-              <SelectTrigger>
-                <SelectValue placeholder={protocolsLoading ? "加载中..." : "选择服务提供商协议"} />
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="选择协议" />
               </SelectTrigger>
               <SelectContent>
-                {protocols.map(protocol => (
+                {protocols.map((protocol) => (
                   <SelectItem key={protocol} value={protocol}>
                     {protocol}
                   </SelectItem>
@@ -281,7 +288,8 @@ export function ProviderDialog({ open, onOpenChange, provider, onSuccess }: Prov
               name="name"
               value={formData.name}
               onChange={handleInputChange}
-              placeholder="例如：我的OpenAI"
+              placeholder="服务商名称"
+              disabled={isReadOnly}
               required
             />
           </div>
@@ -293,48 +301,59 @@ export function ProviderDialog({ open, onOpenChange, provider, onSuccess }: Prov
               name="description"
               value={formData.description}
               onChange={handleInputChange}
-              placeholder="可选描述"
+              placeholder="服务商描述"
+              disabled={isReadOnly}
               rows={3}
             />
           </div>
           
-          {formData.protocol && configFields.map((field, index) => (
-            <div className="grid gap-2" key={index}>
-              <Label htmlFor={`config-${index}`}>
-                {field.label} {field.required && <span className="text-red-500">*</span>}
-              </Label>
-              <Input
-                id={`config-${index}`}
-                type={field.type}
-                value={
-                  field.label === "API Key" 
-                    ? formData.config.apiKey || "" 
-                    : field.label === "基础URL" 
-                    ? formData.config.baseUrl || "" 
-                    : formData.config[field.label.toLowerCase().replace(/\s/g, '')] || ""
-                }
-                onChange={(e) => handleConfigChange(field.label, e.target.value)}
-                placeholder={field.placeholder}
-                required={field.required}
-              />
-            </div>
-          ))}
+          <div className="space-y-4">
+            <Label>配置信息</Label>
+            {configFields.map((field, index) => (
+              <div key={index} className="grid gap-2">
+                <Label htmlFor={field.label.toLowerCase().replace(/\s/g, '')}>
+                  {field.label}
+                  {field.required && <span className="text-red-500"> *</span>}
+                </Label>
+                <Input
+                  id={field.label.toLowerCase().replace(/\s/g, '')}
+                  type={field.type}
+                  value={
+                    field.label === "API Key" 
+                      ? formData.config.apiKey || "" 
+                      : field.label === "基础URL" 
+                        ? formData.config.baseUrl || "" 
+                        : formData.config[field.label.toLowerCase().replace(/\s/g, '')] || ""
+                  }
+                  onChange={(e) => handleConfigChange(field.label, e.target.value)}
+                  placeholder={field.placeholder}
+                  disabled={isReadOnly}
+                  required={field.required}
+                />
+              </div>
+            ))}
+          </div>
         </div>
         
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
-            取消
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            {isReadOnly ? "关闭" : "取消"}
           </Button>
-          <Button onClick={handleSubmit} disabled={loading || !formData.protocol || !formData.name}>
-            {loading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                保存中...
-              </>
-            ) : (
-              isEditMode ? "保存修改" : "添加"
-            )}
-          </Button>
+          {!isReadOnly && (
+            <Button 
+              onClick={handleSubmit} 
+              disabled={loading || !formData.protocol || !formData.name || (formData.config.apiKey === "" && configFields.some(f => f.label === "API Key" && f.required))}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {isEditMode ? "保存中..." : "创建中..."}
+                </>
+              ) : (
+                isEditMode ? "保存" : "创建"
+              )}
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
