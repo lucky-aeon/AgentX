@@ -60,7 +60,10 @@ public class LlmDomainService {
      */
     public void updateProvider(ProviderEntity provider) {
         validateProviderProtocol(provider.getProtocol());
-        LambdaUpdateWrapper<ProviderEntity> wrapper = Wrappers.<ProviderEntity>lambdaUpdate().eq(ProviderEntity::getId, provider.getId()).eq(ProviderEntity::getUserId, provider.getUserId());
+        LambdaUpdateWrapper<ProviderEntity> wrapper = Wrappers
+                .<ProviderEntity>lambdaUpdate()
+                .eq(ProviderEntity::getId, provider.getId())
+                .eq(provider.needCheckUserId(),ProviderEntity::getUserId, provider.getUserId());
         providerRepository.update(provider,wrapper);
     }
 
