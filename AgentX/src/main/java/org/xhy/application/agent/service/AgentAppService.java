@@ -85,14 +85,14 @@ public class AgentAppService {
     /**
      * 更新Agent信息（基本信息和配置合并更新）
      */
-    public AgentDTO updateAgent(String agentId, UpdateAgentRequest request, String userId) {
+    public AgentDTO updateAgent(UpdateAgentRequest request, String userId) {
 
         // 使用组装器创建更新实体
         AgentEntity updateEntity = AgentAssembler.toEntity(request,userId);
 
         updateEntity.setUserId(userId);
         // 调用领域服务更新Agent
-        AgentEntity agentEntity = agentServiceDomainService.updateAgent(agentId, updateEntity);
+        AgentEntity agentEntity = agentServiceDomainService.updateAgent(updateEntity);
         return AgentAssembler.toDTO(agentEntity);
     }
 

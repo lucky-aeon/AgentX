@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.xhy.domain.llm.model.ModelEntity;
 import org.xhy.domain.llm.model.ProviderAggregate;
 import org.xhy.domain.llm.model.ProviderEntity;
+import org.xhy.infrastructure.entity.Operator;
 import org.xhy.infrastructure.llm.protocol.enums.ProviderProtocol;
 import org.xhy.domain.llm.model.enums.ProviderType;
 import org.xhy.domain.llm.repository.ModelRepository;
@@ -48,9 +49,7 @@ public class LlmDomainService {
      */
     public ProviderEntity createProvider(ProviderEntity provider) {
         validateProviderProtocol(provider.getProtocol());
-        provider.setIsOfficial(false);
         providerRepository.insert(provider);
-        
         return provider;
     }
 
@@ -64,13 +63,12 @@ public class LlmDomainService {
                 .<ProviderEntity>lambdaUpdate()
                 .eq(ProviderEntity::getId, provider.getId())
                 .eq(provider.needCheckUserId(),ProviderEntity::getUserId, provider.getUserId());
-        providerRepository.update(provider,wrapper);
+        providerRepository.checkedUpdate(provider,wrapper);
     }
 
     /**
      * 获取用户自己的服务商
-     * @param userId
-     * @return
+     * @param userId 用户id
      */
     public List<ProviderAggregate> getUserProviders(String userId) {
         Wrapper<ProviderEntity> wrapper = Wrappers.<ProviderEntity>lambdaQuery().eq(ProviderEntity::getUserId, userId);
@@ -156,7 +154,6 @@ public class LlmDomainService {
      * 获取服务商
      * @param providerId 服务商id
      * @param userId 用户id
-     * @return
      */
     public ProviderEntity getProvider(String providerId, String userId) {
 
@@ -170,8 +167,7 @@ public class LlmDomainService {
 
     /**
      * 查找服务商
-     * @param providerId
-     * @return
+     * @param providerId 服务商id
      */
     public ProviderEntity findProviderById(String providerId) {
         Wrapper<ProviderEntity> wrapper = Wrappers.<ProviderEntity>lambdaQuery().eq(ProviderEntity::getId, providerId);
@@ -229,19 +225,20 @@ public class LlmDomainService {
      * @param userId 用户id
      */
     @Transactional
-    public void deleteProvider(String providerId, String userId){
-        Wrapper<ProviderEntity> wrapper = Wrappers.<ProviderEntity>lambdaQuery().eq(ProviderEntity::getId, providerId).eq(ProviderEntity::getUserId, userId);
-        providerRepository.delete(wrapper);
+    public void deleteProvider(String providerId, String userId, Operator operator){
+        Wrapper<ProviderEntity> wrapper = Wrappers.<ProviderEntity>lambdaQuery()
+                .eq(ProviderEntity::getId, providerId).eq(operator.needCheckUserId(), ProviderEntity::getUserId, userId);
+        providerRepository.checkedDelete(wrapper);
         // 删除模型
         Wrapper<ModelEntity> modelWrapper = Wrappers.<ModelEntity>lambdaQuery().eq(ModelEntity::getProviderId, providerId);
-        modelRepository.delete(modelWrapper);
+        modelRepository.checkedDelete(modelWrapper);
     }
 
     /**
      * 验证服务商协议是否支持
      * @param protocol 协议
      */
-    private void validateProviderProtocol(String protocol) {
+    private void validateProviderProtocol(ProviderProtocol protocol) {
         // TODO: 从配置或枚举中获取支持的服务商协议列表
         if (!isSupportedProvider(protocol)) {
             throw new BusinessException("不支持的服务商协议类型: " + protocol);
@@ -253,11 +250,9 @@ public class LlmDomainService {
      * @param protocol 服务商提供商编码
      * @return
      */
-    private boolean isSupportedProvider(String protocol) {
-
-        ProviderProtocol[] supportedProviderTypes = ProviderProtocol.values();
-        return Arrays.stream(supportedProviderTypes)
-                .anyMatch(providerType -> providerType.name().equals(protocol));
+    private boolean isSupportedProvider(ProviderProtocol protocol) {
+        return Arrays.stream(ProviderProtocol.values())
+                .anyMatch(providerType -> providerType == protocol);
     }
 
     /**
@@ -283,17 +278,17 @@ public class LlmDomainService {
     public void updateModel(ModelEntity model) {
         Wrapper<ModelEntity> wrapper = 
         Wrappers.<ModelEntity>lambdaQuery().eq(ModelEntity::getId, model.getId()).eq(ModelEntity::getUserId, model.getUserId());
-        modelRepository.update(model, wrapper);
+        modelRepository.checkedUpdate(model, wrapper);
     }
 
     /**
      * 删除模型
      * @param modelId 模型id
      */
-    public void deleteModel(String modelId,String userId) {
+    public void deleteModel(String modelId,String userId,Operator operator) {
         Wrapper<ModelEntity> wrapper = 
-        Wrappers.<ModelEntity>lambdaQuery().eq(ModelEntity::getId, modelId).eq(ModelEntity::getUserId, userId);
-        modelRepository.delete(wrapper);
+        Wrappers.<ModelEntity>lambdaQuery().eq(ModelEntity::getId, modelId).eq(operator.needCheckUserId(),ModelEntity::getUserId, userId);
+        modelRepository.checkedDelete(wrapper);
     }
 
     /**
@@ -307,7 +302,7 @@ public class LlmDomainService {
                 .eq(ModelEntity::getUserId, userId)
                 .setSql("status = NOT status");
         
-        modelRepository.update(null, updateWrapper);
+        modelRepository.checkedUpdate(updateWrapper);
     }
 
     /**
@@ -347,10 +342,7 @@ public class LlmDomainService {
                 .eq(ProviderEntity::getId, providerId)
                 .eq(ProviderEntity::getUserId, userId)
                 .setSql("status = NOT status");
-
-        if(providerRepository.update(null, updateWrapper) == 0){
-            throw new BusinessException("修改失败");
-        }
+        providerRepository.checkedUpdate(updateWrapper);
     }
 
     /**

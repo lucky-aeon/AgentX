@@ -9,6 +9,7 @@ import org.xhy.domain.llm.model.ModelEntity;
 import org.xhy.domain.llm.model.ProviderAggregate;
 import org.xhy.domain.llm.model.ProviderEntity;
 import org.xhy.domain.llm.model.enums.ModelType;
+import org.xhy.infrastructure.entity.Operator;
 import org.xhy.infrastructure.llm.protocol.enums.ProviderProtocol;
 import org.xhy.domain.llm.model.enums.ProviderType;
 import org.xhy.domain.llm.service.LlmDomainService;
@@ -82,7 +83,7 @@ public class LLMAppService {
      * @param userId 用户id
      */
     public void deleteProvider(String providerId, String userId) {
-        llmDomainService.deleteProvider(providerId,userId);
+        llmDomainService.deleteProvider(providerId,userId, Operator.USER);
     }
 
     /**
@@ -165,7 +166,7 @@ public class LLMAppService {
      * @param userId 用户id
      */
     public void deleteModel(String modelId, String userId) {
-        llmDomainService.deleteModel(modelId, userId);
+        llmDomainService.deleteModel(modelId, userId,Operator.ADMIN);
     }
 
     /**

@@ -22,6 +22,10 @@ public class BaseEntity {
     private Operator operatedBy = Operator.USER;
 
 
+    public void setAdmin(){
+        this.operatedBy = Operator.ADMIN;
+    }
+
     public boolean needCheckUserId(){
         return this.operatedBy == Operator.USER;
     }

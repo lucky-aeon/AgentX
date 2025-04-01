@@ -34,9 +34,9 @@ public class SessionDomainService {
      * @param sessionId 会话id
      * @param userId 用户id
      */
-    public boolean deleteSession(String sessionId, String userId) {
-        return sessionRepository.delete(Wrappers.<SessionEntity>lambdaQuery()
-                .eq(SessionEntity::getId, sessionId).eq(SessionEntity::getUserId, userId)) > 0;
+    public void deleteSession(String sessionId, String userId) {
+        sessionRepository.checkedDelete(Wrappers.<SessionEntity>lambdaQuery()
+                .eq(SessionEntity::getId, sessionId).eq(SessionEntity::getUserId, userId));
     }
 
     /**
@@ -51,7 +51,7 @@ public class SessionDomainService {
         session.setId(sessionId);
         session.setUserId(userId);
         session.setTitle(title);
-        sessionRepository.update(session, Wrappers.<SessionEntity>lambdaUpdate()
+        sessionRepository.checkedUpdate(session, Wrappers.<SessionEntity>lambdaUpdate()
                 .eq(SessionEntity::getId, sessionId).eq(SessionEntity::getUserId, userId));
     }
 

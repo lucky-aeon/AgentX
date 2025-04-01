@@ -1,6 +1,9 @@
 package org.xhy.interfaces.dto.llm;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import org.xhy.domain.llm.model.config.ProviderConfig;
+import org.xhy.infrastructure.llm.protocol.enums.ProviderProtocol;
 
 /**
  * 服务提供商创建请求
@@ -8,13 +11,15 @@ import org.xhy.domain.llm.model.config.ProviderConfig;
 public class ProviderCreateRequest {
 
     /**
-     * 服务商代码
-     */ 
-    private String protocol;
+     * 服务商协议
+     */
+    @NotNull(message = "协议不能为空")
+    private ProviderProtocol protocol;
 
     /**
      * 服务商名称
      */
+    @NotBlank(message = "名称不可为空")
     private String name;
 
     /**
@@ -32,11 +37,11 @@ public class ProviderCreateRequest {
      */
     private Boolean status = true;
 
-    public String getProtocol() {
+    public ProviderProtocol getProtocol() {
         return protocol;
     }
     
-    public void setProtocol(String protocol) {
+    public void setProtocol(ProviderProtocol protocol) {
         this.protocol = protocol;
     }
     

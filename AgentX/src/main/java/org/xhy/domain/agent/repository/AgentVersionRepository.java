@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;
 import org.xhy.domain.agent.model.AgentVersionEntity;
+import org.xhy.infrastructure.repository.MyBatisPlusExtRepository;
 
 import java.util.List;
 
@@ -11,7 +12,7 @@ import java.util.List;
  * Agent版本仓库接口
  */
 @Mapper
-public interface AgentVersionRepository extends BaseMapper<AgentVersionEntity> {
+public interface AgentVersionRepository extends MyBatisPlusExtRepository<AgentVersionEntity> {
 
         /**
          * 查询每个agentId的最新版本（按publishStatus过滤）

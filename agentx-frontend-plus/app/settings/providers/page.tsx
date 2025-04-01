@@ -35,7 +35,7 @@ import { Separator } from "@/components/ui/separator"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Switch } from "@/components/ui/switch"
 
-// 服务提供商接口
+// 服务商接口
 interface Model {
   id: string
   userId: string
@@ -87,7 +87,7 @@ export default function ProvidersPage() {
   const [isDeletingModel, setIsDeletingModel] = useState(false)
   const [isTogglingModelStatus, setIsTogglingModelStatus] = useState(false)
   
-  // 加载服务提供商数据
+  // 加载服务商数据
   const loadProviders = async () => {
     setLoading(true)
     try {
@@ -100,14 +100,14 @@ export default function ProvidersPage() {
       
       const response = await getProviders(type);
       if (response.code === 200) {
-        console.log("服务提供商数据:", response.data)
+        console.log("服务商数据:", response.data)
         setProviders(response.data)
       } else {
-        setError(response.message || "获取服务提供商列表失败")
+        setError(response.message || "获取服务商列表失败")
       }
     } catch (err) {
-      console.error("获取服务提供商错误:", err)
-      setError("获取服务提供商数据失败")
+      console.error("获取服务商错误:", err)
+      setError("获取服务商数据失败")
     } finally {
       setLoading(false)
     }
@@ -118,7 +118,7 @@ export default function ProvidersPage() {
     loadProviders()
   }, [activeTab])
   
-  // 根据标签筛选服务提供商（已通过API过滤，无需本地再次过滤）
+  // 根据标签筛选服务商（已通过API过滤，无需本地再次过滤）
   const filteredProviders = providers;
 
   // 打开详情弹窗并获取详细信息
@@ -126,16 +126,16 @@ export default function ProvidersPage() {
     setSelectedProvider(provider)
     setShowDetailDialog(true)
     
-    // 获取服务提供商详情
+    // 获取服务商详情
     setDetailLoading(true)
     try {
       const response = await getProviderDetail(provider.id);
       if (response.code === 200) {
         setSelectedProvider(response.data);
-        // 不再需要单独加载模型列表，因为服务提供商详情已包含models数组
+        // 不再需要单独加载模型列表，因为服务商详情已包含models数组
       }
     } catch (err) {
-      console.error("获取服务提供商详情错误:", err);
+      console.error("获取服务商详情错误:", err);
     } finally {
       setDetailLoading(false);
     }
@@ -154,7 +154,7 @@ export default function ProvidersPage() {
       e.preventDefault();
     }
     
-    // 获取服务提供商详情
+    // 获取服务商详情
     try {
       const response = await getProviderDetail(provider.id);
       if (response.code === 200) {
@@ -168,7 +168,7 @@ export default function ProvidersPage() {
         });
       }
     } catch (err) {
-      console.error("获取服务提供商详情错误:", err);
+      console.error("获取服务商详情错误:", err);
       toast({
         title: "获取提供商详情失败",
         description: "请稍后重试",
@@ -202,13 +202,13 @@ export default function ProvidersPage() {
         loadProviders();
       }
     } catch (error) {
-      console.error("删除服务提供商失败:", error);
+      console.error("删除服务商失败:", error);
     } finally {
       setIsDeleting(false);
     }
   }
   
-  // 切换服务提供商状态
+  // 切换服务商状态
   const toggleProviderStatus = async (provider: Provider, e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
@@ -233,7 +233,7 @@ export default function ProvidersPage() {
         }));
       }
     } catch (error) {
-      console.error("切换服务提供商状态失败:", error);
+      console.error("切换服务商状态失败:", error);
     } finally {
       setIsTogglingStatus(false);
     }
@@ -259,7 +259,7 @@ export default function ProvidersPage() {
   
   // 确认删除模型
   const confirmDeleteModel = async () => {
-    if (!selectedModel) return;
+    if (!selectedModel || !selectedProvider) return;
     
     setIsDeletingModel(true);
     try {
@@ -268,15 +268,25 @@ export default function ProvidersPage() {
         setDeleteModelConfirmOpen(false);
         
         // 更新服务商详情中的模型列表
-        if (selectedProvider) {
-          try {
-            const detailResponse = await getProviderDetail(selectedProvider.id);
-            if (detailResponse.code === 200) {
-              setSelectedProvider(detailResponse.data);
-            }
-          } catch (error) {
-            console.error("刷新服务商详情失败:", error);
+        try {
+          const detailResponse = await getProviderDetail(selectedProvider.id);
+          if (detailResponse.code === 200) {
+            const updatedProvider = detailResponse.data;
+            setSelectedProvider(updatedProvider);
+            
+            // 局部更新providers数组中的对应服务商
+            setProviders(prev => prev.map(p => {
+              if (p.id === selectedProvider.id) {
+                return {
+                  ...p,
+                  models: updatedProvider.models || []
+                };
+              }
+              return p;
+            }));
           }
+        } catch (error) {
+          console.error("刷新服务商详情失败:", error);
         }
       }
     } catch (error) {
@@ -288,25 +298,38 @@ export default function ProvidersPage() {
   
   // 切换模型状态
   const toggleModelStatus = async (model: Model) => {
+    if (!selectedProvider) return;
+    
     setIsTogglingModelStatus(true);
     try {
       const response = await toggleModelStatusWithToast(model.id);
       if (response.code === 200) {
-        // 更新本地状态，不再重新加载模型列表
-        if (selectedProvider) {
-          setSelectedProvider(prev => {
-            if (!prev) return prev;
-            
-            const updatedModels = prev.models.map(m => 
-              m.id === model.id ? { ...m, status: !m.status } : m
-            );
-            
+        const updatedStatus = !model.status;
+        
+        // 更新详情页模型状态
+        const updatedModels = selectedProvider.models.map(m => 
+          m.id === model.id ? { ...m, status: updatedStatus } : m
+        );
+        
+        // 更新选中的服务商
+        setSelectedProvider(prev => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            models: updatedModels
+          };
+        });
+        
+        // 局部更新providers数组中的对应服务商
+        setProviders(prev => prev.map(p => {
+          if (p.id === selectedProvider.id) {
             return {
-              ...prev,
+              ...p,
               models: updatedModels
             };
-          });
-        }
+          }
+          return p;
+        }));
       }
     } catch (error) {
       console.error("切换模型状态失败:", error);
@@ -320,7 +343,7 @@ export default function ProvidersPage() {
     return (
       <div className="container py-6 flex flex-col items-center justify-center min-h-[400px]">
         <Loader2 className="h-10 w-10 animate-spin text-primary" />
-        <p className="mt-4 text-muted-foreground">加载服务提供商...</p>
+        <p className="mt-4 text-muted-foreground">加载服务商...</p>
       </div>
     )
   }
@@ -348,12 +371,12 @@ export default function ProvidersPage() {
     <div className="container py-6">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">服务提供商</h1>
-          <p className="text-muted-foreground">管理您的AI服务提供商和API密钥</p>
+          <h1 className="text-3xl font-bold tracking-tight">服务商</h1>
+          <p className="text-muted-foreground">管理您的AI服务商和API密钥</p>
         </div>
         <Button className="flex items-center gap-2" onClick={openAddDialog}>
           <Plus className="h-4 w-4" />
-          添加服务提供商
+          添加服务商
         </Button>
       </div>
       
@@ -367,7 +390,7 @@ export default function ProvidersPage() {
         <TabsContent value={activeTab} className="space-y-6">
           {filteredProviders.length === 0 ? (
             <div className="text-center py-10 border rounded-md bg-gray-50">
-              <p className="text-muted-foreground">暂无服务提供商数据</p>
+              <p className="text-muted-foreground">暂无服务商数据</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -473,16 +496,16 @@ export default function ProvidersPage() {
         </TabsContent>
       </Tabs>
       
-      {/* 服务提供商详情弹窗 */}
+      {/* 服务商详情弹窗 */}
       {selectedProvider && (
         <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
           <DialogContent className="max-w-4xl max-h-[80vh] flex flex-col overflow-hidden">
             <DialogHeader>
               <DialogTitle className="flex justify-between items-center">
-                <span>服务提供商详情</span>
+                <span>服务商详情</span>
               </DialogTitle>
               <DialogDescription>
-                查看和管理服务提供商的详细信息和模型配置
+                查看和管理服务商的详细信息和模型配置
               </DialogDescription>
             </DialogHeader>
             
@@ -568,16 +591,18 @@ export default function ProvidersPage() {
                 <div className="flex-1 overflow-hidden flex flex-col">
                   <div className="flex justify-between items-center mb-2">
                     <h3 className="text-lg font-semibold">模型列表</h3>
-                    <Button variant="outline" size="sm" onClick={openAddModelDialog}>
-                      <PlusCircle className="h-4 w-4 mr-1" />
-                      添加模型
-                    </Button>
+                    {!selectedProvider.isOfficial && (
+                      <Button variant="outline" size="sm" onClick={openAddModelDialog}>
+                        <PlusCircle className="h-4 w-4 mr-1" />
+                        添加模型
+                      </Button>
+                    )}
                   </div>
                   
                   <ScrollArea className="flex-1">
                     {!selectedProvider.models || selectedProvider.models.length === 0 ? (
                       <div className="text-center py-6 text-muted-foreground">
-                        暂无模型，点击添加按钮创建模型
+                        暂无模型{!selectedProvider.isOfficial && "，点击添加按钮创建模型"}
                       </div>
                     ) : (
                       <div className="space-y-2">
@@ -596,44 +621,50 @@ export default function ProvidersPage() {
                                 )}
                               </div>
                               <div className="flex items-center space-x-2">
-                                <Switch 
-                                  checked={model.status}
-                                  onCheckedChange={() => {}}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    toggleModelStatus(model);
-                                  }}
-                                />
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon"
-                                  className="h-8 w-8" 
-                                  onClick={() => openEditModelDialog(model)}
-                                >
-                                  <Settings2 className="h-4 w-4" />
-                                </Button>
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon"
-                                  className="h-8 w-8 text-destructive" 
-                                  onClick={() => openDeleteModelConfirm(model)}
-                                >
-                                  <svg
-                                    width="15"
-                                    height="15"
-                                    viewBox="0 0 15 15"
-                                    fill="none"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    className="h-4 w-4"
-                                  >
-                                    <path
-                                      d="M5.5 1C5.22386 1 5 1.22386 5 1.5C5 1.77614 5.22386 2 5.5 2H9.5C9.77614 2 10 1.77614 10 1.5C10 1.22386 9.77614 1 9.5 1H5.5ZM3 3.5C3 3.22386 3.22386 3 3.5 3H11.5C11.7761 3 12 3.22386 12 3.5C12 3.77614 11.7761 4 11.5 4H3.5C3.22386 4 3 3.77614 3 3.5ZM3.5 5C3.22386 5 3 5.22386 3 5.5C3 5.77614 3.22386 6 3.5 6H4V12C4 12.5523 4.44772 13 5 13H10C10.5523 13 11 12.5523 11 12V6H11.5C11.7761 6 12 5.77614 12 5.5C12 5.22386 11.7761 5 11.5 5H3.5ZM5 6H10V12H5V6Z"
-                                      fill="currentColor"
-                                      fillRule="evenodd"
-                                      clipRule="evenodd"
-                                    ></path>
-                                  </svg>
-                                </Button>
+                                {!selectedProvider.isOfficial && (
+                                  <Switch 
+                                    checked={model.status}
+                                    onCheckedChange={() => {}}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      toggleModelStatus(model);
+                                    }}
+                                  />
+                                )}
+                                {!selectedProvider.isOfficial && (
+                                  <>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="icon"
+                                      className="h-8 w-8" 
+                                      onClick={() => openEditModelDialog(model)}
+                                    >
+                                      <Settings2 className="h-4 w-4" />
+                                    </Button>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="icon"
+                                      className="h-8 w-8 text-destructive" 
+                                      onClick={() => openDeleteModelConfirm(model)}
+                                    >
+                                      <svg
+                                        width="15"
+                                        height="15"
+                                        viewBox="0 0 15 15"
+                                        fill="none"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        className="h-4 w-4"
+                                      >
+                                        <path
+                                          d="M5.5 1C5.22386 1 5 1.22386 5 1.5C5 1.77614 5.22386 2 5.5 2H9.5C9.77614 2 10 1.77614 10 1.5C10 1.22386 9.77614 1 9.5 1H5.5ZM3 3.5C3 3.22386 3.22386 3 3.5 3H11.5C11.7761 3 12 3.22386 12 3.5C12 3.77614 11.7761 4 11.5 4H3.5C3.22386 4 3 3.77614 3 3.5ZM3.5 5C3.22386 5 3 5.22386 3 5.5C3 5.77614 3.22386 6 3.5 6H4V12C4 12.5523 4.44772 13 5 13H10C10.5523 13 11 12.5523 11 12V6H11.5C11.7761 6 12 5.77614 12 5.5C12 5.22386 11.7761 5 11.5 5H3.5ZM5 6H10V12H5V6Z"
+                                          fill="currentColor"
+                                          fillRule="evenodd"
+                                          clipRule="evenodd"
+                                        ></path>
+                                      </svg>
+                                    </Button>
+                                  </>
+                                )}
                               </div>
                             </div>
                           </Card>
@@ -653,12 +684,14 @@ export default function ProvidersPage() {
               <Button variant="outline" onClick={closeDetail}>
                 关闭
               </Button>
-              <Button 
-                onClick={() => selectedProvider && openEditDialog(selectedProvider)}
-                disabled={!selectedProvider}
-              >
-                编辑配置
-              </Button>
+              {!selectedProvider?.isOfficial && (
+                <Button 
+                  onClick={() => selectedProvider && openEditDialog(selectedProvider)}
+                  disabled={!selectedProvider}
+                >
+                  编辑配置
+                </Button>
+              )}
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -668,9 +701,9 @@ export default function ProvidersPage() {
       <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>删除服务提供商</DialogTitle>
+            <DialogTitle>删除服务商</DialogTitle>
             <DialogDescription>
-              您确定要删除此服务提供商吗？此操作无法撤销。
+              您确定要删除此服务商吗？此操作无法撤销。
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -689,7 +722,7 @@ export default function ProvidersPage() {
         </DialogContent>
       </Dialog>
       
-      {/* 添加/编辑服务提供商对话框 */}
+      {/* 添加/编辑服务商对话框 */}
       <ProviderDialog 
         open={showProviderDialog} 
         onOpenChange={setShowProviderDialog}
@@ -731,15 +764,26 @@ export default function ProvidersPage() {
           providerName={selectedProvider.name}
           model={editingModel}
           onSuccess={async () => {
-            if (selectedProvider) {
-              try {
-                const response = await getProviderDetail(selectedProvider.id);
-                if (response.code === 200) {
-                  setSelectedProvider(response.data);
-                }
-              } catch (error) {
-                console.error("刷新服务商详情失败:", error);
+            // 更新详情页数据
+            try {
+              const response = await getProviderDetail(selectedProvider.id);
+              if (response.code === 200) {
+                const updatedProvider = response.data;
+                setSelectedProvider(updatedProvider);
+                
+                // 局部更新providers数组中的对应服务商
+                setProviders(prev => prev.map(p => {
+                  if (p.id === selectedProvider.id) {
+                    return {
+                      ...p,
+                      models: updatedProvider.models || []
+                    };
+                  }
+                  return p;
+                }));
               }
+            } catch (error) {
+              console.error("刷新服务商详情失败:", error);
             }
           }}
         />

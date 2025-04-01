@@ -104,7 +104,7 @@ public class ConversationAppService {
 
         // 对话 todo xhy 这里需要传入消息列表 ，并且目前默认流式
         org.xhy.domain.llm.model.config.ProviderConfig config = provider.getConfig();
-        StreamingChatLanguageModel chatStreamClient = llmProviderService.getStream(ProviderProtocol.valueOf(provider.getProtocol()), new ProviderConfig(config.getApiKey(),config.getBaseUrl(),model.getModelId()));
+        StreamingChatLanguageModel chatStreamClient = llmProviderService.getStream(provider.getProtocol(), new ProviderConfig(config.getApiKey(),config.getBaseUrl(),model.getModelId()));
 
         // 用户消息
         MessageEntity userMessageEntity = new MessageEntity();

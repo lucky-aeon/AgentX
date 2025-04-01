@@ -1,5 +1,6 @@
 package org.xhy.interfaces.dto.llm;
 
+import jakarta.validation.constraints.NotBlank;
 import org.xhy.domain.llm.model.config.LLMModelConfig;
 import org.xhy.domain.llm.model.enums.ModelType;
 
@@ -16,11 +17,13 @@ public class ModelCreateRequest {
     /**
      * 模型id
      */
+    @NotBlank(message = "模型id不可为空")
     private String modelId;
 
     /**
      * 模型名称
      */
+    @NotBlank(message = "名称不可为空")
     private String name;
 
     /**

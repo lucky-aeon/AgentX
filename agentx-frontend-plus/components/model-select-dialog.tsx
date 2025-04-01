@@ -152,8 +152,9 @@ export function ModelSelectDialog({
               {Object.entries(modelsByProvider).map(([provider, providerModels]) => (
                 <div key={provider} className="space-y-3">
                   <h3 className="font-medium text-sm text-muted-foreground uppercase tracking-wider">
+                    {provider}
                   </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {providerModels.map(model => (
                       <div 
                         key={model.id}
@@ -161,6 +162,7 @@ export function ModelSelectDialog({
                           relative border rounded-lg p-4 transition-colors cursor-pointer
                           ${selectedModelId === model.id ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'border-border hover:border-primary/50'}
                           ${!model.status ? 'opacity-60' : ''}
+                          h-full flex flex-col shadow-sm hover:shadow-md
                         `}
                       >
                         <RadioGroupItem 
@@ -169,19 +171,20 @@ export function ModelSelectDialog({
                           className="sr-only"
                           disabled={!model.status}
                         />
+                        
                         <label 
                           htmlFor={model.id}
                           className="flex flex-col h-full cursor-pointer"
                         >
                           <div className="flex items-start justify-between mb-2">
-                            <div className="flex items-center">
+                            <div className="flex flex-wrap items-center gap-2">
                               <span className="font-medium text-base">
                                 {model.name || model.modelId}
                               </span>
-                              <div className="flex items-center ml-2 space-x-1">
+                              <div className="flex flex-wrap items-center gap-1">
                                 {model.isOfficial && (
                                   <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100">
-                                    官方
+                                    官方模型
                                   </Badge>
                                 )}
                                 {!model.status && (
@@ -192,18 +195,17 @@ export function ModelSelectDialog({
                               </div>
                             </div>
                             {selectedModelId === model.id && (
-                              <CheckCircle className="h-5 w-5 text-primary" />
+                              <CheckCircle className="h-5 w-5 text-primary flex-shrink-0" />
                             )}
                           </div>
                           
-                          <div className="text-sm text-muted-foreground mb-2 flex-1">
-                            {model.description} 
+                          <div className="text-sm text-muted-foreground mb-3 flex-1">
+                            {model.description || "无描述"} 
                           </div>
                           
-                          <div className="flex items-center text-xs text-muted-foreground mt-auto">
+                          <div className="flex items-center text-xs text-muted-foreground mt-auto pt-2 border-t border-dashed border-gray-200">
                             <div className="flex items-center">
                               <span className="mr-3">模型ID: {model.modelId}</span>
-                             
                             </div>
                           </div>
                         </label>
