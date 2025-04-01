@@ -46,7 +46,7 @@ public class LlmDomainService {
      * @param provider 服务商信息
      * @return 创建后的服务商ID
      */
-    public ProviderEntity createCommonProvider(ProviderEntity provider) {
+    public ProviderEntity createProvider(ProviderEntity provider) {
         validateProviderProtocol(provider.getProtocol());
         provider.setIsOfficial(false);
         providerRepository.insert(provider);
@@ -55,29 +55,13 @@ public class LlmDomainService {
     }
 
     /**
-     * 创建官方服务商
-     * @param provider 服务商信息
-     * @return 创建后的服务商ID
-     */
-    public ProviderEntity createOfficeProvider(ProviderEntity provider) {
-        validateProviderProtocol(provider.getProtocol());
-        provider.setIsOfficial(true);
-        providerRepository.insert(provider);
-
-        return provider;
-    }
-
-
-    /**
      * 更新服务商
      * @param provider 服务商信息
      */
     public void updateProvider(ProviderEntity provider) {
-        // 1. 验证服务商协议是否支持
         validateProviderProtocol(provider.getProtocol());
-
-        // 3. 更新服务商信息
-        providerRepository.updateById(provider);
+        LambdaUpdateWrapper<ProviderEntity> wrapper = Wrappers.<ProviderEntity>lambdaUpdate().eq(ProviderEntity::getId, provider.getId()).eq(ProviderEntity::getUserId, provider.getUserId());
+        providerRepository.update(provider,wrapper);
     }
 
     /**

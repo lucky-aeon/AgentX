@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.extension.activerecord.Model;
 import org.apache.ibatis.type.JdbcType;
 import org.xhy.domain.agent.constant.PublishStatus;
+import org.xhy.infrastructure.entity.BaseEntity;
 import org.xhy.infrastructure.typehandler.JsonTypeHandler;
 
 import java.time.LocalDateTime;
@@ -17,7 +18,7 @@ import java.util.List;
  * Agent版本实体类，代表一个Agent的发布版本
  */
 @TableName(value = "agent_versions", autoResultMap = true)
-public class AgentVersionEntity extends Model<AgentVersionEntity> {
+public class AgentVersionEntity extends BaseEntity {
 
     /**
      * 版本唯一ID
@@ -127,23 +128,7 @@ public class AgentVersionEntity extends Model<AgentVersionEntity> {
     @TableField("user_id")
     private String userId;
 
-    /**
-     * 创建时间
-     */
-    @TableField("created_at")
-    private LocalDateTime createdAt;
 
-    /**
-     * 最后更新时间
-     */
-    @TableField("updated_at")
-    private LocalDateTime updatedAt;
-
-    /**
-     * 删除时间（软删除）
-     */
-    @TableField("deleted_at")
-    private LocalDateTime deletedAt;
 
     /**
      * 无参构造函数
@@ -154,38 +139,6 @@ public class AgentVersionEntity extends Model<AgentVersionEntity> {
         this.knowledgeBaseIds = new ArrayList<>();
     }
 
-    /**
-     * 全参构造函数
-     */
-    public AgentVersionEntity(String id, String agentId, String name, String avatar, String description,
-            String versionNumber, String systemPrompt, String welcomeMessage,
-                              AgentModelConfig modelConfig, List<AgentTool> tools, List<String> knowledgeBaseIds,
-            String changeLog, Integer agentType, String userId,
-            LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime deletedAt,
-            Integer publishStatus, String rejectReason, LocalDateTime reviewTime,
-            LocalDateTime publishedAt) {
-        this.id = id;
-        this.agentId = agentId;
-        this.name = name;
-        this.avatar = avatar;
-        this.description = description;
-        this.versionNumber = versionNumber;
-        this.systemPrompt = systemPrompt;
-        this.welcomeMessage = welcomeMessage;
-        this.modelConfig = modelConfig;
-        this.tools = tools;
-        this.knowledgeBaseIds = knowledgeBaseIds;
-        this.changeLog = changeLog;
-        this.agentType = agentType;
-        this.userId = userId;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.deletedAt = deletedAt;
-        this.publishStatus = publishStatus;
-        this.rejectReason = rejectReason;
-        this.reviewTime = reviewTime;
-        this.publishedAt = publishedAt;
-    }
 
     // Getter和Setter方法
     public String getId() {
@@ -331,31 +284,6 @@ public class AgentVersionEntity extends Model<AgentVersionEntity> {
     public void setUserId(String userId) {
         this.userId = userId;
     }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-    public LocalDateTime getDeletedAt() {
-        return deletedAt;
-    }
-
-    public void setDeletedAt(LocalDateTime deletedAt) {
-        this.deletedAt = deletedAt;
-    }
-
     /**
      * 获取发布状态枚举
      */

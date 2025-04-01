@@ -48,7 +48,8 @@ public class LLMAppService {
      */
     public ProviderDTO createProvider(ProviderCreateRequest providerCreateRequest,String userId) {
         ProviderEntity provider = ProviderAssembler.toEntity(providerCreateRequest, userId);
-        llmDomainService.createCommonProvider(provider);
+        provider.setIsOfficial(false);
+        llmDomainService.createProvider(provider);
         return ProviderAssembler.toDTO(provider);
     }
 

@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xhy.domain.llm.model.config.ProviderConfig;
 import org.xhy.infrastructure.converter.ProviderConfigConverter;
+import org.xhy.infrastructure.entity.BaseEntity;
 import org.xhy.infrastructure.exception.BusinessException;
 import org.xhy.infrastructure.utils.EncryptUtils;
 
@@ -14,7 +15,7 @@ import java.time.LocalDateTime;
  * 服务提供商领域模型
  */
 @TableName("providers")
-public class ProviderEntity {
+public class ProviderEntity extends BaseEntity {
 
     @TableId(type = IdType.ASSIGN_UUID)
     private String id;
@@ -29,15 +30,6 @@ public class ProviderEntity {
 
     private Boolean isOfficial;
     private Boolean status;
-
-    @TableField(fill = FieldFill.INSERT)
-    private LocalDateTime createdAt;
-
-    @TableField(fill = FieldFill.INSERT_UPDATE)
-    private LocalDateTime updatedAt;
-
-    @TableLogic
-    private LocalDateTime deletedAt;
 
     public void setConfig(ProviderConfig config) {
         this.config = config;
@@ -101,30 +93,6 @@ public class ProviderEntity {
 
     public void setStatus(Boolean status) {
         this.status = status;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-    public LocalDateTime getDeletedAt() {
-        return deletedAt;
-    }
-
-    public void setDeletedAt(LocalDateTime deletedAt) {
-        this.deletedAt = deletedAt;
     }
 
     public void isActive() {

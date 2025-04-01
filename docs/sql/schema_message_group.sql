@@ -16,6 +16,8 @@ CREATE TABLE message_groups (
     is_active BOOLEAN DEFAULT TRUE,       -- 是否活跃
     user_id VARCHAR(36) NOT NULL,         -- 创建人ID
     metadata JSON                        -- 元数据
+    deleted_at TIMESTAMP NULL
+
 );
 
 -- 为message_groups表添加注释
@@ -38,6 +40,8 @@ CREATE TABLE message_group_items (
     created_at TIMESTAMP NOT NULL,        -- 创建时间
     sort_order INTEGER DEFAULT 0,         -- 排序顺序
     metadata JSON,                        -- 元数据
+    deleted_at TIMESTAMP NULL
+    updated_at TIMESTAMP NOT NULL,        -- 修改时间
 );
 
 -- 为message_group_items表添加注释
@@ -55,6 +59,8 @@ CREATE TABLE message_group_tags (
     group_id VARCHAR(36) NOT NULL,        -- 消息组ID
     tag_name VARCHAR(100) NOT NULL,       -- 标签名称
     created_at TIMESTAMP NOT NULL,        -- 创建时间
+    deleted_at TIMESTAMP NULL
+    updated_at TIMESTAMP NOT NULL,        -- 修改时间
 );
 
 -- 为message_group_tags表添加注释

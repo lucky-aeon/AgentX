@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.activerecord.Model;
 import org.xhy.domain.conversation.constant.Role;
 import org.xhy.infrastructure.converter.ModelConfigConverter;
 import org.xhy.infrastructure.converter.RoleConverter;
+import org.xhy.infrastructure.entity.BaseEntity;
 
 import java.time.LocalDateTime;
 
@@ -12,7 +13,7 @@ import java.time.LocalDateTime;
  * 消息实体类，代表对话中的一条消息
  */
 @TableName("messages")
-public class MessageEntity extends Model<MessageEntity> {
+public class MessageEntity extends BaseEntity {
 
     /**
      * 消息唯一ID

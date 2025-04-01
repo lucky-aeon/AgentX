@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.extension.activerecord.Model;
+import org.xhy.infrastructure.entity.BaseEntity;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -14,7 +15,7 @@ import java.util.List;
  * 上下文实体类，管理会话的上下文窗口
  */
 @TableName("context")
-public class ContextEntity extends Model<ContextEntity> {
+public class ContextEntity extends BaseEntity {
 
     /**
      * 上下文唯一ID
@@ -39,12 +40,6 @@ public class ContextEntity extends Model<ContextEntity> {
      */
     @TableField("summary")
     private String summary;
-
-    /**
-     * 最后更新时间
-     */
-    @TableField("updated_at")
-    private LocalDateTime updatedAt;
 
     /**
      * 无参构造函数
@@ -95,14 +90,6 @@ public class ContextEntity extends Model<ContextEntity> {
 
     public void setSummary(String summary) {
         this.summary = summary;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
     }
 
     /**
