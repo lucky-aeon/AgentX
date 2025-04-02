@@ -29,17 +29,11 @@ public class ConversationDomainService {
 
     private final Logger logger = LoggerFactory.getLogger(ConversationDomainService.class);
     private final MessageRepository messageRepository;
-    private final ContextRepository contextRepository;
-    private final SessionDomainService sessionDomainService;
 
 
 
-    public ConversationDomainService(MessageRepository messageRepository,
-            ContextRepository contextRepository,
-            SessionDomainService sessionDomainService) {
+    public ConversationDomainService(MessageRepository messageRepository) {
         this.messageRepository = messageRepository;
-        this.contextRepository = contextRepository;
-        this.sessionDomainService = sessionDomainService;
     }
 
 
@@ -64,30 +58,6 @@ public class ConversationDomainService {
        messageRepository.insert(message);
        return message;
    }
-
-    /**
-     * 更新上下文，添加新消息到活跃消息列表
-     * 
-     * @param sessionId 会话id
-     * @param messageId 消息id
-     */
-    private void updateContext(String sessionId, String messageId) {
-        // 查找当前会话的上下文
-        ContextEntity context = contextRepository.selectOne(
-                Wrappers.<ContextEntity>lambdaQuery().eq(ContextEntity::getSessionId, sessionId));
-
-        // 如果上下文不存在，创建新上下文
-        if (context == null) {
-            context = ContextEntity.createNew(sessionId);
-            context.addMessage(messageId);
-            contextRepository.insert(context);
-        } else {
-            // 更新现有上下文
-            context.addMessage(messageId);
-            context.setUpdatedAt(LocalDateTime.now());
-            contextRepository.updateById(context);
-        }
-    }
 
     /**
      * 删除会话下的消息

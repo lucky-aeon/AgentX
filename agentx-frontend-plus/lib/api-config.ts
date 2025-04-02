@@ -24,7 +24,11 @@ export const API_ENDPOINTS = {
   AGENT_VERSION_DETAIL: (id: string, version: string) => `/agent/${id}/versions/${version}`,
   PUBLISH_AGENT_VERSION: (id: string) => `/agent/${id}/publish`,
   PUBLISHED_AGENTS: "/agent/published",
-  SET_AGENT_MODEL: (agentId: string, modelId: string) => `/agent/workspace/${agentId}/model/${modelId}`,
+  
+  // Agent工作区相关
+  AGENT_WORKSPACE: "/agent/workspace",
+  AGENT_MODEL_CONFIG: (agentId: string) => `/agent/workspace/${agentId}/model-config`,
+  SET_AGENT_MODEL_CONFIG: (agentId: string) => `/agent/workspace/${agentId}/model/config`,
   
   // LLM相关
   PROVIDERS: "/llm/providers",
@@ -36,8 +40,6 @@ export const API_ENDPOINTS = {
   TOGGLE_PROVIDER_STATUS: (id: string) => `/llm/providers/${id}/status`,
   
   // 模型相关
-  // 注意：'/llm/models' 路径不可用
-  // MODELS: "/llm/models",
   MODEL_DETAIL: (id: string) => `/llm/models/${id}`,
   CREATE_MODEL: "/llm/models",
   UPDATE_MODEL: "/llm/models",

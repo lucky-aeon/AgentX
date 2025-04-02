@@ -76,10 +76,15 @@ public class AgentWorkspaceDomainService {
         return agentWorkspaceRepository.selectOne(wrapper);
     }
 
-    public void save(AgentWorkspaceEntity workspace) {
-        boolean b = agentWorkspaceRepository.insertOrUpdate(workspace);
-        if (!b){
-            throw new BusinessException("保存失败");
-        }
+    public void save(AgentWorkspaceEntity workspace){
+
+        agentWorkspaceRepository.checkInsert(workspace);
+    }
+
+    public void update(AgentWorkspaceEntity workspace) {
+        LambdaUpdateWrapper<AgentWorkspaceEntity> wrapper = Wrappers.<AgentWorkspaceEntity>lambdaUpdate()
+                .eq(AgentWorkspaceEntity::getAgentId, workspace.getAgentId())
+                .eq(AgentWorkspaceEntity::getAgentId, workspace.getAgentId());
+        agentWorkspaceRepository.checkedUpdate(workspace,wrapper);
     }
 }

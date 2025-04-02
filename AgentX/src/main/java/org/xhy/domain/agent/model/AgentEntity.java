@@ -57,11 +57,6 @@ public class AgentEntity extends BaseEntity {
     @TableField("welcome_message")
     private String welcomeMessage;
 
-    /**
-     * 模型配置，包含模型类型、温度等参数
-     */
-    @TableField(value = "model_config", typeHandler = JsonTypeHandler.class, jdbcType = JdbcType.OTHER)
-    private AgentModelConfig modelConfig;
 
     /**
      * Agent可使用的工具列表
@@ -104,34 +99,8 @@ public class AgentEntity extends BaseEntity {
      * 无参构造函数
      */
     public AgentEntity() {
-        this.modelConfig = AgentModelConfig.createDefault();
         this.tools = new ArrayList<>();
         this.knowledgeBaseIds = new ArrayList<>();
-    }
-
-    /**
-     * 全参构造函数
-     */
-    public AgentEntity(String id, String name, String avatar, String description, String systemPrompt,
-                String welcomeMessage, AgentModelConfig modelConfig, List<AgentTool> tools, List<String> knowledgeBaseIds,
-                String publishedVersion, Boolean enabled, Integer agentType, String userId, 
-                LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime deletedAt) {
-        this.id = id;
-        this.name = name;
-        this.avatar = avatar;
-        this.description = description;
-        this.systemPrompt = systemPrompt;
-        this.welcomeMessage = welcomeMessage;
-        this.modelConfig = modelConfig;
-        this.tools = tools;
-        this.knowledgeBaseIds = knowledgeBaseIds;
-        this.publishedVersion = publishedVersion;
-        this.enabled = enabled;
-        this.agentType = agentType;
-        this.userId = userId;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.deletedAt = deletedAt;
     }
 
     // Getter和Setter方法
@@ -183,13 +152,7 @@ public class AgentEntity extends BaseEntity {
         this.welcomeMessage = welcomeMessage;
     }
 
-    public AgentModelConfig getModelConfig() {
-        return modelConfig != null ? modelConfig : AgentModelConfig.createDefault();
-    }
 
-    public void setModelConfig(AgentModelConfig modelConfig) {
-        this.modelConfig = modelConfig;
-    }
 
     public List<AgentTool> getTools() {
         return tools != null ? tools : new ArrayList<>();
@@ -268,11 +231,10 @@ public class AgentEntity extends BaseEntity {
     /**
      * 更新Agent配置
      */
-    public void updateConfig(String systemPrompt, String welcomeMessage, AgentModelConfig modelConfig,
+    public void updateConfig(String systemPrompt, String welcomeMessage,
                             List<AgentTool> tools, List<String> knowledgeBaseIds) {
         this.systemPrompt = systemPrompt;
         this.welcomeMessage = welcomeMessage;
-        this.modelConfig = modelConfig;
         this.tools = tools;
         this.knowledgeBaseIds = knowledgeBaseIds;
         this.updatedAt = LocalDateTime.now();

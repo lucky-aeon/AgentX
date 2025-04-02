@@ -3,7 +3,6 @@ package org.xhy.application.agent.assembler;
 import org.xhy.domain.agent.model.AgentEntity;
 import org.xhy.domain.agent.constant.AgentType;
 import org.xhy.application.agent.dto.AgentDTO;
-import org.xhy.domain.agent.model.AgentModelConfig;
 import org.xhy.interfaces.dto.agent.CreateAgentRequest;
 import org.xhy.interfaces.dto.agent.SearchAgentsRequest;
 import org.xhy.interfaces.dto.agent.UpdateAgentRequest;
@@ -39,13 +38,7 @@ public class AgentAssembler {
         // 设置初始状态为启用
         entity.setEnabled(true);
         
-        // 处理模型配置
-        if (request.getModelConfig() != null) {
-            entity.setModelConfig(request.getModelConfig());
-        } else {
-            entity.setModelConfig(AgentModelConfig.createDefault());
-        }
-        
+
         // 设置工具和知识库ID
         entity.setTools(request.getTools() != null ? request.getTools() : new ArrayList<>());
         entity.setKnowledgeBaseIds(request.getKnowledgeBaseIds() != null ? request.getKnowledgeBaseIds() : new ArrayList<>());
@@ -70,7 +63,6 @@ public class AgentAssembler {
         entity.setAvatar(request.getAvatar());
         entity.setSystemPrompt(request.getSystemPrompt());
         entity.setWelcomeMessage(request.getWelcomeMessage());
-        entity.setModelConfig(request.getModelConfig());
         entity.setTools(request.getTools());
         entity.setKnowledgeBaseIds(request.getKnowledgeBaseIds());
         entity.setUserId(userId);
@@ -95,7 +87,6 @@ public class AgentAssembler {
         dto.setDescription(entity.getDescription());
         dto.setSystemPrompt(entity.getSystemPrompt());
         dto.setWelcomeMessage(entity.getWelcomeMessage());
-        dto.setModelConfig(entity.getModelConfig());
         dto.setTools(entity.getTools());
         dto.setKnowledgeBaseIds(entity.getKnowledgeBaseIds());
         dto.setPublishedVersion(entity.getPublishedVersion());

@@ -1,7 +1,7 @@
 package org.xhy.interfaces.dto.llm;
 
 import jakarta.validation.constraints.NotBlank;
-import org.xhy.domain.llm.model.config.LLMModelConfig;
+import org.xhy.domain.agent.model.LLMModelConfig;
 import org.xhy.domain.llm.model.enums.ModelType;
 
 /**
@@ -36,11 +36,6 @@ public class ModelCreateRequest {
      */
     private ModelType type;
 
-    /**
-     * 模型配置
-     */
-    private LLMModelConfig config;
-    
     public String getProviderId() {
         return providerId;
     }
@@ -80,13 +75,6 @@ public class ModelCreateRequest {
     public void setType(ModelType type) {
         this.type = type;
     }
-    
-    public LLMModelConfig getConfig() {
-        return config;
-    }
-    
-    public void setConfig(LLMModelConfig config) {
-        this.config = config;
-    }
+
 
 }

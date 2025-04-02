@@ -1,7 +1,7 @@
 package org.xhy.application.agent.dto;
 
 import org.xhy.domain.agent.constant.AgentType;
-import org.xhy.domain.agent.model.AgentModelConfig;
+import org.xhy.domain.agent.model.LLMModelConfig;
 import org.xhy.domain.agent.model.AgentTool;
 import org.xhy.domain.agent.constant.PublishStatus;
 
@@ -53,11 +53,6 @@ public class AgentVersionDTO {
      * 欢迎消息
      */
     private String welcomeMessage;
-
-    /**
-     * 模型配置，包含模型类型、温度等参数
-     */
-    private AgentModelConfig modelConfig;
 
     /**
      * Agent可使用的工具列表
@@ -118,41 +113,10 @@ public class AgentVersionDTO {
      * 无参构造函数
      */
     public AgentVersionDTO() {
-        this.modelConfig = AgentModelConfig.createDefault();
         this.tools = new ArrayList<>();
         this.knowledgeBaseIds = new ArrayList<>();
     }
 
-    /**
-     * 全参构造函数
-     */
-    public AgentVersionDTO(String id, String agentId, String name, String avatar, String description,
-            String versionNumber, String systemPrompt, String welcomeMessage,
-                           AgentModelConfig modelConfig, List<AgentTool> tools, List<String> knowledgeBaseIds,
-            String changeLog, Integer agentType, Integer publishStatus,
-            String rejectReason, LocalDateTime reviewTime, LocalDateTime publishedAt,
-            String userId, LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime deletedAt) {
-        this.id = id;
-        this.agentId = agentId;
-        this.name = name;
-        this.avatar = avatar;
-        this.description = description;
-        this.versionNumber = versionNumber;
-        this.systemPrompt = systemPrompt;
-        this.welcomeMessage = welcomeMessage;
-        this.modelConfig = modelConfig;
-        this.tools = tools;
-        this.knowledgeBaseIds = knowledgeBaseIds;
-        this.changeLog = changeLog;
-        this.agentType = agentType;
-        this.publishStatus = publishStatus;
-        this.rejectReason = rejectReason;
-        this.reviewTime = reviewTime;
-        this.publishedAt = publishedAt;
-        this.userId = userId;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-    }
 
     // Getter和Setter方法
     public String getId() {
@@ -217,14 +181,6 @@ public class AgentVersionDTO {
 
     public void setWelcomeMessage(String welcomeMessage) {
         this.welcomeMessage = welcomeMessage;
-    }
-
-    public AgentModelConfig getModelConfig() {
-        return modelConfig;
-    }
-
-    public void setModelConfig(AgentModelConfig modelConfig) {
-        this.modelConfig = modelConfig;
     }
 
     public List<AgentTool> getTools() {

@@ -1,16 +1,16 @@
 package org.xhy.interfaces.api.portal.agent;
 
-import io.jsonwebtoken.lang.Maps;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.xhy.application.agent.service.AgentWorkspaceAppService;
 import org.xhy.application.agent.dto.AgentDTO;
+import org.xhy.domain.agent.model.LLMModelConfig;
 import org.xhy.infrastructure.auth.UserContext;
 import org.xhy.interfaces.api.common.Result;
+import org.xhy.interfaces.dto.agent.request.UpdateModelConfigRequest;
+import jakarta.validation.Valid;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 
 /**
  * Agent工作区
@@ -50,15 +50,15 @@ public class PortalWorkspaceController {
     }
 
     /**
-     * 设置agent的模型
-     * @param modelId 模型id
+     * 设置agent的模型配置
+     * @param config 模型配置
      * @param agentId agentId
      * @return
      */
-    @PutMapping("/{agentId}/model/{modelId}")
-    public Result<Void> saveModelId(@PathVariable String modelId,@PathVariable String agentId){
+    @PutMapping("/{agentId}/model/config")
+    public Result<Void> saveModelConfig(@RequestBody @Validated UpdateModelConfigRequest config, @PathVariable String agentId){
         String userId = UserContext.getCurrentUserId();
-        agentWorkspaceAppService.saveModel(agentId,userId,modelId);
+        agentWorkspaceAppService.updateModelConfig(agentId, userId, config);
         return Result.success();
     }
 
@@ -67,12 +67,9 @@ public class PortalWorkspaceController {
      * @param agentId agentId
      * @return
      */
-    @GetMapping("/{agentId}/model")
-    public Result<Map<String, Object>> getConfiguredModelId(@PathVariable String agentId){
+    @GetMapping("/{agentId}/model-config")
+    public Result<LLMModelConfig> getConfiguredModelId(@PathVariable String agentId){
         String userId = UserContext.getCurrentUserId();
-        String modelId = agentWorkspaceAppService.getConfiguredModelId(agentId,userId);
-        Map<String, Object> result = new HashMap<>();
-        result.put("modelId", modelId);
-        return Result.success(result);
+        return Result.success(agentWorkspaceAppService.getConfiguredModelId(agentId,userId));
     }
 }

@@ -165,6 +165,18 @@ public class LlmDomainService {
         return provider;
     }
 
+    public ProviderEntity getProvider(String providerId) {
+
+        Wrapper<ProviderEntity> wrapper = Wrappers.<ProviderEntity>lambdaQuery().eq(ProviderEntity::getId, providerId);
+        ProviderEntity provider = providerRepository.selectOne(wrapper);
+        if (provider == null) {
+            throw new BusinessException("服务商不存在");
+        }
+        return provider;
+    }
+
+
+
     /**
      * 查找服务商
      * @param providerId 服务商id

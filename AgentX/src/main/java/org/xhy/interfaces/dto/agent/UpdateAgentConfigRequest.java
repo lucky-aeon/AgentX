@@ -1,6 +1,6 @@
 package org.xhy.interfaces.dto.agent;
 
-import org.xhy.domain.agent.model.AgentModelConfig;
+import org.xhy.domain.agent.model.LLMModelConfig;
 import org.xhy.domain.agent.model.AgentTool;
 import org.xhy.infrastructure.util.ValidationUtils;
 
@@ -13,7 +13,7 @@ public class UpdateAgentConfigRequest {
     
     private String systemPrompt;
     private String welcomeMessage;
-    private AgentModelConfig modelConfig;
+    private LLMModelConfig modelConfig;
     private List<AgentTool> tools;
     private List<String> knowledgeBaseIds;
     
@@ -21,7 +21,7 @@ public class UpdateAgentConfigRequest {
     public UpdateAgentConfigRequest() {
     }
     
-    public UpdateAgentConfigRequest(String systemPrompt, String welcomeMessage, AgentModelConfig modelConfig,
+    public UpdateAgentConfigRequest(String systemPrompt, String welcomeMessage, LLMModelConfig modelConfig,
                                  List<AgentTool> tools, List<String> knowledgeBaseIds) {
         this.systemPrompt = systemPrompt;
         this.welcomeMessage = welcomeMessage;
@@ -55,11 +55,11 @@ public class UpdateAgentConfigRequest {
         this.welcomeMessage = welcomeMessage;
     }
     
-    public AgentModelConfig getModelConfig() {
+    public LLMModelConfig getModelConfig() {
         return modelConfig;
     }
     
-    public void setModelConfig(AgentModelConfig modelConfig) {
+    public void setModelConfig(LLMModelConfig modelConfig) {
         this.modelConfig = modelConfig;
     }
     

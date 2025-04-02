@@ -443,31 +443,59 @@ export const getModelsWithToast = withToast(getModels, {
   errorTitle: "获取模型列表失败"
 })
 
-// 设置agent的模型
-export async function setAgentModel(agentId: string, modelId: string): Promise<ApiResponse<null>> {
+// 模型配置接口
+interface ModelConfig {
+  modelId: string;
+  temperature: number;
+  topP: number;
+  maxTokens: number;
+  strategyType: string;
+  reserveRatio: number;
+  summaryThreshold: number;
+}
+
+// 获取Agent的模型配置
+export async function getAgentModel(agentId: string): Promise<ApiResponse<ModelConfig>> {
   try {
-    console.log(`Setting model ${modelId} for agent ${agentId}`)
-    
-    const response = await httpClient.put<ApiResponse<null>>(API_ENDPOINTS.SET_AGENT_MODEL(agentId, modelId));
-    
+    const response = await httpClient.get<ApiResponse<ModelConfig>>(API_ENDPOINTS.AGENT_MODEL_CONFIG(agentId));
     return response;
   } catch (error) {
-    console.error("设置agent模型错误:", error)
+    console.error("获取Agent模型配置错误:", error);
     return {
       code: 500,
       message: error instanceof Error ? error.message : "未知错误",
-      data: null,
+      data: null as unknown as ModelConfig,
       timestamp: Date.now(),
-    }
+    };
   }
 }
 
+// 设置Agent的模型配置
+export async function setAgentModel(agentId: string, config: ModelConfig): Promise<ApiResponse<void>> {
+  try {
+    const response = await httpClient.put<ApiResponse<void>>(
+      API_ENDPOINTS.SET_AGENT_MODEL_CONFIG(agentId),
+      config
+    );
+    return response;
+  } catch (error) {
+    console.error("设置Agent模型配置错误:", error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : "未知错误",
+      data: null as unknown as void,
+      timestamp: Date.now(),
+    };
+  }
+}
+
+// 带Toast提示的设置模型配置
 export const setAgentModelWithToast = withToast(setAgentModel, {
   showSuccessToast: true,
   showErrorToast: true,
-  successTitle: "设置模型成功",
-  errorTitle: "设置模型失败"
-})
+  successTitle: "设置模型配置成功",
+  errorTitle: "设置模型配置失败"
+});
 
 // 创建模型
 export async function createModel(data: any): Promise<ApiResponse<any>> {
@@ -596,55 +624,6 @@ export const getModelTypesWithToast = withToast(getModelTypes, {
   showSuccessToast: false,
   showErrorToast: true,
   errorTitle: "获取模型类型列表失败"
-})
-
-// 获取Agent当前设置的模型ID
-export async function getAgentModel(agentId: string): Promise<ApiResponse<{ modelId: string }>> {
-  try {
-    console.log(`Fetching model for agent: ${agentId}`)
-    
-    const response = await httpClient.get<ApiResponse<{ modelId: string }>>(`/agent/workspace/${agentId}/model`);
-    
-    return response;
-  } catch (error) {
-    console.error("获取Agent模型错误:", error)
-    return {
-      code: 500,
-      message: error instanceof Error ? error.message : "未知错误",
-      data: { modelId: '' },
-      timestamp: Date.now(),
-    }
-  }
-}
-
-export const getAgentModelWithToast = withToast(getAgentModel, {
-  showSuccessToast: false,
-  showErrorToast: true,
-  errorTitle: "获取Agent模型失败"
-})
-
-// 从工作区移除Agent
-export async function removeAgentFromWorkspace(agentId: string): Promise<ApiResponse<void>> {
-  try {
-    console.log(`Removing agent ${agentId} from workspace`)
-    
-    const response = await httpClient.delete<ApiResponse<void>>(`/agent/workspace/${agentId}`);
-    
-    return response;
-  } catch (error) {
-    console.error("从工作区移除Agent错误:", error)
-    return {
-      code: 500,
-      message: error instanceof Error ? error.message : "未知错误",
-      data: undefined,
-      timestamp: Date.now(),
-    }
-  }
-}
-
-export const removeAgentFromWorkspaceWithToast = withToast(removeAgentFromWorkspace, {
-  successTitle: "移除成功",
-  errorTitle: "移除失败"
 })
 
 // 获取工作区Agent列表

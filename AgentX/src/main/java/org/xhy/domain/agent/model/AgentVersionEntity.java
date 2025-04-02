@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.baomidou.mybatisplus.extension.activerecord.Model;
 import org.apache.ibatis.type.JdbcType;
 import org.xhy.domain.agent.constant.PublishStatus;
 import org.xhy.infrastructure.entity.BaseEntity;
@@ -69,12 +68,6 @@ public class AgentVersionEntity extends BaseEntity {
     private String welcomeMessage;
 
     /**
-     * 模型配置，包含模型类型、温度等参数
-     */
-    @TableField(value = "model_config", typeHandler = JsonTypeHandler.class, jdbcType = JdbcType.OTHER)
-    private AgentModelConfig modelConfig;
-
-    /**
      * Agent可使用的工具列表
      */
     @TableField(value = "tools", typeHandler = JsonTypeHandler.class, jdbcType = JdbcType.OTHER)
@@ -134,7 +127,6 @@ public class AgentVersionEntity extends BaseEntity {
      * 无参构造函数
      */
     public AgentVersionEntity() {
-        this.modelConfig = AgentModelConfig.createDefault();
         this.tools = new ArrayList<>();
         this.knowledgeBaseIds = new ArrayList<>();
     }
@@ -179,14 +171,6 @@ public class AgentVersionEntity extends BaseEntity {
 
     public void setWelcomeMessage(String welcomeMessage) {
         this.welcomeMessage = welcomeMessage;
-    }
-
-    public AgentModelConfig getModelConfig() {
-        return modelConfig != null ? modelConfig : AgentModelConfig.createDefault();
-    }
-
-    public void setModelConfig(AgentModelConfig modelConfig) {
-        this.modelConfig = modelConfig;
     }
 
     public List<AgentTool> getTools() {
@@ -320,7 +304,6 @@ public class AgentVersionEntity extends BaseEntity {
         version.setVersionNumber(versionNumber);
         version.setSystemPrompt(agent.getSystemPrompt());
         version.setWelcomeMessage(agent.getWelcomeMessage());
-        version.setModelConfig(agent.getModelConfig());
         version.setTools(agent.getTools());
         version.setKnowledgeBaseIds(agent.getKnowledgeBaseIds());
         version.setChangeLog(changeLog);

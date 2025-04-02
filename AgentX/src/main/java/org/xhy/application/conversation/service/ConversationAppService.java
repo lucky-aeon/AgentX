@@ -16,13 +16,16 @@ import org.xhy.domain.agent.model.AgentWorkspaceEntity;
 import org.xhy.domain.agent.service.AgentDomainService;
 import org.xhy.domain.agent.service.AgentWorkspaceDomainService;
 import org.xhy.domain.conversation.constant.Role;
+import org.xhy.domain.conversation.model.ContextEntity;
 import org.xhy.domain.conversation.model.MessageEntity;
 import org.xhy.domain.conversation.model.SessionEntity;
+import org.xhy.domain.conversation.service.ContextDomainService;
 import org.xhy.domain.conversation.service.ConversationDomainService;
 import org.xhy.domain.conversation.service.SessionDomainService;
 import org.xhy.domain.llm.model.ModelEntity;
 import org.xhy.domain.llm.model.ProviderEntity;
 import org.xhy.domain.llm.service.LlmDomainService;
+import org.xhy.domain.token.service.TokenDomainService;
 import org.xhy.infrastructure.exception.BusinessException;
 import org.xhy.infrastructure.llm.LLMProviderService;
 import org.xhy.infrastructure.llm.config.ProviderConfig;
@@ -45,16 +48,20 @@ public class ConversationAppService {
     private final AgentWorkspaceDomainService agentWorkspaceDomainService;
     private final LlmDomainService llmDomainService;
     private final LLMProviderService llmProviderService;
+    private final ContextDomainService contextDomainService;
+    private final TokenDomainService tokenDomainService;
 
     public ConversationAppService(
             ConversationDomainService conversationDomainService,
-            SessionDomainService sessionDomainService, AgentDomainService agentDomainService, AgentWorkspaceDomainService agentWorkspaceDomainService, LlmDomainService llmDomainService, LLMProviderService llmService) {
+            SessionDomainService sessionDomainService, AgentDomainService agentDomainService, AgentWorkspaceDomainService agentWorkspaceDomainService, LlmDomainService llmDomainService, LLMProviderService llmService, ContextDomainService contextDomainService, TokenDomainService tokenDomainService) {
         this.conversationDomainService = conversationDomainService;
         this.sessionDomainService = sessionDomainService;
         this.agentDomainService = agentDomainService;
         this.agentWorkspaceDomainService = agentWorkspaceDomainService;
         this.llmDomainService = llmDomainService;
         this.llmProviderService = llmService;
+        this.contextDomainService = contextDomainService;
+        this.tokenDomainService = tokenDomainService;
     }
 
     /**
@@ -78,6 +85,7 @@ public class ConversationAppService {
     }
 
 
+
     public SseEmitter chat(ChatRequest chatRequest, String userId){
 
         // 获取会话
@@ -93,7 +101,7 @@ public class ConversationAppService {
 
         // 从工作区中获取对应的模型信息
         AgentWorkspaceEntity workspace = agentWorkspaceDomainService.getWorkspace(agentId, userId);
-        String modelId = workspace.getModelId();
+        String modelId = workspace.getLlmModelConfig().getModelId();
         ModelEntity model = llmDomainService.getModelById(modelId);
 
         model.isActive();
@@ -105,6 +113,12 @@ public class ConversationAppService {
         // 对话 todo xhy 这里需要传入消息列表 ，并且目前默认流式
         org.xhy.domain.llm.model.config.ProviderConfig config = provider.getConfig();
         StreamingChatLanguageModel chatStreamClient = llmProviderService.getStream(provider.getProtocol(), new ProviderConfig(config.getApiKey(),config.getBaseUrl(),model.getModelId()));
+
+
+        // 消息列表
+        ContextEntity contextEntity = contextDomainService.getBySession(sessionId);
+
+//        tokenDomainService.processMessages();
 
         // 用户消息
         MessageEntity userMessageEntity = new MessageEntity();

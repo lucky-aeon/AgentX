@@ -6,9 +6,6 @@ import org.xhy.infrastructure.exception.BusinessException;
 
 public interface MyBatisPlusExtRepository<T> extends BaseMapper<T> {
 
-    /**
-     * 带检查的更新
-     */
     default void checkedUpdate(T entity, Wrapper<T> updateWrapper) {
         int affected = update(entity, updateWrapper);
         if (affected == 0) {
@@ -30,14 +27,18 @@ public interface MyBatisPlusExtRepository<T> extends BaseMapper<T> {
         }
     }
 
-
-    /**
-     * 带检查的删除
-     */
     default void checkedDelete(Wrapper<T> deleteWrapper) {
         int affected = delete(deleteWrapper);
         if (affected == 0) {
             throw new BusinessException("数据更新失败");
         }
     }
+
+    default void checkInsert(T t) {
+        int affected = insert(t);
+        if (affected == 0) {
+            throw new BusinessException("数据更新失败");
+        }
+    }
+
 }
