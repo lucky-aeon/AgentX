@@ -1,6 +1,6 @@
 # AgentX - 智能对话系统平台
 
-AgentX是一个基于大型语言模型的智能对话系统平台，旨在提供强大、灵活且可扩展的对话能力和工具调用能力。用户可以通过该平台与多种大语言模型进行对话，接入自定义知识库，调用各种工具，并构建个性化的Agent服务。
+AgentX 是一个 agent 平台，通过大模型 + MCP 方式来打造属于你的 agent，这里没有复杂的流程节点！没有复杂的拖拉拽！你只需要添加工具！你只需要使用自然语言！你就能打造属于你的 agent！
 
 ## 项目结构
 
@@ -13,51 +13,26 @@ AgentX是一个基于大型语言模型的智能对话系统平台，旨在提�
 
 ## 技术栈
 
-- **后端**: Java 1.8, Spring Boot 2.7.x
+- **后端**: Java 17+, Spring Boot 3.x
 - **数据库**: PostgreSQL 14.x + pgvector
 - **容器化**: Docker & Docker Compose
-- **其他技术**: WebSocket, JPA, JWT
 
 ## 开发环境搭建
 
 ### 前置条件
 
-- JDK 1.8+
+- JDK 17+
 - Maven 3.6+
 - Docker & Docker Compose
 - PostgreSQL 14+ (可选，也可使用Docker启动)
-
-### 环境准备
-
-1. 克隆项目
-
-```bash
-git clone https://github.com/yourusername/AgentX.git
-cd AgentX
-```
-
-2. 使用Maven构建项目
-
-```bash
-mvn clean install
-```
-
-3. 使用Docker Compose启动环境
-
-```bash
-docker-compose up -d
-```
-
-### 开发指南
-
-项目使用Maven管理依赖，使用Spring Boot作为开发框架。开发新功能时请遵循DDD架构设计原则，将不同职责的代码放在相应的层次中。
 
 ## 功能模块
 
 - **基础对话功能**: 流式对话、会话管理、上下文管理
 - **服务商管理**: 多模型服务商接入、服务商配置管理
 - **知识库功能**: 文档管理、向量存储、RAG检索增强
-- **函数调用与工具**: 函数调用框架、系统工具、自定义工具
+- **MCP**: 对接 MCP Server 完成工具的调用
 - **用户系统与计费**: 用户认证、计费系统、使用统计
-- **市场功能**: 插件市场、服务商市场、工具市场
+- **市场功能**: 插件市场、工具市场、知识库市场
 - **API与集成**: 对外API、SDK、外部系统集成
+- **定时任务**: 自动化 agent
