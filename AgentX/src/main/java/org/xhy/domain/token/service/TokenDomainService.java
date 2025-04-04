@@ -32,7 +32,7 @@ public class TokenDomainService {
         TokenOverflowStrategy strategy = strategyFactory.createStrategy(config);
         
         // 执行处理
-        return strategy.process(messages);
+        return strategy.process(messages,config);
     }
     
     /**

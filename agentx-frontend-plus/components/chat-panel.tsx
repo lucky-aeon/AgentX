@@ -20,7 +20,7 @@ interface ChatPanelProps {
 
 interface Message {
   id: string
-  role: "USER" | "SYSTEM"
+  role: "USER" | "SYSTEM" | "assistant"
   content: string
 }
 
@@ -39,7 +39,9 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
   const [isTyping, setIsTyping] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [autoScroll, setAutoScroll] = useState(true)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const chatContainerRef = useRef<HTMLDivElement>(null)
 
   // 获取会话消息
   useEffect(() => {
@@ -59,7 +61,7 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
           // 转换消息格式
           const formattedMessages = messagesResponse.data.map((msg: MessageDTO) => ({
             id: msg.id,
-            role: msg.role as "USER" | "SYSTEM",
+            role: msg.role as "USER" | "SYSTEM" | "assistant",
             content: msg.content,
           }))
           
@@ -82,8 +84,35 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
 
   // 滚动到底部
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages, isTyping])
+    if (autoScroll) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+    }
+  }, [messages, isTyping, autoScroll])
+
+  // 监听滚动事件
+  useEffect(() => {
+    const chatContainer = chatContainerRef.current
+    if (!chatContainer) return
+
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = chatContainer
+      // 判断是否滚动到底部附近（20px误差范围）
+      const isAtBottom = scrollHeight - scrollTop - clientHeight < 20
+      setAutoScroll(isAtBottom)
+    }
+
+    chatContainer.addEventListener('scroll', handleScroll)
+    return () => chatContainer.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  // 处理用户主动发送消息时强制滚动到底部
+  const scrollToBottom = () => {
+    setAutoScroll(true)
+    // 使用setTimeout确保在下一个渲染周期执行
+    setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+    }, 100)
+  }
 
   // 处理发送消息
   const handleSendMessage = async () => {
@@ -92,6 +121,7 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
     const userMessage = input.trim()
     setInput("")
     setIsTyping(true)
+    scrollToBottom() // 用户发送新消息时强制滚动到底部
 
     // 添加用户消息到消息列表
     const userMessageId = `user-${Date.now()}`
@@ -196,7 +226,7 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
   return (
     <div className="flex flex-col h-full w-full">
       {/* 消息列表 */}
-      <div className="flex-1 overflow-y-auto p-2 bg-white">
+      <div className="flex-1 overflow-y-auto p-2 bg-white" ref={chatContainerRef}>
         {loading ? (
           // 加载状态
           <div className="flex items-center justify-center h-full">
@@ -335,6 +365,16 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
                 </div>
               ))}
               <div ref={messagesEndRef} />
+              {!autoScroll && isTyping && (
+                <button
+                  onClick={scrollToBottom}
+                  className="fixed bottom-20 right-5 bg-blue-500 text-white rounded-full p-2 shadow-lg hover:bg-blue-600 transition-colors"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </button>
+              )}
             </div>
           </div>
         )}

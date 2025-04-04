@@ -49,6 +49,10 @@ public class AgentWorkspaceEntity extends BaseEntity {
     }
 
     public LLMModelConfig getLlmModelConfig() {
+        // 兜底
+        if (llmModelConfig == null){
+            llmModelConfig = new LLMModelConfig();
+        }
         return llmModelConfig;
     }
 

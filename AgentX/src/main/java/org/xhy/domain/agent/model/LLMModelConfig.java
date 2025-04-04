@@ -1,6 +1,7 @@
 package org.xhy.domain.agent.model;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import org.xhy.domain.shared.enums.TokenOverflowStrategyEnum;
 
 /**
  * Agent模型配置类，用于表示大语言模型的相关配置参数
@@ -33,7 +34,7 @@ public class LLMModelConfig {
     /**
      * 策略类型 @link TokenOverflowStrategyEnum
      */
-    private String strategyType;
+    private TokenOverflowStrategyEnum strategyType;
     /**
      * 预留缓冲比例，适用于滑动窗口策略
      * 范围0-1之间的小数，表示预留的空间比例
@@ -91,11 +92,11 @@ public class LLMModelConfig {
         this.maxTokens = maxTokens;
     }
 
-    public String getStrategyType() {
+    public TokenOverflowStrategyEnum getStrategyType() {
         return strategyType;
     }
 
-    public void setStrategyType(String strategyType) {
+    public void setStrategyType(TokenOverflowStrategyEnum strategyType) {
         this.strategyType = strategyType;
     }
 

@@ -1,7 +1,6 @@
 package org.xhy.interfaces.dto.llm;
 
 import jakarta.validation.constraints.NotBlank;
-import org.xhy.domain.agent.model.LLMModelConfig;
 import org.xhy.domain.llm.model.enums.ModelType;
 
 /**

@@ -3,6 +3,7 @@ package org.xhy.interfaces.dto.agent.request;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
+import org.xhy.domain.shared.enums.TokenOverflowStrategyEnum;
 
 /**
  * 保存模型配置请求对象
@@ -40,9 +41,9 @@ public class UpdateModelConfigRequest {
     private Integer maxTokens;
 
     /**
-     * 策略类型 @link TokenOverflowStrategyEnum
+     * 策略类型
      */
-    private String strategyType = "NONE";
+    private TokenOverflowStrategyEnum strategyType =TokenOverflowStrategyEnum.NONE;
     /**
      * 预留缓冲比例，适用于滑动窗口策略
      * 范围0-1之间的小数，表示预留的空间比例
@@ -85,11 +86,11 @@ public class UpdateModelConfigRequest {
         this.maxTokens = maxTokens;
     }
 
-    public String getStrategyType() {
+    public TokenOverflowStrategyEnum getStrategyType() {
         return strategyType;
     }
 
-    public void setStrategyType(String strategyType) {
+    public void setStrategyType(TokenOverflowStrategyEnum strategyType) {
         this.strategyType = strategyType;
     }
 

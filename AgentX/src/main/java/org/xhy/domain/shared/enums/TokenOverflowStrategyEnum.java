@@ -1,4 +1,4 @@
-package org.xhy.domain.token.model.enums;
+package org.xhy.domain.shared.enums;
 
 /**
  * Token超限处理策略枚举

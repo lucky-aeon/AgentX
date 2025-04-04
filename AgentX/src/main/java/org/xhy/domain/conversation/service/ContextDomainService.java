@@ -7,8 +7,6 @@ import org.xhy.domain.conversation.model.ContextEntity;
 import org.xhy.domain.conversation.repository.ContextRepository;
 import org.xhy.infrastructure.exception.BusinessException;
 
-import java.util.List;
-
 @Service
 public class ContextDomainService {
 
@@ -19,13 +17,29 @@ public class ContextDomainService {
     }
 
     // 获取历史消息id
-    public ContextEntity getBySession(String sessionId) {
+    public ContextEntity getBySessionId(String sessionId) {
         LambdaQueryWrapper<ContextEntity> wrapper = Wrappers.<ContextEntity>lambdaQuery()
                 .eq(ContextEntity::getSessionId, sessionId)
                 .select();
         ContextEntity contextEntity = contextRepository.selectOne(wrapper);
         if (contextEntity==null){
             throw new BusinessException("消息上下文不存在");
+        }
+        return contextEntity;
+    }
+
+    public ContextEntity findBySessionId(String sessionId) {
+        LambdaQueryWrapper<ContextEntity> wrapper = Wrappers.<ContextEntity>lambdaQuery()
+                .eq(ContextEntity::getSessionId, sessionId);
+        return contextRepository.selectOne(wrapper);
+    }
+
+
+    public ContextEntity insertOrUpdate(ContextEntity contextEntity) {
+        try {
+            contextRepository.insertOrUpdate(contextEntity);
+        }catch (Exception e){
+            System.out.println(e);
         }
         return contextEntity;
     }

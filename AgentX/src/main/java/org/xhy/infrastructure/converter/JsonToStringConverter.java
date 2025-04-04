@@ -6,6 +6,7 @@ import org.apache.ibatis.type.BaseTypeHandler;
 import org.apache.ibatis.type.JdbcType;
 import org.apache.ibatis.type.MappedJdbcTypes;
 import org.postgresql.util.PGobject;
+import org.xhy.infrastructure.util.JsonUtils;
 
 import java.sql.CallableStatement;
 import java.sql.PreparedStatement;
@@ -20,7 +21,6 @@ import java.sql.SQLException;
 @MappedJdbcTypes(JdbcType.OTHER)
 public abstract class JsonToStringConverter<T> extends BaseTypeHandler<T> {
     
-    private static final ObjectMapper MAPPER = new ObjectMapper();
     private final Class<T> type;
     
     protected JsonToStringConverter(Class<T> type) {
@@ -35,11 +35,7 @@ public abstract class JsonToStringConverter<T> extends BaseTypeHandler<T> {
             throws SQLException {
         PGobject jsonObject = new PGobject();
         jsonObject.setType("jsonb");
-        try {
-            jsonObject.setValue(MAPPER.writeValueAsString(parameter));
-        } catch (JsonProcessingException e) {
-            throw new SQLException("Error converting object to JSON", e);
-        }
+        jsonObject.setValue(JsonUtils.toJsonString(parameter));
         ps.setObject(i, jsonObject);
     }
     
@@ -62,13 +58,9 @@ public abstract class JsonToStringConverter<T> extends BaseTypeHandler<T> {
     }
     
     private T parseJson(String json) throws SQLException {
-        try {
-            if (json == null) {
-                return null;
-            }
-            return MAPPER.readValue(json, type);
-        } catch (JsonProcessingException e) {
-            throw new SQLException("Error parsing JSON", e);
+        if (json == null) {
+            return null;
         }
+        return JsonUtils.parseObject(json,type);
     }
 } 

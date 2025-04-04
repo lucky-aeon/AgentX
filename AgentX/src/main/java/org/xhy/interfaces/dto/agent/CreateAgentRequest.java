@@ -19,7 +19,6 @@ public class CreateAgentRequest {
     private AgentType agentType = AgentType.CHAT_ASSISTANT;
     private String systemPrompt;
     private String welcomeMessage;
-    private LLMModelConfig modelConfig;
     private List<AgentTool> tools;
     private List<String> knowledgeBaseIds;
 
@@ -73,14 +72,6 @@ public class CreateAgentRequest {
 
     public void setWelcomeMessage(String welcomeMessage) {
         this.welcomeMessage = welcomeMessage;
-    }
-
-    public LLMModelConfig getModelConfig() {
-        return modelConfig;
-    }
-
-    public void setModelConfig(LLMModelConfig modelConfig) {
-        this.modelConfig = modelConfig;
     }
 
     public List<AgentTool> getTools() {

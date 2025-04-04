@@ -25,6 +25,7 @@ public class LLMProviderFactory {
             openAiChatModelBuilder.apiKey(providerConfig.getApiKey());
             openAiChatModelBuilder.baseUrl(providerConfig.getBaseUrl());
             openAiChatModelBuilder.customHeaders(providerConfig.getCustomHeaders());
+            openAiChatModelBuilder.modelName(providerConfig.getModel());
             model = new OpenAiChatModel(openAiChatModelBuilder);
         }
         return model;

@@ -6,7 +6,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.xhy.domain.token.model.TokenMessage;
 import org.xhy.domain.token.model.TokenProcessResult;
 import org.xhy.domain.token.model.config.TokenOverflowConfig;
-import org.xhy.domain.token.model.enums.TokenOverflowStrategyEnum;
+import org.xhy.domain.shared.enums.TokenOverflowStrategyEnum;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -50,7 +50,7 @@ public class NoTokenOverflowStrategyTest {
     @Test
     public void process_shouldReturnOriginalMessages() {
         // 执行处理
-        TokenProcessResult process = strategy.process(messages);
+        TokenProcessResult process = strategy.process(messages,new TokenOverflowConfig());
         List<TokenMessage> result = process.getRetainedMessages();
 
         // 验证结果
@@ -62,7 +62,7 @@ public class NoTokenOverflowStrategyTest {
     @Test
     public void process_withEmptyList_shouldReturnEmptyList() {
         // 执行处理
-        TokenProcessResult process = strategy.process(new ArrayList<>());
+        TokenProcessResult process = strategy.process(new ArrayList<>(),new TokenOverflowConfig());
         List<TokenMessage> result = process.getRetainedMessages();
 
         // 验证结果
@@ -73,7 +73,7 @@ public class NoTokenOverflowStrategyTest {
     @Test
     public void process_withNullList_shouldReturnEmptyList() {
         // 执行处理
-        TokenProcessResult process = strategy.process(null);
+        TokenProcessResult process = strategy.process(null,new TokenOverflowConfig());
         List<TokenMessage> result = process.getRetainedMessages();
 
         // 验证结果

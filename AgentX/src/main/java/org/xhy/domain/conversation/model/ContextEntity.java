@@ -4,10 +4,11 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.baomidou.mybatisplus.extension.activerecord.Model;
+import org.apache.ibatis.type.JdbcType;
+import org.xhy.infrastructure.converter.JsonToStringConverter;
+import org.xhy.infrastructure.converter.ListConverter;
 import org.xhy.infrastructure.entity.BaseEntity;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,10 +31,10 @@ public class ContextEntity extends BaseEntity {
     private String sessionId;
 
     /**
-     * 活跃消息ID列表，JSON数组
+     * 活跃消息ID列表
      */
-    @TableField(value = "active_messages", typeHandler = org.xhy.infrastructure.typehandler.JsonTypeHandler.class)
-    private String activeMessages;
+    @TableField(value = "active_messages", typeHandler = ListConverter.class)
+    private List<String> activeMessages = new ArrayList<>();
 
     /**
      * 历史消息摘要
@@ -47,19 +48,6 @@ public class ContextEntity extends BaseEntity {
     public ContextEntity() {
     }
 
-    /**
-     * 全参构造函数
-     */
-    public ContextEntity(String id, String sessionId, String activeMessages,
-                         String summary, LocalDateTime updatedAt) {
-        this.id = id;
-        this.sessionId = sessionId;
-        this.activeMessages = activeMessages;
-        this.summary = summary;
-        this.updatedAt = updatedAt;
-    }
-
-    // Getter和Setter方法
     public String getId() {
         return id;
     }
@@ -76,11 +64,11 @@ public class ContextEntity extends BaseEntity {
         this.sessionId = sessionId;
     }
 
-    public String getActiveMessages() {
+    public List<String> getActiveMessages() {
         return activeMessages;
     }
 
-    public void setActiveMessages(String activeMessages) {
+    public void setActiveMessages(List<String> activeMessages) {
         this.activeMessages = activeMessages;
     }
 
@@ -92,93 +80,4 @@ public class ContextEntity extends BaseEntity {
         this.summary = summary;
     }
 
-    /**
-     * 创建新的上下文
-     */
-    public static ContextEntity createNew(String sessionId) {
-        ContextEntity context = new ContextEntity();
-        context.setSessionId(sessionId);
-        context.setActiveMessages("[]"); // 初始化为空数组
-        context.setUpdatedAt(LocalDateTime.now());
-        return context;
-    }
-
-    /**
-     * 添加消息到活跃消息列表
-     */
-    public void addMessage(String messageId) {
-        // 简单实现，实际项目中应该使用JSON库处理
-        // 这里假设activeMessages是一个JSON数组字符串
-        List<String> messages = parseActiveMessages();
-        messages.add(messageId);
-        this.activeMessages = formatActiveMessages(messages);
-        this.updatedAt = LocalDateTime.now();
-    }
-
-    /**
-     * 获取活跃消息ID列表
-     */
-    public List<String> getActiveMessageIds() {
-        return parseActiveMessages();
-    }
-
-    /**
-     * 设置活跃消息列表
-     */
-    public void setActiveMessageIds(List<String> messageIds) {
-        this.activeMessages = formatActiveMessages(messageIds);
-        this.updatedAt = LocalDateTime.now();
-    }
-
-    /**
-     * 清空上下文
-     */
-    public void clear() {
-        this.activeMessages = "[]";
-        this.summary = null;
-        this.updatedAt = LocalDateTime.now();
-    }
-
-    /**
-     * 解析activeMessages字符串为List
-     */
-    private List<String> parseActiveMessages() {
-        // 注意：实际项目中应使用JSON库解析
-        if (activeMessages == null || activeMessages.equals("[]")) {
-            return new ArrayList<>();
-        }
-
-        // 简单实现，实际项目中应使用JSON库解析
-        String content = activeMessages.substring(1, activeMessages.length() - 1);
-        if (content.isEmpty()) {
-            return new ArrayList<>();
-        }
-
-        String[] ids = content.split(",");
-        List<String> result = new ArrayList<>(ids.length);
-        for (String id : ids) {
-            result.add(id.trim().replace("\"", ""));
-        }
-        return result;
-    }
-
-    /**
-     * 将List格式化为JSON数组字符串
-     */
-    private String formatActiveMessages(List<String> messages) {
-        // 注意：实际项目中应使用JSON库生成
-        if (messages == null || messages.isEmpty()) {
-            return "[]";
-        }
-
-        StringBuilder sb = new StringBuilder("[");
-        for (int i = 0; i < messages.size(); i++) {
-            if (i > 0) {
-                sb.append(",");
-            }
-            sb.append("\"").append(messages.get(i)).append("\"");
-        }
-        sb.append("]");
-        return sb.toString();
-    }
 }

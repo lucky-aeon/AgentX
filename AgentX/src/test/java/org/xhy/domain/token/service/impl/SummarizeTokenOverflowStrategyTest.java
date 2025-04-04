@@ -2,12 +2,10 @@ package org.xhy.domain.token.service.impl;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.xhy.domain.token.model.TokenMessage;
 import org.xhy.domain.token.model.TokenProcessResult;
 import org.xhy.domain.token.model.config.TokenOverflowConfig;
-import org.xhy.domain.token.model.enums.TokenOverflowStrategyEnum;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -46,7 +44,7 @@ public class SummarizeTokenOverflowStrategyTest {
     @Test
     public void testProcess() {
         // 执行处理
-        TokenProcessResult process = strategy.process(messages);
+        TokenProcessResult process = strategy.process(messages,new TokenOverflowConfig());
         List<TokenMessage> result = process.getRetainedMessages();
 
         // 验证结果
@@ -82,7 +80,7 @@ public class SummarizeTokenOverflowStrategyTest {
     @Test
     public void testProcessWithEmptyList() {
         // 执行处理
-        TokenProcessResult process = strategy.process(new ArrayList<>());
+        TokenProcessResult process = strategy.process(new ArrayList<>(),new TokenOverflowConfig());
         List<TokenMessage> result = process.getRetainedMessages();
         // 验证结果
         assertNotNull(result, "结果不应为空");
@@ -102,7 +100,7 @@ public class SummarizeTokenOverflowStrategyTest {
         
         // 执行处理 - 注意：由于测试类自动注入策略，这里需要创建一个新的策略实例
         SummarizeTokenOverflowStrategy testStrategy = new SummarizeTokenOverflowStrategy(testConfig);
-        TokenProcessResult process = testStrategy.process(smallMessages);
+        TokenProcessResult process = testStrategy.process(smallMessages,new TokenOverflowConfig());
         List<TokenMessage> result = process.getRetainedMessages();
         // 验证结果
         assertNotNull(result, "结果不应为空");
@@ -116,7 +114,7 @@ public class SummarizeTokenOverflowStrategyTest {
     @Test
     public void testGetMessagesToSummarize() {
         // 先执行处理
-        strategy.process(messages);
+        strategy.process(messages,new TokenOverflowConfig());
         
         // 获取需要摘要的消息
         List<TokenMessage> messagesToSummarize = strategy.getMessagesToSummarize();

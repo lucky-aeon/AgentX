@@ -4,7 +4,7 @@ import org.springframework.stereotype.Service;
 import org.xhy.domain.token.model.TokenMessage;
 import org.xhy.domain.token.model.TokenProcessResult;
 import org.xhy.domain.token.model.config.TokenOverflowConfig;
-import org.xhy.domain.token.model.enums.TokenOverflowStrategyEnum;
+import org.xhy.domain.shared.enums.TokenOverflowStrategyEnum;
 import org.xhy.domain.token.service.TokenOverflowStrategy;
 
 import java.util.ArrayList;
@@ -50,7 +50,7 @@ public class SlidingWindowTokenOverflowStrategy implements TokenOverflowStrategy
      * @return 处理后保留的消息列表
      */
     @Override
-    public TokenProcessResult process(List<TokenMessage> messages) {
+    public TokenProcessResult process(List<TokenMessage> messages,TokenOverflowConfig tokenOverflowConfig) {
         if (!needsProcessing(messages)) {
             TokenProcessResult result = new TokenProcessResult();
             result.setRetainedMessages(messages);

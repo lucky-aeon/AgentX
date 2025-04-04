@@ -6,10 +6,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.xhy.domain.agent.model.LLMModelConfig;
+import org.xhy.domain.conversation.constant.Role;
 import org.xhy.domain.llm.model.config.ProviderConfig;
-import org.xhy.infrastructure.converter.ProviderConfigConverter;
+import org.xhy.domain.llm.model.enums.ModelType;
+import org.xhy.infrastructure.converter.*;
 
 import jakarta.annotation.PostConstruct;
+import org.xhy.infrastructure.llm.protocol.enums.ProviderProtocol;
+
+import java.util.List;
 
 /**
  * MyBatis类型处理器配置类
@@ -32,7 +38,12 @@ public class MyBatisTypeHandlerConfig {
         
         // 确保自动扫描没有生效时，我们手动注册需要的转换器
         typeHandlerRegistry.register(ProviderConfig.class, new ProviderConfigConverter());
-        
+        typeHandlerRegistry.register(List.class, new ListConverter());
+        typeHandlerRegistry.register(LLMModelConfig.class, new LLMModelConfigConverter());
+        typeHandlerRegistry.register(ProviderProtocol.class, new ProviderProtocolConverter());
+        typeHandlerRegistry.register(ModelType.class, new ModelTypeConverter());
+        typeHandlerRegistry.register(Role.class, new RoleConverter());
+
         log.info("手动注册类型处理器：ProviderConfigConverter");
         
         // 打印所有已注册的类型处理器

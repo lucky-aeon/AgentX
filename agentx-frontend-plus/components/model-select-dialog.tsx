@@ -73,7 +73,7 @@ export function ModelSelectDialog({
   const [topK, setTopK] = useState(50);
   const [maxTokens, setMaxTokens] = useState(4096);
   const [reserveRatio, setReserveRatio] = useState(0.2);
-  const [summaryThreshold, setSummaryThreshold] = useState(0.75);
+  const [summaryThreshold, setSummaryThreshold] = useState(35);
   
   // 策略选择
   const [strategyType, setStrategyType] = useState("NONE");
@@ -401,13 +401,13 @@ export function ModelSelectDialog({
                 <div className="space-y-2 mt-4">
                   <div className="flex items-center justify-between">
                     <span className="font-medium">摘要触发阈值</span>
-                    <span>{(summaryThreshold * 100).toFixed(0)}%</span>
+                    <span>{summaryThreshold}%</span>
                   </div>
                   <Slider
                     value={[summaryThreshold]}
-                    min={0.3}
-                    max={0.9}
-                    step={0.05}
+                    min={30}
+                    max={90}
+                    step={5}
                     onValueChange={(value) => setSummaryThreshold(value[0])}
                   />
                   <p className="text-sm text-muted-foreground">当上下文Token数超过此阈值时触发摘要生成</p>

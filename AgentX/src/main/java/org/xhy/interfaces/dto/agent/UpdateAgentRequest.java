@@ -83,14 +83,7 @@ public class UpdateAgentRequest {
     public void setWelcomeMessage(String welcomeMessage) {
         this.welcomeMessage = welcomeMessage;
     }
-    
-    public LLMModelConfig getModelConfig() {
-        return modelConfig;
-    }
-    
-    public void setModelConfig(LLMModelConfig modelConfig) {
-        this.modelConfig = modelConfig;
-    }
+
     
     public List<AgentTool> getTools() {
         return tools;

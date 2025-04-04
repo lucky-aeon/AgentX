@@ -1,14 +1,11 @@
 package org.xhy.domain.token.service.impl;
 
-import org.checkerframework.checker.units.qual.A;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.xhy.domain.token.model.TokenMessage;
 import org.xhy.domain.token.model.TokenProcessResult;
 import org.xhy.domain.token.model.config.TokenOverflowConfig;
-import org.xhy.domain.token.model.enums.TokenOverflowStrategyEnum;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -46,7 +43,7 @@ public class SlidingWindowTokenOverflowStrategyTest {
     @Test
     public void testProcess() {
         // 执行处理
-        TokenProcessResult process = strategy.process(messages);
+        TokenProcessResult process = strategy.process(messages,new TokenOverflowConfig());
         List<TokenMessage> result = process.getRetainedMessages();
         // 验证结果
         assertNotNull(result, "结果不应为空");
@@ -73,7 +70,7 @@ public class SlidingWindowTokenOverflowStrategyTest {
     @Test
     public void testProcessWithEmptyList() {
         // 执行处理
-        TokenProcessResult process = strategy.process(new ArrayList<>());
+        TokenProcessResult process = strategy.process(new ArrayList<>(),new TokenOverflowConfig());
         List<TokenMessage> result = process.getRetainedMessages();
         // 验证结果
         assertNotNull(result, "结果不应为空");
@@ -94,7 +91,7 @@ public class SlidingWindowTokenOverflowStrategyTest {
         // 执行处理 - 注意：由于测试类自动注入策略，这里需要创建一个新的策略实例
         SlidingWindowTokenOverflowStrategy testStrategy = new SlidingWindowTokenOverflowStrategy(testConfig);
 
-        TokenProcessResult process = testStrategy.process(smallMessages);
+        TokenProcessResult process = testStrategy.process(smallMessages,new TokenOverflowConfig());
         List<TokenMessage> result = process.getRetainedMessages();
 
         // 验证结果
