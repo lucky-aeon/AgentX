@@ -46,7 +46,7 @@ public class ConversationDomainService {
      */
     public List<MessageEntity> getConversationMessages(String sessionId) {
         return messageRepository.selectList(
-                Wrappers.<MessageEntity>lambdaQuery().eq(MessageEntity::getSessionId, sessionId));
+                Wrappers.<MessageEntity>lambdaQuery().eq(MessageEntity::getSessionId, sessionId).orderByAsc(MessageEntity::getCreatedAt));
     }
 
 

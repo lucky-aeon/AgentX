@@ -1,24 +1,57 @@
 package org.xhy.application.conversation.service;
 
+import com.baomidou.mybatisplus.core.toolkit.Assert;
+import com.baomidou.mybatisplus.core.toolkit.StringUtils;
+import dev.langchain4j.data.message.*;
+import dev.langchain4j.model.chat.StreamingChatLanguageModel;
+import dev.langchain4j.model.chat.response.ChatResponse;
+import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
+import dev.langchain4j.model.openai.OpenAiChatRequestParameters;
+import dev.langchain4j.model.openai.internal.chat.AssistantMessage;
+import dev.langchain4j.model.output.TokenUsage;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import org.xhy.application.conversation.assembler.MessageAssembler;
 import org.xhy.application.conversation.dto.ChatRequest;
+import org.xhy.application.conversation.dto.StreamChatResponse;
 import org.xhy.application.conversation.dto.MessageDTO;
-import org.xhy.domain.agent.service.AgentValidator;
-import org.xhy.domain.agent.service.ModelProviderFacade;
-import org.xhy.domain.conversation.factory.MessageFactory;
+import org.xhy.domain.agent.model.AgentEntity;
+import org.xhy.domain.agent.model.AgentWorkspaceEntity;
+import org.xhy.domain.agent.model.LLMModelConfig;
+import org.xhy.domain.agent.service.AgentDomainService;
+import org.xhy.domain.agent.service.AgentWorkspaceDomainService;
+import org.xhy.domain.conversation.constant.Role;
+import org.xhy.domain.conversation.handler.ChatEnvironment;
+import org.xhy.domain.conversation.handler.MessageHandler;
+import org.xhy.domain.conversation.handler.MessageHandlerFactory;
+import org.xhy.domain.conversation.model.ContextEntity;
 import org.xhy.domain.conversation.model.MessageEntity;
+import org.xhy.domain.conversation.model.SessionEntity;
+import org.xhy.domain.conversation.service.ContextDomainService;
 import org.xhy.domain.conversation.service.ConversationDomainService;
-import org.xhy.domain.conversation.service.ContextProcessor;
+import org.xhy.domain.conversation.service.MessageDomainService;
 import org.xhy.domain.conversation.service.SessionDomainService;
-import org.xhy.domain.llm.model.LLMRequest;
-import org.xhy.domain.llm.service.LLMRequestService;
+import org.xhy.domain.llm.model.ModelEntity;
+import org.xhy.domain.llm.model.ProviderEntity;
+import org.xhy.domain.llm.service.LlmDomainService;
+import org.xhy.domain.shared.enums.TokenOverflowStrategyEnum;
+import org.xhy.domain.token.model.TokenMessage;
+import org.xhy.domain.token.model.TokenProcessResult;
+import org.xhy.domain.token.model.config.TokenOverflowConfig;
+import org.xhy.domain.token.service.TokenDomainService;
 import org.xhy.infrastructure.exception.BusinessException;
-import org.xhy.infrastructure.llm.service.StreamResponseHandler;
-import org.xhy.infrastructure.sse.SseEmitterFactory;
+import org.xhy.infrastructure.llm.LLMProviderService;
+import org.xhy.infrastructure.llm.LLMServiceFactory;
+import org.xhy.infrastructure.llm.config.ProviderConfig;
+import org.xhy.infrastructure.transport.MessageTransport;
+import org.xhy.infrastructure.transport.MessageTransportFactory;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 对话应用服务，用于适配域层的对话服务
@@ -28,36 +61,40 @@ public class ConversationAppService {
 
     private final ConversationDomainService conversationDomainService;
     private final SessionDomainService sessionDomainService;
-    private final ContextProcessor contextProcessor;
-    private final AgentValidator agentValidator;
-    private final ModelProviderFacade modelProviderFacade;
-    private final MessageFactory messageFactory;
-    private final SseEmitterFactory sseEmitterFactory;
-    private final LLMRequestService llmRequestService;
-    private final StreamResponseHandler streamResponseHandler;
-    private final ChatCompletionCallbackAdapter completionCallbackAdapter;
+    private final AgentDomainService agentDomainService;
+    private final AgentWorkspaceDomainService agentWorkspaceDomainService;
+    private final LlmDomainService llmDomainService;
+    private final ContextDomainService contextDomainService;
+    private final TokenDomainService tokenDomainService;
+    private final MessageDomainService messageDomainService;
+
+    // 新增依赖
+    private final MessageHandlerFactory messageHandlerFactory;
+    private final MessageTransportFactory transportFactory;
+
 
     public ConversationAppService(
             ConversationDomainService conversationDomainService,
             SessionDomainService sessionDomainService,
-            ContextProcessor contextProcessor,
-            AgentValidator agentValidator,
-            ModelProviderFacade modelProviderFacade,
-            MessageFactory messageFactory,
-            SseEmitterFactory sseEmitterFactory,
-            LLMRequestService llmRequestService,
-            StreamResponseHandler streamResponseHandler,
-            ChatCompletionCallbackAdapter completionCallbackAdapter) {
+            AgentDomainService agentDomainService,
+            AgentWorkspaceDomainService agentWorkspaceDomainService,
+            LlmDomainService llmDomainService,
+            ContextDomainService contextDomainService,
+            TokenDomainService tokenDomainService,
+            MessageDomainService messageDomainService,
+            MessageHandlerFactory messageHandlerFactory,
+            MessageTransportFactory transportFactory,
+            LLMServiceFactory llmServiceFactory) {
         this.conversationDomainService = conversationDomainService;
         this.sessionDomainService = sessionDomainService;
-        this.contextProcessor = contextProcessor;
-        this.agentValidator = agentValidator;
-        this.modelProviderFacade = modelProviderFacade;
-        this.messageFactory = messageFactory;
-        this.sseEmitterFactory = sseEmitterFactory;
-        this.llmRequestService = llmRequestService;
-        this.streamResponseHandler = streamResponseHandler;
-        this.completionCallbackAdapter = completionCallbackAdapter;
+        this.agentDomainService = agentDomainService;
+        this.agentWorkspaceDomainService = agentWorkspaceDomainService;
+        this.llmDomainService = llmDomainService;
+        this.contextDomainService = contextDomainService;
+        this.tokenDomainService = tokenDomainService;
+        this.messageDomainService = messageDomainService;
+        this.messageHandlerFactory = messageHandlerFactory;
+        this.transportFactory = transportFactory;
     }
 
     /**
@@ -69,7 +106,9 @@ public class ConversationAppService {
      */
     public List<MessageDTO> getConversationMessages(String sessionId, String userId) {
         // 查询对应会话是否存在
-        if (sessionDomainService.find(sessionId, userId) == null) {
+        SessionEntity sessionEntity = sessionDomainService.find(sessionId, userId);
+
+        if (sessionEntity == null) {
             throw new BusinessException("会话不存在");
         }
 
@@ -78,80 +117,167 @@ public class ConversationAppService {
     }
 
     /**
-     * 聊天接口
+     * 对话方法 - 统一入口
      *
      * @param chatRequest 聊天请求
      * @param userId 用户ID
-     * @return SseEmitter实例
+     * @return SSE发射器
      */
     public SseEmitter chat(ChatRequest chatRequest, String userId) {
-        // 1. 验证会话和Agent
-        AgentValidator.ValidationResult validationResult = agentValidator.validateSessionAndAgent(
-                chatRequest.getSessionId(), userId);
-        
-        // 2. 获取模型和提供商
-        ModelProviderFacade.ModelProviderResult modelProviderResult = modelProviderFacade.getModelAndProvider(
-                validationResult.getAgentEntity().getId(), userId);
-        
-        // 3. 处理上下文和消息
-        ContextProcessor.ContextResult contextResult = contextProcessor.processContext(
-                chatRequest.getSessionId(),
-                modelProviderResult.getLlmModelConfig().getMaxTokens(),
-                modelProviderResult.getLlmModelConfig().getStrategyType(),
-                modelProviderResult.getLlmModelConfig().getSummaryThreshold(),
-                modelProviderResult.getProviderConfig());
-        
-        // 4. 创建用户和LLM消息实体
-        MessageEntity userMessageEntity = messageFactory.createUserMessage(
-                chatRequest.getMessage(), 
-                chatRequest.getSessionId());
-        
-        MessageEntity llmMessageEntity = messageFactory.createSystemMessage(
-                chatRequest.getSessionId(),
-                modelProviderResult.getModelEntity().getModelId(),
-                modelProviderResult.getProviderEntity().getId());
-        
-        // 5. 创建SSE发射器
-        SseEmitter emitter = sseEmitterFactory.createEmitter(300000L);
-        
-        try {
-            // 6. 转换温度和topP参数
-            float temperature = modelProviderResult.getLlmModelConfig().getTemperature().floatValue();
-            float topP = modelProviderResult.getLlmModelConfig().getTopP().floatValue();
-            
-            // 7. 构建LLM请求
-            LLMRequest llmRequest = llmRequestService.buildRequest(
-                    contextResult,
-                    chatRequest.getMessage(),
-                    validationResult.getAgentEntity().getSystemPrompt(),
-                    modelProviderResult.getModelEntity().getModelId(),
-                    temperature,
-                    topP);
-            
-            // 8. 初始化回调适配器
-            completionCallbackAdapter.initialize(
-                    emitter,
-                    userMessageEntity,
-                    llmMessageEntity,
-                    contextResult.getContextEntity(),
-                    modelProviderResult.getProviderEntity().getName(),
-                    modelProviderResult.getModelEntity().getModelId());
-            
-            // 9. 执行流式请求，使用回调接口处理响应
-            streamResponseHandler.handleStreamResponse(
-                    modelProviderResult.getChatStreamClient(),
-                    llmRequest,
-                    completionCallbackAdapter);
-            
-            return emitter;
-        } catch (Exception e) {
-            // 统一错误处理
-            try {
-                sseEmitterFactory.sendErrorResponse(emitter, "聊天请求处理失败: " + e.getMessage());
-            } finally {
-                emitter.complete();
-            }
-            throw new BusinessException("聊天请求处理失败", e);
+        // 1. 准备对话环境
+        ChatEnvironment environment = prepareEnvironment(chatRequest, userId);
+
+        // 2. 获取传输方式 (当前仅支持SSE，将来支持WebSocket)
+        MessageTransport<SseEmitter> transport = transportFactory.getTransport(MessageTransportFactory.TRANSPORT_TYPE_SSE);
+
+        // 3. 获取适合的消息处理器 (根据agent类型)
+        MessageHandler handler = messageHandlerFactory.getHandler(environment.getAgent());
+
+        // 4. 处理对话
+        return handler.handleChat(environment, transport);
+    }
+
+    /**
+     * 准备对话环境
+     *
+     * @param chatRequest 聊天请求
+     * @param userId 用户ID
+     * @return 对话环境
+     */
+    private ChatEnvironment prepareEnvironment(ChatRequest chatRequest, String userId) {
+        // 1. 获取会话
+        String sessionId = chatRequest.getSessionId();
+        SessionEntity session = sessionDomainService.getSession(sessionId, userId);
+        String agentId = session.getAgentId();
+
+        // 2. 获取对应agent
+        AgentEntity agent = agentDomainService.getAgentById(agentId);
+        if (!agent.getUserId().equals(userId) && !agent.getEnabled()) {
+            throw new BusinessException("agent已被禁用");
         }
+
+        // 3. 获取工作区和模型配置
+        AgentWorkspaceEntity workspace = agentWorkspaceDomainService.getWorkspace(agentId, userId);
+        LLMModelConfig llmModelConfig = workspace.getLlmModelConfig();
+        String modelId = llmModelConfig.getModelId();
+        ModelEntity model = llmDomainService.getModelById(modelId);
+        model.isActive();
+
+        // 4. 获取服务商信息
+        ProviderEntity provider = llmDomainService.getProvider(model.getProviderId(), userId);
+        provider.isActive();
+
+        // 5. 创建环境对象
+        ChatEnvironment environment = new ChatEnvironment();
+        environment.setSessionId(sessionId);
+        environment.setUserId(userId);
+        environment.setUserMessage(chatRequest.getMessage());
+        environment.setAgent(agent);
+        environment.setModel(model);
+        environment.setProvider(provider);
+        environment.setLlmModelConfig(llmModelConfig);
+
+        // 6. 设置上下文信息和消息历史
+        setupContextAndHistory(environment);
+
+        return environment;
+    }
+
+    /**
+     * 设置上下文和历史消息
+     *
+     * @param environment 对话环境
+     */
+    private void setupContextAndHistory(ChatEnvironment environment) {
+        String sessionId = environment.getSessionId();
+
+        // 获取上下文
+        ContextEntity contextEntity = contextDomainService.findBySessionId(sessionId);
+        List<MessageEntity> messageEntities = new ArrayList<>();
+
+        if (contextEntity != null) {
+            // 获取活跃消息
+            List<String> activeMessageIds = contextEntity.getActiveMessages();
+            messageEntities = messageDomainService.listByIds(activeMessageIds);
+
+            // 应用Token溢出策略
+            applyTokenOverflowStrategy(environment, contextEntity, messageEntities);
+        } else {
+            contextEntity = new ContextEntity();
+            contextEntity.setSessionId(sessionId);
+        }
+
+        environment.setContextEntity(contextEntity);
+        environment.setMessageHistory(messageEntities);
+    }
+
+    /**
+     * 应用Token溢出策略
+     *
+     * @param environment 对话环境
+     * @param contextEntity 上下文实体
+     * @param messageEntities 消息实体列表
+     */
+    private void applyTokenOverflowStrategy(
+            ChatEnvironment environment,
+            ContextEntity contextEntity,
+            List<MessageEntity> messageEntities) {
+
+        LLMModelConfig llmModelConfig = environment.getLlmModelConfig();
+        ProviderEntity provider = environment.getProvider();
+
+        // 处理Token溢出
+        TokenOverflowStrategyEnum strategyType = llmModelConfig.getStrategyType();
+
+        // Token处理
+        List<TokenMessage> tokenMessages = tokenizeMessage(messageEntities);
+
+        // 构造Token配置
+        TokenOverflowConfig tokenOverflowConfig = new TokenOverflowConfig();
+        tokenOverflowConfig.setStrategyType(strategyType);
+        tokenOverflowConfig.setMaxTokens(llmModelConfig.getMaxTokens());
+        tokenOverflowConfig.setSummaryThreshold(llmModelConfig.getSummaryThreshold());
+
+        // 设置提供商配置
+        org.xhy.domain.llm.model.config.ProviderConfig providerConfig = provider.getConfig();
+        tokenOverflowConfig.setProviderConfig(new ProviderConfig(
+                providerConfig.getApiKey(),
+                providerConfig.getBaseUrl(),
+                environment.getModel().getModelId(),
+                provider.getProtocol()));
+
+        // 处理Token
+        TokenProcessResult result = tokenDomainService.processMessages(tokenMessages, tokenOverflowConfig);
+
+        // 更新上下文
+        if (result.isProcessed()) {
+            List<TokenMessage> retainedMessages = result.getRetainedMessages();
+            List<String> retainedMessageIds = retainedMessages.stream()
+                    .map(TokenMessage::getId)
+                    .collect(Collectors.toList());
+
+            if (strategyType == TokenOverflowStrategyEnum.SUMMARIZE) {
+                String newSummary = result.getSummary();
+                String oldSummary = contextEntity.getSummary();
+                contextEntity.setSummary(oldSummary + newSummary);
+            }
+
+            contextEntity.setActiveMessages(retainedMessageIds);
+        }
+    }
+
+    /**
+     * 消息实体转换为token消息
+     */
+    private List<TokenMessage> tokenizeMessage(List<MessageEntity> messageEntities) {
+        return messageEntities.stream().map(message -> {
+            TokenMessage tokenMessage = new TokenMessage();
+            tokenMessage.setId(message.getId());
+            tokenMessage.setRole(message.getRole().name());
+            tokenMessage.setContent(message.getContent());
+            tokenMessage.setTokenCount(message.getTokenCount());
+            tokenMessage.setCreatedAt(message.getCreatedAt());
+            return tokenMessage;
+        }).collect(Collectors.toList());
     }
 }

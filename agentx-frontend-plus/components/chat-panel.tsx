@@ -24,6 +24,11 @@ interface Message {
   content: string
 }
 
+interface AssistantMessage {
+  id: string
+  hasContent: boolean
+}
+
 interface StreamData {
   content: string
   done: boolean
@@ -40,6 +45,8 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [autoScroll, setAutoScroll] = useState(true)
+  const [isThinking, setIsThinking] = useState(false)
+  const [currentAssistantMessage, setCurrentAssistantMessage] = useState<AssistantMessage | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const chatContainerRef = useRef<HTMLDivElement>(null)
 
@@ -121,6 +128,8 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
     const userMessage = input.trim()
     setInput("")
     setIsTyping(true)
+    setIsThinking(true) // 设置思考状态
+    setCurrentAssistantMessage(null) // 重置助手消息状态
     scrollToBottom() // 用户发送新消息时强制滚动到底部
 
     // 添加用户消息到消息列表
@@ -149,6 +158,7 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
 
       // 添加助理消息到消息列表 - 使用固定的ID以便于更新
       const assistantMessageId = `assistant-${Date.now()}`
+      setCurrentAssistantMessage({ id: assistantMessageId, hasContent: false })
       setMessages((prev) => [
         ...prev,
         {
@@ -160,6 +170,7 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
 
       let accumulatedContent = ""
       const decoder = new TextDecoder()
+      let hasReceivedFirstResponse = false
       
       // 用于解析SSE格式数据的变量
       let buffer = ""
@@ -184,6 +195,12 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
               const data = JSON.parse(jsonStr) as StreamData
               
               if (data.content) {
+                // 收到第一个响应，结束思考状态
+                if (!hasReceivedFirstResponse) {
+                  hasReceivedFirstResponse = true
+                  setIsThinking(false)
+                }
+                
                 accumulatedContent += data.content
                 
                 // 更新现有的助手消息
@@ -192,11 +209,15 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
                     msg.id === assistantMessageId ? { ...msg, content: accumulatedContent } : msg,
                   ),
                 )
+                
+                // 更新助手消息状态
+                setCurrentAssistantMessage({ id: assistantMessageId, hasContent: true })
               }
               
               // 如果返回了done标记，则结束处理
               if (data.done) {
                 console.log("Stream completed with done flag")
+                setIsThinking(false) // 确保在完成时关闭思考状态
               }
             } catch (e) {
               console.error("Error parsing SSE data:", e, line)
@@ -206,6 +227,7 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
       }
     } catch (error) {
       console.error("Error in stream chat:", error)
+      setIsThinking(false) // 错误发生时关闭思考状态
       toast({
         description: error instanceof Error ? error.message : "未知错误",
         variant: "destructive",
@@ -364,6 +386,29 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
                   )}
                 </div>
               ))}
+              
+              {/* 思考中提示 */}
+              {isThinking && (!currentAssistantMessage || !currentAssistantMessage.hasContent) && (
+                <div className="flex justify-start mb-3">
+                  <div className="mr-2 h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm shadow-sm flex-shrink-0">
+                    A
+                  </div>
+                  <div className="rounded-2xl px-5 py-4 bg-gray-50 border border-gray-200 shadow-sm transition-all animate-thinking" style={{ maxWidth: 'min(90%, 800px)' }}>
+                    <div className="flex flex-col">
+                      <div className="flex items-center gap-2.5 mb-3">
+                        <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
+                        <div className="text-gray-600 text-sm font-medium">AI 正在思考...</div>
+                      </div>
+                      <div className="flex items-center">
+                        <div className="relative h-1.5 w-40 bg-gray-200 rounded-full overflow-hidden">
+                          <div className="absolute top-0 left-0 h-full w-40 bg-gradient-to-r from-blue-300 via-blue-500 to-blue-300 rounded-full animate-progress"></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
               <div ref={messagesEndRef} />
               {!autoScroll && isTyping && (
                 <button
