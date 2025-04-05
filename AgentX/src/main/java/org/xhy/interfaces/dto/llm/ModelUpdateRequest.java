@@ -2,7 +2,6 @@ package org.xhy.interfaces.dto.llm;
 
 
 import jakarta.validation.constraints.NotBlank;
-import org.xhy.domain.llm.model.config.LLMModelConfig;
 
 /**
  * 模型更新请求
@@ -31,10 +30,6 @@ public class ModelUpdateRequest {
      */
     private String description;
 
-    /**
-     * 模型配置
-     */
-    private LLMModelConfig config;
 
     /**
      * 模型状态
@@ -63,13 +58,7 @@ public class ModelUpdateRequest {
         this.description = description;
     }
     
-    public LLMModelConfig getConfig() {
-        return config;
-    }
-    
-    public void setConfig(LLMModelConfig config) {
-        this.config = config;
-    }
+
 
     public String getModelId() {
         return modelId;

@@ -9,6 +9,7 @@ import org.xhy.domain.agent.model.AgentEntity;
 import org.xhy.application.agent.dto.AgentVersionDTO;
 import org.xhy.domain.agent.model.AgentVersionEntity;
 import org.xhy.domain.agent.model.AgentWorkspaceEntity;
+import org.xhy.domain.agent.model.LLMModelConfig;
 import org.xhy.domain.agent.service.AgentDomainService;
 import org.xhy.domain.agent.service.AgentWorkspaceDomainService;
 import org.xhy.infrastructure.exception.ParamValidationException;
@@ -48,9 +49,7 @@ public class AgentAppService {
         AgentEntity entity = AgentAssembler.toEntity(request,userId);
         entity.setUserId(userId);
         AgentEntity agent = agentServiceDomainService.createAgent(entity);
-        AgentWorkspaceEntity agentWorkspaceEntity = new AgentWorkspaceEntity();
-        agentWorkspaceEntity.setAgentId(agent.getId());
-        agentWorkspaceEntity.setUserId(userId);
+        AgentWorkspaceEntity agentWorkspaceEntity = new AgentWorkspaceEntity(agent.getId(),userId,new LLMModelConfig());
         agentWorkspaceDomainService.save(agentWorkspaceEntity);
         return AgentAssembler.toDTO(agent);
     }

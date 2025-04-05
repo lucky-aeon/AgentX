@@ -1,9 +1,7 @@
 package org.xhy.domain.conversation.model;
 
 import com.baomidou.mybatisplus.annotation.*;
-import com.baomidou.mybatisplus.extension.activerecord.Model;
 import org.xhy.domain.conversation.constant.Role;
-import org.xhy.infrastructure.converter.ModelConfigConverter;
 import org.xhy.infrastructure.converter.RoleConverter;
 import org.xhy.infrastructure.entity.BaseEntity;
 

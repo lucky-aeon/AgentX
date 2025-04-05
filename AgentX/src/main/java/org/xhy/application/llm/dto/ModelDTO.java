@@ -1,6 +1,6 @@
 package org.xhy.application.llm.dto;
 
-import org.xhy.domain.llm.model.config.LLMModelConfig;
+import org.xhy.domain.agent.model.LLMModelConfig;
 import org.xhy.domain.llm.model.enums.ModelType;
 
 import java.time.LocalDateTime;
@@ -42,10 +42,6 @@ public class ModelDTO {
      * 模型类型
      */
     private ModelType type;
-    /**
-     * 模型配置
-     */
-    private LLMModelConfig config;
     /**
      * 是否官方
      */
@@ -127,13 +123,7 @@ public class ModelDTO {
         this.type = type;
     }
     
-    public LLMModelConfig getConfig() {
-        return config;
-    }
-    
-    public void setConfig(LLMModelConfig config) {
-        this.config = config;
-    }
+
     
     public Boolean getIsOfficial() {
         return isOfficial;

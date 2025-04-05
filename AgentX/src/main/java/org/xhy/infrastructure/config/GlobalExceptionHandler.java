@@ -4,17 +4,21 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.async.AsyncRequestTimeoutException;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import org.xhy.infrastructure.exception.BusinessException;
 import org.xhy.infrastructure.exception.EntityNotFoundException;
 import org.xhy.infrastructure.exception.ParamValidationException;
 import org.xhy.interfaces.api.common.Result;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -86,6 +90,33 @@ public class GlobalExceptionHandler {
 
         logger.error("表单绑定异常: {}, URL: {}", errorMessage, request.getRequestURL(), e);
         return Result.badRequest(errorMessage);
+    }
+
+    /**
+     * 处理异步请求超时异常
+     */
+    @ExceptionHandler(AsyncRequestTimeoutException.class)
+    @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
+    public Object handleAsyncRequestTimeoutException(AsyncRequestTimeoutException e, HttpServletRequest request) {
+        logger.error("异步请求超时: {}", request.getRequestURL(), e);
+        
+        // 处理SSE请求的超时情况
+        String contentType = request.getContentType();
+        if (contentType != null && contentType.contains(MediaType.TEXT_EVENT_STREAM_VALUE)) {
+            SseEmitter emitter = new SseEmitter();
+            try {
+                emitter.send(SseEmitter.event()
+                        .name("error")
+                        .data("{\"message\":\"请求超时，请重试\",\"done\":true}"));
+                emitter.complete();
+            } catch (IOException ex) {
+                logger.error("发送SSE超时消息失败", ex);
+            }
+            return emitter;
+        }
+        
+        // 非SSE请求返回标准JSON响应
+        return Result.error(503, "请求处理超时，请重试");
     }
 
     /**

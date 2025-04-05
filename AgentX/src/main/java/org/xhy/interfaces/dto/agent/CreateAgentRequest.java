@@ -1,7 +1,7 @@
 package org.xhy.interfaces.dto.agent;
 
 import jakarta.validation.constraints.NotBlank;
-import org.xhy.domain.agent.model.AgentModelConfig;
+import org.xhy.domain.agent.model.LLMModelConfig;
 import org.xhy.domain.agent.model.AgentTool;
 import org.xhy.domain.agent.constant.AgentType;
 
@@ -19,7 +19,6 @@ public class CreateAgentRequest {
     private AgentType agentType = AgentType.CHAT_ASSISTANT;
     private String systemPrompt;
     private String welcomeMessage;
-    private AgentModelConfig modelConfig;
     private List<AgentTool> tools;
     private List<String> knowledgeBaseIds;
 
@@ -73,14 +72,6 @@ public class CreateAgentRequest {
 
     public void setWelcomeMessage(String welcomeMessage) {
         this.welcomeMessage = welcomeMessage;
-    }
-
-    public AgentModelConfig getModelConfig() {
-        return modelConfig;
-    }
-
-    public void setModelConfig(AgentModelConfig modelConfig) {
-        this.modelConfig = modelConfig;
     }
 
     public List<AgentTool> getTools() {

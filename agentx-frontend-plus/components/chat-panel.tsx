@@ -20,8 +20,13 @@ interface ChatPanelProps {
 
 interface Message {
   id: string
-  role: "USER" | "SYSTEM"
+  role: "USER" | "SYSTEM" | "assistant"
   content: string
+}
+
+interface AssistantMessage {
+  id: string
+  hasContent: boolean
 }
 
 interface StreamData {
@@ -39,7 +44,11 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
   const [isTyping, setIsTyping] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [autoScroll, setAutoScroll] = useState(true)
+  const [isThinking, setIsThinking] = useState(false)
+  const [currentAssistantMessage, setCurrentAssistantMessage] = useState<AssistantMessage | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const chatContainerRef = useRef<HTMLDivElement>(null)
 
   // 获取会话消息
   useEffect(() => {
@@ -59,7 +68,7 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
           // 转换消息格式
           const formattedMessages = messagesResponse.data.map((msg: MessageDTO) => ({
             id: msg.id,
-            role: msg.role as "USER" | "SYSTEM",
+            role: msg.role as "USER" | "SYSTEM" | "assistant",
             content: msg.content,
           }))
           
@@ -82,8 +91,35 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
 
   // 滚动到底部
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages, isTyping])
+    if (autoScroll) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+    }
+  }, [messages, isTyping, autoScroll])
+
+  // 监听滚动事件
+  useEffect(() => {
+    const chatContainer = chatContainerRef.current
+    if (!chatContainer) return
+
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = chatContainer
+      // 判断是否滚动到底部附近（20px误差范围）
+      const isAtBottom = scrollHeight - scrollTop - clientHeight < 20
+      setAutoScroll(isAtBottom)
+    }
+
+    chatContainer.addEventListener('scroll', handleScroll)
+    return () => chatContainer.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  // 处理用户主动发送消息时强制滚动到底部
+  const scrollToBottom = () => {
+    setAutoScroll(true)
+    // 使用setTimeout确保在下一个渲染周期执行
+    setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+    }, 100)
+  }
 
   // 处理发送消息
   const handleSendMessage = async () => {
@@ -92,6 +128,9 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
     const userMessage = input.trim()
     setInput("")
     setIsTyping(true)
+    setIsThinking(true) // 设置思考状态
+    setCurrentAssistantMessage(null) // 重置助手消息状态
+    scrollToBottom() // 用户发送新消息时强制滚动到底部
 
     // 添加用户消息到消息列表
     const userMessageId = `user-${Date.now()}`
@@ -119,6 +158,7 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
 
       // 添加助理消息到消息列表 - 使用固定的ID以便于更新
       const assistantMessageId = `assistant-${Date.now()}`
+      setCurrentAssistantMessage({ id: assistantMessageId, hasContent: false })
       setMessages((prev) => [
         ...prev,
         {
@@ -130,6 +170,7 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
 
       let accumulatedContent = ""
       const decoder = new TextDecoder()
+      let hasReceivedFirstResponse = false
       
       // 用于解析SSE格式数据的变量
       let buffer = ""
@@ -154,6 +195,12 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
               const data = JSON.parse(jsonStr) as StreamData
               
               if (data.content) {
+                // 收到第一个响应，结束思考状态
+                if (!hasReceivedFirstResponse) {
+                  hasReceivedFirstResponse = true
+                  setIsThinking(false)
+                }
+                
                 accumulatedContent += data.content
                 
                 // 更新现有的助手消息
@@ -162,11 +209,15 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
                     msg.id === assistantMessageId ? { ...msg, content: accumulatedContent } : msg,
                   ),
                 )
+                
+                // 更新助手消息状态
+                setCurrentAssistantMessage({ id: assistantMessageId, hasContent: true })
               }
               
               // 如果返回了done标记，则结束处理
               if (data.done) {
                 console.log("Stream completed with done flag")
+                setIsThinking(false) // 确保在完成时关闭思考状态
               }
             } catch (e) {
               console.error("Error parsing SSE data:", e, line)
@@ -176,6 +227,7 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
       }
     } catch (error) {
       console.error("Error in stream chat:", error)
+      setIsThinking(false) // 错误发生时关闭思考状态
       toast({
         description: error instanceof Error ? error.message : "未知错误",
         variant: "destructive",
@@ -196,7 +248,7 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
   return (
     <div className="flex flex-col h-full w-full">
       {/* 消息列表 */}
-      <div className="flex-1 overflow-y-auto p-2 bg-white">
+      <div className="flex-1 overflow-y-auto p-2 bg-white" ref={chatContainerRef}>
         {loading ? (
           // 加载状态
           <div className="flex items-center justify-center h-full">
@@ -334,7 +386,40 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
                   )}
                 </div>
               ))}
+              
+              {/* 思考中提示 */}
+              {isThinking && (!currentAssistantMessage || !currentAssistantMessage.hasContent) && (
+                <div className="flex justify-start mb-3">
+                  <div className="mr-2 h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm shadow-sm flex-shrink-0">
+                    A
+                  </div>
+                  <div className="rounded-2xl px-5 py-4 bg-gray-50 border border-gray-200 shadow-sm transition-all animate-thinking" style={{ maxWidth: 'min(90%, 800px)' }}>
+                    <div className="flex flex-col">
+                      <div className="flex items-center gap-2.5 mb-3">
+                        <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
+                        <div className="text-gray-600 text-sm font-medium">AI 正在思考...</div>
+                      </div>
+                      <div className="flex items-center">
+                        <div className="relative h-1.5 w-40 bg-gray-200 rounded-full overflow-hidden">
+                          <div className="absolute top-0 left-0 h-full w-40 bg-gradient-to-r from-blue-300 via-blue-500 to-blue-300 rounded-full animate-progress"></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
               <div ref={messagesEndRef} />
+              {!autoScroll && isTyping && (
+                <button
+                  onClick={scrollToBottom}
+                  className="fixed bottom-20 right-5 bg-blue-500 text-white rounded-full p-2 shadow-lg hover:bg-blue-600 transition-colors"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </button>
+              )}
             </div>
           </div>
         )}
