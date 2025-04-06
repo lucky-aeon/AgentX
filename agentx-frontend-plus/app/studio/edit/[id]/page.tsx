@@ -64,18 +64,6 @@ import type { AgentVersion } from "@/types/agent"
 // 应用类型定义
 type AgentType = "chat" | "agent"
 
-// 模型选项
-const modelOptions = [
-  { value: "gpt-4o", label: "GPT-4o" },
-  { value: "gpt-4-turbo", label: "GPT-4 Turbo" },
-  { value: "gpt-3.5-turbo", label: "GPT-3.5 Turbo" },
-  { value: "claude-3-opus", label: "Claude 3 Opus" },
-  { value: "claude-3-sonnet", label: "Claude 3 Sonnet" },
-  { value: "claude-3-haiku", label: "Claude 3 Haiku" },
-  { value: "gemini-pro", label: "Gemini Pro" },
-  { value: "llama-3-70b", label: "Llama 3 70B" },
-]
-
 // 工具选项
 const toolOptions = [
   { id: "web-search", name: "网页搜索", description: "允许搜索互联网获取信息" },
@@ -99,11 +87,6 @@ interface AgentFormData {
   description: string
   systemPrompt: string
   welcomeMessage: string
-  modelConfig: {
-    modelName: string
-    temperature: number
-    maxTokens: number
-  }
   tools: string[]
   knowledgeBaseIds: string[]
   enabled: boolean
@@ -140,11 +123,6 @@ export default function EditAgentPage() {
     description: "",
     systemPrompt: "",
     welcomeMessage: "",
-    modelConfig: {
-      modelName: "gpt-4o",
-      temperature: 0.7,
-      maxTokens: 2000,
-    },
     tools: [],
     knowledgeBaseIds: [],
     enabled: true,
@@ -168,13 +146,8 @@ export default function EditAgentPage() {
             description: agent.description,
             systemPrompt: agent.systemPrompt,
             welcomeMessage: agent.welcomeMessage,
-            modelConfig: {
-              modelName: agent.modelConfig.modelName,
-              temperature: agent.modelConfig.temperature || 0.7,
-              maxTokens: agent.modelConfig.maxTokens || 2000,
-            },
-            tools: agent.tools.map((tool) => tool.id),
-            knowledgeBaseIds: agent.knowledgeBaseIds,
+            tools: agent.tools?.map((tool) => tool.id) || [],
+            knowledgeBaseIds: agent.knowledgeBaseIds || [],
             enabled: agent.enabled,
             agentType: agent.agentType,
           })
@@ -210,17 +183,6 @@ export default function EditAgentPage() {
     setFormData((prev) => ({
       ...prev,
       [field]: value,
-    }))
-  }
-
-  // 更新模型配置
-  const updateModelConfig = (field: string, value: any) => {
-    setFormData((prev) => ({
-      ...prev,
-      modelConfig: {
-        ...prev.modelConfig,
-        [field]: value,
-      },
     }))
   }
 
@@ -309,16 +271,12 @@ export default function EditAgentPage() {
     try {
       // 准备API请求参数
       const agentData = {
+        id: agentId,
         name: formData.name,
         avatar: formData.avatar,
         description: formData.description || "",
         systemPrompt: selectedType === "chat" ? formData.systemPrompt : "",
         welcomeMessage: selectedType === "chat" ? formData.welcomeMessage : "",
-        modelConfig: {
-          modelName: formData.modelConfig.modelName,
-          temperature: formData.modelConfig.temperature,
-          maxTokens: formData.modelConfig.maxTokens,
-        },
         tools: formData.tools.map((toolId) => {
           const tool = toolOptions.find((t) => t.id === toolId)
           return {
@@ -401,7 +359,6 @@ export default function EditAgentPage() {
         changeLog: changeLog || `发布 ${versionNumber} 版本`,
         systemPrompt: formData.systemPrompt,
         welcomeMessage: formData.welcomeMessage,
-        modelConfig: formData.modelConfig,
         tools: formData.tools.map((toolId) => {
           const tool = toolOptions.find((t) => t.id === toolId)
           return {
@@ -477,13 +434,8 @@ export default function EditAgentPage() {
         description: version.description,
         systemPrompt: version.systemPrompt,
         welcomeMessage: version.welcomeMessage,
-        modelConfig: {
-          modelName: version.modelConfig.modelName,
-          temperature: version.modelConfig.temperature || 0.7,
-          maxTokens: version.modelConfig.maxTokens || 2000,
-        },
-        tools: version.tools.map((tool) => tool.id),
-        knowledgeBaseIds: version.knowledgeBaseIds,
+        tools: version.tools?.map((tool) => tool.id) || [],
+        knowledgeBaseIds: version.knowledgeBaseIds || [],
         enabled: formData.enabled, // 保持当前启用/禁用状态
         agentType: version.agentType,
       })
@@ -517,13 +469,11 @@ export default function EditAgentPage() {
       return [
         { id: "basic", label: "基本信息" },
         { id: "prompt", label: "提示词配置" },
-        { id: "model", label: "模型配置" },
         { id: "tools", label: "工具与知识库" },
       ]
     } else {
       return [
         { id: "basic", label: "基本信息" },
-        { id: "model", label: "模型配置" },
         { id: "tools", label: "工具配置" },
       ]
     }
@@ -757,72 +707,6 @@ export default function EditAgentPage() {
               </TabsContent>
             )}
 
-            <TabsContent value="model" className="space-y-6">
-              {/* 模型选择 */}
-              <div>
-                <h2 className="text-lg font-medium mb-2">选择模型</h2>
-                <p className="text-sm text-muted-foreground mb-2">
-                  选择{selectedType === "chat" ? "聊天助理" : "功能性助理"}使用的大语言模型
-                </p>
-                <Select
-                  value={formData.modelConfig.modelName}
-                  onValueChange={(value) => updateModelConfig("modelName", value)}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="选择模型" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {modelOptions.map((model) => (
-                      <SelectItem key={model.value} value={model.value}>
-                        {model.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* 温度设置 */}
-              <div>
-                <h2 className="text-lg font-medium mb-2">温度</h2>
-                <p className="text-sm text-muted-foreground mb-2">
-                  控制输出的随机性：较低的值使输出更确定，较高的值使输出更多样化
-                </p>
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-sm">精确</span>
-                    <span className="text-sm font-medium">{formData.modelConfig.temperature.toFixed(1)}</span>
-                  </div>
-                  <Slider
-                    value={[formData.modelConfig.temperature]}
-                    min={0}
-                    max={1}
-                    step={0.1}
-                    onValueChange={(value) => updateModelConfig("temperature", value[0])}
-                  />
-                </div>
-              </div>
-
-              {/* 最大Token */}
-              <div>
-                <h2 className="text-lg font-medium mb-2">最大输出Token</h2>
-                <p className="text-sm text-muted-foreground mb-2">限制模型单次回复的最大长度</p>
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-sm">简短</span>
-                    <span className="text-sm font-medium">{formData.modelConfig.maxTokens}</span>
-                    <span className="text-sm">详细</span>
-                  </div>
-                  <Slider
-                    value={[formData.modelConfig.maxTokens]}
-                    min={500}
-                    max={4000}
-                    step={100}
-                    onValueChange={(value) => updateModelConfig("maxTokens", value[0])}
-                  />
-                </div>
-              </div>
-            </TabsContent>
-
             <TabsContent value="tools" className="space-y-6">
               {/* 工具选择 */}
               <div>
@@ -913,7 +797,6 @@ export default function EditAgentPage() {
                   </Avatar>
                   <span className="font-medium">{formData.name || "聊天助理"}</span>
                 </div>
-                <Badge variant="outline">{formData.modelConfig.modelName}</Badge>
               </div>
 
               <div className="h-[500px] flex flex-col">
@@ -991,7 +874,6 @@ export default function EditAgentPage() {
                   </Avatar>
                   <span className="font-medium">{formData.name || "功能性助理"}</span>
                 </div>
-                <Badge variant="outline">{formData.modelConfig.modelName}</Badge>
               </div>
 
               <div className="h-[500px] flex flex-col">
@@ -1096,14 +978,6 @@ export default function EditAgentPage() {
                 <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">类型</span>
                   <span className="text-sm font-medium">{selectedType === "chat" ? "聊天助理" : "功能性助理"}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">模型</span>
-                  <span className="text-sm font-medium">{formData.modelConfig.modelName}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">温度</span>
-                  <span className="text-sm font-medium">{formData.modelConfig.temperature.toFixed(1)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">工具数量</span>
@@ -1268,18 +1142,6 @@ export default function EditAgentPage() {
               <div className="space-y-2">
                 <h3 className="font-medium">配置信息</h3>
                 <div className="space-y-1">
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">模型</span>
-                    <span className="text-sm">{selectedVersion.modelConfig.modelName}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">温度</span>
-                    <span className="text-sm">{selectedVersion.modelConfig.temperature?.toFixed(1) || "0.7"}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">最大Token</span>
-                    <span className="text-sm">{selectedVersion.modelConfig.maxTokens || "2000"}</span>
-                  </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">工具数量</span>
                     <span className="text-sm">{selectedVersion.tools.length}</span>

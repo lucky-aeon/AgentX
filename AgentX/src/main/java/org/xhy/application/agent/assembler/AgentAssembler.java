@@ -67,6 +67,7 @@ public class AgentAssembler {
         entity.setKnowledgeBaseIds(request.getKnowledgeBaseIds());
         entity.setUserId(userId);
         entity.setEnabled(request.getEnabled());
+        entity.setId(request.getAgentId());
 
         return entity;
     }
