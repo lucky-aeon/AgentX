@@ -22,24 +22,24 @@ import java.util.List;
 /**
  * 标准消息处理器
  */
-@Component(value = "standardMessageHandler")
-public class StandardMessageHandler implements MessageHandler {
+@Component(value = "chatMessageHandler")
+public class ChatMessageHandler implements MessageHandler {
     
     /**
      * 连接超时时间（毫秒）: 5分钟
      */
-    private static final long CONNECTION_TIMEOUT = 300000L;
+    protected static final long CONNECTION_TIMEOUT = 300000L;
     
     /**
      * 摘要前缀信息
      */
     private static final String SUMMARY_PREFIX = "以下是用户历史消息的摘要，请仅作为参考，用户没有提起则不要回答摘要中的内容：\\n";
+
+    protected final ConversationDomainService conversationDomainService;
+    protected final ContextDomainService contextDomainService;
+    protected final LLMServiceFactory llmServiceFactory;
     
-    private final ConversationDomainService conversationDomainService;
-    private final ContextDomainService contextDomainService;
-    private final LLMServiceFactory llmServiceFactory;
-    
-    public StandardMessageHandler(
+    public ChatMessageHandler(
             ConversationDomainService conversationDomainService,
             ContextDomainService contextDomainService,
             LLMServiceFactory llmServiceFactory) {
@@ -76,7 +76,7 @@ public class StandardMessageHandler implements MessageHandler {
     /**
      * 创建用户消息实体
      */
-    private MessageEntity createUserMessage(ChatEnvironment environment) {
+    protected MessageEntity createUserMessage(ChatEnvironment environment) {
         MessageEntity messageEntity = new MessageEntity();
         messageEntity.setRole(Role.USER);
         messageEntity.setContent(environment.getUserMessage());
@@ -87,7 +87,7 @@ public class StandardMessageHandler implements MessageHandler {
     /**
      * 创建LLM消息实体
      */
-    private MessageEntity createLlmMessage(ChatEnvironment environment) {
+    protected MessageEntity createLlmMessage(ChatEnvironment environment) {
         MessageEntity messageEntity = new MessageEntity();
         messageEntity.setRole(Role.SYSTEM);
         messageEntity.setSessionId(environment.getSessionId());
@@ -99,7 +99,7 @@ public class StandardMessageHandler implements MessageHandler {
     /**
      * 准备LLM请求
      */
-    private dev.langchain4j.model.chat.request.ChatRequest prepareLlmRequest(ChatEnvironment environment) {
+    protected dev.langchain4j.model.chat.request.ChatRequest prepareLlmRequest(ChatEnvironment environment) {
         // 构建聊天消息列表
         List<ChatMessage> chatMessages = new ArrayList<>();
         dev.langchain4j.model.chat.request.ChatRequest.Builder chatRequestBuilder = 
@@ -181,7 +181,7 @@ public class StandardMessageHandler implements MessageHandler {
     /**
      * 处理对话
      */
-    private <T> void processChat(
+    protected <T> void processChat(
             StreamingChatLanguageModel llmClient,
             dev.langchain4j.model.chat.request.ChatRequest llmRequest,
             T connection,

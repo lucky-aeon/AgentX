@@ -186,6 +186,13 @@
             <version>1.0.0-beta2</version>
         </dependency>
 
+
+        <dependency>
+            <groupId>dev.langchain4j</groupId>
+            <artifactId>langchain4j-mcp</artifactId>
+            <version>1.0.0-beta2</version>
+        </dependency>
+
         <dependency>
             <groupId>org.dromara.stream-query</groupId>
             <artifactId>stream-core</artifactId>
