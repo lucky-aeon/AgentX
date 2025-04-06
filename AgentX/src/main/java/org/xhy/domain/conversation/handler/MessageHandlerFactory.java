@@ -46,10 +46,10 @@ public class MessageHandlerFactory {
     private MessageHandler getHandlerByType(MessageHandlerType type) {
         switch (type) {
             case REACT:
-                return applicationContext.getBean("reactMessageHandler", MessageHandler.class);
+                return applicationContext.getBean("agentMessageHandler", MessageHandler.class);
             case STANDARD:
             default:
-                return applicationContext.getBean("standardMessageHandler", MessageHandler.class);
+                return applicationContext.getBean("chatMessageHandler", MessageHandler.class);
         }
     }
 } 
