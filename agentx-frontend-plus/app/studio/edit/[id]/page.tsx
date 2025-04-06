@@ -169,12 +169,12 @@ export default function EditAgentPage() {
             systemPrompt: agent.systemPrompt,
             welcomeMessage: agent.welcomeMessage,
             modelConfig: {
-              modelName: agent.modelConfig.modelName,
-              temperature: agent.modelConfig.temperature || 0.7,
-              maxTokens: agent.modelConfig.maxTokens || 2000,
+              modelName: agent.modelConfig?.modelName || "gpt-3.5-turbo",
+              temperature: agent.modelConfig?.temperature || 0.7,
+              maxTokens: agent.modelConfig?.maxTokens || 2000,
             },
-            tools: agent.tools.map((tool) => tool.id),
-            knowledgeBaseIds: agent.knowledgeBaseIds,
+            tools: agent.tools?.map((tool) => tool.id) || [],
+            knowledgeBaseIds: agent.knowledgeBaseIds || [],
             enabled: agent.enabled,
             agentType: agent.agentType,
           })
@@ -478,12 +478,12 @@ export default function EditAgentPage() {
         systemPrompt: version.systemPrompt,
         welcomeMessage: version.welcomeMessage,
         modelConfig: {
-          modelName: version.modelConfig.modelName,
-          temperature: version.modelConfig.temperature || 0.7,
-          maxTokens: version.modelConfig.maxTokens || 2000,
+          modelName: version.modelConfig?.modelName || "gpt-3.5-turbo",
+          temperature: version.modelConfig?.temperature || 0.7,
+          maxTokens: version.modelConfig?.maxTokens || 2000,
         },
-        tools: version.tools.map((tool) => tool.id),
-        knowledgeBaseIds: version.knowledgeBaseIds,
+        tools: version.tools?.map((tool) => tool.id) || [],
+        knowledgeBaseIds: version.knowledgeBaseIds || [],
         enabled: formData.enabled, // 保持当前启用/禁用状态
         agentType: version.agentType,
       })
