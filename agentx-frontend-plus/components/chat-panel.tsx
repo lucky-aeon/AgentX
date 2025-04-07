@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { FileText, Send } from 'lucide-react'
+import { FileText, Send, ClipboardList } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -13,9 +13,13 @@ import { Skeleton } from "@/components/ui/skeleton"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import { Highlight, themes } from "prism-react-renderer"
+import { CurrentTaskList } from "@/components/current-task-list"
 
 interface ChatPanelProps {
   conversationId: string
+  onToggleTaskHistory?: () => void
+  showTaskHistory?: boolean
+  isFunctionalAgent?: boolean
 }
 
 interface Message {
@@ -38,7 +42,7 @@ interface StreamData {
   timestamp: number
 }
 
-export function ChatPanel({ conversationId }: ChatPanelProps) {
+export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory = false, isFunctionalAgent = false }: ChatPanelProps) {
   const [input, setInput] = useState("")
   const [messages, setMessages] = useState<Message[]>([])
   const [isTyping, setIsTyping] = useState(false)
@@ -246,19 +250,38 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
   }
 
   return (
-    <div className="flex flex-col h-full w-full">
-      {/* 消息列表 */}
-      <div className="flex-1 overflow-y-auto p-2 bg-white" ref={chatContainerRef}>
+    <div className="relative flex h-full w-full flex-col overflow-hidden bg-white">
+      <div className="flex items-center justify-between px-4 py-2 border-b">
+        <div className="flex items-center">
+          <FileText className="h-5 w-5 text-gray-500 mr-2" />
+          <span className="font-medium">对话</span>
+        </div>
+        {isFunctionalAgent && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={onToggleTaskHistory}
+          >
+            <ClipboardList className={`h-5 w-5 ${showTaskHistory ? 'text-primary' : 'text-gray-500'}`} />
+          </Button>
+        )}
+      </div>
+
+      <div 
+        ref={chatContainerRef}
+        className="flex-1 overflow-y-auto px-4 pt-3 pb-4 w-full"
+      >
         {loading ? (
           // 加载状态
-          <div className="flex items-center justify-center h-full">
+          <div className="flex items-center justify-center h-full w-full">
             <div className="text-center">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-2 border-gray-200 border-t-blue-500 mb-2"></div>
               <p className="text-gray-500">正在加载消息...</p>
             </div>
           </div>
         ) : (
-          <div className="space-y-4 max-w-5xl mx-auto">
+          <div className="space-y-4 w-full">
             {error && (
               <div className="bg-red-50 border border-red-200 rounded-md p-3 text-sm text-red-600">
                 {error}
@@ -266,126 +289,132 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
             )}
 
             {/* 消息内容 */}
-            <div className="space-y-3">
-              {messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex ${message.role === "USER" ? "justify-end" : "justify-start"} mb-3`}
-                >
-                  {message.role !== "USER" && (
-                    <div className="mr-2 h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm shadow-sm flex-shrink-0">
-                      A
-                    </div>
-                  )}
+            <div className="space-y-3 w-full">
+              {messages.length === 0 ? (
+                <div className="flex items-center justify-center h-20 w-full">
+                  <p className="text-gray-400">暂无消息，开始发送消息吧</p>
+                </div>
+              ) : (
+                messages.map((message) => (
                   <div
-                    className={`rounded-2xl px-3.5 py-2.5 ${
-                      message.role === "USER"
-                        ? "bg-blue-500 text-white shadow-sm"
-                        : "bg-gray-100 border border-gray-200 shadow-sm"
-                    }`}
-                    style={{ 
-                      wordWrap: 'break-word', 
-                      overflowWrap: 'break-word', 
-                      maxWidth: 'min(90%, 800px)',
-                      position: 'relative'
-                    }}
+                    key={message.id}
+                    className={`flex ${message.role === "USER" ? "justify-end" : "justify-start"} mb-3 w-full`}
                   >
-                    {message.content ? (
-                      <div 
-                        className={`prose prose-sm max-w-none break-words overflow-hidden ${
-                          message.role === "USER" 
-                            ? "prose-invert" 
-                            : "prose-headings:text-gray-800"
-                        }`} 
-                        style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}
-                      >
-                        <ReactMarkdown 
-                          remarkPlugins={[remarkGfm]}
-                          components={{
-                            code({node, inline, className, children, ...props}: any) {
-                              const match = /language-(\w+)/.exec(className || '')
-                              const language = match ? match[1] : ''
-                              
-                              return !inline ? (
-                                <div className="overflow-x-auto my-3 rounded-lg" style={{ maxWidth: '100%' }}>
-                                  <Highlight
-                                    theme={message.role === "USER" ? themes.vsLight : themes.github}
-                                    code={String(children).replace(/\n$/, '')}
-                                    language={language || 'text'}
-                                  >
-                                    {({className, style, tokens, getLineProps, getTokenProps}) => (
-                                      <pre className="p-3 rounded-lg" style={{
-                                        ...style,
-                                        overflowX: 'auto',
-                                        margin: 0,
-                                        maxWidth: '100%',
-                                        whiteSpace: 'pre-wrap',
-                                        wordBreak: 'break-word',
-                                        backgroundColor: message.role === "USER" ? 'rgba(59, 130, 246, 0.15)' : 'rgba(0, 0, 0, 0.04)'
-                                      }}>
-                                        {tokens.map((line, i) => (
-                                          <div key={i} {...getLineProps({line})} style={{ overflowWrap: 'break-word', wordBreak: 'break-all' }}>
-                                            {line.map((token, key) => (
-                                              <span key={key} {...getTokenProps({token})} />
-                                            ))}
-                                          </div>
-                                        ))}
-                                      </pre>
-                                    )}
-                                  </Highlight>
-                                </div>
-                              ) : (
-                                <code className={`${message.role === "USER" ? "bg-blue-400/30" : "bg-gray-200"} px-1.5 py-0.5 rounded-md text-sm font-mono`} {...props}>
-                                  {children}
-                                </code>
-                              )
-                            },
-                            pre({children}: any) {
-                              return <div className="overflow-x-auto" style={{ maxWidth: '100%' }}>{children}</div>
-                            },
-                            p({children}: any) {
-                              return <div className="break-words whitespace-normal my-2" style={{ overflowWrap: 'break-word', wordBreak: 'break-word' }}>{children}</div>
-                            },
-                            li({children}: any) {
-                              return <li className="my-1">{children}</li>
-                            },
-                            ul({children}: any) {
-                              return <ul className="list-disc pl-5 my-2">{children}</ul>
-                            },
-                            ol({children}: any) {
-                              return <ol className="list-decimal pl-5 my-2">{children}</ol>
-                            },
-                            blockquote({children}: any) {
-                              return <div className="border-l-4 border-gray-200 pl-4 my-2 italic" style={{ overflowWrap: 'break-word', wordBreak: 'break-word' }}>{children}</div>
-                            },
-                            table({children}: any) {
-                              return <div className="overflow-x-auto my-2" style={{ maxWidth: '100%' }}><table className="border-collapse border border-gray-300">{children}</table></div>
-                            },
-                            a({node, children, href, ...props}: any) {
-                              return <a href={href} className="break-all" style={{ wordBreak: 'break-all' }} {...props}>{children}</a>
-                            }
-                          }}
-                        >
-                          {message.content}
-                        </ReactMarkdown>
+                    {message.role !== "USER" && (
+                      <div className="mr-2 h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm shadow-sm flex-shrink-0">
+                        A
                       </div>
-                    ) : (
-                      message.role === "SYSTEM" && isTyping ? (
-                        <div className="flex space-x-2">
-                          <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" />
-                          <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce delay-100" />
-                          <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce delay-200" />
+                    )}
+                    <div
+                      className={`rounded-2xl px-3.5 py-2.5 ${
+                        message.role === "USER"
+                          ? "bg-blue-500 text-white shadow-sm"
+                          : "bg-gray-100 border border-gray-200 shadow-sm"
+                      }`}
+                      style={{ 
+                        wordWrap: 'break-word', 
+                        overflowWrap: 'break-word', 
+                        maxWidth: 'min(90%, 800px)',
+                        position: 'relative'
+                      }}
+                    >
+                      {message.content ? (
+                        <div 
+                          className={`prose prose-sm max-w-none break-words overflow-hidden ${
+                            message.role === "USER" 
+                              ? "prose-invert" 
+                              : "prose-headings:text-gray-800"
+                          }`} 
+                          style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}
+                        >
+                          <ReactMarkdown 
+                            remarkPlugins={[remarkGfm]}
+                            components={{
+                              code({node, inline, className, children, ...props}: any) {
+                                const match = /language-(\w+)/.exec(className || '')
+                                const language = match ? match[1] : ''
+                                
+                                return !inline ? (
+                                  <div className="overflow-x-auto my-3 rounded-lg" style={{ maxWidth: '100%' }}>
+                                    <Highlight
+                                      theme={message.role === "USER" ? themes.vsLight : themes.github}
+                                      code={String(children).replace(/\n$/, '')}
+                                      language={language || 'text'}
+                                    >
+                                      {({className, style, tokens, getLineProps, getTokenProps}) => (
+                                        <pre className="p-3 rounded-lg" style={{
+                                          ...style,
+                                          overflowX: 'auto',
+                                          margin: 0,
+                                          maxWidth: '100%',
+                                          whiteSpace: 'pre-wrap',
+                                          wordBreak: 'break-word',
+                                          backgroundColor: message.role === "USER" ? 'rgba(59, 130, 246, 0.15)' : 'rgba(0, 0, 0, 0.04)'
+                                        }}>
+                                          {tokens.map((line, i) => (
+                                            <div key={i} {...getLineProps({line})} style={{ overflowWrap: 'break-word', wordBreak: 'break-all' }}>
+                                              {line.map((token, key) => (
+                                                <span key={key} {...getTokenProps({token})} />
+                                              ))}
+                                            </div>
+                                          ))}
+                                        </pre>
+                                      )}
+                                    </Highlight>
+                                  </div>
+                                ) : (
+                                  <code className={`${message.role === "USER" ? "bg-blue-400/30" : "bg-gray-200"} px-1.5 py-0.5 rounded-md text-sm font-mono`} {...props}>
+                                    {children}
+                                  </code>
+                                )
+                              },
+                              pre({children}: any) {
+                                return <div className="overflow-x-auto" style={{ maxWidth: '100%' }}>{children}</div>
+                              },
+                              p({children}: any) {
+                                return <div className="break-words whitespace-normal my-2" style={{ overflowWrap: 'break-word', wordBreak: 'break-word' }}>{children}</div>
+                              },
+                              li({children}: any) {
+                                return <li className="my-1">{children}</li>
+                              },
+                              ul({children}: any) {
+                                return <ul className="list-disc pl-5 my-2">{children}</ul>
+                              },
+                              ol({children}: any) {
+                                return <ol className="list-decimal pl-5 my-2">{children}</ol>
+                              },
+                              blockquote({children}: any) {
+                                return <div className="border-l-4 border-gray-200 pl-4 my-2 italic" style={{ overflowWrap: 'break-word', wordBreak: 'break-word' }}>{children}</div>
+                              },
+                              table({children}: any) {
+                                return <div className="overflow-x-auto my-2" style={{ maxWidth: '100%' }}><table className="border-collapse border border-gray-300">{children}</table></div>
+                              },
+                              a({node, children, href, ...props}: any) {
+                                return <a href={href} className="break-all" style={{ wordBreak: 'break-all' }} {...props}>{children}</a>
+                              }
+                            }}
+                          >
+                            {message.content}
+                          </ReactMarkdown>
                         </div>
-                      ) : null
+                      ) : (
+                        message.role === "SYSTEM" && isTyping ? (
+                          <div className="flex space-x-2">
+                            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" />
+                            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce delay-100" />
+                            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce delay-200" />
+                          </div>
+                        ) : null
+                      )}
+                    </div>
+                    {message.role === "USER" && (
+                      <div className="ml-2 h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm shadow-sm flex-shrink-0">
+                        U
+                      </div>
                     )}
                   </div>
-                  {message.role === "USER" && (
-                    <div className="ml-2 h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm shadow-sm flex-shrink-0">
-                      U
-                    </div>
-                  )}
-                </div>
-              ))}
+                ))
+              )}
               
               {/* 思考中提示 */}
               {isThinking && (!currentAssistantMessage || !currentAssistantMessage.hasContent) && (
@@ -425,6 +454,13 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
         )}
       </div>
 
+      {/* 输入框上方显示当前任务列表 */}
+      {isFunctionalAgent && (
+        <div className="px-4 py-2">
+          <CurrentTaskList />
+        </div>
+      )}
+
       {/* 输入框 */}
       <div className="border-t p-2 bg-white">
         <div className="flex items-end gap-2 max-w-5xl mx-auto">
@@ -432,12 +468,7 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
             placeholder="输入消息...(Shift+Enter换行, Enter发送)"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                handleSendMessage();
-              }
-            }}
+            onKeyDown={handleKeyPress}
             className="min-h-[56px] flex-1 resize-none overflow-hidden rounded-xl bg-white px-3 py-2 font-normal border-gray-200 shadow-sm focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-opacity-50"
             rows={Math.min(5, Math.max(2, input.split('\n').length))}
           />
