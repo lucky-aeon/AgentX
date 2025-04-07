@@ -2,7 +2,7 @@ package org.xhy.infrastructure.transport;
 
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-import org.xhy.application.conversation.dto.StreamChatResponse;
+import org.xhy.application.conversation.dto.AgentChatResponse;
 
 import java.io.IOException;
 
@@ -29,7 +29,7 @@ public class SseMessageTransport implements MessageTransport<SseEmitter> {
         // 添加超时回调
         emitter.onTimeout(() -> {
             try {
-                StreamChatResponse response = new StreamChatResponse();
+                AgentChatResponse response = new AgentChatResponse();
                 response.setContent(TIMEOUT_MESSAGE);
                 response.setDone(true);
                 emitter.send(response);
@@ -42,7 +42,7 @@ public class SseMessageTransport implements MessageTransport<SseEmitter> {
         // 添加错误回调
         emitter.onError((ex) -> {
             try {
-                StreamChatResponse response = new StreamChatResponse();
+                AgentChatResponse response = new AgentChatResponse();
                 response.setContent(ERROR_MESSAGE_PREFIX + ex.getMessage() + "]");
                 response.setDone(true);
                 emitter.send(response);
@@ -54,17 +54,12 @@ public class SseMessageTransport implements MessageTransport<SseEmitter> {
         
         return emitter;
     }
-    
+
     @Override
-    public void sendMessage(SseEmitter connection, String content, boolean isDone, 
-                           String provider, String model) {
+    public void sendMessage(SseEmitter connection, AgentChatResponse streamChatResponse) {
         try {
-            StreamChatResponse response = new StreamChatResponse();
-            response.setContent(content);
-            response.setDone(isDone);
-            response.setProvider(provider);
-            response.setModel(model);
-            connection.send(response);
+
+            connection.send(streamChatResponse);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -78,7 +73,7 @@ public class SseMessageTransport implements MessageTransport<SseEmitter> {
     @Override
     public void handleError(SseEmitter connection, Throwable error) {
         try {
-            StreamChatResponse response = new StreamChatResponse();
+            AgentChatResponse response = new AgentChatResponse();
             response.setContent(error.getMessage());
             response.setDone(true);
             connection.send(response);

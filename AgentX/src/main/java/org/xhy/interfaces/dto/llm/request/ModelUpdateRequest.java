@@ -1,17 +1,17 @@
-package org.xhy.interfaces.dto.llm;
+package org.xhy.interfaces.dto.llm.request;
+
 
 import jakarta.validation.constraints.NotBlank;
-import org.xhy.domain.llm.model.enums.ModelType;
 
 /**
- * 模型创建请求
+ * 模型更新请求
  */
-public class ModelCreateRequest {
+public class ModelUpdateRequest {
     
     /**
-     * 服务商ID
+     * 模型ID
      */
-    private String providerId;
+    private String id;
 
     /**
      * 模型id
@@ -30,25 +30,16 @@ public class ModelCreateRequest {
      */
     private String description;
 
-    /**
-     * 模型类型
-     */
-    private ModelType type;
 
-    public String getProviderId() {
-        return providerId;
+    /**
+     * 模型状态
+     */
+    public String getId() {
+        return id;
     }
     
-    public void setProviderId(String providerId) {
-        this.providerId = providerId;
-    }
-    
-    public String getModelId() {
-        return modelId;
-    }
-    
-    public void setModelId(String modelId) {
-        this.modelId = modelId;
+    public void setId(String id) {
+        this.id = id;
     }
     
     public String getName() {
@@ -67,13 +58,13 @@ public class ModelCreateRequest {
         this.description = description;
     }
     
-    public ModelType getType() {
-        return type;
-    }
-    
-    public void setType(ModelType type) {
-        this.type = type;
-    }
 
 
+    public String getModelId() {
+        return modelId;
+    }
+
+    public void setModelId(String modelId) {
+        this.modelId = modelId;
+    }
 }

@@ -1,4 +1,4 @@
-package org.xhy.interfaces.dto.agent;
+package org.xhy.interfaces.dto.agent.request;
 
 import org.xhy.domain.agent.constant.PublishStatus;
 import org.xhy.infrastructure.util.ValidationUtils;
