@@ -1,4 +1,4 @@
-package org.xhy.interfaces.dto.agent;
+package org.xhy.interfaces.dto.agent.request;
 
 import java.util.regex.Pattern;
 

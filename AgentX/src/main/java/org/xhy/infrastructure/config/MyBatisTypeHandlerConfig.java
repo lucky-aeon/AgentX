@@ -7,9 +7,11 @@ import org.springframework.context.annotation.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xhy.domain.agent.model.LLMModelConfig;
+import org.xhy.domain.conversation.constant.MessageType;
 import org.xhy.domain.conversation.constant.Role;
 import org.xhy.domain.llm.model.config.ProviderConfig;
 import org.xhy.domain.llm.model.enums.ModelType;
+import org.xhy.domain.task.constant.TaskStatus;
 import org.xhy.infrastructure.converter.*;
 
 import jakarta.annotation.PostConstruct;
@@ -43,6 +45,8 @@ public class MyBatisTypeHandlerConfig {
         typeHandlerRegistry.register(ProviderProtocol.class, new ProviderProtocolConverter());
         typeHandlerRegistry.register(ModelType.class, new ModelTypeConverter());
         typeHandlerRegistry.register(Role.class, new RoleConverter());
+        typeHandlerRegistry.register(MessageType.class, new MessageTypeConverter());
+        typeHandlerRegistry.register(TaskStatus.class, new TaskStatusConverter());
 
         log.info("手动注册类型处理器：ProviderConfigConverter");
         

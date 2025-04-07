@@ -8,6 +8,8 @@ import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
 import dev.langchain4j.model.openai.OpenAiChatRequestParameters;
 import dev.langchain4j.model.output.TokenUsage;
 import org.springframework.stereotype.Component;
+import org.xhy.application.conversation.dto.AgentChatResponse;
+import org.xhy.domain.conversation.constant.MessageType;
 import org.xhy.domain.conversation.constant.Role;
 import org.xhy.domain.conversation.model.MessageEntity;
 import org.xhy.domain.conversation.service.ContextDomainService;
@@ -26,9 +28,9 @@ import java.util.List;
 public class ChatMessageHandler implements MessageHandler {
     
     /**
-     * 连接超时时间（毫秒）: 5分钟
+     * 连接超时时间（毫秒）
      */
-    protected static final long CONNECTION_TIMEOUT = 300000L;
+    protected static final long CONNECTION_TIMEOUT = 1000000L;
     
     /**
      * 摘要前缀信息
@@ -60,7 +62,7 @@ public class ChatMessageHandler implements MessageHandler {
         T connection = transport.createConnection(CONNECTION_TIMEOUT);
         
         // 准备LLM请求
-        dev.langchain4j.model.chat.request.ChatRequest llmRequest = prepareLlmRequest(environment);
+        dev.langchain4j.model.chat.request.ChatRequest llmRequest = prepareChatRequest(environment);
         
         // 获取LLM客户端
         StreamingChatLanguageModel llmClient = llmServiceFactory.getStreamingClient(
@@ -99,7 +101,7 @@ public class ChatMessageHandler implements MessageHandler {
     /**
      * 准备LLM请求
      */
-    protected dev.langchain4j.model.chat.request.ChatRequest prepareLlmRequest(ChatEnvironment environment) {
+    protected dev.langchain4j.model.chat.request.ChatRequest prepareChatRequest(ChatEnvironment environment) {
         // 构建聊天消息列表
         List<ChatMessage> chatMessages = new ArrayList<>();
         dev.langchain4j.model.chat.request.ChatRequest.Builder chatRequestBuilder = 
@@ -111,8 +113,7 @@ public class ChatMessageHandler implements MessageHandler {
         }
         
         // 2. 有条件地添加摘要信息(作为AI消息，但有明确的前缀标识)
-        if (StringUtils.isNotEmpty(environment.getContextEntity().getSummary()) && 
-            isComplexOrRelatedQuery(environment.getUserMessage())) {
+        if (StringUtils.isNotEmpty(environment.getContextEntity().getSummary())) {
             // 添加为AI消息，但明确标识这是摘要
             chatMessages.add(new AiMessage(SUMMARY_PREFIX + environment.getContextEntity().getSummary()));
         }
@@ -144,40 +145,10 @@ public class ChatMessageHandler implements MessageHandler {
         
         return chatRequestBuilder.build();
     }
-    
-    /**
-     * 判断是否需要加载历史摘要的复杂或相关查询
-     * 
-     * @param userMessage 用户消息
-     * @return 是否需要加载历史摘要
-     */
-    private boolean isComplexOrRelatedQuery(String userMessage) {
-        if (userMessage == null || userMessage.trim().length() < 5) {
-            // 非常简短的消息通常不需要历史背景
-            return false;
-        }
-        
-        // 检查是否包含与历史相关的关键词
-        String lowerCaseMessage = userMessage.toLowerCase();
-        String[] historyRelatedKeywords = {
-            "之前", "刚才", "前面", "上面", "上述", "继续", "还有", "接着", "那么", "所以",
-            "previous", "before", "earlier", "continue", "follow", "further", "then", "therefore"
-        };
-        
-        for (String keyword : historyRelatedKeywords) {
-            if (lowerCaseMessage.contains(keyword)) {
-                return true;
-            }
-        }
-        
-        // 检查消息长度，较长的消息可能需要更完整的上下文
-        if (userMessage.length() > 30) {
-            return true;
-        }
-        
-        return false;
-    }
-    
+
+
+
+
     /**
      * 处理对话
      */
@@ -193,12 +164,10 @@ public class ChatMessageHandler implements MessageHandler {
         llmClient.doChat(llmRequest, new StreamingChatResponseHandler() {
             @Override
             public void onPartialResponse(String partialResponse) {
+                AgentChatResponse response = AgentChatResponse.build(partialResponse, false, MessageType.TEXT);
                 transport.sendMessage(
                         connection,
-                        partialResponse,
-                        false,
-                        environment.getProvider().getName(),
-                        environment.getModel().getModelId()
+                        response
                 );
             }
             
@@ -215,14 +184,14 @@ public class ChatMessageHandler implements MessageHandler {
                 Integer outputTokenCount = tokenUsage.outputTokenCount();
                 llmMessageEntity.setTokenCount(outputTokenCount);
                 llmMessageEntity.setContent(completeResponse.aiMessage().text());
-                
+
+                AgentChatResponse response = AgentChatResponse.build("", true, MessageType.TEXT);
+
+
                 // 发送完成消息
                 transport.sendMessage(
                         connection,
-                        "",
-                        true,
-                        environment.getProvider().getName(),
-                        environment.getModel().getModelId()
+                        response
                 );
                 transport.completeConnection(connection);
                 

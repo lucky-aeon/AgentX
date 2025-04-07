@@ -1,14 +1,12 @@
 package org.xhy.domain.agent.service;
 
+import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.mcp.McpToolProvider;
 import dev.langchain4j.mcp.client.DefaultMcpClient;
 import dev.langchain4j.mcp.client.McpClient;
 import dev.langchain4j.mcp.client.transport.McpTransport;
 import dev.langchain4j.mcp.client.transport.http.HttpMcpTransport;
-import dev.langchain4j.mcp.client.transport.stdio.StdioMcpTransport;
-import dev.langchain4j.model.chat.ChatLanguageModel;
 import dev.langchain4j.model.chat.response.ChatResponse;
-import dev.langchain4j.model.openai.OpenAiChatModel;
 import dev.langchain4j.model.openai.OpenAiStreamingChatModel;
 import dev.langchain4j.rag.content.Content;
 import dev.langchain4j.service.AiServices;
@@ -18,7 +16,7 @@ import dev.langchain4j.service.tool.ToolProvider;
 
 import java.util.List;
 
-public class MCPTest {
+public class MCPStandTest {
 
     public static void main(String[] args) throws Exception {
 
@@ -45,25 +43,22 @@ public class MCPTest {
                 .mcpClients(List.of(mcpClient))
                 .build();
 
-        AgentTest bot = AiServices.builder(AgentTest.class)
+        AgentStandTest agent = AiServices.builder(AgentStandTest.class)
                 .streamingChatLanguageModel(model)
                 .toolProvider(toolProvider)
                 .build();
 
-        TokenStream tokenStream = bot.chat("获取时区");
-        tokenStream.onPartialResponse((String partialResponse) -> System.out.println("流式：" + partialResponse))
-                .onRetrieved((List<Content> contents) -> System.out.println(contents))
-                .onToolExecuted((ToolExecution toolExecution) -> System.out.println("工具调用" + toolExecution))
-                .onCompleteResponse((ChatResponse response) -> {
-                    System.out.println("已完成" + response);
-                    try {
-                        mcpClient.close();
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                })
-                .onError((Throwable error) -> error.printStackTrace())
-                .start();
+        AiMessage aiMessage = agent.chat("获取时区");
+        if (aiMessage.hasToolExecutionRequests()) {
+            aiMessage.toolExecutionRequests().forEach(toolExecutionRequest -> {
+                String toolName = toolExecutionRequest.name();
+                System.out.println(toolName);
+            });
+        }else {
+            System.out.println(aiMessage.text());
+        }
+
+
     }
 
 }

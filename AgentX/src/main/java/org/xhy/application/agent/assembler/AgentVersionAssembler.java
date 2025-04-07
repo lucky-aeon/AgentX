@@ -3,7 +3,7 @@ package org.xhy.application.agent.assembler;
 import org.xhy.application.agent.dto.AgentVersionDTO;
 import org.xhy.domain.agent.model.AgentEntity;
 import org.xhy.domain.agent.model.AgentVersionEntity;
-import org.xhy.interfaces.dto.agent.PublishAgentVersionRequest;
+import org.xhy.interfaces.dto.agent.request.PublishAgentVersionRequest;
 
 import java.util.ArrayList;
 import java.util.Collections;

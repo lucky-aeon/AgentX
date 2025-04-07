@@ -15,7 +15,7 @@ import org.xhy.domain.conversation.model.SessionEntity;
 import org.xhy.domain.conversation.service.ConversationDomainService;
 import org.xhy.domain.conversation.service.SessionDomainService;
 import org.xhy.infrastructure.exception.BusinessException;
-import org.xhy.interfaces.dto.conversation.ConversationRequest;
+import org.xhy.interfaces.dto.conversation.request.ConversationRequest;
 
 @Service
 public class AgentSessionAppService {

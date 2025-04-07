@@ -1,19 +1,9 @@
 package org.xhy.domain.agent.service;
 
-import dev.langchain4j.mcp.McpToolProvider;
-import dev.langchain4j.mcp.client.DefaultMcpClient;
-import dev.langchain4j.mcp.client.McpClient;
-import dev.langchain4j.mcp.client.transport.McpTransport;
-import dev.langchain4j.mcp.client.transport.http.HttpMcpTransport;
 import dev.langchain4j.model.chat.response.ChatResponse;
 import dev.langchain4j.model.openai.OpenAiStreamingChatModel;
-import dev.langchain4j.rag.content.Content;
 import dev.langchain4j.service.AiServices;
 import dev.langchain4j.service.TokenStream;
-import dev.langchain4j.service.tool.ToolExecution;
-import dev.langchain4j.service.tool.ToolProvider;
-
-import java.util.List;
 
 import static java.lang.Thread.sleep;
 
@@ -28,7 +18,7 @@ public class ChatTest {
                 .build();
 
 
-        AgentTest bot = AiServices.builder(AgentTest.class)
+        AgentStreamTest bot = AiServices.builder(AgentStreamTest.class)
                 .streamingChatLanguageModel(model)
                 .build();
 

@@ -1,26 +1,15 @@
 package org.xhy.application.conversation.service;
 
-import com.baomidou.mybatisplus.core.toolkit.Assert;
-import com.baomidou.mybatisplus.core.toolkit.StringUtils;
-import dev.langchain4j.data.message.*;
-import dev.langchain4j.model.chat.StreamingChatLanguageModel;
-import dev.langchain4j.model.chat.response.ChatResponse;
-import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
-import dev.langchain4j.model.openai.OpenAiChatRequestParameters;
-import dev.langchain4j.model.openai.internal.chat.AssistantMessage;
-import dev.langchain4j.model.output.TokenUsage;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import org.xhy.application.conversation.assembler.MessageAssembler;
 import org.xhy.application.conversation.dto.ChatRequest;
-import org.xhy.application.conversation.dto.StreamChatResponse;
 import org.xhy.application.conversation.dto.MessageDTO;
 import org.xhy.domain.agent.model.AgentEntity;
 import org.xhy.domain.agent.model.AgentWorkspaceEntity;
 import org.xhy.domain.agent.model.LLMModelConfig;
 import org.xhy.domain.agent.service.AgentDomainService;
 import org.xhy.domain.agent.service.AgentWorkspaceDomainService;
-import org.xhy.domain.conversation.constant.Role;
 import org.xhy.domain.conversation.handler.ChatEnvironment;
 import org.xhy.domain.conversation.handler.MessageHandler;
 import org.xhy.domain.conversation.handler.MessageHandlerFactory;
@@ -40,16 +29,12 @@ import org.xhy.domain.token.model.TokenProcessResult;
 import org.xhy.domain.token.model.config.TokenOverflowConfig;
 import org.xhy.domain.token.service.TokenDomainService;
 import org.xhy.infrastructure.exception.BusinessException;
-import org.xhy.infrastructure.llm.LLMProviderService;
 import org.xhy.infrastructure.llm.LLMServiceFactory;
 import org.xhy.infrastructure.llm.config.ProviderConfig;
 import org.xhy.infrastructure.transport.MessageTransport;
 import org.xhy.infrastructure.transport.MessageTransportFactory;
 
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 

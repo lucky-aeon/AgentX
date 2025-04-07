@@ -1,7 +1,9 @@
 package org.xhy.domain.conversation.handler;
 
+import dev.langchain4j.service.TokenStream;
+
 public interface Agent {
 
-    String chat(String prompt);
+    TokenStream chat(String prompt);
 
 }

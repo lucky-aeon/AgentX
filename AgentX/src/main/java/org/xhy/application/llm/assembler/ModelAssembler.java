@@ -2,8 +2,8 @@ package org.xhy.application.llm.assembler;
 
 import org.xhy.application.llm.dto.ModelDTO;
 import org.xhy.domain.llm.model.ModelEntity;
-import org.xhy.interfaces.dto.llm.ModelCreateRequest;
-import org.xhy.interfaces.dto.llm.ModelUpdateRequest;
+import org.xhy.interfaces.dto.llm.request.ModelCreateRequest;
+import org.xhy.interfaces.dto.llm.request.ModelUpdateRequest;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
