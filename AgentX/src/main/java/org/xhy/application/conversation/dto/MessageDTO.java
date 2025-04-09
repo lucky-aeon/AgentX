@@ -1,5 +1,6 @@
 package org.xhy.application.conversation.dto;
 
+import org.xhy.domain.conversation.constant.MessageType;
 import org.xhy.domain.conversation.constant.Role;
 import org.xhy.domain.conversation.model.MessageEntity;
 
@@ -34,6 +35,10 @@ public class MessageDTO {
      */
     private String model;
 
+    /**
+     * 消息类型
+     */
+    private MessageType  messageType;
     /**
      * 无参构造函数
      */
@@ -90,17 +95,11 @@ public class MessageDTO {
         this.model = model;
     }
 
-    /**
-     * 将消息实体转换为DTO
-     */
-    public static MessageDTO fromEntity(MessageEntity message) {
-        MessageDTO dto = new MessageDTO();
-        dto.setId(message.getId());
-        dto.setRole(message.getRole());
-        dto.setContent(message.getContent());
-        dto.setCreatedAt(message.getCreatedAt());
-        dto.setProvider(message.getProvider());
-        dto.setModel(message.getModel());
-        return dto;
+    public MessageType getMessageType() {
+        return messageType;
+    }
+
+    public void setMessageType(MessageType messageType) {
+        this.messageType = messageType;
     }
 }

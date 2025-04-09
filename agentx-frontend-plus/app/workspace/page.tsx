@@ -295,6 +295,7 @@ export default function WorkspacePage() {
                 onToggleTaskHistory={() => setShowTaskHistory(!showTaskHistory)}
                 showTaskHistory={showTaskHistory}
                 isFunctionalAgent={isFunctionalAgent}
+                agentName={currentAgent?.name || "AI助手"}
               />
             </div>
             {showTaskHistory && isFunctionalAgent && (
