@@ -27,7 +27,6 @@ public class MCPStandTest {
                 .logRequests(true)
                 .logResponses(true)
                 .build();
-        //
         // npx -y @smithery/cli@latest run @smithery-ai/github --key def1f067-c5b7-443f-af21-2a80c5f176d9
         McpTransport transport = new HttpMcpTransport.Builder()
                 .sseUrl("http://127.0.0.1:8006/time/sse")

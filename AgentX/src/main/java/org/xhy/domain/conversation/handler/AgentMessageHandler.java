@@ -49,6 +49,10 @@ public class AgentMessageHandler extends ChatMessageHandler {
 
     private final TaskDomainService taskDomainService;
 
+    // 任务拆分提示词 测试过程用的
+    String decompositionTestPrompt =
+            "你是一个专业的任务规划专家，请根据用户的需求，将复杂任务分解为合理的子任务序列,只拆分为3条子任务。请分解为合理的子任务序列，直接以数字编号的形式列出，无需额外解释";
+
     // 任务拆分提示词
     String decompositionPrompt =
             "你是一个专业的任务规划专家，请根据用户的需求，将复杂任务分解为合理的子任务序列。" +
@@ -59,7 +63,7 @@ public class AgentMessageHandler extends ChatMessageHandler {
                     "\n4. 子任务应按照合理的顺序排列，确保执行的流畅性" +
                     "\n5. 子任务描述应面向用户，清晰易懂，避免技术术语" +
                     "\n6. 创造性地考虑用户可能忽略的方面，提供全面的规划" +
-                    "\n\n以下是用户的需求：%s" +
+                    "\n\n以下是用户的需求：" +
                     "\n\n请分解为合理的子任务序列，直接以数字编号的形式列出，无需额外解释。";
 
     // 任务结果汇总提示词
@@ -131,7 +135,7 @@ public class AgentMessageHandler extends ChatMessageHandler {
         
         // 等待任务拆分完成
         try {
-            boolean completed = taskDescLatch.await(30, TimeUnit.SECONDS); // 设置合理的超时时间
+            boolean completed = taskDescLatch.await(300, TimeUnit.SECONDS); // 设置合理的超时时间
             if (!completed) {
                 // 等待超时，可能需要处理
                 // 向前端发送超时消息
@@ -202,7 +206,15 @@ public class AgentMessageHandler extends ChatMessageHandler {
                     // 更新任务状态为进行中
                     subTask.updateStatus(TaskStatus.IN_PROGRESS);
                     taskDomainService.updateTask(subTask);
-                    
+
+                    // 保存执行消息
+                    MessageEntity taskCallMessageEntity = createLlmMessage(environment);
+                    taskCallMessageEntity.setMessageType(MessageType.TASK_EXEC);
+                    taskCallMessageEntity.setContent("执行任务："+task);
+                    taskCallMessageEntity.setTokenCount(0);
+                    conversationDomainService.saveMessage(taskCallMessageEntity);
+
+
                     // 通知前端当前执行的任务
                     AgentChatResponse taskExecNotification = AgentChatResponse.build(
                             task, false, MessageType.TASK_EXEC);
@@ -239,16 +251,33 @@ public class AgentMessageHandler extends ChatMessageHandler {
                     
                     // 处理工具调用
                     if (aiMessage.hasToolExecutionRequests()) {
+                        // 创建工具调用消息实体
+                        MessageEntity toolCallMessageEntity = createLlmMessage(environment);
+                        toolCallMessageEntity.setMessageType(MessageType.TOOL_CALL);
+                        StringBuilder toolCallsContent = new StringBuilder("工具调用:\n");
+                        
                         aiMessage.toolExecutionRequests().forEach(toolExecutionRequest -> {
                             String toolName = toolExecutionRequest.name();
+                            toolCallsContent.append("- ").append(toolName).append("\n");
+                            
                             AgentChatResponse toolCallResponse = AgentChatResponse.build(
                                     toolName, false, MessageType.TOOL_CALL);
                             toolCallResponse.setTaskId(subTask.getId());
                             messageTransport.sendMessage(connection, toolCallResponse);
                         });
+                        
+                        // 设置工具调用内容并保存
+                        toolCallMessageEntity.setContent(toolCallsContent.toString());
+                        toolCallMessageEntity.setTokenCount(0);
+                        conversationDomainService.saveMessage(toolCallMessageEntity);
+                        
+                        // 更新上下文
+                        activeMessages.add(toolCallMessageEntity.getId());
                     }
                     
                     taskResult = aiMessage.text();
+                    
+                    // 子任务结果不再保存到消息表，因为这是过程消息
                     
                     // 保存子任务结果
                     subTaskResults.put(task, taskResult);
@@ -304,12 +333,6 @@ public class AgentMessageHandler extends ChatMessageHandler {
                 executor.shutdown();
             }
         });
-        
-        // 发送一个通知，告知前端任务已开始异步处理
-        AgentChatResponse startedResponse = AgentChatResponse.build(
-                "已开始处理任务，结果将逐步推送", false, MessageType.TEXT);
-        messageTransport.sendMessage(connection, startedResponse);
-        
         // 立即返回连接，主线程不等待任务完成
         return connection;
     }
@@ -513,7 +536,7 @@ public class AgentMessageHandler extends ChatMessageHandler {
         ChatRequest.Builder chatRequestBuilder = new ChatRequest.Builder();
 
         // 添加任务拆分系统提示词
-        String prompt = String.format(decompositionPrompt, environment.getUserMessage());
+        String prompt = String.format(decompositionTestPrompt, environment.getUserMessage());
         chatMessages.add(new SystemMessage(prompt));
 
         // 添加当前用户消息

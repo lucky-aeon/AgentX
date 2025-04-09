@@ -30,7 +30,7 @@ public class ChatMessageHandler implements MessageHandler {
     /**
      * 连接超时时间（毫秒）
      */
-    protected static final long CONNECTION_TIMEOUT = 1000000L;
+    protected static final long CONNECTION_TIMEOUT = 3000000L;
     
     /**
      * 摘要前缀信息

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { FileText, Send, ClipboardList } from 'lucide-react'
+import { FileText, Send, ClipboardList, Wrench, CheckCircle, ListTodo } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -14,12 +14,16 @@ import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import { Highlight, themes } from "prism-react-renderer"
 import { CurrentTaskList } from "@/components/current-task-list"
+import { MessageType, type Message as MessageInterface } from "@/types/conversation"
+import { formatDistanceToNow } from 'date-fns'
+import { zhCN } from 'date-fns/locale'
 
 interface ChatPanelProps {
   conversationId: string
   onToggleTaskHistory?: () => void
   showTaskHistory?: boolean
   isFunctionalAgent?: boolean
+  agentName?: string
 }
 
 interface Message {
@@ -42,9 +46,9 @@ interface StreamData {
   timestamp: number
 }
 
-export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory = false, isFunctionalAgent = false }: ChatPanelProps) {
+export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory = false, isFunctionalAgent = false, agentName = "AI助手" }: ChatPanelProps) {
   const [input, setInput] = useState("")
-  const [messages, setMessages] = useState<Message[]>([])
+  const [messages, setMessages] = useState<MessageInterface[]>([])
   const [isTyping, setIsTyping] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -70,11 +74,30 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
         
         if (messagesResponse.code === 200 && messagesResponse.data) {
           // 转换消息格式
-          const formattedMessages = messagesResponse.data.map((msg: MessageDTO) => ({
-            id: msg.id,
-            role: msg.role as "USER" | "SYSTEM" | "assistant",
-            content: msg.content,
-          }))
+          const formattedMessages = messagesResponse.data.map((msg: MessageDTO) => {
+            // 将SYSTEM角色的消息视为assistant
+            const normalizedRole = msg.role === "SYSTEM" ? "assistant" : msg.role as "USER" | "SYSTEM" | "assistant"
+            
+            // 获取消息类型，优先使用messageType字段
+            let messageType = MessageType.TEXT
+            if (msg.messageType) {
+              // 尝试转换为枚举值
+              try {
+                messageType = msg.messageType as MessageType
+              } catch (e) {
+                console.warn("Unknown message type:", msg.messageType)
+              }
+            }
+            
+            return {
+              id: msg.id,
+              role: normalizedRole,
+              content: msg.content,
+              type: messageType,
+              createdAt: msg.createdAt,
+              updatedAt: msg.updatedAt
+            }
+          })
           
           setMessages(formattedMessages)
         } else {
@@ -144,6 +167,8 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
         id: userMessageId,
         role: "USER",
         content: userMessage,
+        type: MessageType.TEXT,
+        createdAt: new Date().toISOString()
       },
     ])
 
@@ -160,7 +185,7 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
         throw new Error("No reader available")
       }
 
-      // 添加助理消息到消息列表 - 使用固定的ID以便于更新
+      // 添加助理消息到消息列表
       const assistantMessageId = `assistant-${Date.now()}`
       setCurrentAssistantMessage({ id: assistantMessageId, hasContent: false })
       setMessages((prev) => [
@@ -169,6 +194,8 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
           id: assistantMessageId,
           role: "assistant",
           content: "",
+          type: MessageType.TEXT,
+          createdAt: new Date().toISOString()
         },
       ])
 
@@ -249,6 +276,101 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
     }
   }
 
+  // 格式化消息时间
+  const formatMessageTime = (timestamp?: string) => {
+    if (!timestamp) return '';
+    try {
+      const date = new Date(timestamp);
+      return date.toLocaleString('zh-CN', {
+        hour: '2-digit',
+        minute: '2-digit',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      });
+    } catch (e) {
+      return '';
+    }
+  };
+
+  // 根据消息类型获取图标和文本
+  const getMessageTypeInfo = (type: MessageType) => {
+    switch (type) {
+      case MessageType.TOOL_CALL:
+        return {
+          icon: <Wrench className="h-5 w-5 text-blue-500" />,
+          text: '工具调用'
+        };
+      case MessageType.TASK_EXEC:
+        return {
+          icon: <ListTodo className="h-5 w-5 text-purple-500" />,
+          text: '任务执行'
+        };
+      case MessageType.TASK_STATUS:
+        return {
+          icon: <CheckCircle className="h-5 w-5 text-green-500" />,
+          text: '任务状态'
+        };
+      case MessageType.TASK_IDS:
+        return {
+          icon: <ListTodo className="h-5 w-5 text-orange-500" />,
+          text: '任务ID列表'
+        };
+      case MessageType.TEXT:
+      default:
+        return {
+          icon: null,
+          text: agentName
+        };
+    }
+  };
+
+  // 渲染消息内容
+  const renderMessageContent = (message: MessageInterface) => {
+    return (
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          // 代码块渲染
+          code({ inline, className, children, ...props }: any) {
+            const match = /language-(\w+)/.exec(className || "");
+            return !inline && match ? (
+              <Highlight
+                theme={themes.vsDark}
+                code={String(children).replace(/\n$/, "")}
+                language={match[1]}
+              >
+                {({ className, style, tokens, getLineProps, getTokenProps }) => (
+                  <pre
+                    className={`${className} rounded p-2 my-2 overflow-auto text-sm`}
+                    style={style}
+                  >
+                    {tokens.map((line, i) => (
+                      <div key={i} {...getLineProps({ line, key: i })}>
+                        <span className="text-gray-500 mr-2 text-right w-6 inline-block select-none">
+                          {i + 1}
+                        </span>
+                        {line.map((token, key) => (
+                          <span key={key} {...getTokenProps({ token, key })} />
+                        ))}
+                      </div>
+                    ))}
+                  </pre>
+                )}
+              </Highlight>
+            ) : (
+              <code className={`${className} bg-gray-100 px-1 py-0.5 rounded`} {...props}>
+                {children}
+              </code>
+            );
+          },
+        }}
+      >
+        {message.content}
+      </ReactMarkdown>
+    );
+  };
+
   return (
     <div className="relative flex h-full w-full flex-col overflow-hidden bg-white">
       <div className="flex items-center justify-between px-4 py-2 border-b">
@@ -287,9 +409,9 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
                 {error}
               </div>
             )}
-
+            
             {/* 消息内容 */}
-            <div className="space-y-3 w-full">
+            <div className="space-y-6 w-full">
               {messages.length === 0 ? (
                 <div className="flex items-center justify-center h-20 w-full">
                   <p className="text-gray-400">暂无消息，开始发送消息吧</p>
@@ -298,118 +420,44 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
                 messages.map((message) => (
                   <div
                     key={message.id}
-                    className={`flex ${message.role === "USER" ? "justify-end" : "justify-start"} mb-3 w-full`}
+                    className={`w-full`}
                   >
-                    {message.role !== "USER" && (
-                      <div className="mr-2 h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm shadow-sm flex-shrink-0">
-                        A
-                      </div>
-                    )}
-                    <div
-                      className={`rounded-2xl px-3.5 py-2.5 ${
-                        message.role === "USER"
-                          ? "bg-blue-500 text-white shadow-sm"
-                          : "bg-gray-100 border border-gray-200 shadow-sm"
-                      }`}
-                      style={{ 
-                        wordWrap: 'break-word', 
-                        overflowWrap: 'break-word', 
-                        maxWidth: 'min(90%, 800px)',
-                        position: 'relative'
-                      }}
-                    >
-                      {message.content ? (
-                        <div 
-                          className={`prose prose-sm max-w-none break-words overflow-hidden ${
-                            message.role === "USER" 
-                              ? "prose-invert" 
-                              : "prose-headings:text-gray-800"
-                          }`} 
-                          style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}
-                        >
-                          <ReactMarkdown 
-                            remarkPlugins={[remarkGfm]}
-                            components={{
-                              code({node, inline, className, children, ...props}: any) {
-                                const match = /language-(\w+)/.exec(className || '')
-                                const language = match ? match[1] : ''
-                                
-                                return !inline ? (
-                                  <div className="overflow-x-auto my-3 rounded-lg" style={{ maxWidth: '100%' }}>
-                                    <Highlight
-                                      theme={message.role === "USER" ? themes.vsLight : themes.github}
-                                      code={String(children).replace(/\n$/, '')}
-                                      language={language || 'text'}
-                                    >
-                                      {({className, style, tokens, getLineProps, getTokenProps}) => (
-                                        <pre className="p-3 rounded-lg" style={{
-                                          ...style,
-                                          overflowX: 'auto',
-                                          margin: 0,
-                                          maxWidth: '100%',
-                                          whiteSpace: 'pre-wrap',
-                                          wordBreak: 'break-word',
-                                          backgroundColor: message.role === "USER" ? 'rgba(59, 130, 246, 0.15)' : 'rgba(0, 0, 0, 0.04)'
-                                        }}>
-                                          {tokens.map((line, i) => (
-                                            <div key={i} {...getLineProps({line})} style={{ overflowWrap: 'break-word', wordBreak: 'break-all' }}>
-                                              {line.map((token, key) => (
-                                                <span key={key} {...getTokenProps({token})} />
-                                              ))}
-                                            </div>
-                                          ))}
-                                        </pre>
-                                      )}
-                                    </Highlight>
-                                  </div>
-                                ) : (
-                                  <code className={`${message.role === "USER" ? "bg-blue-400/30" : "bg-gray-200"} px-1.5 py-0.5 rounded-md text-sm font-mono`} {...props}>
-                                    {children}
-                                  </code>
-                                )
-                              },
-                              pre({children}: any) {
-                                return <div className="overflow-x-auto" style={{ maxWidth: '100%' }}>{children}</div>
-                              },
-                              p({children}: any) {
-                                return <div className="break-words whitespace-normal my-2" style={{ overflowWrap: 'break-word', wordBreak: 'break-word' }}>{children}</div>
-                              },
-                              li({children}: any) {
-                                return <li className="my-1">{children}</li>
-                              },
-                              ul({children}: any) {
-                                return <ul className="list-disc pl-5 my-2">{children}</ul>
-                              },
-                              ol({children}: any) {
-                                return <ol className="list-decimal pl-5 my-2">{children}</ol>
-                              },
-                              blockquote({children}: any) {
-                                return <div className="border-l-4 border-gray-200 pl-4 my-2 italic" style={{ overflowWrap: 'break-word', wordBreak: 'break-word' }}>{children}</div>
-                              },
-                              table({children}: any) {
-                                return <div className="overflow-x-auto my-2" style={{ maxWidth: '100%' }}><table className="border-collapse border border-gray-300">{children}</table></div>
-                              },
-                              a({node, children, href, ...props}: any) {
-                                return <a href={href} className="break-all" style={{ wordBreak: 'break-all' }} {...props}>{children}</a>
-                              }
-                            }}
-                          >
+                    {/* 用户消息 */}
+                    {message.role === "USER" ? (
+                      <div className="flex justify-end">
+                        <div className="max-w-[80%]">
+                          <div className="bg-blue-50 text-gray-800 p-3 rounded-lg shadow-sm">
                             {message.content}
-                          </ReactMarkdown>
-                        </div>
-                      ) : (
-                        message.role === "SYSTEM" && isTyping ? (
-                          <div className="flex space-x-2">
-                            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" />
-                            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce delay-100" />
-                            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce delay-200" />
                           </div>
-                        ) : null
-                      )}
-                    </div>
-                    {message.role === "USER" && (
-                      <div className="ml-2 h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm shadow-sm flex-shrink-0">
-                        U
+                          <div className="text-xs text-gray-500 mt-1 text-right">
+                            {formatMessageTime(message.createdAt)}
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      /* AI消息 */
+                      <div className="flex">
+                        <div className="h-8 w-8 mr-2 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
+                          {message.type && message.type !== MessageType.TEXT 
+                            ? getMessageTypeInfo(message.type).icon 
+                            : <div className="text-lg">🤖</div>
+                          }
+                        </div>
+                        <div className="max-w-[80%]">
+                          {/* 消息类型指示 */}
+                          <div className="flex items-center mb-1 text-xs text-gray-500">
+                            <span className="font-medium">
+                              {message.type ? getMessageTypeInfo(message.type).text : agentName}
+                            </span>
+                            <span className="mx-1 text-gray-400">·</span>
+                            <span>{formatMessageTime(message.createdAt)}</span>
+                          </div>
+                          
+                          {/* 消息内容 */}
+                          <div className="p-3 rounded-lg">
+                            {renderMessageContent(message)}
+                          </div>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -418,20 +466,22 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
               
               {/* 思考中提示 */}
               {isThinking && (!currentAssistantMessage || !currentAssistantMessage.hasContent) && (
-                <div className="flex justify-start mb-3">
-                  <div className="mr-2 h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm shadow-sm flex-shrink-0">
-                    A
+                <div className="flex items-start">
+                  <div className="h-8 w-8 mr-2 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <div className="text-lg">🤖</div>
                   </div>
-                  <div className="rounded-2xl px-5 py-4 bg-gray-50 border border-gray-200 shadow-sm transition-all animate-thinking" style={{ maxWidth: 'min(90%, 800px)' }}>
-                    <div className="flex flex-col">
-                      <div className="flex items-center gap-2.5 mb-3">
-                        <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
-                        <div className="text-gray-600 text-sm font-medium">AI 正在思考...</div>
-                      </div>
-                      <div className="flex items-center">
-                        <div className="relative h-1.5 w-40 bg-gray-200 rounded-full overflow-hidden">
-                          <div className="absolute top-0 left-0 h-full w-40 bg-gradient-to-r from-blue-300 via-blue-500 to-blue-300 rounded-full animate-progress"></div>
-                        </div>
+                  <div className="max-w-[80%]">
+                    <div className="flex items-center mb-1 text-xs text-gray-500">
+                      <span className="font-medium">{agentName}</span>
+                      <span className="mx-1 text-gray-400">·</span>
+                      <span>刚刚</span>
+                    </div>
+                    <div className="space-y-2 p-3 rounded-lg">
+                      <div className="flex space-x-2 items-center">
+                        <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
+                        <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse delay-75"></div>
+                        <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse delay-150"></div>
+                        <div className="text-sm text-gray-500 animate-pulse">思考中...</div>
                       </div>
                     </div>
                   </div>
@@ -440,14 +490,14 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
               
               <div ref={messagesEndRef} />
               {!autoScroll && isTyping && (
-                <button
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="fixed bottom-20 right-6 rounded-full shadow-md bg-white"
                   onClick={scrollToBottom}
-                  className="fixed bottom-20 right-5 bg-blue-500 text-white rounded-full p-2 shadow-lg hover:bg-blue-600 transition-colors"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                  </svg>
-                </button>
+                  <span>↓</span>
+                </Button>
               )}
             </div>
           </div>
