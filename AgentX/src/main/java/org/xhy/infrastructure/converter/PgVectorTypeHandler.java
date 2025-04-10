@@ -13,7 +13,7 @@ import org.apache.ibatis.type.JdbcType;
 import org.apache.ibatis.type.MappedTypes;
 
 /**
- * @author shilong.zang
+ * @author zang
  * @date 17:06 <br/>
  */
 @MappedTypes(float[].class)

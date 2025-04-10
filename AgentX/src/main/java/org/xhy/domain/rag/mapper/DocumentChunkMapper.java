@@ -1,7 +1,7 @@
 package org.xhy.domain.rag.mapper;
 
 /**
- * @author shilong.zang
+ * @author zang
  * @date 18:05 <br/>
  */
 

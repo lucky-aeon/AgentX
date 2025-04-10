@@ -14,7 +14,7 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 
 /**
- * @author shilong.zang
+ * @author zang
  * @date 15:40 <br/>
  */
 @TableName("document_chunks")

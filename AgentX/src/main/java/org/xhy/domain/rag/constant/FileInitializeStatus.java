@@ -1,7 +1,7 @@
 package org.xhy.domain.rag.constant;
 
 /**
- * @author shilong.zang
+ * @author zang
  * @date 10:18 <br/>
  */
 public interface FileInitializeStatus {

@@ -1,7 +1,7 @@
 package org.xhy.domain.rag.constant;
 
 /**
- * @author shilong.zang
+ * @author zang
  * @date 10:19 <br/>
  */
 public interface EmbeddingStatus {
