@@ -11,7 +11,7 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 
 /**
- * @author shilong.zang
+ * @author zang
  * @date 10:11 <br/>
  */
 @TableName("file_detail")
