@@ -1,20 +1,12 @@
 package org.xhy.infrastructure.config;
 
-import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.handlers.MetaObjectHandler;
-import com.baomidou.mybatisplus.extension.spring.MybatisSqlSessionFactoryBean;
-
 import org.apache.ibatis.reflection.MetaObject;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.annotation.Primary;
-import org.xhy.infrastructure.converter.PgVectorTypeHandler;
 
 import java.time.LocalDateTime;
-
-import javax.sql.DataSource;
 
 /**
  * MyBatis-Plus配置类
@@ -47,19 +39,4 @@ public class MybatisPlusConfig implements MetaObjectHandler {
         LocalDateTime now = LocalDateTime.now();
         this.strictUpdateFill(metaObject, "updatedAt", LocalDateTime.class, now);
     }
-
-    @Bean
-    @Primary
-    public MybatisSqlSessionFactoryBean sqlSessionFactory(DataSource dataSource) {
-        MybatisSqlSessionFactoryBean factoryBean = new MybatisSqlSessionFactoryBean();
-        factoryBean.setDataSource(dataSource);
-
-        MybatisConfiguration configuration = new MybatisConfiguration();
-        // 注册向量类型处理器
-        configuration.getTypeHandlerRegistry().register(PgVectorTypeHandler.class);
-
-        factoryBean.setConfiguration(configuration);
-        return factoryBean;
-    }
-
 }
