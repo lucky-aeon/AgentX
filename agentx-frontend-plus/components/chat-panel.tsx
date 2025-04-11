@@ -292,7 +292,7 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
             return;
           }
           
-          // 更新任务状态
+          // 创建新的任务Map
           const taskMap = new Map<string, TaskDTO>();
           
           // 添加父任务
@@ -319,39 +319,38 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
             }
           });
           
-          // 更新状态 - 使用函数式更新确保拿到最新状态
+          // 更新任务状态 - 直接替换，但保留现有任务的进行状态
           setTasks(currentTasks => {
-            // 合并现有任务和新获取的任务
-            const mergedMap = new Map(currentTasks);
+            // 只保留API返回的任务，但可能保留一些特殊状态
             
-            // 优先使用API返回的任务数据
-            taskMap.forEach((newTask, taskId) => {
-              const existingTask = mergedMap.get(taskId);
-              
-              if (existingTask) {
-                // 如果任务已存在，只在必要时更新状态
-                // 保留现有的IN_PROGRESS状态，除非API返回了COMPLETED
-                const finalStatus = 
-                  (existingTask.status === "IN_PROGRESS" && newTask.status === "WAITING") 
-                    ? "IN_PROGRESS" 
-                    : newTask.status;
-                
-                // 使用最高的进度值
-                const finalProgress = Math.max(existingTask.progress, newTask.progress);
-                
-                mergedMap.set(taskId, {
-                  ...newTask,
-                  status: finalStatus,
-                  progress: finalProgress
+            // 1. 找出当前正在进行中的任务
+            const inProgressTaskIds = new Set<string>();
+            for (const [id, task] of currentTasks.entries()) {
+              if (task.status === "IN_PROGRESS") {
+                inProgressTaskIds.add(id);
+              }
+            }
+            
+            // 2. 以API返回的任务为基础
+            const newTaskMap = new Map<string, TaskDTO>();
+            
+            // 3. 处理每个任务
+            for (const [id, task] of taskMap.entries()) {
+              // 如果任务在API中存在，添加到新Map中
+              if (inProgressTaskIds.has(id) && task.status === "WAITING") {
+                // 保留进行中状态
+                newTaskMap.set(id, {
+                  ...task,
+                  status: "IN_PROGRESS"
                 });
               } else {
-                // 新任务直接添加
-                mergedMap.set(taskId, newTask);
+                // 使用API返回的状态
+                newTaskMap.set(id, task);
               }
-            });
+            }
             
-            console.log(`任务Map更新: ${currentTasks.size} -> ${mergedMap.size}`);
-            return mergedMap;
+            console.log(`任务更新: ${currentTasks.size} -> ${newTaskMap.size} (替换模式)`);
+            return newTaskMap;
           });
           
           // 添加任务完成检查
