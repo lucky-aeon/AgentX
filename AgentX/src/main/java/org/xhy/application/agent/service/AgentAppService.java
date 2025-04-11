@@ -42,9 +42,6 @@ public class AgentAppService {
      */
     @Transactional
     public AgentDTO createAgent(CreateAgentRequest request, String userId) {
-
-        // todo xhy 判断用户是否存在
-
         // 使用组装器创建领域实体
         AgentEntity entity = AgentAssembler.toEntity(request,userId);
         entity.setUserId(userId);

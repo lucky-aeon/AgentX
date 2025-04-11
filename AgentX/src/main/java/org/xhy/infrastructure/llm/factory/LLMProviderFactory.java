@@ -8,6 +8,8 @@ import dev.langchain4j.model.openai.OpenAiStreamingChatModel;
 import org.xhy.infrastructure.llm.config.ProviderConfig;
 import org.xhy.infrastructure.llm.protocol.enums.ProviderProtocol;
 
+import java.time.Duration;
+
 
 public class LLMProviderFactory {
 
@@ -26,6 +28,7 @@ public class LLMProviderFactory {
             openAiChatModelBuilder.baseUrl(providerConfig.getBaseUrl());
             openAiChatModelBuilder.customHeaders(providerConfig.getCustomHeaders());
             openAiChatModelBuilder.modelName(providerConfig.getModel());
+            openAiChatModelBuilder.timeout(Duration.ofSeconds(500));
             model = new OpenAiChatModel(openAiChatModelBuilder);
         }
         return model;
@@ -39,6 +42,7 @@ public class LLMProviderFactory {
             openAiStreamingChatModelBuilder.baseUrl(providerConfig.getBaseUrl());
             openAiStreamingChatModelBuilder.customHeaders(providerConfig.getCustomHeaders());
             openAiStreamingChatModelBuilder.modelName(providerConfig.getModel());
+            openAiStreamingChatModelBuilder.timeout(Duration.ofSeconds(500));
             model = new OpenAiStreamingChatModel(openAiStreamingChatModelBuilder);
         }
         return model;

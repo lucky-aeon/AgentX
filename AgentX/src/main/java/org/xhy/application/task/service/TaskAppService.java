@@ -3,6 +3,7 @@ package org.xhy.application.task.service;
 import org.springframework.stereotype.Service;
 import org.xhy.application.task.assembler.TaskAssembler;
 import org.xhy.application.task.dto.TaskDTO;
+import org.xhy.domain.task.model.TaskAggregate;
 import org.xhy.domain.task.model.TaskEntity;
 import org.xhy.domain.task.service.TaskDomainService;
 
@@ -24,18 +25,15 @@ public class TaskAppService {
     }
 
 
+
     /**
-     * 获取会话相关的所有任务
+     * 获取当前会话的最新任务
      *
      * @param sessionId 会话ID
      * @return 任务DTO列表
      */
-    public List<TaskDTO> getSessionTasks(String sessionId) {
-        // 获取任务列表
-        List<TaskEntity> tasks = new ArrayList<>(); // todo xhy
+    public TaskAggregate getCurrentSessionTask(String sessionId,String userId) {
+        return taskDomainService.getCurrentSessionTask(sessionId, userId);
 
-        // 转换为DTO返回
-        return TaskAssembler.toDTOList(tasks);
     }
-
 } 

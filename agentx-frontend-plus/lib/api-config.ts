@@ -12,6 +12,10 @@ export const API_ENDPOINTS = {
   DELETE_SESSION: (id: string) => `/agent/session/${id}`,
   CHAT: (sessionId: string) => `/conversation/chat/${sessionId}`,
   SEND_MESSAGE: (sessionId: string) => `/agent/session/${sessionId}/message`,
+  
+  // 任务相关
+  SESSION_TASKS: (sessionId: string) => `/tasks/session/${sessionId}/latest`,
+  SESSION_TASK_DETAIL: (taskId: string) => `/tasks/${taskId}`,
 
   // 助理相关
   USER_AGENTS: (userId: string) => `/agent/user/${userId}`,

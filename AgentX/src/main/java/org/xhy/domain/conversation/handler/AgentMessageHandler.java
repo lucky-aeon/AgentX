@@ -32,6 +32,7 @@ import org.xhy.infrastructure.transport.MessageTransport;
 import org.xhy.application.task.dto.TaskDTO;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -92,7 +93,7 @@ public class AgentMessageHandler extends ChatMessageHandler {
     }
 
     private List<String> getTools(){
-        return Arrays.asList("http://124.220.234.136:8006/time/sse");
+        return new ArrayList<>();
     }
 
     @Override
@@ -122,52 +123,53 @@ public class AgentMessageHandler extends ChatMessageHandler {
         // 保存父任务
         taskDomainService.addTask(parentTask);
         
-        // 第二步：任务拆分（流式响应）
-        ChatRequest splitTaskRequest = prepareSplitTaskRequest(environment);
-        List<String> tasks = new ArrayList<>();
-        Map<String, TaskEntity> subTaskMap = new HashMap<>();
-        
-        // 创建一个信号量用于同步
-        CountDownLatch taskDescLatch = new CountDownLatch(1);
-        
-        getTaskDesc(streamingClient, splitTaskRequest, connection, messageTransport, 
-                environment, userMessageEntity, llmMessageEntity, parentTask, subTaskMap, tasks, taskDescLatch);
-        
-        // 等待任务拆分完成
-        try {
-            boolean completed = taskDescLatch.await(300, TimeUnit.SECONDS); // 设置合理的超时时间
-            if (!completed) {
-                // 等待超时，可能需要处理
-                // 向前端发送超时消息
-                AgentChatResponse timeoutResponse = AgentChatResponse.build(
-                        "任务拆分超时", true, MessageType.TEXT);
-                messageTransport.sendMessage(connection, timeoutResponse);
-                return connection;
-            }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            // 向前端发送中断消息
-            AgentChatResponse interruptResponse = AgentChatResponse.build(
-                    "任务拆分被中断", true, MessageType.TEXT);
-            messageTransport.sendMessage(connection, interruptResponse);
-            return connection;
-        }
-        
-        // 保存用户消息和LLM拆分结果消息
-        conversationDomainService.insertBathMessage(Arrays.asList(userMessageEntity, llmMessageEntity));
-        
-        // 更新上下文
-        List<String> activeMessages = environment.getContextEntity().getActiveMessages();
-        activeMessages.add(userMessageEntity.getId());
-        activeMessages.add(llmMessageEntity.getId());
-        contextDomainService.insertOrUpdate(environment.getContextEntity());
-        
-        // 创建一个线程池来异步执行任务
+        // 创建一个线程池来异步执行所有任务（包括拆分和执行）
         ExecutorService executor = Executors.newSingleThreadExecutor();
         
-        // 异步执行子任务和汇总
+        // 异步执行任务拆分和子任务
         executor.submit(() -> {
             try {
+                // 第二步：任务拆分（流式响应）
+                ChatRequest splitTaskRequest = prepareSplitTaskRequest(environment);
+                List<String> tasks = new ArrayList<>();
+                Map<String, TaskEntity> subTaskMap = new HashMap<>();
+                
+                // 不再使用CountDownLatch，改为完全异步处理
+                CompletableFuture<Boolean> splitTaskFuture = new CompletableFuture<>();
+                
+                getTaskDesc(streamingClient, splitTaskRequest, connection, messageTransport, 
+                        environment, userMessageEntity, llmMessageEntity, parentTask, subTaskMap, tasks, splitTaskFuture);
+                
+                // 等待任务拆分完成，但不阻塞前端响应
+                boolean splitCompleted = false;
+                try {
+                    splitCompleted = splitTaskFuture.get(300, TimeUnit.SECONDS);
+                    if (!splitCompleted) {
+                        // 处理任务拆分失败
+                        AgentChatResponse timeoutResponse = AgentChatResponse.build(
+                                "任务拆分失败", true, MessageType.TEXT);
+                        messageTransport.sendMessage(connection, timeoutResponse);
+                        messageTransport.completeConnection(connection);
+                        return;
+                    }
+                } catch (Exception e) {
+                    // 处理等待异常
+                    AgentChatResponse errorResponse = AgentChatResponse.build(
+                            "任务拆分过程发生错误: " + e.getMessage(), true, MessageType.TEXT);
+                    messageTransport.sendMessage(connection, errorResponse);
+                    messageTransport.completeConnection(connection);
+                    return;
+                }
+                
+                // 保存用户消息和LLM拆分结果消息
+                conversationDomainService.insertBathMessage(Arrays.asList(userMessageEntity, llmMessageEntity));
+                
+                // 更新上下文
+                List<String> activeMessages = environment.getContextEntity().getActiveMessages();
+                activeMessages.add(userMessageEntity.getId());
+                activeMessages.add(llmMessageEntity.getId());
+                contextDomainService.insertOrUpdate(environment.getContextEntity());
+                
                 // 第三步：配置MCP工具
                 List<String> toolUrls = getTools();
                 ToolProvider toolProvider = null;
@@ -217,7 +219,7 @@ public class AgentMessageHandler extends ChatMessageHandler {
 
                     // 通知前端当前执行的任务
                     AgentChatResponse taskExecNotification = AgentChatResponse.build(
-                            task, false, MessageType.TASK_EXEC);
+                            task, true, MessageType.TASK_EXEC);
                     taskExecNotification.setTaskId(subTask.getId());
                     messageTransport.sendMessage(connection, taskExecNotification);
                     
@@ -261,7 +263,7 @@ public class AgentMessageHandler extends ChatMessageHandler {
                             toolCallsContent.append("- ").append(toolName).append("\n");
                             
                             AgentChatResponse toolCallResponse = AgentChatResponse.build(
-                                    toolName, false, MessageType.TOOL_CALL);
+                                    toolName, true, MessageType.TOOL_CALL);
                             toolCallResponse.setTaskId(subTask.getId());
                             messageTransport.sendMessage(connection, toolCallResponse);
                         });
@@ -286,6 +288,9 @@ public class AgentMessageHandler extends ChatMessageHandler {
                     // 更新子任务状态为已完成
                     subTask.updateStatus(TaskStatus.COMPLETED);
                     taskDomainService.updateTask(subTask);
+                    taskExecNotification.setMessageType(MessageType.TASK_STATUS_TO_FINISH);
+                    messageTransport.sendMessage(connection, taskExecNotification);
+
                     
                     // 更新父任务进度
                     int completedCount = completedTasks.incrementAndGet();
@@ -295,7 +300,7 @@ public class AgentMessageHandler extends ChatMessageHandler {
                     
                     // 通知前端任务进度
                     AgentChatResponse progressNotification = AgentChatResponse.build(
-                            String.valueOf(progress), false, MessageType.TASK_STATUS);
+                            "", true, MessageType.TASK_STATUS_TO_LOADING);
                     progressNotification.setTaskId(parentTask.getId());
                     messageTransport.sendMessage(connection, progressNotification);
                 }
@@ -309,19 +314,13 @@ public class AgentMessageHandler extends ChatMessageHandler {
                 }
 
                 String taskSummary = taskSummaryBuilder.toString();
-                System.out.println("结果："+taskSummaryBuilder);
 
                 MessageEntity summaryMessageEntity = createLlmMessage(environment);
                 
                 summarizeResults(streamingClient, environment, taskSummary, connection, messageTransport, 
                         summaryMessageEntity, parentTask);
                 
-                // 保存总结消息
-                conversationDomainService.saveMessage(summaryMessageEntity);
-                
-                // 更新上下文
-                activeMessages.add(summaryMessageEntity.getId());
-                contextDomainService.insertOrUpdate(environment.getContextEntity());
+
             } catch (Exception e) {
                 // 处理异步执行过程中的异常
                 String errorMessage = "任务执行过程中发生错误: " + e.getMessage();
@@ -361,7 +360,7 @@ public class AgentMessageHandler extends ChatMessageHandler {
             TaskEntity parentTask,
             Map<String, TaskEntity> subTaskMap,
             List<String> tasks,
-            CountDownLatch taskDescLatch) {
+            CompletableFuture<Boolean> splitTaskFuture) {
 
         llmClient.doChat(llmRequest, new StreamingChatResponseHandler() {
             StringBuilder fullResponse = new StringBuilder();
@@ -379,16 +378,16 @@ public class AgentMessageHandler extends ChatMessageHandler {
             @Override
             public void onCompleteResponse(ChatResponse completeResponse) {
                 try {
-                    // 设置token使用情况
-                    TokenUsage tokenUsage = completeResponse.metadata().tokenUsage();
-    
-                    // 设置用户消息token数
-                    Integer inputTokenCount = tokenUsage.inputTokenCount();
-                    userMessageEntity.setTokenCount(inputTokenCount);
-    
-                    // 设置LLM消息内容和token数
-                    Integer outputTokenCount = tokenUsage.outputTokenCount();
-                    llmMessageEntity.setTokenCount(outputTokenCount);
+                // 设置token使用情况
+                TokenUsage tokenUsage = completeResponse.metadata().tokenUsage();
+
+                // 设置用户消息token数
+                Integer inputTokenCount = tokenUsage.inputTokenCount();
+                userMessageEntity.setTokenCount(inputTokenCount);
+
+                // 设置LLM消息内容和token数
+                Integer outputTokenCount = tokenUsage.outputTokenCount();
+                llmMessageEntity.setTokenCount(outputTokenCount);
                     
                     // 保存完整响应
                     String taskDesc = completeResponse.aiMessage().text();
@@ -423,22 +422,14 @@ public class AgentMessageHandler extends ChatMessageHandler {
                         // 保存到Map中供后续使用
                         subTaskMap.put(task, subTask);
                     }
-                    
-                    // 构建包含任务列表的响应
-                    AgentChatResponse tasksResponse = AgentChatResponse.build(
-                            "", false, MessageType.TASK_IDS);
-                    tasksResponse.setTaskId(parentTask.getId());
-                    tasksResponse.setTasks(taskDTOList);
-                    
-                    // 发送任务列表响应
-                    transport.sendMessage(connection, tasksResponse);
-                    
                     // 发送完成消息
-                    AgentChatResponse finishResponse = AgentChatResponse.build("", true, MessageType.TEXT);
+                    AgentChatResponse finishResponse = AgentChatResponse.build("", true, MessageType.TASK_SPLIT_FINISH);
                     transport.sendMessage(connection, finishResponse);
-                } finally {
-                    // 完成任务拆分，释放锁
-                    taskDescLatch.countDown();
+
+                    // 标记任务拆分已完成
+                    splitTaskFuture.complete(true);
+                } catch (Exception e) {
+                    splitTaskFuture.completeExceptionally(e);
                 }
             }
 
@@ -447,8 +438,8 @@ public class AgentMessageHandler extends ChatMessageHandler {
                 try {
                     transport.handleError(connection, error);
                 } finally {
-                    // 发生错误时也要释放锁，避免主线程永远等待
-                    taskDescLatch.countDown();
+                    // 发生错误时标记任务拆分失败
+                    splitTaskFuture.completeExceptionally(error);
                 }
             }
         });
@@ -493,7 +484,7 @@ public class AgentMessageHandler extends ChatMessageHandler {
             public void onPartialResponse(String partialResponse) {
                 fullSummary.append(partialResponse);
                 
-                // 发送流式响应给前端
+                // 发送流式响应给前端 - 确保明确使用TEXT类型，不和任务列表混合
                 AgentChatResponse response = AgentChatResponse.build(
                         partialResponse, false, MessageType.TEXT);
                 transport.sendMessage(connection, response);
@@ -508,18 +499,23 @@ public class AgentMessageHandler extends ChatMessageHandler {
                 String summary = completeResponse.aiMessage().text();
                 summaryMessageEntity.setContent(summary);
                 summaryMessageEntity.setTokenCount(outputTokenCount);
+                summaryMessageEntity.setMessageType(MessageType.TEXT); // 确保消息类型为TEXT
                 
                 // 更新父任务为完成状态
                 parentTask.updateStatus(TaskStatus.COMPLETED);
                 parentTask.setTaskResult(summary);
                 taskDomainService.updateTask(parentTask);
                 
-                // 发送完成消息
+                // 然后再发送最终完成标记 - 独立消息
                 AgentChatResponse finishResponse = AgentChatResponse.build("", true, MessageType.TEXT);
                 transport.sendMessage(connection, finishResponse);
                 transport.completeConnection(connection);
-            }
 
+                // 更新上下文
+                environment.getContextEntity().getActiveMessages().add(summaryMessageEntity.getId());
+                contextDomainService.insertOrUpdate(environment.getContextEntity());
+                conversationDomainService.saveMessage(summaryMessageEntity);
+            }
             @Override
             public void onError(Throwable error) {
                 transport.handleError(connection, error);

@@ -6,7 +6,7 @@ server:
   tomcat:
     threads:
       max: 200 # 最大工作线程数
-    connection-timeout: 20000 # 连接超时毫秒
+    connection-timeout: 2000000 # 连接超时毫秒
     max-connections: 10000 # 最大连接数
     accept-count: 100 # 等待队列长度
     # 异步请求相关设置
