@@ -212,7 +212,7 @@ public class AgentMessageHandler extends ChatMessageHandler {
                     // 保存执行消息
                     MessageEntity taskCallMessageEntity = createLlmMessage(environment);
                     taskCallMessageEntity.setMessageType(MessageType.TASK_EXEC);
-                    taskCallMessageEntity.setContent("执行任务："+task);
+                    taskCallMessageEntity.setContent(task);
                     taskCallMessageEntity.setTokenCount(0);
                     conversationDomainService.saveMessage(taskCallMessageEntity);
 
@@ -222,7 +222,14 @@ public class AgentMessageHandler extends ChatMessageHandler {
                             task, true, MessageType.TASK_EXEC);
                     taskExecNotification.setTaskId(subTask.getId());
                     messageTransport.sendMessage(connection, taskExecNotification);
-                    
+
+
+                    // 通知前端任务进度
+                    AgentChatResponse progressNotification = AgentChatResponse.build(
+                            "", true, MessageType.TASK_STATUS_TO_LOADING);
+                    progressNotification.setTaskId(subTask.getId());
+                    messageTransport.sendMessage(connection, progressNotification);
+
                     // 构建子任务上下文（包含前面子任务的结果）
                     StringBuilder contextBuilder = new StringBuilder();
                     contextBuilder.append("当前任务: ").append(task).append("\n\n");
@@ -297,12 +304,7 @@ public class AgentMessageHandler extends ChatMessageHandler {
                     int progress = (int) ((completedCount / (double) totalTasks) * 100);
                     parentTask.updateProgress(progress);
                     taskDomainService.updateTask(parentTask);
-                    
-                    // 通知前端任务进度
-                    AgentChatResponse progressNotification = AgentChatResponse.build(
-                            "", true, MessageType.TASK_STATUS_TO_LOADING);
-                    progressNotification.setTaskId(parentTask.getId());
-                    messageTransport.sendMessage(connection, progressNotification);
+
                 }
 
                 // 第五步：总结结果（流式响应）
