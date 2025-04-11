@@ -41,7 +41,32 @@ export enum MessageType {
   /**
    * 任务ID列表消息
    */
-  TASK_IDS = "TASK_IDS"
+  TASK_IDS = "TASK_IDS",
+  
+  /**
+   * 任务拆分完成消息
+   */
+  TASK_SPLIT_FINISH = "TASK_SPLIT_FINISH",
+
+  /**
+   * 任务进行中消息
+   */
+  TASK_IN_PROGRESS = "TASK_IN_PROGRESS",
+
+  /**
+   * 任务完成消息
+   */
+  TASK_COMPLETED = "TASK_COMPLETED",
+  
+  /**
+   * 任务状态变为已完成消息
+   */
+  TASK_STATUS_TO_FINISH = "TASK_STATUS_TO_FINISH",
+  
+  /**
+   * 任务状态变为加载中消息
+   */
+  TASK_STATUS_TO_LOADING = "TASK_STATUS_TO_LOADING"
 }
 
 // 消息接口
@@ -53,6 +78,8 @@ export interface Message {
   type?: MessageType
   createdAt?: string
   updatedAt?: string
+  tasks?: any[] // 任务列表
+  taskId?: string // 任务ID
 }
 
 // 创建会话请求参数

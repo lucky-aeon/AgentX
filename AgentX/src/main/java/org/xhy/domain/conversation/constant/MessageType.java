@@ -19,12 +19,17 @@ public enum MessageType {
      */
     TASK_EXEC,
     /**
-     * 任务状态更新消息
+     * 任务状态进行中
      */
-    TASK_STATUS,
-    
+    TASK_STATUS_TO_LOADING,
+
     /**
-     * 任务ID列表消息
+     * 任务状态完成
      */
-    TASK_IDS
-} 
+    TASK_STATUS_TO_FINISH,
+
+    /**
+     * 任务拆分结束消息
+     */
+    TASK_SPLIT_FINISH
+}
