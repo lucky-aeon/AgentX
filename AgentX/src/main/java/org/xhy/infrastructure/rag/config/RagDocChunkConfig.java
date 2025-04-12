@@ -22,6 +22,7 @@ import cn.hutool.core.lang.Dict;
 import cn.hutool.core.util.StrUtil;
 
 /**
+ * 文件上传服务服务配置
  * @author shilong.zang
  * @date 22:51 <br/>
  */
