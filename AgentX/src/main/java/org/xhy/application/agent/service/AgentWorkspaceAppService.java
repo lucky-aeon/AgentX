@@ -16,7 +16,7 @@ import org.xhy.domain.conversation.service.ConversationDomainService;
 import org.xhy.domain.conversation.service.SessionDomainService;
 import org.xhy.domain.llm.model.ModelEntity;
 import org.xhy.domain.llm.model.ProviderEntity;
-import org.xhy.domain.llm.service.LlmDomainService;
+import org.xhy.domain.llm.service.LLMDomainService;
 import org.xhy.infrastructure.exception.BusinessException;
 import org.xhy.interfaces.dto.agent.request.UpdateModelConfigRequest;
 
@@ -41,11 +41,11 @@ public class AgentWorkspaceAppService {
     private final SessionDomainService sessionDomainService;
 
     private final ConversationDomainService conversationDomainService;
-    private final LlmDomainService llmDomainService;
+    private final LLMDomainService llmDomainService;
     private final ProjectInfoProperties projectInfoProperties;
 
     public AgentWorkspaceAppService(AgentWorkspaceDomainService agentWorkspaceDomainService,
-                                    AgentDomainService agentServiceDomainService, SessionDomainService sessionDomainService, ConversationDomainService conversationDomainService, LlmDomainService llmDomainService, ProjectInfoProperties projectInfoProperties) {
+                                    AgentDomainService agentServiceDomainService, SessionDomainService sessionDomainService, ConversationDomainService conversationDomainService, LLMDomainService llmDomainService, ProjectInfoProperties projectInfoProperties) {
         this.agentWorkspaceDomainService = agentWorkspaceDomainService;
         this.agentServiceDomainService = agentServiceDomainService;
         this.sessionDomainService = sessionDomainService;

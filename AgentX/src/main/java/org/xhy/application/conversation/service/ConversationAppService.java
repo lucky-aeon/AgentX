@@ -22,7 +22,7 @@ import org.xhy.domain.conversation.service.MessageDomainService;
 import org.xhy.domain.conversation.service.SessionDomainService;
 import org.xhy.domain.llm.model.ModelEntity;
 import org.xhy.domain.llm.model.ProviderEntity;
-import org.xhy.domain.llm.service.LlmDomainService;
+import org.xhy.domain.llm.service.LLMDomainService;
 import org.xhy.domain.shared.enums.TokenOverflowStrategyEnum;
 import org.xhy.domain.token.model.TokenMessage;
 import org.xhy.domain.token.model.TokenProcessResult;
@@ -48,7 +48,7 @@ public class ConversationAppService {
     private final SessionDomainService sessionDomainService;
     private final AgentDomainService agentDomainService;
     private final AgentWorkspaceDomainService agentWorkspaceDomainService;
-    private final LlmDomainService llmDomainService;
+    private final LLMDomainService llmDomainService;
     private final ContextDomainService contextDomainService;
     private final TokenDomainService tokenDomainService;
     private final MessageDomainService messageDomainService;
@@ -63,7 +63,7 @@ public class ConversationAppService {
             SessionDomainService sessionDomainService,
             AgentDomainService agentDomainService,
             AgentWorkspaceDomainService agentWorkspaceDomainService,
-            LlmDomainService llmDomainService,
+            LLMDomainService llmDomainService,
             ContextDomainService contextDomainService,
             TokenDomainService tokenDomainService,
             MessageDomainService messageDomainService,
