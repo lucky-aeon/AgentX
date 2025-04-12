@@ -19,7 +19,15 @@ public interface MessageTransport<T> {
      * @param streamChatResponse 消息内容
      */
     void sendMessage(T connection, AgentChatResponse streamChatResponse);
-    
+
+    /**
+     * 发送消息
+     * @param connection 连接对象
+     * @param streamChatResponse 消息内容
+     */
+    void sendEndMessage(T connection, AgentChatResponse streamChatResponse);
+
+
     /**
      * 完成连接
      * @param connection 连接对象
