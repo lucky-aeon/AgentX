@@ -53,15 +53,15 @@ public class EmbeddingConfig {
     public EmbeddingStore<TextSegment> initEmbeddingStore() {
 
         return PgVectorEmbeddingStore.builder()
-                .table("")
-                .dropTableFirst(true)
-                .createTable(true)
-                .host("")
+                .table("agent.document")
+                .dropTableFirst(false)
+                .createTable(false)
+                .host("124.220.234.136")
                 .port(5432)
-                .user("")
-                .password("")
+                .user("agent")
+                .password("cE6ekwea3sZE")
                 .dimension(1024)
-                .database("")
+                .database("agent")
                 .build();
 
     }

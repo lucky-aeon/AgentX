@@ -14,6 +14,7 @@ import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.stereotype.Component;
 import org.xhy.infrastructure.mq.model.MQSendEventModel;
 
 import jakarta.annotation.Resource;
@@ -22,10 +23,9 @@ import jakarta.annotation.Resource;
  * @author zang
  * @date 14:03 <br/>
  */
+
+@Component
 public class RabbitMQUtils {
-
-    private final Logger logger = LoggerFactory.getLogger(RabbitMQUtils.class);
-
     
     private static final Map<String, Queue> QUEUE_MAP = new ConcurrentHashMap<>();
 
