@@ -1,4 +1,4 @@
-package org.xhy.domain.embedding.model;
+package org.xhy.domain.rag.model;
 
 import java.io.Serial;
 import java.io.Serializable;

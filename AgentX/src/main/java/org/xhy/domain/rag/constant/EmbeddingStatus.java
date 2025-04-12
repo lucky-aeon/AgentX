@@ -1,4 +1,4 @@
-package org.xhy.domain.embedding.constant;
+package org.xhy.domain.rag.constant;
 
 /**
  * @author zang

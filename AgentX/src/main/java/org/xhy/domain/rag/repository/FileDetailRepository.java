@@ -1,7 +1,7 @@
-package org.xhy.domain.embedding.repository;
+package org.xhy.domain.rag.repository;
 
 import org.apache.ibatis.annotations.Mapper;
-import org.xhy.domain.embedding.model.FileDetailEntity;
+import org.xhy.domain.rag.model.FileDetailEntity;
 import org.xhy.infrastructure.repository.MyBatisPlusExtRepository;
 
 /**

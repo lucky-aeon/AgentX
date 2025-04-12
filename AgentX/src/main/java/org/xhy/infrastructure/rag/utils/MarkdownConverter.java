@@ -1,4 +1,4 @@
-package org.xhy.infrastructure.embedding.utils;
+package org.xhy.infrastructure.rag.utils;
 
 import com.vladsch.flexmark.html.HtmlRenderer;
 import com.vladsch.flexmark.parser.Parser;

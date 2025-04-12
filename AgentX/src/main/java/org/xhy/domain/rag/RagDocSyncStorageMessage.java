@@ -1,22 +1,16 @@
-package org.xhy.domain.embedding.model;
+package org.xhy.domain.rag;
 
 import java.io.Serial;
 import java.io.Serializable;
 
-import org.xhy.infrastructure.entity.BaseEntity;
-
-import com.baomidou.mybatisplus.annotation.TableName;
-
 /**
  * @author shilong.zang
- * @date 20:24 <br/>
+ * @date 20:54 <br/>
  */
-@TableName("document_unit")
-public class DocumentUnitEntity extends BaseEntity implements Serializable {
+public class RagDocSyncStorageMessage implements Serializable {
 
     @Serial
-    private static final long serialVersionUID = 7001509997040094844L;
-
+    private static final long serialVersionUID = -5764144581856293209L;
     /**
      * 主键
      */
@@ -41,6 +35,8 @@ public class DocumentUnitEntity extends BaseEntity implements Serializable {
      * 是否进行向量化
      */
     private Boolean isVector;
+
+    private String fileName;
 
     public String getId() {
         return id;
@@ -80,5 +76,13 @@ public class DocumentUnitEntity extends BaseEntity implements Serializable {
 
     public void setVector(Boolean vector) {
         isVector = vector;
+    }
+
+    public String getFileName() {
+        return fileName;
+    }
+
+    public void setFileName(String fileName) {
+        this.fileName = fileName;
     }
 }
