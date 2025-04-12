@@ -12,7 +12,7 @@ import org.xhy.domain.llm.model.enums.ModelType;
 import org.xhy.infrastructure.entity.Operator;
 import org.xhy.infrastructure.llm.protocol.enums.ProviderProtocol;
 import org.xhy.domain.llm.model.enums.ProviderType;
-import org.xhy.domain.llm.service.LlmDomainService;
+import org.xhy.domain.llm.service.LLMDomainService;
 import org.xhy.interfaces.dto.llm.request.ModelCreateRequest;
 import org.xhy.interfaces.dto.llm.request.ModelUpdateRequest;
 import org.xhy.interfaces.dto.llm.request.ProviderCreateRequest;
@@ -24,9 +24,9 @@ import java.util.stream.Collectors;
 @Service
 public class LLMAppService {
 
-    private final LlmDomainService llmDomainService;
+    private final LLMDomainService llmDomainService;
 
-    public LLMAppService(LlmDomainService llmDomainService) {
+    public LLMAppService(LLMDomainService llmDomainService) {
         this.llmDomainService = llmDomainService;
     }
 

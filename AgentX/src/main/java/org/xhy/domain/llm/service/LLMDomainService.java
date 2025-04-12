@@ -27,12 +27,12 @@ import java.util.stream.Collectors;
  * 负责服务提供商和模型的核心业务逻辑
  */
 @Service
-public class LlmDomainService {
+public class LLMDomainService {
     
     private final ProviderRepository providerRepository;
     private final ModelRepository modelRepository;
 
-    public LlmDomainService(
+    public LLMDomainService(
             ProviderRepository providerRepository,
             ModelRepository modelRepository
             ) {
