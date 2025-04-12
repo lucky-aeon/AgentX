@@ -1,4 +1,4 @@
-package org.xhy.infrastructure.starter.model;
+package org.xhy.infrastructure.mq.model;
 
 import java.io.Serial;
 import java.util.List;
@@ -7,7 +7,7 @@ import java.util.Map;
 import org.slf4j.MDC;
 import org.springframework.amqp.core.ExchangeTypes;
 import org.springframework.context.ApplicationEvent;
-import org.xhy.infrastructure.starter.enums.EventType;
+import org.xhy.infrastructure.mq.enums.EventType;
 
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;

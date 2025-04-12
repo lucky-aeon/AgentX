@@ -1,4 +1,4 @@
-package org.xhy.infrastructure.starter.model;
+package org.xhy.infrastructure.mq.model;
 
 import org.springframework.amqp.core.ExchangeTypes;
 

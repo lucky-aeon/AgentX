@@ -1,4 +1,4 @@
-package org.xhy.infrastructure.starter.utils;
+package org.xhy.infrastructure.mq.utils;
 
 import java.util.Map;
 import java.util.Objects;
@@ -14,7 +14,7 @@ import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.context.annotation.Configuration;
-import org.xhy.infrastructure.starter.model.MQSendEventModel;
+import org.xhy.infrastructure.mq.model.MQSendEventModel;
 
 import jakarta.annotation.Resource;
 

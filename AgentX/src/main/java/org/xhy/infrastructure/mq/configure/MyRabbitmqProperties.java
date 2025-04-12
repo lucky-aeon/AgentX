@@ -1,4 +1,4 @@
-package org.xhy.infrastructure.starter.configure;
+package org.xhy.infrastructure.mq.configure;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;

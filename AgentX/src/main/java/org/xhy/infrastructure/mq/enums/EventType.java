@@ -1,4 +1,4 @@
-package org.xhy.infrastructure.starter.enums;
+package org.xhy.infrastructure.mq.enums;
 
 /**
  * @author zang

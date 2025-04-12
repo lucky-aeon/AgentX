@@ -1,11 +1,11 @@
-package org.xhy.infrastructure.starter.events;
+package org.xhy.infrastructure.mq.events;
 
 import java.io.Serial;
 import java.util.Arrays;
 import java.util.List;
 
-import org.xhy.infrastructure.starter.enums.EventType;
-import org.xhy.infrastructure.starter.model.MQSendEventModel;
+import org.xhy.infrastructure.mq.enums.EventType;
+import org.xhy.infrastructure.mq.model.MQSendEventModel;
 
 
 /**

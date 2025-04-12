@@ -1,4 +1,4 @@
-package org.xhy.infrastructure.starter.configure;
+package org.xhy.infrastructure.mq.configure;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
