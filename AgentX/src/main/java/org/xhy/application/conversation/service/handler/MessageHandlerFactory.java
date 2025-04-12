@@ -1,7 +1,8 @@
-package org.xhy.domain.conversation.handler;
+package org.xhy.application.conversation.service.handler;
 
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
+import org.xhy.application.conversation.service.message.AbstractMessageHandler;
 import org.xhy.domain.agent.model.AgentEntity;
 
 /**
@@ -31,7 +32,7 @@ public class MessageHandlerFactory {
      * @param agent 智能体实体
      * @return 消息处理器
      */
-    public MessageHandler getHandler(AgentEntity agent) {
+    public AbstractMessageHandler getHandler(AgentEntity agent) {
         // 目前暂时使用标准处理器
         // 后续可根据agent属性判断是否支持React模式
         if (agent.getAgentType() == 1){
@@ -49,13 +50,13 @@ public class MessageHandlerFactory {
      * @param type 处理器类型
      * @return 消息处理器
      */
-    private MessageHandler getHandlerByType(MessageHandlerType type) {
+    private AbstractMessageHandler getHandlerByType(MessageHandlerType type) {
         switch (type) {
             case AGENT:
-                return applicationContext.getBean("agentMessageHandler", MessageHandler.class);
+                return applicationContext.getBean("agentMessageHandler", AbstractMessageHandler.class);
             case STANDARD:
             default:
-                return applicationContext.getBean("chatMessageHandler", MessageHandler.class);
+                return applicationContext.getBean("chatMessageHandler", AbstractMessageHandler.class);
         }
     }
 } 

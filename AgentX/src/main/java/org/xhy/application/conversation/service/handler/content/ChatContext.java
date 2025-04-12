@@ -1,4 +1,4 @@
-package org.xhy.domain.conversation.handler;
+package org.xhy.application.conversation.service.handler.content;
 
 import org.xhy.domain.agent.model.AgentEntity;
 import org.xhy.domain.agent.model.LLMModelConfig;
@@ -10,9 +10,9 @@ import org.xhy.domain.llm.model.ProviderEntity;
 import java.util.List;
 
 /**
- * 对话环境，包含对话所需的所有信息
+ * chat 上下文，包含对话所需的所有信息
  */
-public class ChatEnvironment {
+public class ChatContext {
     /**
      * 会话ID
      */

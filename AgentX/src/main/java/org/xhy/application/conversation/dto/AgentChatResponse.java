@@ -48,12 +48,29 @@ public class AgentChatResponse {
     public AgentChatResponse() {
     }
 
+    public static AgentChatResponse buildEndMessage(MessageType messageType) {
 
-    public static AgentChatResponse build(String content, boolean done, MessageType messageType) {
+        AgentChatResponse streamChatResponse = new AgentChatResponse();
+        streamChatResponse.setContent("");
+        streamChatResponse.setDone(true);
+        streamChatResponse.setMessageType(messageType);
+        return streamChatResponse;
+    }
+    public static AgentChatResponse buildEndMessage(String content,MessageType messageType) {
 
         AgentChatResponse streamChatResponse = new AgentChatResponse();
         streamChatResponse.setContent(content);
-        streamChatResponse.setDone(done);
+        streamChatResponse.setDone(true);
+        streamChatResponse.setMessageType(messageType);
+        return streamChatResponse;
+    }
+
+
+    public static AgentChatResponse build(String content, MessageType messageType) {
+
+        AgentChatResponse streamChatResponse = new AgentChatResponse();
+        streamChatResponse.setContent(content);
+        streamChatResponse.setDone(false);
         streamChatResponse.setMessageType(messageType);
         return streamChatResponse;
     }
