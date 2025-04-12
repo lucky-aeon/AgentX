@@ -4,9 +4,11 @@ import java.io.Serial;
 import java.io.Serializable;
 import java.util.Objects;
 
+import org.springframework.web.multipart.MultipartFile;
 import org.xhy.infrastructure.entity.BaseEntity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 
@@ -178,6 +180,17 @@ public class FileDetailEntity extends BaseEntity implements Serializable {
      * @see org.xhy.domain.rag.constant.EmbeddingStatus
      */
     private String isEmbedding;
+
+    @TableField(exist = false)
+    private MultipartFile multipartFile;
+
+    public MultipartFile getMultipartFile() {
+        return multipartFile;
+    }
+
+    public void setMultipartFile(MultipartFile multipartFile) {
+        this.multipartFile = multipartFile;
+    }
 
     public String getId() {
         return id;
@@ -429,7 +442,9 @@ public class FileDetailEntity extends BaseEntity implements Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (o == null || getClass() != o.getClass()) return false;
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
         FileDetailEntity that = (FileDetailEntity) o;
         return Objects.equals(id, that.id) && Objects.equals(url, that.url) && Objects.equals(size, that.size) && Objects.equals(filename, that.filename) && Objects.equals(originalFilename, that.originalFilename) && Objects.equals(basePath, that.basePath) && Objects.equals(path, that.path) && Objects.equals(ext, that.ext) && Objects.equals(contentType, that.contentType) && Objects.equals(platform, that.platform) && Objects.equals(thUrl, that.thUrl) && Objects.equals(thFilename, that.thFilename) && Objects.equals(thSize, that.thSize) && Objects.equals(thContentType, that.thContentType) && Objects.equals(objectId, that.objectId) && Objects.equals(objectType, that.objectType) && Objects.equals(metadata, that.metadata) && Objects.equals(userMetadata, that.userMetadata) && Objects.equals(thMetadata, that.thMetadata) && Objects.equals(thUserMetadata, that.thUserMetadata) && Objects.equals(attr, that.attr) && Objects.equals(fileAcl, that.fileAcl) && Objects.equals(thFileAcl, that.thFileAcl) && Objects.equals(hashInfo, that.hashInfo) && Objects.equals(uploadId, that.uploadId) && Objects.equals(uploadStatus, that.uploadStatus) && Objects.equals(userId, that.userId) && Objects.equals(dataSetId, that.dataSetId) && Objects.equals(filePageSize, that.filePageSize) && Objects.equals(isInitialize, that.isInitialize) && Objects.equals(isEmbedding, that.isEmbedding);
     }
