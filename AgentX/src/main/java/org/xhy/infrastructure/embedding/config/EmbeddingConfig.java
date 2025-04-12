@@ -3,8 +3,10 @@ package org.xhy.infrastructure.embedding.config;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
+import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.model.openai.OpenAiEmbeddingModel;
+import dev.langchain4j.store.embedding.EmbeddingStore;
+import dev.langchain4j.store.embedding.pgvector.PgVectorEmbeddingStore;
 
 /**
  * 嵌入式配置
@@ -42,4 +44,27 @@ public class EmbeddingConfig {
                 .logResponses(true)
                 .build();
     }
+
+    /**
+     * 向量化存储配置
+     * @return PgVectorEmbeddingStore实例
+     */
+    @Bean
+    public EmbeddingStore<TextSegment> initEmbeddingStore() {
+
+        return PgVectorEmbeddingStore.builder()
+                .table("")
+                .dropTableFirst(true)
+                .createTable(true)
+                .host("")
+                .port(5432)
+                .user("")
+                .password("")
+                .dimension(1024)
+                .database("")
+                .build();
+
+    }
+
+
 }
