@@ -22,8 +22,6 @@ import jakarta.annotation.Resource;
  * @author zang
  * @date 14:03 <br/>
  */
-
-@Configuration
 public class RabbitMQUtils {
 
     private final Logger logger = LoggerFactory.getLogger(RabbitMQUtils.class);
