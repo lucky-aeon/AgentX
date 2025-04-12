@@ -1,18 +1,12 @@
 package org.xhy.domain.llm.model;
 
 import com.baomidou.mybatisplus.annotation.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.xhy.domain.llm.model.config.ProviderConfig;
 import org.xhy.infrastructure.converter.ProviderConfigConverter;
 import org.xhy.infrastructure.converter.ProviderProtocolConverter;
-import org.xhy.infrastructure.converter.RoleConverter;
 import org.xhy.infrastructure.entity.BaseEntity;
 import org.xhy.infrastructure.exception.BusinessException;
 import org.xhy.infrastructure.llm.protocol.enums.ProviderProtocol;
-import org.xhy.infrastructure.utils.EncryptUtils;
-
-import java.time.LocalDateTime;
 
 /**
  * 服务提供商领域模型

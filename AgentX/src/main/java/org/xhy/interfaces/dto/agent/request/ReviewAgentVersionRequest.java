@@ -1,7 +1,7 @@
 package org.xhy.interfaces.dto.agent.request;
 
 import org.xhy.domain.agent.constant.PublishStatus;
-import org.xhy.infrastructure.util.ValidationUtils;
+import org.xhy.infrastructure.utils.ValidationUtils;
 import org.xhy.infrastructure.exception.ParamValidationException;
 
 /**

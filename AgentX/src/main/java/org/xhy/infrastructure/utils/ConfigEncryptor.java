@@ -1,4 +1,4 @@
-package org.xhy.infrastructure.util;
+package org.xhy.infrastructure.utils;
 
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.AES;
