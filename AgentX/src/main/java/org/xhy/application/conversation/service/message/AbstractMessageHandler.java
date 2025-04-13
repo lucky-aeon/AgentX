@@ -72,7 +72,7 @@ public abstract class AbstractMessageHandler {
      */
     protected MessageEntity createLlmMessage(ChatContext environment) {
         MessageEntity messageEntity = new MessageEntity();
-        messageEntity.setRole(Role.SYSTEM);
+        messageEntity.setRole(Role.ASSISTANT);
         messageEntity.setSessionId(environment.getSessionId());
         messageEntity.setModel(environment.getModel().getModelId());
         messageEntity.setProvider(environment.getProvider().getId());

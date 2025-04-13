@@ -5,15 +5,18 @@ import dev.langchain4j.model.chat.ChatLanguageModel;
 import dev.langchain4j.model.chat.StreamingChatLanguageModel;
 import dev.langchain4j.model.chat.request.ChatRequest;
 import dev.langchain4j.model.openai.OpenAiChatRequestParameters;
+import org.xhy.application.conversation.service.handler.content.ChatContext;
 import org.xhy.application.conversation.service.message.agent.event.AgentEventHandler;
 import org.xhy.application.conversation.service.message.agent.event.AgentWorkflowEvent;
 import org.xhy.application.conversation.service.message.agent.manager.TaskManager;
 import org.xhy.application.conversation.service.message.agent.workflow.AgentWorkflowContext;
 import org.xhy.application.conversation.service.message.agent.workflow.AgentWorkflowState;
 import org.xhy.domain.conversation.constant.MessageType;
+import org.xhy.domain.conversation.model.ContextEntity;
 import org.xhy.domain.conversation.model.MessageEntity;
 import org.xhy.domain.conversation.service.ContextDomainService;
 import org.xhy.domain.conversation.service.ConversationDomainService;
+import org.xhy.domain.conversation.service.MessageDomainService;
 import org.xhy.infrastructure.llm.LLMServiceFactory;
 
 import java.util.List;
@@ -28,18 +31,17 @@ public abstract class AbstractAgentHandler implements AgentEventHandler {
 
     protected final LLMServiceFactory llmServiceFactory;
     protected final TaskManager taskManager;
-    protected final ConversationDomainService conversationDomainService;
     protected final ContextDomainService contextDomainService;
+    protected final MessageDomainService messageDomainService;
     
     protected AbstractAgentHandler(
             LLMServiceFactory llmServiceFactory,
             TaskManager taskManager,
-            ConversationDomainService conversationDomainService,
-            ContextDomainService contextDomainService) {
+            ContextDomainService contextDomainService, MessageDomainService messageDomainService) {
         this.llmServiceFactory = llmServiceFactory;
         this.taskManager = taskManager;
-        this.conversationDomainService = conversationDomainService;
         this.contextDomainService = contextDomainService;
+        this.messageDomainService = messageDomainService;
     }
     
     /**
@@ -75,7 +77,16 @@ public abstract class AbstractAgentHandler implements AgentEventHandler {
      * 子类必须实现此方法以定义具体处理步骤
      */
     protected abstract <T> void processEvent(AgentWorkflowContext<?> context);
-    
+
+
+    /**
+     * 保存消息并且更新消息到上下文
+     */
+    protected void saveMessageAndUpdateContext(List<MessageEntity> messageEntities, ChatContext chatContext){
+        messageDomainService.saveMessageAndUpdateContext(messageEntities, chatContext.getContextEntity());
+        chatContext.getMessageHistory().addAll(messageEntities);
+    }
+
     /**
      * 创建消息实体
      * 通用方法，创建特定类型的消息实体

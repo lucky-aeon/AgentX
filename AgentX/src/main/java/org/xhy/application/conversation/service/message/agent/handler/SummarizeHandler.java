@@ -18,9 +18,11 @@ import org.xhy.domain.conversation.constant.MessageType;
 import org.xhy.domain.conversation.model.MessageEntity;
 import org.xhy.domain.conversation.service.ContextDomainService;
 import org.xhy.domain.conversation.service.ConversationDomainService;
+import org.xhy.domain.conversation.service.MessageDomainService;
 import org.xhy.infrastructure.llm.LLMServiceFactory;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -33,9 +35,9 @@ public class SummarizeHandler extends AbstractAgentHandler {
     public SummarizeHandler(
             LLMServiceFactory llmServiceFactory,
             TaskManager taskManager,
-            ConversationDomainService conversationDomainService,
-            ContextDomainService contextDomainService) {
-        super(llmServiceFactory, taskManager, conversationDomainService, contextDomainService);
+            ContextDomainService contextDomainService,
+            MessageDomainService messageDomainService) {
+        super(llmServiceFactory, taskManager, contextDomainService,messageDomainService);
     }
     
     @Override
@@ -89,14 +91,9 @@ public class SummarizeHandler extends AbstractAgentHandler {
                         String summary = completeResponse.aiMessage().text();
                         summaryMessageEntity.setContent(summary);
                         summaryMessageEntity.setTokenCount(outputTokenCount);
-                        
-                        // 保存汇总消息
-                        conversationDomainService.saveMessage(summaryMessageEntity);
-                        
-                        // 更新上下文
-                        context.getChatContext().getContextEntity().getActiveMessages().add(summaryMessageEntity.getId());
-                        contextDomainService.insertOrUpdate(context.getChatContext().getContextEntity());
-                        
+
+
+                        saveMessageAndUpdateContext(Collections.singletonList(summaryMessageEntity),context.getChatContext());
                         // 更新父任务为完成状态
                         taskManager.completeTask(context.getParentTask(), summary);
                         

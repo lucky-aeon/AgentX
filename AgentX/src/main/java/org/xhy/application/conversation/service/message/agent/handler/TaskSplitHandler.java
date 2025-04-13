@@ -1,5 +1,6 @@
 package org.xhy.application.conversation.service.message.agent.handler;
 
+import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.message.UserMessage;
@@ -8,20 +9,26 @@ import dev.langchain4j.model.chat.request.ChatRequest;
 import dev.langchain4j.model.chat.response.ChatResponse;
 import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
 import dev.langchain4j.model.output.TokenUsage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.xhy.application.conversation.service.message.agent.event.AgentWorkflowEvent;
 import org.xhy.application.conversation.service.message.agent.manager.TaskManager;
+import org.xhy.application.conversation.service.message.agent.service.InfoRequirementService;
 import org.xhy.application.conversation.service.message.agent.template.AgentPromptTemplates;
 import org.xhy.application.conversation.service.message.agent.workflow.AgentWorkflowContext;
 import org.xhy.application.conversation.service.message.agent.workflow.AgentWorkflowState;
 import org.xhy.domain.conversation.constant.MessageType;
+import org.xhy.domain.conversation.constant.Role;
+import org.xhy.domain.conversation.model.MessageEntity;
+import org.xhy.domain.conversation.service.MessageDomainService;
 import org.xhy.domain.task.model.TaskEntity;
 import org.xhy.domain.conversation.service.ContextDomainService;
 import org.xhy.domain.conversation.service.ConversationDomainService;
 import org.xhy.infrastructure.llm.LLMServiceFactory;
 
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -32,12 +39,18 @@ import java.util.concurrent.CompletableFuture;
 @Component
 public class TaskSplitHandler extends AbstractAgentHandler {
 
+    private static final Logger log = LoggerFactory.getLogger(TaskSplitHandler.class);
+    private final InfoRequirementService infoRequirementService;
+
     public TaskSplitHandler(
             LLMServiceFactory llmServiceFactory,
             TaskManager taskManager,
-            ConversationDomainService conversationDomainService,
-            ContextDomainService contextDomainService) {
-        super(llmServiceFactory, taskManager, conversationDomainService, contextDomainService);
+            ContextDomainService contextDomainService,
+            InfoRequirementService infoRequirementService,
+            MessageDomainService messageDomainService
+            ) {
+        super(llmServiceFactory, taskManager, contextDomainService,messageDomainService);
+        this.infoRequirementService = infoRequirementService;
     }
     
     @Override
@@ -55,12 +68,34 @@ public class TaskSplitHandler extends AbstractAgentHandler {
     protected <T> void processEvent(AgentWorkflowContext<?> contextObj) {
         AgentWorkflowContext<T> context = (AgentWorkflowContext<T>) contextObj;
         
+        // 首先检查信息是否完整
+        infoRequirementService.checkInfoAndWaitIfNeeded(context)
+            .thenAccept(infoComplete -> {
+                if (infoComplete) {
+                    // 信息完整，执行任务拆分
+                    log.info("信息完整，开始执行任务拆分");
+                    doTaskSplitting(context);
+                }
+                // 如果信息不完整，checkInfoAndWaitIfNeeded已经处理了提示和上下文保存
+            });
+        
+        // 设置为true以阻止父类自动调用transitionToNextState
+        // 我们将在doTaskSplitting的回调中手动处理状态转换
+        this.setBreak(true);
+    }
+    
+    /**
+     * 执行实际的任务拆分逻辑
+     */
+    private <T> void doTaskSplitting(AgentWorkflowContext<T> context) {
         try {
+
             // 获取流式模型客户端
             StreamingChatLanguageModel streamingClient = getStreamingClient(context);
             
             // 构建任务拆分请求
             ChatRequest splitTaskRequest = buildSplitTaskRequest(context);
+
             
             // 不阻塞，使用Future跟踪任务拆分完成
             CompletableFuture<Boolean> splitTaskFuture = new CompletableFuture<>();
@@ -109,28 +144,18 @@ public class TaskSplitHandler extends AbstractAgentHandler {
                             // 添加到上下文
                             context.addSubTask(task, subTask);
                         }
-
+                        
                         context.sendEndMessage(MessageType.TASK_SPLIT_FINISH);
-
+                        
                         // 保存用户消息和LLM消息，并更新上下文
-                        conversationDomainService.insertBathMessage(Arrays.asList(
-                                context.getUserMessageEntity(), 
-                                context.getLlmMessageEntity()));
-                        
-                        // 更新上下文
-                        List<String> activeMessages = context.getChatContext().getContextEntity().getActiveMessages();
-                        activeMessages.add(context.getUserMessageEntity().getId());
-                        activeMessages.add(context.getLlmMessageEntity().getId());
-                        contextDomainService.insertOrUpdate(context.getChatContext().getContextEntity());
-                        
+                        saveMessageAndUpdateContext(Collections.singletonList(context.getLlmMessageEntity()),context.getChatContext());
+
                         // 转换到任务拆分完成状态
                         context.transitionTo(AgentWorkflowState.TASK_SPLIT_COMPLETED);
                         
                         splitTaskFuture.complete(true);
-
-
-
                     } catch (Exception e) {
+                        log.error("任务拆分处理响应失败", e);
                         context.handleError(e);
                         splitTaskFuture.complete(false);
                     }
@@ -138,11 +163,13 @@ public class TaskSplitHandler extends AbstractAgentHandler {
                 
                 @Override
                 public void onError(Throwable error) {
+                    log.error("任务拆分失败", error);
                     context.handleError(error);
                     splitTaskFuture.complete(false);
                 }
             });
         } catch (Exception e) {
+            log.error("执行任务拆分失败", e);
             context.handleError(e);
         }
     }
@@ -152,7 +179,16 @@ public class TaskSplitHandler extends AbstractAgentHandler {
      */
     private <T> ChatRequest buildSplitTaskRequest(AgentWorkflowContext<T> context) {
         List<ChatMessage> messages = new ArrayList<>();
-        
+        for (MessageEntity messageEntity : context.getChatContext().getMessageHistory()) {
+            String content = messageEntity.getContent();
+            if (messageEntity.getRole() == Role.SYSTEM){
+                messages.add(new SystemMessage(content));
+            }else if (messageEntity.getRole() == Role.USER){
+                messages.add(new UserMessage(content));
+            }else {
+                messages.add(new AiMessage(content));
+            }
+        }
         // 添加系统提示词
         messages.add(new SystemMessage(AgentPromptTemplates.getDecompositionPrompt()));
         

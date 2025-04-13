@@ -16,10 +16,12 @@ import org.xhy.domain.conversation.constant.MessageType;
 import org.xhy.domain.conversation.model.MessageEntity;
 import org.xhy.domain.conversation.service.ContextDomainService;
 import org.xhy.domain.conversation.service.ConversationDomainService;
+import org.xhy.domain.conversation.service.MessageDomainService;
 import org.xhy.domain.task.constant.TaskStatus;
 import org.xhy.domain.task.model.TaskEntity;
 import org.xhy.infrastructure.llm.LLMServiceFactory;
 
+import java.util.Collections;
 import java.util.Map;
 
 /**
@@ -34,9 +36,9 @@ public class TaskExecutionHandler extends AbstractAgentHandler {
             LLMServiceFactory llmServiceFactory,
             AgentToolManager toolManager,
             TaskManager taskManager,
-            ConversationDomainService conversationDomainService,
-            ContextDomainService contextDomainService) {
-        super(llmServiceFactory, taskManager, conversationDomainService, contextDomainService);
+            ContextDomainService contextDomainService,
+            MessageDomainService messageDomainService) {
+        super(llmServiceFactory, taskManager, contextDomainService,messageDomainService);
         this.toolManager = toolManager;
     }
     
@@ -101,7 +103,7 @@ public class TaskExecutionHandler extends AbstractAgentHandler {
             // 保存执行消息
             MessageEntity taskCallMessageEntity = createMessageEntity(
                     context, MessageType.TASK_EXEC, taskName, 0);
-            conversationDomainService.saveMessage(taskCallMessageEntity);
+            messageDomainService.saveMessage(Collections.singletonList(taskCallMessageEntity));
             
             // 通知前端当前执行的任务
             context.sendEndMessage(taskName, MessageType.TASK_EXEC);
@@ -183,7 +185,7 @@ public class TaskExecutionHandler extends AbstractAgentHandler {
         
         // 设置工具调用内容并保存
         toolCallMessageEntity.setContent(toolCallsContent.toString());
-        conversationDomainService.saveMessage(toolCallMessageEntity);
+        messageDomainService.saveMessage(Collections.singletonList(toolCallMessageEntity));
         
         // 更新上下文
         context.getChatContext().getContextEntity().getActiveMessages().add(toolCallMessageEntity.getId());

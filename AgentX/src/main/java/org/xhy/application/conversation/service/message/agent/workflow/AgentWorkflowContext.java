@@ -10,6 +10,7 @@ import org.xhy.domain.task.model.TaskEntity;
 import org.xhy.infrastructure.transport.MessageTransport;
 
 import java.util.*;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -38,6 +39,9 @@ public class AgentWorkflowContext<T> {
     // 父任务实体，代表整个复杂任务
     private TaskEntity parentTask;
 
+    // 上一个工作流状态
+    private volatile AgentWorkflowState previousState = null;
+
     // 当前工作流状态，使用volatile保证多线程可见性
     private volatile AgentWorkflowState state = AgentWorkflowState.INITIALIZED;
 
@@ -56,6 +60,8 @@ public class AgentWorkflowContext<T> {
     // 当前正在执行的子任务索引，使用AtomicInteger保证线程安全
     private AtomicInteger currentTaskIndex = new AtomicInteger(0);
 
+    private CountDownLatch countDownLatch = new CountDownLatch(1);
+
     private Map<String,Object> extraData = new HashMap<>();
 
 
@@ -64,6 +70,7 @@ public class AgentWorkflowContext<T> {
      */
     public void transitionTo(AgentWorkflowState newState) {
         AgentWorkflowState oldState = this.state;
+        this.previousState = this.state;
         this.state = newState;
         AgentWorkflowEvent event = new AgentWorkflowEvent(this, oldState, newState);
         AgentEventBus.publish(event);
@@ -256,4 +263,12 @@ public class AgentWorkflowContext<T> {
     public Object getExtraData(String key) {
         return this.extraData.get(key);
     }
-} 
+
+    public AgentWorkflowState getPreviousState() {
+        return previousState;
+    }
+
+    public CountDownLatch getCountDownLatch() {
+        return countDownLatch;
+    }
+}
