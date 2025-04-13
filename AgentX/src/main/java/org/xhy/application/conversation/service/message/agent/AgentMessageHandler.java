@@ -12,6 +12,7 @@ import dev.langchain4j.model.output.TokenUsage;
 import org.springframework.stereotype.Component;
 import org.xhy.application.conversation.dto.AgentChatResponse;
 import org.xhy.application.conversation.service.message.AbstractMessageHandler;
+import org.xhy.application.conversation.service.message.agent.handler.AnalyserMessageHandler;
 import org.xhy.application.task.dto.TaskDTO;
 import org.xhy.domain.conversation.constant.MessageType;
 import org.xhy.application.conversation.service.handler.content.ChatContext;
@@ -48,18 +49,21 @@ public class AgentMessageHandler extends AbstractMessageHandler {
     private final TaskSplitHandler taskSplitHandler;
     private final TaskExecutionHandler taskExecutionHandler;
     private final SummarizeHandler summarizeHandler;
+    private final AnalyserMessageHandler analyserMessageHandler;
 
     public AgentMessageHandler(
             ConversationDomainService conversationDomainService,
             ContextDomainService contextDomainService,
             LLMServiceFactory llmServiceFactory,
             TaskManager taskManager,
-            TaskSplitHandler taskSplitHandler, TaskExecutionHandler taskExecutionHandler, SummarizeHandler summarizeHandler) {
+            TaskSplitHandler taskSplitHandler, TaskExecutionHandler taskExecutionHandler, SummarizeHandler summarizeHandler,
+            AnalyserMessageHandler analyserMessageHandler) {
         super(conversationDomainService, contextDomainService, llmServiceFactory);
         this.taskManager = taskManager;
         this.taskSplitHandler = taskSplitHandler;
         this.taskExecutionHandler = taskExecutionHandler;
         this.summarizeHandler = summarizeHandler;
+        this.analyserMessageHandler = analyserMessageHandler;
 
         // 初始化事件处理器
         initializeEventHandlers();
@@ -83,6 +87,9 @@ public class AgentMessageHandler extends AbstractMessageHandler {
             // 注册结果汇总处理器
             AgentEventBus.register(AgentWorkflowState.TASK_EXECUTED, 
                     summarizeHandler);
+
+            // 注册分析用户输入处理器
+            AgentEventBus.register(AgentWorkflowState.ANALYSER_MESSAGE,analyserMessageHandler);
         } catch (Exception e) {
             // 初始化异常处理
             throw new RuntimeException("初始化Agent事件处理器失败", e);
@@ -114,7 +121,7 @@ public class AgentMessageHandler extends AbstractMessageHandler {
         workflowContext.setParentTask(parentTask);
         
         // 转换状态到任务拆分，触发事件
-        workflowContext.transitionTo(AgentWorkflowState.TASK_SPLITTING);
+        workflowContext.transitionTo(AgentWorkflowState.ANALYSER_MESSAGE);
         
         // 立即返回连接，后续由事件驱动工作流
         return connection;

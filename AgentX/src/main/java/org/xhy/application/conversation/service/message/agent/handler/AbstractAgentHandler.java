@@ -1,6 +1,7 @@
 package org.xhy.application.conversation.service.message.agent.handler;
 
 import dev.langchain4j.data.message.ChatMessage;
+import dev.langchain4j.model.chat.ChatLanguageModel;
 import dev.langchain4j.model.chat.StreamingChatLanguageModel;
 import dev.langchain4j.model.chat.request.ChatRequest;
 import dev.langchain4j.model.openai.OpenAiChatRequestParameters;
@@ -22,7 +23,9 @@ import java.util.List;
  * 提供通用功能和模板方法，减少子类中的重复代码
  */
 public abstract class AbstractAgentHandler implements AgentEventHandler {
-    
+
+    private Boolean isBreak = false;
+
     protected final LLMServiceFactory llmServiceFactory;
     protected final TaskManager taskManager;
     protected final ConversationDomainService conversationDomainService;
@@ -51,8 +54,8 @@ public abstract class AbstractAgentHandler implements AgentEventHandler {
         
         // 获取上下文并处理事件
         AgentWorkflowContext<?> context = event.getContext();
-        transitionToNextState(context);
         processEvent(context);
+        transitionToNextState(context);
     }
     
     /**
@@ -101,6 +104,15 @@ public abstract class AbstractAgentHandler implements AgentEventHandler {
                 context.getChatContext().getProvider(), 
                 context.getChatContext().getModel());
     }
+
+    /**
+     * 获取标准模型客户端
+     */
+    protected <T> ChatLanguageModel getStrandClient(AgentWorkflowContext<T> context) {
+        return llmServiceFactory.getStrandClient(
+                context.getChatContext().getProvider(),
+                context.getChatContext().getModel());
+    }
     
     /**
      * 构建聊天请求的通用方法
@@ -121,4 +133,12 @@ public abstract class AbstractAgentHandler implements AgentEventHandler {
         
         return requestBuilder.build();
     }
-} 
+
+    public Boolean getBreak() {
+        return isBreak;
+    }
+
+    public void setBreak(Boolean aBreak) {
+        isBreak = aBreak;
+    }
+}
