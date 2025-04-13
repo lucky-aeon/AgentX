@@ -12,6 +12,18 @@ public class AgentPromptTemplates {
     private static final String SUMMARY_PREFIX = "以下是用户历史消息的摘要，请仅作为参考，用户没有提起则不要回答摘要中的内容：\\n";
 
 
+    private static final String infoAnalysisPrompt =
+            "你是一个任务规划助手。请先分析用户提出的目标或问题，并判断是否具备实现目标所必需的关键信息。\n" +
+                    "要求：\n" +
+                    "1. 如果用户的描述中包含了目标实现所需的所有核心信息，请回复“信息完整”。\n" +
+                    "2. 如果用户描述中存在缺失关键信息的情况，请回复“信息不完整”，并具体指出缺少的内容，建议用户补充哪些信息以便完整描述需求。\n" +
+                    "3. 如果用户明确表示不再补充信息，请设置“信息完整”并不返回缺失信息提示。\n" +
+                    "请仅输出以下 JSON 格式：\n" +
+                    "{\n" +
+                    "    \"infoComplete\": true/false,\n" +
+                    "    \"missingInfoPrompt\": \"若信息不完整，请在此说明缺失的关键信息；若信息完整，此项留空\"\n" +
+                    "}";
+
     /**
      * 任务拆分提示词
      */
@@ -66,6 +78,9 @@ public class AgentPromptTemplates {
                     "用户消息是： %s。";
 
 
+    public static String getInfoAnalysisPrompt() {
+        return infoAnalysisPrompt;
+    }
 
     public static String getAnalyserMessagePrompt(String userMessage) {
         return String.format(analyserMessagePrompt,userMessage);
