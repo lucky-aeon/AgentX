@@ -1,13 +1,23 @@
 package org.xhy.application.conversation.service.handler.content;
 
+import com.baomidou.mybatisplus.core.toolkit.StringUtils;
+import dev.langchain4j.data.message.AiMessage;
+import dev.langchain4j.data.message.ChatMessage;
+import dev.langchain4j.data.message.SystemMessage;
+import dev.langchain4j.data.message.UserMessage;
+import dev.langchain4j.model.openai.OpenAiChatRequestParameters;
+import org.xhy.application.conversation.service.message.agent.template.AgentPromptTemplates;
 import org.xhy.domain.agent.model.AgentEntity;
 import org.xhy.domain.agent.model.LLMModelConfig;
+import org.xhy.domain.conversation.constant.Role;
 import org.xhy.domain.conversation.model.ContextEntity;
 import org.xhy.domain.conversation.model.MessageEntity;
 import org.xhy.domain.llm.model.ModelEntity;
 import org.xhy.domain.llm.model.ProviderEntity;
 
+import java.util.ArrayList;
 import java.util.List;
+
 
 /**
  * chat 上下文，包含对话所需的所有信息
@@ -128,5 +138,50 @@ public class ChatContext {
 
     public void setMessageHistory(List<MessageEntity> messageHistory) {
         this.messageHistory = messageHistory;
+    }
+
+    public dev.langchain4j.model.chat.request.ChatRequest.Builder prepareChatRequest() {
+        // 构建聊天消息列表
+        List<ChatMessage> chatMessages = new ArrayList<>();
+        dev.langchain4j.model.chat.request.ChatRequest.Builder chatRequestBuilder =
+                new dev.langchain4j.model.chat.request.ChatRequest.Builder();
+
+        // 1. 首先添加系统提示(如果有)
+        if (StringUtils.isNotEmpty(this.getAgent().getSystemPrompt())) {
+            chatMessages.add(new SystemMessage(this.getAgent().getSystemPrompt()));
+        }
+
+        // 2. 有条件地添加摘要信息(作为AI消息，但有明确的前缀标识)
+        if (StringUtils.isNotEmpty(this.getContextEntity().getSummary())) {
+            // 添加为AI消息，但明确标识这是摘要
+            chatMessages.add(new AiMessage(AgentPromptTemplates.getSummaryPrefix() + this.getContextEntity().getSummary()));
+        }
+
+        // 3. 添加对话历史
+        for (MessageEntity messageEntity : this.getMessageHistory()) {
+            Role role = messageEntity.getRole();
+            String content = messageEntity.getContent();
+            if (role == Role.USER) {
+                chatMessages.add(new UserMessage(content));
+            } else if (role == Role.SYSTEM) {
+                // 历史中的SYSTEM角色实际上是AI的回复
+                chatMessages.add(new AiMessage(content));
+            }
+        }
+
+        // 4. 添加当前用户消息
+        chatMessages.add(new UserMessage(this.getUserMessage()));
+
+        // 构建请求参数
+        OpenAiChatRequestParameters.Builder parameters = new OpenAiChatRequestParameters.Builder();
+        parameters.modelName(this.getModel().getModelId());
+        parameters.topP(this.getLlmModelConfig().getTopP())
+                .temperature(this.getLlmModelConfig().getTemperature());
+
+        // 设置消息和参数
+        chatRequestBuilder.messages(chatMessages);
+        chatRequestBuilder.parameters(parameters.build());
+
+        return chatRequestBuilder;
     }
 } 

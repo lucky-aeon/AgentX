@@ -1,6 +1,5 @@
 package org.xhy.application.conversation.service.message.agent.template;
 
-import org.springframework.stereotype.Component;
 
 import java.util.Map;
 
@@ -9,6 +8,10 @@ import java.util.Map;
  * 集中管理各种场景的提示词
  */
 public class AgentPromptTemplates {
+
+    private static final String SUMMARY_PREFIX = "以下是用户历史消息的摘要，请仅作为参考，用户没有提起则不要回答摘要中的内容：\\n";
+
+
     /**
      * 任务拆分提示词
      */
@@ -37,6 +40,43 @@ public class AgentPromptTemplates {
                     "确保回答涵盖所有关键信息，逻辑清晰、表达通顺。\n" +
                     "直接给出最终结果，不需要提及子任务或汇总过程。\n\n" +
                     "子任务执行结果：\n%s";
+
+    private static final String analyserMessagePrompt =
+            "你是一个分析消息助手，你需要分析用户的消息是问答消息还是任务消息。\n" +
+                    "问答消息是指用户提出的简单问题或对话，例如：\"你好\"、\"你是谁\"、\"今天的天气怎么样\"等，通常不需要进行复杂的处理。对于问答消息，你需要返回标识 `true`，并且在 `reply` 字段返回大模型对用户消息的完整回复。\n" +
+                    "任务消息是指用户提出的需要大模型根据上下文进行规划、分析、设计等解决方案的消息，例如：\"帮我规划东莞一日游\"，\"Java八股文该如何学习\"等。对于任务消息，你只需要返回标识 `false`，不需要返回大模型的具体回复内容。\n" +
+                    "返回的数据格式是一个 JSON 结构，包含两个字段：\n" +
+                    "{\n" +
+                    "   \"isQuestion\": boolean,   // 标识消息是否是问答消息，true表示问答消息，false表示任务消息\n" +
+                    "   \"reply\": String          // 对于问答消息，返回大模型的完整回复；对于任务消息，留空\n" +
+                    "}\n" +
+                    "\n" +
+                    "以下是一些示例：\n" +
+                    "示例1:\n" +
+                    "用户消息：\"你好\"\n" +
+                    "输出：\n" +
+            "{\\\"isQuestion\\\": true, \\\"reply\\\": \\\"你好！我是一个智能助手，我可以帮你解答问题，或者帮你规划任务！你有什么需要吗？\\\"}\n" +
+                    "\n" +
+                    "示例2:\n" +
+                    "用户消息：\"帮我规划东莞一日游。\"\n" +
+                    "输出：\n" +
+                    "{\\\"isQuestion\\\": false, \\\"reply\\\": \\\"\\\"}\n" +
+                    "\n" +
+                    "请根据用户的消息，选择适当的回复，并返回格式化的 JSON 结果。"+
+                    "用户消息是： %s。";
+
+
+
+    public static String getAnalyserMessagePrompt(String userMessage) {
+        return String.format(analyserMessagePrompt,userMessage);
+    }
+
+    /**
+     * 获取摘要算法的提示词
+     */
+    public static String getSummaryPrefix() {
+        return SUMMARY_PREFIX;
+    }
 
     /**
      * 获取任务拆分提示词

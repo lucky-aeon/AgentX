@@ -56,6 +56,9 @@ public class AgentWorkflowContext<T> {
     // 当前正在执行的子任务索引，使用AtomicInteger保证线程安全
     private AtomicInteger currentTaskIndex = new AtomicInteger(0);
 
+    private Map<String,Object> extraData = new HashMap<>();
+
+
     /**
      * 转换状态并发布事件
      */
@@ -245,5 +248,12 @@ public class AgentWorkflowContext<T> {
 
     public int getTotalTaskCount() {
         return tasks.size();
+    }
+
+    public void addExtraData(String key, Object value) {
+        this.extraData.put(key, value);
+    }
+    public Object getExtraData(String key) {
+        return this.extraData.get(key);
     }
 } 

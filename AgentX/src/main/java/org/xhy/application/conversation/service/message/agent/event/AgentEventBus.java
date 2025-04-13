@@ -3,6 +3,7 @@ package org.xhy.application.conversation.service.message.agent.event;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import org.xhy.application.conversation.service.message.agent.handler.AbstractAgentHandler;
 import org.xhy.application.conversation.service.message.agent.workflow.AgentWorkflowState;
 
 import java.util.Collections;
@@ -39,6 +40,9 @@ public class AgentEventBus {
         List<AgentEventHandler> stateHandlers = handlers.getOrDefault(event.getToState(), Collections.emptyList());
         for (AgentEventHandler handler : stateHandlers) {
             try {
+                if (((AbstractAgentHandler) handler).getBreak()) {
+                    return;
+                }
                 handler.handle(event);
             } catch (Exception e) {
                 // 处理事件处理异常
