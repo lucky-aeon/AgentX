@@ -3,6 +3,8 @@ package org.xhy.domain.rag.straegy.impl;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.dromara.streamquery.stream.core.bean.BeanHelper;
 import org.dromara.x.file.storage.core.FileInfo;
@@ -105,7 +107,7 @@ public class PDFRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl impl
 
                 final ChatResponse chat = ocrModel.chat(userMessage);
 
-                ocrData.put(pageIndex, chat.aiMessage().text());
+                ocrData.put(pageIndex, processText(chat.aiMessage().text()));
 
                 log.info("第{}页处理请求，共{}页，当前内存使用: {}MB",
                         (pageIndex + 1),
@@ -161,5 +163,27 @@ public class PDFRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl impl
             documentUnitRepository.checkInsert(documentUnitDO);
 
         }
+    }
+
+    private static final Pattern[] PATTERNS = {
+            Pattern.compile("\\\\（"),
+            Pattern.compile("\\\\）"),
+            Pattern.compile("\n{3,}"),
+            Pattern.compile("([^\n])\n([^\n])"),
+            Pattern.compile("\\$\\s+"),
+            Pattern.compile("\\s+\\$"),
+            Pattern.compile("\\$\\$")
+    };
+
+    public String processText(String input) {
+        String result = input;
+        result = PATTERNS[0].matcher(result).replaceAll(Matcher.quoteReplacement("\\("));
+        result = PATTERNS[1].matcher(result).replaceAll(Matcher.quoteReplacement("\\)"));
+        result = PATTERNS[2].matcher(result).replaceAll("\n\n");
+        result = PATTERNS[3].matcher(result).replaceAll("$1\n$2");
+        result = PATTERNS[4].matcher(result).replaceAll(Matcher.quoteReplacement("$"));
+        result = PATTERNS[5].matcher(result).replaceAll(Matcher.quoteReplacement("$"));
+        result = PATTERNS[6].matcher(result).replaceAll(Matcher.quoteReplacement("$$"));
+        return result.trim();
     }
 }
