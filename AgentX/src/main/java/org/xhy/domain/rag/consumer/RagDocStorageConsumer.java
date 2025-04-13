@@ -17,7 +17,7 @@ import org.springframework.amqp.rabbit.annotation.QueueBinding;
 import org.springframework.amqp.rabbit.annotation.RabbitHandler;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
-import org.xhy.domain.rag.RagDocSyncStorageMessage;
+import org.xhy.domain.rag.message.RagDocSyncStorageMessage;
 import org.xhy.domain.rag.service.EmbeddingService;
 import org.xhy.infrastructure.mq.events.RagDocSyncStorageEvent;
 import org.xhy.infrastructure.mq.model.MqMessage;

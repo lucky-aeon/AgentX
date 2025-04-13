@@ -45,6 +45,8 @@ public class RagDocChuckService {
 
         byte[] bytes = fileStorageService.download(fileInfo).bytes();
 
+
+
         final ChatLanguageModel ocrModel = LLMProviderService.getNormal(ProviderProtocol.OpenAI, null);
 
         final ChatResponse chat = ocrModel.chat();

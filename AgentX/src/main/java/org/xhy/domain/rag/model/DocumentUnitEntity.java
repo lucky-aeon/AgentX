@@ -42,6 +42,19 @@ public class DocumentUnitEntity extends BaseEntity implements Serializable {
      */
     private Boolean isVector;
 
+    /**
+     * ocr识别状态
+     */
+    private Boolean isOcr;
+
+    public Boolean getOcr() {
+        return isOcr;
+    }
+
+    public void setOcr(Boolean ocr) {
+        isOcr = ocr;
+    }
+
     public String getId() {
         return id;
     }

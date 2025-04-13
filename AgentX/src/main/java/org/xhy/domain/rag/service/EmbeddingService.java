@@ -10,7 +10,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-import org.xhy.domain.rag.RagDocSyncStorageMessage;
+import org.xhy.domain.rag.message.RagDocSyncStorageMessage;
 import org.xhy.domain.rag.constant.EmbeddingStatus;
 import org.xhy.domain.rag.constant.FileInitializeStatus;
 import org.xhy.domain.rag.constant.MetadataConstant;
