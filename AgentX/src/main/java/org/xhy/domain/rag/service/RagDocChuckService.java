@@ -46,15 +46,6 @@ public class RagDocChuckService {
 
         applicationContext.publishEvent(new RagDocSyncStorageEvent<>(ragDocSyncOcrMessage, EventType.DOC_REFRESH_ORG));
 
-        final ChatLanguageModel ocrModel = LLMProviderService.getNormal(ProviderProtocol.OpenAI, null);
-
-        final ChatResponse chat = ocrModel.chat();
-
-
-        // 1. 获取文件id
-        // 2. 获取文件
-        // 3. 异步入库
     }
 
-    private getPage
 }
