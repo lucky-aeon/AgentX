@@ -1,5 +1,6 @@
 package org.xhy.domain.rag.straegy.impl;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -48,6 +49,22 @@ public class PDFRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl impl
     public PDFRagDocSyncOcrStrategyImpl(DocumentUnitRepository documentUnitRepository, FileDetailRepository fileDetailRepository) {
         this.documentUnitRepository = documentUnitRepository;
         this.fileDetailRepository = fileDetailRepository;
+    }
+
+    /**
+     * 获取文件页数
+     *
+     */
+    @Override
+    public void pushPageSize(byte[] bytes,RagDocSyncOcrMessage ragDocSyncOcrMessage) {
+
+        try {
+            final int pdfPageCount = PdfToBase64Converter.getPdfPageCount(bytes);
+            ragDocSyncOcrMessage.setPageSize(pdfPageCount);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
     }
 
     /**

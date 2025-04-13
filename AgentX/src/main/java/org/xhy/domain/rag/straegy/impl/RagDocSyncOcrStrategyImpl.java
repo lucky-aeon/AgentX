@@ -24,8 +24,10 @@ public abstract class RagDocSyncOcrStrategyImpl implements RagDocSyncOcrStrategy
     @Override
     public void handle(RagDocSyncOcrMessage ragDocSyncOcrMessage, String strategy) throws Exception {
 
-        final byte[] fileData = getFileData(ragDocSyncOcrMessage, strategy);
 
+
+        final byte[] fileData = getFileData(ragDocSyncOcrMessage, strategy);
+        pushPageSize(fileData,ragDocSyncOcrMessage);
         if (fileData == null) {
             LOG.error("文件数据为空");
             return;
@@ -38,6 +40,11 @@ public abstract class RagDocSyncOcrStrategyImpl implements RagDocSyncOcrStrategy
         insertData(ragDocSyncOcrMessage,ocrData);
 
     };
+
+    /**
+     * 获取文件页数
+     */
+    abstract public void pushPageSize(byte[] bytes, RagDocSyncOcrMessage ragDocSyncOcrMessage);
 
     /**
      * 获取文件
