@@ -1,6 +1,9 @@
 package org.xhy.application.conversation.service.message.agent.service;
 
+import dev.langchain4j.data.message.AiMessage;
+import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.SystemMessage;
+import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.chat.ChatLanguageModel;
 import dev.langchain4j.model.chat.request.ChatRequest;
 import dev.langchain4j.model.chat.response.ChatResponse;
@@ -12,6 +15,7 @@ import org.xhy.application.conversation.service.message.agent.analysis.dto.InfoR
 import org.xhy.application.conversation.service.message.agent.template.AgentPromptTemplates;
 import org.xhy.application.conversation.service.message.agent.workflow.AgentWorkflowContext;
 import org.xhy.domain.conversation.constant.MessageType;
+import org.xhy.domain.conversation.constant.Role;
 import org.xhy.domain.conversation.model.MessageEntity;
 import org.xhy.domain.conversation.service.MessageDomainService;
 import org.xhy.infrastructure.llm.LLMServiceFactory;
@@ -110,7 +114,7 @@ public class InfoRequirementService {
         String userMessage = context.getChatContext().getUserMessage();
         
         // 检查是否超过最大尝试次数
-        MessageEntity llmMessageEntity = context.getLlmMessageEntity();
+        MessageEntity llmMessageEntity = createLlmMessage(context.getChatContext());
         if (attemptCount > MAX_INFO_CHECK_ATTEMPTS) {
             log.info("会话[{}]已达到最大信息补充尝试次数({}次)，将基于当前信息继续处理", 
                     sessionId, MAX_INFO_CHECK_ATTEMPTS);
@@ -132,6 +136,12 @@ public class InfoRequirementService {
             
             // 构建请求
             ChatRequest request = buildRequest(context);
+
+            // attemptCount > 0 说明是后续的补充信息，补充信息没有被加入上下文中，需要手动添加
+            if (attemptCount > 0){
+                request.messages().add(new UserMessage(userMessage));
+            }
+
             request.messages().add(new SystemMessage(AgentPromptTemplates.getInfoAnalysisPrompt()));
             ChatResponse chat = chatLanguageModel.chat(request);
             String text = chat.aiMessage().text();
@@ -174,14 +184,15 @@ public class InfoRequirementService {
                 context.getChatContext().setUserMessage(userMessage);
             }else {
                 // 保存用户消息
-                MessageEntity userMessageEntity = context.getUserMessageEntity();
+                MessageEntity userMessageEntity = createUserMessage(context.getChatContext());
                 userMessageEntity.setContent(userMessage);
                 messageEntityList.add(userMessageEntity);
             }
             messageEntityList.add(llmMessageEntity);
+
             // 保存消息记录
             messageDomainService.saveMessageAndUpdateContext(messageEntityList,context.getChatContext().getContextEntity());
-            context.getChatContext().getMessageHistory().add(llmMessageEntity);
+            context.getChatContext().getMessageHistory().addAll(messageEntityList);
 
             
             // 创建等待用户输入的Future
@@ -219,9 +230,21 @@ public class InfoRequirementService {
      * 构建请求
      */
     private <T> ChatRequest buildRequest(AgentWorkflowContext<T> context) {
-        ChatContext chatContext = context.getChatContext();
-        ChatRequest.Builder builder = chatContext.prepareChatRequest();
-        return builder.build();
+        List<ChatMessage> chatMessages = new ArrayList<>();
+        ChatRequest.Builder chatRequestBuilder = new ChatRequest.Builder();
+        for (MessageEntity messageEntity : context.getChatContext().getMessageHistory()) {
+            Role role = messageEntity.getRole();
+            String content = messageEntity.getContent();
+            if (role == Role.USER) {
+                chatMessages.add(new UserMessage(content));
+            } else if (role == Role.SYSTEM) {
+                chatMessages.add(new SystemMessage(content));
+            }else {
+                chatMessages.add(new AiMessage(content));
+            }
+        }
+        chatRequestBuilder.messages(chatMessages);
+        return chatRequestBuilder.build();
     }
     
     /**
@@ -232,4 +255,29 @@ public class InfoRequirementService {
                 context.getChatContext().getProvider(),
                 context.getChatContext().getModel());
     }
+
+    /**
+     * 创建用户消息实体
+     */
+    protected MessageEntity createUserMessage(ChatContext environment) {
+        MessageEntity messageEntity = new MessageEntity();
+        messageEntity.setRole(Role.USER);
+        messageEntity.setContent(environment.getUserMessage());
+        messageEntity.setSessionId(environment.getSessionId());
+        return messageEntity;
+    }
+
+
+    /**
+     * 创建LLM消息实体
+     */
+    protected MessageEntity createLlmMessage(ChatContext environment) {
+        MessageEntity messageEntity = new MessageEntity();
+        messageEntity.setRole(Role.ASSISTANT);
+        messageEntity.setSessionId(environment.getSessionId());
+        messageEntity.setModel(environment.getModel().getModelId());
+        messageEntity.setProvider(environment.getProvider().getId());
+        return messageEntity;
+    }
+
 }
