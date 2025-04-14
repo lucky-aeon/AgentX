@@ -106,7 +106,8 @@ public abstract class AbstractMessageHandler {
             if (role == Role.USER) {
                 chatMessages.add(new UserMessage(content));
             } else if (role == Role.SYSTEM) {
-                // 历史中的SYSTEM角色实际上是AI的回复
+                chatMessages.add(new SystemMessage(content));
+            }else {
                 chatMessages.add(new AiMessage(content));
             }
         }

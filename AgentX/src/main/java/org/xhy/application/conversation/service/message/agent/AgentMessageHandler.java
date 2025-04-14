@@ -117,13 +117,15 @@ public class AgentMessageHandler extends AbstractMessageHandler {
         if (blockingInfo != null) {
             log.info("检测到用户正在补充信息: sessionId={}, message={}", sessionId, userInput);
             
-            // 处理用户输入
-            infoRequirementService.handleUserInput(sessionId, userInput);
-            
             // 创建新的连接，后续补充信息处理结果会通过这个连接发送给前端
             T connection = messageTransport.createConnection(CONNECTION_TIMEOUT);
+            
+            // 先设置新连接，再处理用户输入
             blockingInfo.setConnection(connection);
             blockingInfo.setMessageTransport(messageTransport);
+            
+            // 处理用户输入
+            infoRequirementService.handleUserInput(sessionId, userInput);
             
             // 返回新连接
             return connection;
