@@ -10,7 +10,6 @@ import org.springframework.context.annotation.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Primary;
-import org.xhy.infrastructure.converter.PgVectorTypeHandler;
 
 import java.time.LocalDateTime;
 
@@ -48,18 +47,6 @@ public class MybatisPlusConfig implements MetaObjectHandler {
         this.strictUpdateFill(metaObject, "updatedAt", LocalDateTime.class, now);
     }
 
-    @Bean
-    @Primary
-    public MybatisSqlSessionFactoryBean sqlSessionFactory(DataSource dataSource) {
-        MybatisSqlSessionFactoryBean factoryBean = new MybatisSqlSessionFactoryBean();
-        factoryBean.setDataSource(dataSource);
 
-        MybatisConfiguration configuration = new MybatisConfiguration();
-        // 注册向量类型处理器
-        configuration.getTypeHandlerRegistry().register(PgVectorTypeHandler.class);
-
-        factoryBean.setConfiguration(configuration);
-        return factoryBean;
-    }
 
 }
