@@ -14,7 +14,7 @@ npm install --legacy-peer-deps
 - **接口层(Interfaces)**: 负责与外部系统交互，包括API接口、前端界面等
 - **应用层(Application)**: 负责业务流程编排，调用领域服务完成业务逻辑
 - **领域层(Domain)**: 包含核心业务逻辑和领域模型
-- **基础设施层(Infrastructure)**: 提供技术支持，如数据持久化、外部服务等
+- **基础设施层(Infrastructure)**: 提供技术支持，如数据持久化、外部服务等  aaa
 
 ## 技术栈
 
