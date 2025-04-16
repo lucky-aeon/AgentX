@@ -24,8 +24,6 @@ import java.sql.SQLException;
 @MappedJdbcTypes({JdbcType.VARCHAR, JdbcType.LONGVARCHAR, JdbcType.OTHER})
 public class ProviderConfigConverter extends BaseTypeHandler<ProviderConfig> {
 
-    private static final Logger log = LoggerFactory.getLogger(ProviderConfigConverter.class);
-    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     @Override
     public void setNonNullParameter(PreparedStatement ps, int i, ProviderConfig parameter, JdbcType jdbcType)
