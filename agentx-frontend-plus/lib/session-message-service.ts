@@ -1,5 +1,6 @@
 import { API_CONFIG, API_ENDPOINTS } from "./api-config"
 import type { ApiResponse } from "@/types/agent"
+import { MessageType } from "@/types/conversation"
 import { withToast } from "./toast-utils"
 
 // 消息类型定义
@@ -8,6 +9,7 @@ export interface MessageDTO {
   sessionId: string
   role: string
   content: string
+  messageType?: MessageType | string
   createdAt?: string
   updatedAt?: string
 }

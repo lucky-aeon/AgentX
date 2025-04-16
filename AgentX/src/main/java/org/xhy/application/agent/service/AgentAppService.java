@@ -13,8 +13,8 @@ import org.xhy.domain.agent.model.LLMModelConfig;
 import org.xhy.domain.agent.service.AgentDomainService;
 import org.xhy.domain.agent.service.AgentWorkspaceDomainService;
 import org.xhy.infrastructure.exception.ParamValidationException;
-import org.xhy.interfaces.dto.agent.*;
 import org.xhy.domain.agent.constant.PublishStatus;
+import org.xhy.interfaces.dto.agent.request.*;
 
 import java.util.List;
 
@@ -42,9 +42,6 @@ public class AgentAppService {
      */
     @Transactional
     public AgentDTO createAgent(CreateAgentRequest request, String userId) {
-
-        // todo xhy 判断用户是否存在
-
         // 使用组装器创建领域实体
         AgentEntity entity = AgentAssembler.toEntity(request,userId);
         entity.setUserId(userId);

@@ -5,7 +5,7 @@ import org.xhy.application.agent.service.AgentAppService;
 import org.xhy.application.agent.dto.AgentVersionDTO;
 import org.xhy.domain.agent.constant.PublishStatus;
 import org.xhy.interfaces.api.common.Result;
-import org.xhy.interfaces.dto.agent.ReviewAgentVersionRequest;
+import org.xhy.interfaces.dto.agent.request.ReviewAgentVersionRequest;
 
 import java.util.List;
 /**

@@ -28,6 +28,7 @@ public class MessageAssembler {
         dto.setRole(message.getRole());
         dto.setContent(message.getContent());
         dto.setCreatedAt(message.getCreatedAt());
+        dto.setMessageType(message.getMessageType());
 
         return dto;
     }

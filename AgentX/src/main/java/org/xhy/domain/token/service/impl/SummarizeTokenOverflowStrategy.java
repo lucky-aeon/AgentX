@@ -160,7 +160,7 @@ public class SummarizeTokenOverflowStrategy implements TokenOverflowStrategy {
         ProviderConfig providerConfig = tokenOverflowConfig.getProviderConfig();
 
         // 使用当前服务商调用大模型
-        ChatLanguageModel chatLanguageModel = LLMProviderService.getNormal(providerConfig.getProtocol(), providerConfig);
+        ChatLanguageModel chatLanguageModel = LLMProviderService.getStrand(providerConfig.getProtocol(), providerConfig);
         SystemMessage systemMessage = new SystemMessage(  "你是一个专业的对话摘要生成器，请严格按照以下要求工作：\n" +
                 "1. 只基于提供的对话内容生成客观摘要，不得添加任何原对话中没有的信息\n" +
                 "2. 特别关注：用户问题、回答中的关键信息、重要事实\n" +

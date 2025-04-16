@@ -1,11 +1,12 @@
 package org.xhy.application.agent.assembler;
 
+import org.springframework.beans.BeanUtils;
 import org.xhy.domain.agent.model.AgentEntity;
 import org.xhy.domain.agent.constant.AgentType;
 import org.xhy.application.agent.dto.AgentDTO;
-import org.xhy.interfaces.dto.agent.CreateAgentRequest;
-import org.xhy.interfaces.dto.agent.SearchAgentsRequest;
-import org.xhy.interfaces.dto.agent.UpdateAgentRequest;
+import org.xhy.interfaces.dto.agent.request.CreateAgentRequest;
+import org.xhy.interfaces.dto.agent.request.SearchAgentsRequest;
+import org.xhy.interfaces.dto.agent.request.UpdateAgentRequest;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -37,7 +38,7 @@ public class AgentAssembler {
 
         // 设置初始状态为启用
         entity.setEnabled(true);
-        
+
 
         // 设置工具和知识库ID
         entity.setTools(request.getTools() != null ? request.getTools() : new ArrayList<>());

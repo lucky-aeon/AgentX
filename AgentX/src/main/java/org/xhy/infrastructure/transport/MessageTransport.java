@@ -1,5 +1,7 @@
 package org.xhy.infrastructure.transport;
 
+import org.xhy.application.conversation.dto.AgentChatResponse;
+
 /**
  * 消息传输接口，用于抽象不同的消息传输方式(SSE、WebSocket等)
  */
@@ -14,13 +16,18 @@ public interface MessageTransport<T> {
     /**
      * 发送消息
      * @param connection 连接对象
-     * @param content 消息内容
-     * @param isDone 是否完成
-     * @param provider 服务商名称
-     * @param model 模型名称
+     * @param streamChatResponse 消息内容
      */
-    void sendMessage(T connection, String content, boolean isDone, String provider, String model);
-    
+    void sendMessage(T connection, AgentChatResponse streamChatResponse);
+
+    /**
+     * 发送消息
+     * @param connection 连接对象
+     * @param streamChatResponse 消息内容
+     */
+    void sendEndMessage(T connection, AgentChatResponse streamChatResponse);
+
+
     /**
      * 完成连接
      * @param connection 连接对象

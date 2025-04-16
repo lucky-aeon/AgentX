@@ -22,10 +22,10 @@ import org.xhy.infrastructure.llm.protocol.enums.ProviderProtocol;
 import org.xhy.domain.llm.model.enums.ProviderType;
 import org.xhy.infrastructure.auth.UserContext;
 import org.xhy.interfaces.api.common.Result;
-import org.xhy.interfaces.dto.llm.ModelCreateRequest;
-import org.xhy.interfaces.dto.llm.ModelUpdateRequest;
-import org.xhy.interfaces.dto.llm.ProviderCreateRequest;
-import org.xhy.interfaces.dto.llm.ProviderUpdateRequest;
+import org.xhy.interfaces.dto.llm.request.ModelCreateRequest;
+import org.xhy.interfaces.dto.llm.request.ModelUpdateRequest;
+import org.xhy.interfaces.dto.llm.request.ProviderCreateRequest;
+import org.xhy.interfaces.dto.llm.request.ProviderUpdateRequest;
 
 
 /**

@@ -4,18 +4,15 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.xhy.application.agent.service.AgentSessionAppService;
 import org.xhy.application.conversation.dto.ChatRequest;
-import org.xhy.application.conversation.dto.StreamChatRequest;
 import org.xhy.application.conversation.service.ConversationAppService;
 import org.xhy.application.conversation.dto.MessageDTO;
 import org.xhy.application.conversation.dto.SessionDTO;
 import org.xhy.infrastructure.auth.UserContext;
 import org.xhy.interfaces.api.common.Result;
-import org.xhy.interfaces.dto.conversation.ConversationRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;

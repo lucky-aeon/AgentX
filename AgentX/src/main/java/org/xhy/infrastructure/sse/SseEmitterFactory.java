@@ -2,7 +2,7 @@ package org.xhy.infrastructure.sse;
 
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-import org.xhy.application.conversation.dto.StreamChatResponse;
+import org.xhy.application.conversation.dto.AgentChatResponse;
 
 import java.io.IOException;
 
@@ -25,7 +25,7 @@ public class SseEmitterFactory {
         // 添加超时回调
         emitter.onTimeout(() -> {
             try {
-                StreamChatResponse response = new StreamChatResponse();
+                AgentChatResponse response = new AgentChatResponse();
                 response.setContent("\n\n[系统提示：响应超时，请重试]");
                 response.setDone(true);
                 emitter.send(response);
@@ -38,7 +38,7 @@ public class SseEmitterFactory {
         // 添加错误回调
         emitter.onError((ex) -> {
             try {
-                StreamChatResponse response = new StreamChatResponse();
+                AgentChatResponse response = new AgentChatResponse();
                 response.setContent("\n\n[系统错误：" + ex.getMessage() + "]");
                 response.setDone(true);
                 emitter.send(response);
@@ -65,11 +65,9 @@ public class SseEmitterFactory {
             String providerName,
             String modelId) {
         try {
-            StreamChatResponse response = new StreamChatResponse();
+            AgentChatResponse response = new AgentChatResponse();
             response.setContent(content);
             response.setDone(false);
-            response.setProvider(providerName);
-            response.setModel(modelId);
             emitter.send(response);
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -88,11 +86,9 @@ public class SseEmitterFactory {
             String providerName,
             String modelId) {
         try {
-            StreamChatResponse response = new StreamChatResponse();
+            AgentChatResponse response = new AgentChatResponse();
             response.setContent("");
             response.setDone(true);
-            response.setProvider(providerName);
-            response.setModel(modelId);
             emitter.send(response);
             emitter.complete();
         } catch (IOException e) {
@@ -108,7 +104,7 @@ public class SseEmitterFactory {
      */
     public void sendErrorResponse(SseEmitter emitter, String error) {
         try {
-            StreamChatResponse response = new StreamChatResponse();
+            AgentChatResponse response = new AgentChatResponse();
             response.setContent(error);
             response.setDone(true);
             emitter.send(response);

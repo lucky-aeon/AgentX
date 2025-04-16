@@ -1,6 +1,5 @@
 package org.xhy.interfaces.api.admin;
 
-import dev.langchain4j.service.V;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -14,10 +13,10 @@ import org.xhy.application.llm.dto.ModelDTO;
 import org.xhy.application.llm.dto.ProviderDTO;
 import org.xhy.infrastructure.auth.UserContext;
 import org.xhy.interfaces.api.common.Result;
-import org.xhy.interfaces.dto.llm.ModelCreateRequest;
-import org.xhy.interfaces.dto.llm.ModelUpdateRequest;
-import org.xhy.interfaces.dto.llm.ProviderCreateRequest;
-import org.xhy.interfaces.dto.llm.ProviderUpdateRequest;
+import org.xhy.interfaces.dto.llm.request.ModelCreateRequest;
+import org.xhy.interfaces.dto.llm.request.ModelUpdateRequest;
+import org.xhy.interfaces.dto.llm.request.ProviderCreateRequest;
+import org.xhy.interfaces.dto.llm.request.ProviderUpdateRequest;
 
 /**
  * 管理员LLM管理

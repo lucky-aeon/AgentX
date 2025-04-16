@@ -3,7 +3,7 @@
 import { DialogTrigger } from "@/components/ui/dialog"
 
 import { useEffect, useState } from "react"
-import { Plus, MoreHorizontal, Edit, Trash2 } from "lucide-react"
+import { Plus, MoreHorizontal, Edit, Trash2, ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -54,6 +54,7 @@ export function ConversationList({ workspaceId }: ConversationListProps) {
   const [sessionToDelete, setSessionToDelete] = useState<string | null>(null)
   const [isDeletingSession, setIsDeletingSession] = useState(false)
   const [searchText, setSearchText] = useState("")
+  const [isCollapsed, setIsCollapsed] = useState(false)
 
   // 获取会话列表
   const fetchSessions = async () => {
@@ -209,139 +210,158 @@ export function ConversationList({ workspaceId }: ConversationListProps) {
   }
 
   return (
-    <div className="w-[320px] border-r flex flex-col h-full bg-white">
-      <div className="p-4 border-b">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">会话列表</h2>
-          <Button size="icon" variant="ghost" onClick={() => handleQuickCreateSession()}>
-            <Plus className="h-4 w-4" />
-            <span className="sr-only">新建会话</span>
-          </Button>
-        </div>
-        <div className="relative">
-          <Input
-            placeholder="搜索会话..."
-            className="pl-8"
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-          />
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground"
-          >
-            <circle cx="11" cy="11" r="8" />
-            <line x1="21" y1="21" x2="16.65" y2="16.65" />
-          </svg>
+    <div className={`border-r flex flex-col h-full bg-white transition-all duration-300 ${isCollapsed ? 'w-[40px]' : 'w-[320px]'}`}>
+      <div className={`${isCollapsed ? 'py-4 px-0' : 'p-4'} border-b flex items-center relative ${isCollapsed ? 'h-full' : ''}`}>
+        {!isCollapsed && (
+          <>
+            <h2 className="text-lg font-semibold">会话列表</h2>
+            <div style={{ position: 'absolute', right: '65px' }}>
+              <Button size="icon" variant="ghost" onClick={() => handleQuickCreateSession()}>
+                <Plus className="h-4 w-4" />
+                <span className="sr-only">新建会话</span>
+              </Button>
+            </div>
+          </>
+        )}
+        
+        {/* 收缩/展开按钮 - 明确右侧位置 */}
+        <div 
+          className={`absolute ${isCollapsed ? 'w-full h-12' : 'w-12 border-l h-full'} right-0 top-0 flex items-center justify-center cursor-pointer hover:bg-gray-50`}
+          onClick={() => setIsCollapsed(!isCollapsed)}
+        >
+          {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
         </div>
       </div>
-      <ScrollArea className="flex-1">
-        <div className="p-2 space-y-1">
-          {loading ? (
-            // 加载状态显示骨架屏
-            Array.from({ length: 5 }).map((_, index) => (
-              <div key={index} className="flex items-center gap-3 rounded-lg px-3 py-2 mb-2">
-                <Skeleton className="h-9 w-9 rounded-full" />
-                <div className="space-y-1 flex-1">
-                  <Skeleton className="h-4 w-3/4" />
-                  <Skeleton className="h-3 w-1/2" />
-                </div>
-              </div>
-            ))
-          ) : sessions.length > 0 ? (
-            sessions.map((session) => (
-              <div
-                key={session.id}
-                style={{
-                  position: 'relative',
-                  padding: '12px',
-                  borderRadius: '6px',
-                  marginBottom: '4px',
-                  cursor: 'pointer',
-                  backgroundColor: selectedConversationId === session.id ? '#ebf4ff' : 'transparent',
-                  border: selectedConversationId === session.id ? '1px solid #bfdbfe' : '1px solid transparent',
-                  transition: 'background-color 0.2s',
-                }}
-                onClick={() => selectConversation(session.id)}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div style={{ flex: 1, minWidth: 0, marginRight: '8px' }}>
-                    <div style={{ fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {session.title}
-                    </div>
-                    <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>
-                      {new Date(session.createdAt).toLocaleString()}
+      
+      {!isCollapsed && (
+        <>
+          <div className="relative p-4">
+            <Input
+              placeholder="搜索会话..."
+              className="pl-8"
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+            />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground"
+            >
+            </svg>
+          </div>
+          
+          <ScrollArea className="flex-1">
+            <div className="p-2 space-y-1">
+              {loading ? (
+                // 加载状态显示骨架屏
+                Array.from({ length: 5 }).map((_, index) => (
+                  <div key={index} className="flex items-center gap-3 rounded-lg px-3 py-2 mb-2">
+                    <Skeleton className="h-9 w-9 rounded-full" />
+                    <div className="space-y-1 flex-1">
+                      <Skeleton className="h-4 w-3/4" />
+                      <Skeleton className="h-3 w-1/2" />
                     </div>
                   </div>
-                  
-                  <div style={{ display: 'inline-block' }}>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          style={{ 
-                            height: '32px', 
-                            width: '32px', 
-                            minWidth: '32px',
-                            flexShrink: 0,
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
-                          }}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            e.preventDefault();
-                            console.log('点击菜单按钮:', session.id);
-                          }}
-                        >
-                          <MoreHorizontal style={{ height: '16px', width: '16px' }} />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            e.preventDefault();
-                            console.log('点击重命名选项:', session.id);
-                            openRenameDialog(session);
-                          }}
-                        >
-                          <Edit className="mr-2 h-4 w-4" />
-                          重命名
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          className="text-red-600"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            e.preventDefault();
-                            console.log('点击删除选项:', session.id);
-                            handleDeleteSession(session.id);
-                          }}
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          删除
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                ))
+              ) : sessions.length > 0 ? (
+                sessions.map((session) => (
+                  <div
+                    key={session.id}
+                    style={{
+                      position: 'relative',
+                      padding: '12px',
+                      borderRadius: '6px',
+                      marginBottom: '4px',
+                      cursor: 'pointer',
+                      backgroundColor: selectedConversationId === session.id ? '#ebf4ff' : 'transparent',
+                      border: selectedConversationId === session.id ? '1px solid #bfdbfe' : '1px solid transparent',
+                      transition: 'background-color 0.2s',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                    }}
+                    onClick={() => selectConversation(session.id)}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                      <div style={{ flex: 1, minWidth: 0, marginRight: '8px' }}>
+                        <div style={{ fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {session.title}
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>
+                          {new Date(session.createdAt).toLocaleString()}
+                        </div>
+                      </div>
+                      
+                      <div style={{ display: 'inline-block' }}>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              style={{ 
+                                height: '32px', 
+                                width: '32px', 
+                                minWidth: '32px',
+                                flexShrink: 0,
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                console.log('点击菜单按钮:', session.id);
+                              }}
+                            >
+                              <MoreHorizontal style={{ height: '16px', width: '16px' }} />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                console.log('点击重命名选项:', session.id);
+                                openRenameDialog(session);
+                              }}
+                            >
+                              <Edit className="mr-2 h-4 w-4" />
+                              重命名
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              className="text-red-600"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                console.log('点击删除选项:', session.id);
+                                handleDeleteSession(session.id);
+                              }}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              删除
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </div>
                   </div>
+                ))
+              ) : (
+                // 没有会话时显示提示
+                <div className="text-center py-8 text-muted-foreground">
+                  暂无会话
                 </div>
-              </div>
-            ))
-          ) : (
-            // 没有会话时显示提示
-            <div className="text-center py-8 text-muted-foreground">
-              暂无会话
+              )}
             </div>
-          )}
-        </div>
-      </ScrollArea>
+          </ScrollArea>
+        </>
+      )}
       
       {/* 删除确认对话框 */}
       <Dialog open={!!sessionToDelete} onOpenChange={(open) => !open && setSessionToDelete(null)}>

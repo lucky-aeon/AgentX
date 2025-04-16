@@ -5,8 +5,8 @@ import org.xhy.application.llm.dto.ProviderDTO;
 import org.xhy.domain.llm.model.ModelEntity;
 import org.xhy.domain.llm.model.ProviderAggregate;
 import org.xhy.domain.llm.model.ProviderEntity;
-import org.xhy.interfaces.dto.llm.ProviderCreateRequest;
-import org.xhy.interfaces.dto.llm.ProviderUpdateRequest;
+import org.xhy.interfaces.dto.llm.request.ProviderCreateRequest;
+import org.xhy.interfaces.dto.llm.request.ProviderUpdateRequest;
 
 import java.time.LocalDateTime;
 import java.util.List;

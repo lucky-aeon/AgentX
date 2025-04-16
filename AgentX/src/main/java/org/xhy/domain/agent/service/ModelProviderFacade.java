@@ -6,7 +6,7 @@ import org.xhy.domain.agent.model.AgentWorkspaceEntity;
 import org.xhy.domain.agent.model.LLMModelConfig;
 import org.xhy.domain.llm.model.ModelEntity;
 import org.xhy.domain.llm.model.ProviderEntity;
-import org.xhy.domain.llm.service.LlmDomainService;
+import org.xhy.domain.llm.service.LLMDomainService;
 import org.xhy.infrastructure.llm.LLMProviderService;
 import org.xhy.infrastructure.llm.config.ProviderConfig;
 
@@ -18,11 +18,11 @@ import org.xhy.infrastructure.llm.config.ProviderConfig;
 public class ModelProviderFacade {
 
     private final AgentWorkspaceDomainService agentWorkspaceDomainService;
-    private final LlmDomainService llmDomainService;
+    private final LLMDomainService llmDomainService;
 
     public ModelProviderFacade(
             AgentWorkspaceDomainService agentWorkspaceDomainService,
-            LlmDomainService llmDomainService) {
+            LLMDomainService llmDomainService) {
         this.agentWorkspaceDomainService = agentWorkspaceDomainService;
         this.llmDomainService = llmDomainService;
     }

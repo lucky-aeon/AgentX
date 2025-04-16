@@ -8,19 +8,19 @@ import org.xhy.application.llm.dto.ModelDTO;
 import org.xhy.application.llm.dto.ProviderDTO;
 import org.xhy.domain.llm.model.ModelEntity;
 import org.xhy.domain.llm.model.ProviderEntity;
-import org.xhy.domain.llm.service.LlmDomainService;
+import org.xhy.domain.llm.service.LLMDomainService;
 import org.xhy.infrastructure.entity.Operator;
-import org.xhy.interfaces.dto.llm.ModelCreateRequest;
-import org.xhy.interfaces.dto.llm.ModelUpdateRequest;
-import org.xhy.interfaces.dto.llm.ProviderCreateRequest;
-import org.xhy.interfaces.dto.llm.ProviderUpdateRequest;
+import org.xhy.interfaces.dto.llm.request.ModelCreateRequest;
+import org.xhy.interfaces.dto.llm.request.ModelUpdateRequest;
+import org.xhy.interfaces.dto.llm.request.ProviderCreateRequest;
+import org.xhy.interfaces.dto.llm.request.ProviderUpdateRequest;
 
 @Service
 public class AdminLLMAppService {
 
-    private final LlmDomainService llmDomainService;
+    private final LLMDomainService llmDomainService;
 
-    public AdminLLMAppService(LlmDomainService llmDomainService) {
+    public AdminLLMAppService(LLMDomainService llmDomainService) {
         this.llmDomainService = llmDomainService;
     }
 
