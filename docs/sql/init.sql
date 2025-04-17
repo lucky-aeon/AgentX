@@ -100,7 +100,7 @@ CREATE TABLE providers (
     protocol VARCHAR(50) NOT NULL,
     name VARCHAR(100) NOT NULL,
     description TEXT,
-    config JSONB,
+    config TEXT,
     is_official BOOLEAN DEFAULT FALSE,
     status BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -247,7 +247,7 @@ COMMENT ON COLUMN providers.user_id IS '用户ID';
 COMMENT ON COLUMN providers.protocol IS '协议类型';
 COMMENT ON COLUMN providers.name IS '服务提供商名称';
 COMMENT ON COLUMN providers.description IS '服务提供商描述';
-COMMENT ON COLUMN providers.config IS '服务提供商配置，JSON格式';
+COMMENT ON COLUMN providers.config IS '服务提供商配置';
 COMMENT ON COLUMN providers.is_official IS '是否官方服务提供商';
 COMMENT ON COLUMN providers.status IS '服务提供商状态';
 COMMENT ON COLUMN providers.created_at IS '创建时间';
