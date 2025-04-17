@@ -32,6 +32,9 @@ public class MessageDomainService {
      * 保存消息并且更新消息到上下文
      */
     public void saveMessageAndUpdateContext(List<MessageEntity> messageEntities, ContextEntity contextEntity){
+        if (messageEntities == null || messageEntities.isEmpty()){
+            return;
+        }
         for (MessageEntity messageEntity : messageEntities) {
             messageEntity.setId(null);
         }
