@@ -898,51 +898,63 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
   // 渲染消息内容
   const renderMessageContent = (message: MessageInterface) => {
     return (
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        components={{
-          // 代码块渲染
-          code({ inline, className, children, ...props }: any) {
-            const match = /language-(\w+)/.exec(className || "");
-            return !inline && match ? (
-              <Highlight
-                theme={themes.vsDark}
-                code={String(children).replace(/\n$/, "")}
-                language={match[1]}
-              >
-                {({ className, style, tokens, getLineProps, getTokenProps }) => (
-                  <pre
-                    className={`${className} rounded p-2 my-2 overflow-auto text-sm`}
-                    style={style}
-                  >
-                    {tokens.map((line, i) => (
-                      <div key={i} {...getLineProps({ line, key: i })}>
-                        <span className="text-gray-500 mr-2 text-right w-6 inline-block select-none">
-                          {i + 1}
-                        </span>
-                        {line.map((token, tokenIndex) => {
-                          // 获取token props但不包含key
-                          const tokenProps = getTokenProps({ token, key: tokenIndex });
-                          // 删除key属性
-                          const { key, ...restTokenProps } = tokenProps;
-                          // 单独传递key属性
-                          return <span key={tokenIndex} {...restTokenProps} />;
-                        })}
-                      </div>
-                    ))}
-                  </pre>
-                )}
-              </Highlight>
-            ) : (
-              <code className={`${className} bg-gray-100 px-1 py-0.5 rounded`} {...props}>
-                {children}
-              </code>
-            );
-          },
-        }}
-      >
-        {message.content}
-      </ReactMarkdown>
+      <div className="react-markdown">
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
+          components={{
+            // 代码块渲染
+            code({ inline, className, children, ...props }: any) {
+              const match = /language-(\w+)/.exec(className || "");
+              return !inline && match ? (
+                <Highlight
+                  theme={themes.vsDark}
+                  code={String(children).replace(/\n$/, "")}
+                  language={match[1]}
+                >
+                  {({ className, style, tokens, getLineProps, getTokenProps }) => (
+                    <div className="code-block-container">
+                      <pre
+                        className={`${className} rounded p-2 my-2 overflow-x-auto max-w-full text-sm`}
+                        style={{...style, wordBreak: 'break-all', overflowWrap: 'break-word'}}
+                      >
+                        {tokens.map((line, i) => (
+                          <div key={i} {...getLineProps({ line, key: i })} style={{whiteSpace: 'pre-wrap', wordBreak: 'break-all'}}>
+                            <span className="text-gray-500 mr-2 text-right w-6 inline-block select-none">
+                              {i + 1}
+                            </span>
+                            {line.map((token, tokenIndex) => {
+                              // 获取token props但不包含key
+                              const tokenProps = getTokenProps({ token, key: tokenIndex });
+                              // 删除key属性
+                              const { key, ...restTokenProps } = tokenProps;
+                              // 单独传递key属性，并添加样式确保长字符串能换行
+                              return <span 
+                                key={tokenIndex} 
+                                {...restTokenProps} 
+                                style={{
+                                  ...restTokenProps.style,
+                                  wordBreak: 'break-all',
+                                  overflowWrap: 'break-word'
+                                }}
+                              />;
+                            })}
+                          </div>
+                        ))}
+                      </pre>
+                    </div>
+                  )}
+                </Highlight>
+              ) : (
+                <code className={`${className} bg-gray-100 px-1 py-0.5 rounded break-all`} {...props}>
+                  {children}
+                </code>
+              );
+            },
+          }}
+        >
+          {message.content}
+        </ReactMarkdown>
+      </div>
     );
   };
 

@@ -2,13 +2,10 @@ package org.xhy.application.conversation.service.message;
 
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import dev.langchain4j.data.message.AiMessage;
-import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.model.chat.StreamingChatLanguageModel;
-import dev.langchain4j.model.chat.request.ChatRequest;
-import dev.langchain4j.model.openai.OpenAiChatRequestParameters;
 import dev.langchain4j.model.openai.OpenAiTokenizer;
 import dev.langchain4j.service.AiServices;
 import dev.langchain4j.service.TokenStream;
@@ -24,9 +21,9 @@ import org.xhy.domain.conversation.service.MessageDomainService;
 import org.xhy.infrastructure.llm.LLMServiceFactory;
 import org.xhy.infrastructure.transport.MessageTransport;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 public abstract class AbstractMessageHandler {
 
@@ -103,12 +100,12 @@ public abstract class AbstractMessageHandler {
     protected <T> void processChat(
         Agent agent, T connection, MessageTransport<T> transport,
         ChatContext chatContext, MessageEntity userEntity, MessageEntity llmEntity){
-        StringBuilder messageBuilder = new StringBuilder();
+        AtomicReference<StringBuilder> messageBuilder = new AtomicReference<>(new StringBuilder());
         TokenStream tokenStream = agent.chat(chatContext.getUserMessage());
 
         // 部分响应处理
         tokenStream.onPartialResponse(reply -> {
-            messageBuilder.append(reply);
+            messageBuilder.get().append(reply);
             transport.sendMessage(connection,
                     AgentChatResponse.build(reply, MessageType.TEXT));
         });
@@ -139,13 +136,14 @@ public abstract class AbstractMessageHandler {
 
         // 工具执行处理
         tokenStream.onToolExecuted(toolExecution -> {
-            if (!messageBuilder.isEmpty()){
+            if (!messageBuilder.get().isEmpty()){
                 transport.sendMessage(connection,
                         AgentChatResponse.buildEndMessage(MessageType.TEXT));
                 llmEntity.setContent(messageBuilder.toString());
                 messageDomainService.saveMessageAndUpdateContext(
                         Collections.singletonList(llmEntity),
                         chatContext.getContextEntity());
+                messageBuilder.set(new StringBuilder());
             }
             String message = "执行工具：" + toolExecution.request().name();
             MessageEntity toolMessage = createLlmMessage(chatContext);
