@@ -161,4 +161,16 @@ public class MessageEntity extends BaseEntity {
     public void setMetadata(String metadata) {
         this.metadata = metadata;
     }
+
+    public boolean isUserMessage(){
+        return this.role == Role.USER;
+    }
+
+    public boolean isAIMessage(){
+        return this.role == Role.ASSISTANT;
+    }
+
+    public boolean isSystemMessage(){
+        return this.role == Role.SYSTEM;
+    }
 }

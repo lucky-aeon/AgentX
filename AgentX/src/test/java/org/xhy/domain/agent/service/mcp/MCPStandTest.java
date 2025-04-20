@@ -20,6 +20,7 @@ import java.lang.reflect.Field;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class MCPStandTest {
 
@@ -41,23 +42,6 @@ public class MCPStandTest {
             // 每个 URL 单独一个 IdToToolInterceptor
             IdToToolInterceptor idMap = new IdToToolInterceptor();
 
-            // 2.1) 启动 SSE 旁听，并在回调里绑定当前 url 和 interceptor
-            subscribers.add(new RawSseSubscriber(url, rawJson -> {
-                rawJson = rawJson.trim();
-                System.out.println(rawJson);
-                if (!rawJson.startsWith("{")) return;
-                try {
-                    JsonNode node = new ObjectMapper().readTree(rawJson);
-                    long id = node.path("id").asLong(-1);
-                    JsonNode content = node.path("result").path("content");
-                    if (id >= 0 && content.isArray() && !content.isEmpty()) {
-                        String text = content.get(0).path("text").asText();
-                        String tool = idMap.toolNameForId(id);
-                        System.out.println(tool + " → " + text);
-                    }
-                } catch (Exception ignored) {
-                }
-            }));
 
             // 2.2) 构造 HttpMcpTransport 并注入拦截器
             HttpMcpTransport transport = new HttpMcpTransport.Builder()
@@ -79,6 +63,7 @@ public class MCPStandTest {
             // 2.3) 用这个 transport 构造 McpClient
             McpClient client = new DefaultMcpClient.Builder()
                     .transport(transport)
+                    .logHandler(new AgentMcpLogMessageHandler())
                     .build();
             mcpClients.add(client);
         }

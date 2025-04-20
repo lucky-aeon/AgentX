@@ -33,8 +33,6 @@ public class MessageHandlerFactory {
      * @return 消息处理器
      */
     public AbstractMessageHandler getHandler(AgentEntity agent) {
-        // 目前暂时使用标准处理器
-        // 后续可根据agent属性判断是否支持React模式
         if (agent.getAgentType() == 1){
             return getHandlerByType(MessageHandlerType.STANDARD);
 

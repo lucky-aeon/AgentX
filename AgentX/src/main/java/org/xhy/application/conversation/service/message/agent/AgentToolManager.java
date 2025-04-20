@@ -1,4 +1,4 @@
-package org.xhy.application.conversation.service.message.agent.manager;
+package org.xhy.application.conversation.service.message.agent;
 
 import dev.langchain4j.mcp.McpToolProvider;
 import dev.langchain4j.mcp.client.DefaultMcpClient;
@@ -8,6 +8,7 @@ import dev.langchain4j.mcp.client.transport.http.HttpMcpTransport;
 import dev.langchain4j.service.tool.ToolProvider;
 import org.springframework.stereotype.Component;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,6 +36,7 @@ public class AgentToolManager {
                     .sseUrl(toolUrl)
                     .logRequests(true)
                     .logResponses(true)
+                    .timeout(Duration.ofHours(1))
                     .build();
             
             McpClient mcpClient = new DefaultMcpClient.Builder()
@@ -58,4 +60,4 @@ public class AgentToolManager {
         // 这里可以从配置、数据库等获取可用工具
         return new ArrayList<>();
     }
-} 
+}

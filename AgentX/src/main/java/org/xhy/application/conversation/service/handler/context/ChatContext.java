@@ -1,12 +1,12 @@
-package org.xhy.application.conversation.service.handler.content;
+package org.xhy.application.conversation.service.handler.context;
 
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.message.UserMessage;
+import dev.langchain4j.model.chat.request.ChatRequest;
 import dev.langchain4j.model.openai.OpenAiChatRequestParameters;
-import org.xhy.application.conversation.service.message.agent.template.AgentPromptTemplates;
 import org.xhy.domain.agent.model.AgentEntity;
 import org.xhy.domain.agent.model.LLMModelConfig;
 import org.xhy.domain.conversation.constant.Role;
@@ -140,7 +140,7 @@ public class ChatContext {
         this.messageHistory = messageHistory;
     }
 
-    public dev.langchain4j.model.chat.request.ChatRequest.Builder prepareChatRequest() {
+    public ChatRequest prepareChatRequest() {
         // 构建聊天消息列表
         List<ChatMessage> chatMessages = new ArrayList<>();
         dev.langchain4j.model.chat.request.ChatRequest.Builder chatRequestBuilder =
@@ -182,6 +182,6 @@ public class ChatContext {
         chatRequestBuilder.messages(chatMessages);
         chatRequestBuilder.parameters(parameters.build());
 
-        return chatRequestBuilder;
+        return chatRequestBuilder.build();
     }
 } 
