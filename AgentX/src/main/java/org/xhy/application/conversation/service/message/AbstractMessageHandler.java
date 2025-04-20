@@ -139,11 +139,18 @@ public abstract class AbstractMessageHandler {
 
         // 工具执行处理
         tokenStream.onToolExecuted(toolExecution -> {
+            if (!messageBuilder.isEmpty()){
+                transport.sendMessage(connection,
+                        AgentChatResponse.buildEndMessage(MessageType.TEXT));
+                llmEntity.setContent(messageBuilder.toString());
+                messageDomainService.saveMessageAndUpdateContext(
+                        Collections.singletonList(llmEntity),
+                        chatContext.getContextEntity());
+            }
             String message = "执行工具：" + toolExecution.request().name();
             MessageEntity toolMessage = createLlmMessage(chatContext);
             toolMessage.setMessageType(MessageType.TOOL_CALL);
             toolMessage.setContent(message);
-
             messageDomainService.saveMessageAndUpdateContext(
                     Collections.singletonList(toolMessage),
                     chatContext.getContextEntity());
@@ -207,49 +214,6 @@ public abstract class AbstractMessageHandler {
         return messageEntity;
     }
 
-    /**
-     * 准备LLM请求
-     */
-    protected ChatRequest prepareChatRequest(ChatContext environment) {
-        // 构建聊天消息列表
-        List<ChatMessage> chatMessages = new ArrayList<>();
-        ChatRequest.Builder chatRequestBuilder =
-                new ChatRequest.Builder();
-
-        // 1. 首先添加系统提示(如果有)
-        if (StringUtils.isNotEmpty(environment.getAgent().getSystemPrompt())) {
-            chatMessages.add(new SystemMessage(environment.getAgent().getSystemPrompt()));
-        }
-
-        // 2. 有条件地添加摘要信息(作为AI消息，但有明确的前缀标识)
-
-
-        // 3. 添加对话历史
-        for (MessageEntity messageEntity : environment.getMessageHistory()) {
-            Role role = messageEntity.getRole();
-            String content = messageEntity.getContent();
-            if (role == Role.USER) {
-                chatMessages.add(new UserMessage(content));
-            } else if (role == Role.SYSTEM) {
-                chatMessages.add(new SystemMessage(content));
-            }else {
-                chatMessages.add(new AiMessage(content));
-            }
-        }
-
-        // 构建请求参数
-        OpenAiChatRequestParameters.Builder parameters = new OpenAiChatRequestParameters.Builder();
-        parameters.modelName(environment.getModel().getModelId());
-        parameters.topP(environment.getLlmModelConfig().getTopP())
-                .temperature(environment.getLlmModelConfig().getTemperature());
-
-        // 设置消息和参数
-        chatRequestBuilder.messages(chatMessages);
-        chatRequestBuilder.parameters(parameters.build());
-
-        return chatRequestBuilder.build();
-    }
-
 
     /**
      * 构建历史消息到内存中
@@ -260,7 +224,7 @@ public abstract class AbstractMessageHandler {
             // 添加为AI消息，但明确标识这是摘要
             memory.add(new AiMessage(AgentPromptTemplates.getSummaryPrefix() + summary));
         }
-        memory.add(new SystemMessage(chatContext.getAgent().getSystemPrompt()));
+        memory.add(new SystemMessage(chatContext.getAgent().getSystemPrompt()+"\n"+AgentPromptTemplates.getIgnoreSensitiveInfoPrompt()));
         List<MessageEntity> messageHistory = chatContext.getMessageHistory();
         for (MessageEntity messageEntity : messageHistory) {
             if(messageEntity.isUserMessage()){
