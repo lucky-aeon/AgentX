@@ -62,6 +62,20 @@ const DEFAULT_PROTOCOL_CONFIG: ProtocolConfigFields = {
       type: "url" 
     }
   ],
+  "CLAUDE": [
+    { 
+      label: "API Key", 
+      placeholder: "输入Anthropic API Key", 
+      required: true, 
+      type: "text" 
+    },
+    { 
+      label: "基础URL", 
+      placeholder: "可选，例如：https://api.anthropic.com", 
+      required: true, 
+      type: "url" 
+    }
+  ]
   // 预留其他协议的配置字段
 }
 

@@ -5,7 +5,8 @@ import org.xhy.infrastructure.exception.BusinessException;
 
 public enum ProviderProtocol {
 
-    OpenAI;
+    OpenAI,
+    CLAUDE;
 
     public static ProviderProtocol fromCode(String code) {
         for (ProviderProtocol protocol : values()) {

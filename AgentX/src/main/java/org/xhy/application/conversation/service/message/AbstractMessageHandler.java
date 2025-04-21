@@ -102,7 +102,7 @@ public abstract class AbstractMessageHandler {
         ChatContext chatContext, MessageEntity userEntity, MessageEntity llmEntity){
         AtomicReference<StringBuilder> messageBuilder = new AtomicReference<>(new StringBuilder());
         TokenStream tokenStream = agent.chat(chatContext.getUserMessage());
-
+        tokenStream.ignoreErrors();
         // 部分响应处理
         tokenStream.onPartialResponse(reply -> {
             messageBuilder.get().append(reply);
@@ -130,9 +130,9 @@ public abstract class AbstractMessageHandler {
         });
 
         // 错误处理
-        tokenStream.onError(throwable -> handleError(
-                connection, transport, chatContext,
-                messageBuilder.toString(), llmEntity, throwable));
+//        tokenStream.onError(throwable -> handleError(
+//                connection, transport, chatContext,
+//                messageBuilder.toString(), llmEntity, throwable));
 
         // 工具执行处理
         tokenStream.onToolExecuted(toolExecution -> {

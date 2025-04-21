@@ -1,6 +1,8 @@
 package org.xhy.infrastructure.llm.factory;
 
 
+import dev.langchain4j.model.anthropic.AnthropicChatModel;
+import dev.langchain4j.model.anthropic.AnthropicStreamingChatModel;
 import dev.langchain4j.model.chat.ChatLanguageModel;
 import dev.langchain4j.model.chat.StreamingChatLanguageModel;
 import dev.langchain4j.model.openai.OpenAiChatModel;
@@ -9,6 +11,8 @@ import org.xhy.infrastructure.llm.config.ProviderConfig;
 import org.xhy.infrastructure.llm.protocol.enums.ProviderProtocol;
 
 import java.time.Duration;
+
+import static dev.langchain4j.model.anthropic.AnthropicChatModelName.CLAUDE_3_5_SONNET_20240620;
 
 
 public class LLMProviderFactory {
@@ -28,8 +32,16 @@ public class LLMProviderFactory {
             openAiChatModelBuilder.baseUrl(providerConfig.getBaseUrl());
             openAiChatModelBuilder.customHeaders(providerConfig.getCustomHeaders());
             openAiChatModelBuilder.modelName(providerConfig.getModel());
-            openAiChatModelBuilder.timeout(Duration.ofSeconds(500));
+            openAiChatModelBuilder.timeout(Duration.ofHours(1));
             model = new OpenAiChatModel(openAiChatModelBuilder);
+        } else if (protocol == ProviderProtocol.CLAUDE) {
+            model = AnthropicChatModel.builder()
+                    .apiKey(providerConfig.getApiKey())
+                    .baseUrl(providerConfig.getBaseUrl())
+                    .modelName(providerConfig.getModel())
+                    .version("2023-06-01")
+                    .timeout(Duration.ofHours(1))
+                    .build();
         }
         return model;
     }
@@ -37,14 +49,23 @@ public class LLMProviderFactory {
     public static StreamingChatLanguageModel getLLMProviderByStream(ProviderProtocol protocol, ProviderConfig providerConfig){
         StreamingChatLanguageModel model = null;
         if (protocol == ProviderProtocol.OpenAI){
-            OpenAiStreamingChatModel.OpenAiStreamingChatModelBuilder openAiStreamingChatModelBuilder = new OpenAiStreamingChatModel.OpenAiStreamingChatModelBuilder();
-            openAiStreamingChatModelBuilder.apiKey(providerConfig.getApiKey());
-            openAiStreamingChatModelBuilder.baseUrl(providerConfig.getBaseUrl());
-            openAiStreamingChatModelBuilder.customHeaders(providerConfig.getCustomHeaders());
-            openAiStreamingChatModelBuilder.modelName(providerConfig.getModel());
-            openAiStreamingChatModelBuilder.timeout(Duration.ofSeconds(500));
-            model = new OpenAiStreamingChatModel(openAiStreamingChatModelBuilder);
+            model = new OpenAiStreamingChatModel.OpenAiStreamingChatModelBuilder()
+                    .apiKey(providerConfig.getApiKey())
+                    .baseUrl(providerConfig.getBaseUrl())
+                    .customHeaders(providerConfig.getCustomHeaders())
+                    .modelName(providerConfig.getModel())
+                    .timeout(Duration.ofHours(1))
+                    .build();
+        }else if (protocol == ProviderProtocol.CLAUDE){
+            model = AnthropicStreamingChatModel.builder()
+                    .apiKey(providerConfig.getApiKey())
+                    .baseUrl(providerConfig.getBaseUrl())
+                    .version("2023-06-01")
+                    .modelName(providerConfig.getModel())
+                    .timeout(Duration.ofHours(1))
+                    .build();
         }
+
         return model;
     }
 }
