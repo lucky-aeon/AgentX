@@ -75,8 +75,8 @@ dromara:
     amazon-s3: # 0.0.7 及以前的版本，配置名称是：aws-s3
       - platform: amazon-s3-1 # 存储平台标识
         enable-storage: true  # 启用存储
-        access-key: ${SECRET_ID}
-        secret-key:  ${SECRET_KEY}
+        access-key: ${S3_SECRET_ID}
+        secret-key:  ${S3_SECRET_KEY}
         region: ?? # 与 end-point 参数至少填一个
         end-point: https://cos.ap-beijing.myqcloud.com # 与 region 参数至少填一个
         bucket-name: zang-1307996497
