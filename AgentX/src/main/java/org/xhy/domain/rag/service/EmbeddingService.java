@@ -25,15 +25,21 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.StrUtil;
 import dev.langchain4j.data.document.Metadata;
 import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.model.openai.OpenAiEmbeddingModel;
+import dev.langchain4j.service.AiServices;
+import dev.langchain4j.store.embedding.EmbeddingSearchRequest;
+import dev.langchain4j.store.embedding.EmbeddingSearchResult;
 import dev.langchain4j.store.embedding.EmbeddingStore;
 import dev.langchain4j.store.embedding.filter.comparison.IsEqualTo;
+import dev.langchain4j.store.embedding.filter.comparison.IsIn;
 
 /**
  * 向量话存储
+ *
  * @author shilong.zang
  * @date 18:28 <br/>
  */
@@ -47,16 +53,12 @@ public class EmbeddingService implements MetadataConstant {
     private final ApplicationContext applicationContext;
 
     private final EmbeddingStore<TextSegment> embeddingStore;
-    
+
     private final FileDetailRepository fileDetailRepository;
 
     private final DocumentUnitRepository documentUnitRepository;
 
-    public EmbeddingService(OpenAiEmbeddingModel openAiEmbeddingModel, 
-                           EmbeddingStore<TextSegment> embeddingStore,
-                           FileDetailRepository fileDetailRepository,
-                            ApplicationContext applicationContext,
-                            DocumentUnitRepository documentUnitRepository) {
+    public EmbeddingService(OpenAiEmbeddingModel openAiEmbeddingModel, EmbeddingStore<TextSegment> embeddingStore, FileDetailRepository fileDetailRepository, ApplicationContext applicationContext, DocumentUnitRepository documentUnitRepository) {
         this.openAiEmbeddingModel = openAiEmbeddingModel;
         this.embeddingStore = embeddingStore;
         this.fileDetailRepository = fileDetailRepository;
@@ -65,7 +67,33 @@ public class EmbeddingService implements MetadataConstant {
     }
 
     /**
+     * @param dataSetId 知识库ids
+     * @param question  内容
+     * @return List<Document> 文档列表
+     */
+    public List<DocumentUnitEntity> ragDoc(List<String> dataSetId, String question) {
+        final EmbeddingSearchResult<TextSegment> textSegmentList = embeddingStore.search(EmbeddingSearchRequest.builder()
+                .filter(new IsIn(DATA_SET_ID, dataSetId))
+                .maxResults(15)
+                .queryEmbedding(Embedding.from(openAiEmbeddingModel.embed(question).content().vector()))
+                .build());
+
+        final List<String> documentId = Steam.of(textSegmentList.matches()).map(textSegmentEmbeddingSearchResult -> {
+
+            if (textSegmentEmbeddingSearchResult.embedded().metadata().containsKey(DOCUMENT_ID)) {
+                return textSegmentEmbeddingSearchResult.embedded().metadata().getString(DOCUMENT_ID);
+            }
+            return "";
+        }).filter(StrUtil::isNotBlank).toList();
+
+        return documentUnitRepository.selectList(Wrappers.lambdaQuery(DocumentUnitEntity.class).in(DocumentUnitEntity::getId, documentId));
+
+    }
+
+
+    /**
      * 批量删除向量数据
+     *
      * @param embeddingIds 向量数据id
      */
     public void deleteEmbedding(List<String> embeddingIds) {
@@ -74,11 +102,13 @@ public class EmbeddingService implements MetadataConstant {
 
     /**
      * 重新向量入库
+     *
      * @param fileId 文件ID
      * @return 处理结果，true表示成功，false表示失败
      */
     @Transactional(rollbackFor = Exception.class)
     public boolean reindexEmbedding(String fileId) {
+
         if (!StringUtils.hasText(fileId)) {
             log.warn("重新向量入库的文件ID为空");
             return false;
@@ -93,7 +123,7 @@ public class EmbeddingService implements MetadataConstant {
             }
 
             if (ObjectUtil.notEqual(fileDetail.getIsInitialize(), FileInitializeStatus.INITIALIZED)) {
-                log.warn("ID为{}的文件没有任何数据",fileId);
+                log.warn("ID为{}的文件没有任何数据", fileId);
             }
 
             // 更新文件状态为入库中
@@ -125,9 +155,10 @@ public class EmbeddingService implements MetadataConstant {
             return false;
         }
     }
-    
+
     /**
      * 获取与文件关联的向量ID列表
+     *
      * @param fileId 文件ID
      */
     private void removeEmbeddingByFileId(String fileId) {
@@ -169,7 +200,7 @@ public class EmbeddingService implements MetadataConstant {
 
         embeddingStore.add(embeddings);
 
-        documentUnitRepository.update(Wrappers.lambdaUpdate(DocumentUnitEntity.class).eq(DocumentUnitEntity::getId, docId).set(DocumentUnitEntity::getVector,true));
+        documentUnitRepository.update(Wrappers.lambdaUpdate(DocumentUnitEntity.class).eq(DocumentUnitEntity::getId, docId).set(DocumentUnitEntity::getVector, true));
 
         // 修改文件状态
         final Integer pageSize = fileDetailEntity.getFilePageSize();
@@ -178,7 +209,7 @@ public class EmbeddingService implements MetadataConstant {
 
         final Integer anInt = Convert.toInt(isVector);
 
-        if (anInt>=pageSize) {
+        if (anInt >= pageSize) {
             fileDetailRepository.update(Wrappers.lambdaUpdate(FileDetailEntity.class).eq(FileDetailEntity::getId, fileDetailEntity.getId()).set(FileDetailEntity::getIsEmbedding, EmbeddingStatus.INITIALIZED));
         }
 

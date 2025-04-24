@@ -21,6 +21,11 @@ public interface MetadataConstant {
      */
     String FILE_NAME = "FILE_NAME";
 
+    /**
+     * 数据集id
+     */
+    String DATA_SET_ID = "DATA_SET_ID";
+
 
 
 }
