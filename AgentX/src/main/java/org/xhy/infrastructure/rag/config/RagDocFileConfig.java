@@ -8,6 +8,7 @@ import org.dromara.x.file.storage.core.recorder.FileRecorder;
 import org.dromara.x.file.storage.core.upload.FilePartInfo;
 import org.springframework.stereotype.Service;
 import org.xhy.domain.rag.constant.EmbeddingStatus;
+import org.xhy.domain.rag.constant.FileInitializeStatus;
 import org.xhy.domain.rag.model.FileDetailEntity;
 import org.xhy.domain.rag.repository.FileDetailRepository;
 
@@ -27,13 +28,13 @@ import cn.hutool.core.util.StrUtil;
  * @date 22:51 <br/>
  */
 @Service
-public class RagDocChunkConfig implements FileRecorder {
+public class RagDocFileConfig implements FileRecorder {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     private final FileDetailRepository fileDetailRepository;
 
-    public RagDocChunkConfig(FileDetailRepository fileDetailRepository) {
+    public RagDocFileConfig(FileDetailRepository fileDetailRepository) {
         this.fileDetailRepository = fileDetailRepository;
     }
 
@@ -52,6 +53,8 @@ public class RagDocChunkConfig implements FileRecorder {
 
         //detail.setUserId(StpUtil.getLoginIdAsLong());
         fileDetailRepository.checkInsert(detail);
+
+        info.setId(detail.getId());
 
         return Boolean.TRUE;
     }
@@ -123,7 +126,8 @@ public class RagDocChunkConfig implements FileRecorder {
         detail.setAttr(valueToJson(info.getAttr()));
         // 这里手动获 哈希信息 并转成 json 字符串，方便存储在数据库中
         detail.setHashInfo(valueToJson(info.getHashInfo()));
-        detail.setIsEmbedding(EmbeddingStatus.INITIALIZING);
+        detail.setIsEmbedding(EmbeddingStatus.UNINITIALIZED);
+        detail.setIsInitialize(FileInitializeStatus.INITIALIZE_WAIT);
         return detail;
     }
 

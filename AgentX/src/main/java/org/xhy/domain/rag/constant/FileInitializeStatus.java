@@ -7,6 +7,11 @@ package org.xhy.domain.rag.constant;
 public interface FileInitializeStatus {
 
     /**
+     * 待初始化
+     */
+    String INITIALIZE_WAIT = "<UNK>";
+
+    /**
      * 初始化中
      */
     String INITIALIZING = "初始化中";
