@@ -170,16 +170,16 @@ public class FileDetailEntity extends BaseEntity implements Serializable {
     private Integer filePageSize;
 
     /**
-     * 是否进行初始化
+     * 初始化状态
      * @see org.xhy.domain.rag.constant.FileInitializeStatus
      */
-    private String isInitialize;
+    private Integer isInitialize;
 
     /**
-     * 是否进行向量化
+     * 向量化状态
      * @see org.xhy.domain.rag.constant.EmbeddingStatus
      */
-    private String isEmbedding;
+    private Integer isEmbedding;
 
     @TableField(exist = false)
     private MultipartFile multipartFile;
@@ -424,19 +424,19 @@ public class FileDetailEntity extends BaseEntity implements Serializable {
         this.filePageSize = filePageSize;
     }
 
-    public String getIsInitialize() {
+    public Integer getIsInitialize() {
         return isInitialize;
     }
 
-    public void setIsInitialize(String isInitialize) {
+    public void setIsInitialize(Integer isInitialize) {
         this.isInitialize = isInitialize;
     }
 
-    public String getIsEmbedding() {
+    public Integer getIsEmbedding() {
         return isEmbedding;
     }
 
-    public void setIsEmbedding(String isEmbedding) {
+    public void setIsEmbedding(Integer isEmbedding) {
         this.isEmbedding = isEmbedding;
     }
 

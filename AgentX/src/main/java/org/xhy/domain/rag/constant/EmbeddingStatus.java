@@ -9,19 +9,19 @@ public interface EmbeddingStatus {
     /**
      * 未初始化
      */
-    String UNINITIALIZED = "未入库";
+    Integer UNINITIALIZED = 0;
     /**
      * 初始化中
      */
-    String INITIALIZING = "入库中";
+    Integer INITIALIZING = 1;
     /**
      * 已初始化
      */
-    String INITIALIZED = "已入库";
+    Integer INITIALIZED = 2;
 
     /**
      * 初始化失败
      */
-    String INITIALIZATION_FAILED = "入库失败";
+    Integer INITIALIZATION_FAILED = 3;
 
 }

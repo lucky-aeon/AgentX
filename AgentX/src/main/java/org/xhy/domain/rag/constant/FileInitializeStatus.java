@@ -9,20 +9,20 @@ public interface FileInitializeStatus {
     /**
      * 待初始化
      */
-    String INITIALIZE_WAIT = "<UNK>";
+    Integer INITIALIZE_WAIT = 0;
 
     /**
      * 初始化中
      */
-    String INITIALIZING = "初始化中";
+    Integer INITIALIZING = 1;
     /**
      * 已初始化
      */
-    String INITIALIZED = "已初始化";
+    Integer INITIALIZED = 2;
 
     /**
      * 初始化失败
      */
-    String INITIALIZATION_FAILED = "初始化失败";
+    Integer INITIALIZATION_FAILED = 3;
 
 }
