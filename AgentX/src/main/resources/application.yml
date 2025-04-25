@@ -50,12 +50,17 @@ mybatis-plus:
 
 embedding:
   name: OpenAI
-  api-key: ${OPENAI_API_KEY:}
-  api-url: ${OPENAI_API_URL:https://api.openai.com/v1/chat/completions}
-  model: ${OPENAI_MODEL:gpt-3.5-turbo}
-  timeout: ${OPENAI_TIMEOUT:30000}
+  api-key: ${SILICONFLOW_API_KEY:}
+  api-url: ${SILICONFLOW_API_URL_EMBEDDING:https://api.siliconflow.cn/v1/embeddings}
+  model: ${SILICONFLOW_MODEL_EMBEDDING_MODEL:BAAI/bge-m3}
+  timeout: ${SILICONFLOW_TIMEOUT:30000}
 
-
+rerank:
+  name: OpenAI
+  api-key: ${SILICONFLOW_API_KEY:}
+  api-url: ${SILICONFLOW_API_URL_RERANK:https://api.siliconflow.cn/v1/rerank}
+  model: ${SILICONFLOW_MODEL_RERANK_MODEL:Pro/BAAI/bge-reranker-v2-m3}
+  timeout: ${SILICONFLOW_TIMEOUT:30000}
 # LLM服务配置
 llm:
   provider:
