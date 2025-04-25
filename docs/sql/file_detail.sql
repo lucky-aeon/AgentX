@@ -27,8 +27,8 @@ CREATE TABLE agent.file_detail (
                                      upload_id varchar(64) NULL, -- 上传ID
                                      upload_status int4 NULL, -- 上传状态，1：初始化完成，2：上传完成
                                      user_id int8 NULL, -- 用户ID
-                                     is_initialize varchar(20) NULL, -- 是否进行初始化
-                                     is_embedding varchar(20) NULL, -- 是否进行向量化
+                                     is_initialize int4 NULL, -- 是否进行初始化
+                                     is_embedding int4 NULL, -- 是否进行向量化
                                      data_set_id varchar NULL,
                                      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                                      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -67,6 +67,6 @@ COMMENT ON COLUMN agent.file_detail.hash_info IS '哈希信息';
 COMMENT ON COLUMN agent.file_detail.upload_id IS '上传ID';
 COMMENT ON COLUMN agent.file_detail.upload_status IS '上传状态，1：初始化完成，2：上传完成';
 COMMENT ON COLUMN agent.file_detail.user_id IS '用户ID';
-COMMENT ON COLUMN agent.file_detail.is_initialize IS '是否进行初始化';
-COMMENT ON COLUMN agent.file_detail.is_embedding IS '是否进行向量化';
+COMMENT ON COLUMN agent.file_detail.is_initialize IS '0：未初始化；1：初始化中；2：初始化完成；3：初始化失败';
+COMMENT ON COLUMN agent.file_detail.is_embedding IS '0：未向量化；1：向量化中；2：向量化完成；3：向量化失败';
 COMMENT ON COLUMN agent.file_detail.file_page_size IS '文件页数';
