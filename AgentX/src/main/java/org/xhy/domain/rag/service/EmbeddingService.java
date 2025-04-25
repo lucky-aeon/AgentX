@@ -30,7 +30,6 @@ import dev.langchain4j.data.document.Metadata;
 import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.model.openai.OpenAiEmbeddingModel;
-import dev.langchain4j.service.AiServices;
 import dev.langchain4j.store.embedding.EmbeddingSearchRequest;
 import dev.langchain4j.store.embedding.EmbeddingSearchResult;
 import dev.langchain4j.store.embedding.EmbeddingStore;
@@ -58,7 +57,9 @@ public class EmbeddingService implements MetadataConstant {
 
     private final DocumentUnitRepository documentUnitRepository;
 
-    public EmbeddingService(OpenAiEmbeddingModel openAiEmbeddingModel, EmbeddingStore<TextSegment> embeddingStore, FileDetailRepository fileDetailRepository, ApplicationContext applicationContext, DocumentUnitRepository documentUnitRepository) {
+    public EmbeddingService(OpenAiEmbeddingModel openAiEmbeddingModel, EmbeddingStore<TextSegment> embeddingStore,
+            FileDetailRepository fileDetailRepository, ApplicationContext applicationContext,
+            DocumentUnitRepository documentUnitRepository) {
         this.openAiEmbeddingModel = openAiEmbeddingModel;
         this.embeddingStore = embeddingStore;
         this.fileDetailRepository = fileDetailRepository;
@@ -68,15 +69,16 @@ public class EmbeddingService implements MetadataConstant {
 
     /**
      * @param dataSetId 知识库ids
-     * @param question  内容
+     * @param question 内容
      * @return List<Document> 文档列表
      */
     public List<DocumentUnitEntity> ragDoc(List<String> dataSetId, String question) {
-        final EmbeddingSearchResult<TextSegment> textSegmentList = embeddingStore.search(EmbeddingSearchRequest.builder()
-                .filter(new IsIn(DATA_SET_ID, dataSetId))
-                .maxResults(15)
-                .queryEmbedding(Embedding.from(openAiEmbeddingModel.embed(question).content().vector()))
-                .build());
+        final EmbeddingSearchResult<TextSegment> textSegmentList = embeddingStore.search(
+                EmbeddingSearchRequest.builder()
+                        .filter(new IsIn(DATA_SET_ID, dataSetId))
+                        .maxResults(15)
+                        .queryEmbedding(Embedding.from(openAiEmbeddingModel.embed(question).content().vector()))
+                        .build());
 
         final List<String> documentId = Steam.of(textSegmentList.matches()).map(textSegmentEmbeddingSearchResult -> {
 
@@ -86,7 +88,8 @@ public class EmbeddingService implements MetadataConstant {
             return "";
         }).filter(StrUtil::isNotBlank).toList();
 
-        return documentUnitRepository.selectList(Wrappers.lambdaQuery(DocumentUnitEntity.class).in(DocumentUnitEntity::getId, documentId));
+        return documentUnitRepository.selectList(
+                Wrappers.lambdaQuery(DocumentUnitEntity.class).in(DocumentUnitEntity::getId, documentId));
 
     }
 
@@ -110,7 +113,7 @@ public class EmbeddingService implements MetadataConstant {
     public boolean reindexEmbedding(String fileId) {
 
         if (!StringUtils.hasText(fileId)) {
-            log.warn("重新向量入库的文件ID为空");
+            log.warn("File ID for re-vectorization is empty");
             return false;
         }
 
@@ -118,12 +121,12 @@ public class EmbeddingService implements MetadataConstant {
             // 获取文件详情
             FileDetailEntity fileDetail = fileDetailRepository.selectById(fileId);
             if (fileDetail == null) {
-                log.warn("未找到ID为{}的文件", fileId);
+                log.warn("File with ID {}not found", fileId);
                 return false;
             }
 
             if (ObjectUtil.notEqual(fileDetail.getIsInitialize(), FileInitializeStatus.INITIALIZED)) {
-                log.warn("ID为{}的文件没有任何数据", fileId);
+                log.warn("The file with ID {} has no data", fileId);
             }
 
             // 更新文件状态为入库中
@@ -141,7 +144,7 @@ public class EmbeddingService implements MetadataConstant {
 
             return true;
         } catch (Exception e) {
-            log.error("文件{}重新向量入库失败", fileId, e);
+            log.error("File {} re-vectorization and storage failed", fileId, e);
             // 更新文件状态为入库失败
             try {
                 FileDetailEntity fileDetail = fileDetailRepository.selectById(fileId);
@@ -150,7 +153,7 @@ public class EmbeddingService implements MetadataConstant {
                     fileDetailRepository.updateById(fileDetail);
                 }
             } catch (Exception ex) {
-                log.error("更新文件状态失败", ex);
+                log.error("Failed to update file status", ex);
             }
             return false;
         }
@@ -171,7 +174,8 @@ public class EmbeddingService implements MetadataConstant {
      */
     private void indexEmbedding(List<DocumentUnitEntity> documentUnitEntityList) {
 
-        Steam.of(documentUnitEntityList).forEach(documentUnit -> applicationContext.publishEvent(new RagDocSyncStorageEvent<>(documentUnit, EventType.DOC_SYNC_RAG)));
+        Steam.of(documentUnitEntityList).forEach(documentUnit -> applicationContext.publishEvent(
+                new RagDocSyncStorageEvent<>(documentUnit, EventType.DOC_SYNC_RAG)));
 
     }
 
@@ -200,17 +204,23 @@ public class EmbeddingService implements MetadataConstant {
 
         embeddingStore.add(embeddings);
 
-        documentUnitRepository.update(Wrappers.lambdaUpdate(DocumentUnitEntity.class).eq(DocumentUnitEntity::getId, docId).set(DocumentUnitEntity::getVector, true));
+        documentUnitRepository.update(
+                Wrappers.lambdaUpdate(DocumentUnitEntity.class).eq(DocumentUnitEntity::getId, docId)
+                        .set(DocumentUnitEntity::getVector, true));
 
         // 修改文件状态
         final Integer pageSize = fileDetailEntity.getFilePageSize();
 
-        final Long isVector = documentUnitRepository.selectCount(Wrappers.lambdaQuery(DocumentUnitEntity.class).eq(DocumentUnitEntity::getFileId, documentUnitEntity.getFileId()).eq(DocumentUnitEntity::getVector, true));
+        final Long isVector = documentUnitRepository.selectCount(Wrappers.lambdaQuery(DocumentUnitEntity.class)
+                .eq(DocumentUnitEntity::getFileId, documentUnitEntity.getFileId())
+                .eq(DocumentUnitEntity::getVector, true));
 
         final Integer anInt = Convert.toInt(isVector);
 
         if (anInt >= pageSize) {
-            fileDetailRepository.update(Wrappers.lambdaUpdate(FileDetailEntity.class).eq(FileDetailEntity::getId, fileDetailEntity.getId()).set(FileDetailEntity::getIsEmbedding, EmbeddingStatus.INITIALIZED));
+            fileDetailRepository.update(
+                    Wrappers.lambdaUpdate(FileDetailEntity.class).eq(FileDetailEntity::getId, fileDetailEntity.getId())
+                            .set(FileDetailEntity::getIsEmbedding, EmbeddingStatus.INITIALIZED));
         }
 
     }

@@ -29,13 +29,13 @@ public abstract class RagDocSyncOcrStrategyImpl implements RagDocSyncOcrStrategy
         final byte[] fileData = getFileData(ragDocSyncOcrMessage, strategy);
         pushPageSize(fileData,ragDocSyncOcrMessage);
         if (fileData == null) {
-            LOG.error("文件数据为空");
+            LOG.error("File data is empty");
             return;
         }
 
         final Map<Integer, String> ocrData = processFile(fileData, ragDocSyncOcrMessage.getPageSize());
 
-        LOG.info("当前文件成功获取到 {} 页数据", ocrData.size());
+        LOG.info("Successfully retrieved {} pages of data from the current file", ocrData.size());
 
         insertData(ragDocSyncOcrMessage,ocrData);
 

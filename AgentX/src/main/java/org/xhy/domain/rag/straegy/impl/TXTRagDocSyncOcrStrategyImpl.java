@@ -73,13 +73,13 @@ public class TXTRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl{
         // 从数据库中获取文件详情
         FileDetailEntity fileDetailEntity = fileDetailRepository.selectById(ragDocSyncOcrMessage.getFileId());
         if (fileDetailEntity == null) {
-            log.error("文件不存在: {}", ragDocSyncOcrMessage.getFileId());
+            log.error("File does not exist: {}", ragDocSyncOcrMessage.getFileId());
             return new byte[0];
         }
 
         // 转换为FileInfo并下载文件
         FileInfo fileInfo = BeanHelper.copyProperties(fileDetailEntity, FileInfo.class);
-        log.info("准备下载Word文档: {}", fileInfo.getFilename());
+        log.info("Preparing to download Word document: {}", fileInfo.getFilename());
         return fileStorageService.download(fileInfo).bytes();
     }
 
@@ -91,7 +91,7 @@ public class TXTRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl{
      */
     @Override
     public Map<Integer, String> processFile(byte[] fileBytes, int totalPages) {
-        log.info("当前类型为非pdf文件，直接提取文字 ——————> 不包含页数，页数概念为索引");
+        log.info("Current type is non-PDF file, directly extract text ——————> Does not include page numbers, page number concept is index");
 
         DocumentParser parser = new TextDocumentParser();
         // 使用ByteArrayInputStream将字节数组转换为输入流
@@ -117,12 +117,12 @@ public class TXTRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl{
             return ocrData;
 
         } catch (Exception e) {
-            log.error("处理文档失败", e);
+            log.error("Failed to process document", e);
         } finally {
             try {
                 inputStream.close();
             } catch (IOException e) {
-                log.error("关闭输入流失败", e);
+                log.error("Failed to close the input stream", e);
             }
         }
 
@@ -138,7 +138,7 @@ public class TXTRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl{
     @Override
     public void insertData(RagDocSyncOcrMessage ragDocSyncOcrMessage, Map<Integer, String> ocrData) throws Exception {
 
-        log.info("开始保存文档内容，共拆分{}段", ragDocSyncOcrMessage.getPageSize());
+        log.info("Start saving document content, split into {} segments in total.", ragDocSyncOcrMessage.getPageSize());
 
         // 遍历每一页，将内容保存到数据库
         for (int pageIndex = 0; pageIndex < ragDocSyncOcrMessage.getPageSize(); pageIndex++) {
@@ -153,15 +153,15 @@ public class TXTRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl{
 
             if (content == null) {
                 documentUnitEntity.setOcr(false);
-                log.warn("第{}页内容为空", pageIndex + 1);
+                log.warn("Page {} is empty", pageIndex + 1);
             }
 
             // 保存或更新数据
             documentUnitRepository.checkInsert(documentUnitEntity);
-            log.debug("保存第{}页内容完成", pageIndex + 1);
+            log.debug("Saving page {} content completed.", pageIndex + 1);
         }
 
-        log.info("Word文档内容保存完成");
+        log.info("Word document content saved successfully");
 
     }
 }

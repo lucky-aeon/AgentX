@@ -109,7 +109,7 @@ public class PDFRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl impl
 
                 ocrData.put(pageIndex, processText(chat.aiMessage().text()));
 
-                log.info("第{}页处理请求，共{}页，当前内存使用: {}MB",
+                log.info("Processing request page {}/{}, current memory usage: {} MB",
                         (pageIndex + 1),
                         totalPages,
                         (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / (1024 * 1024));
@@ -124,9 +124,9 @@ public class PDFRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl impl
                     Thread.currentThread().interrupt();
                 }
 
-                log.info("第{}页处理完成", (pageIndex + 1));
+                log.info("Page {} processing completed", (pageIndex + 1));
             } catch (Exception e) {
-                log.error("处理PDF第{}页时发生错误: {}", (pageIndex + 1), e.getMessage());
+                log.error("Error processing PDF page {}: {}", (pageIndex + 1), e.getMessage());
                 // 继续处理下一页，不中断整个流程
             }
         }

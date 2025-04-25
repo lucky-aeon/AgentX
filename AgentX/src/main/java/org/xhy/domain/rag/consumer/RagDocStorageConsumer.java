@@ -57,11 +57,11 @@ public class RagDocStorageConsumer {
         RagDocSyncStorageMessage mqRecordReqDTO = JSON.parseObject(JSON.toJSONString(mqMessageBody.getData()),
                 RagDocSyncStorageMessage.class);
         try {
-            log.info("当前文件{}第{}页 ————  向量化开始",mqRecordReqDTO.getFileName(),mqRecordReqDTO.getPage());
+            log.info("Current file {} Page {} ———— Starting vectorization",mqRecordReqDTO.getFileName(),mqRecordReqDTO.getPage());
             embeddingService.syncStorage(mqRecordReqDTO);
-            log.info("当前文件{}第{}页 ————  向量化结束",mqRecordReqDTO.getFileName(),mqRecordReqDTO.getPage());
+            log.info("Current file {} Page {} ———— Vectorization finished",mqRecordReqDTO.getFileName(),mqRecordReqDTO.getPage());
         } catch (Exception e) {
-            log.error("向量化发生异常", e);
+            log.error("Exception occurred during vectorization", e);
         } finally {
             channel.basicAck(deliveryTag, false);
         }

@@ -80,13 +80,13 @@ public class WORDRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl imp
         // 从数据库中获取文件详情
         FileDetailEntity fileDetailEntity = fileDetailRepository.selectById(ragDocSyncOcrMessage.getFileId());
         if (fileDetailEntity == null) {
-            log.error("文件不存在: {}", ragDocSyncOcrMessage.getFileId());
+            log.error("File not found: {}", ragDocSyncOcrMessage.getFileId());
             return new byte[0];
         }
 
         // 转换为FileInfo并下载文件
         FileInfo fileInfo = BeanHelper.copyProperties(fileDetailEntity, FileInfo.class);
-        log.info("准备下载Word文档: {}", fileInfo.getFilename());
+        log.info("Preparing to download Word document: {}", fileInfo.getFilename());
         return fileStorageService.download(fileInfo).bytes();
     }
 
@@ -99,7 +99,7 @@ public class WORDRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl imp
      */
     @Override
     public Map<Integer, String> processFile(byte[] fileBytes, int totalPages) {
-        log.info("当前类型为非pdf文件，直接提取文字 ——————> 不包含页数，页数概念为索引");
+        log.info("Current file type is non-PDF, text is extracted directly ——————> Does not contain page numbers; the concept of page numbers serves as an index.");
 
         DocumentParser parser = new ApachePoiDocumentParser();
         // 使用ByteArrayInputStream将字节数组转换为输入流
@@ -125,12 +125,12 @@ public class WORDRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl imp
             return ocrData;
 
         } catch (Exception e) {
-            log.error("处理文档失败", e);
+            log.error("Failed to process document", e);
         } finally {
             try {
                 inputStream.close();
             } catch (IOException e) {
-                log.error("关闭输入流失败", e);
+                log.error("Failed to close the input stream", e);
             }
         }
 
