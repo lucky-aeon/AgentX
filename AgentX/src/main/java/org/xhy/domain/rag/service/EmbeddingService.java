@@ -1,5 +1,6 @@
 package org.xhy.domain.rag.service;
 
+import dev.langchain4j.store.embedding.EmbeddingMatch;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -57,14 +58,17 @@ public class EmbeddingService implements MetadataConstant {
 
     private final DocumentUnitRepository documentUnitRepository;
 
+    private final RerankService rerankService;
+
     public EmbeddingService(OpenAiEmbeddingModel openAiEmbeddingModel, EmbeddingStore<TextSegment> embeddingStore,
             FileDetailRepository fileDetailRepository, ApplicationContext applicationContext,
-            DocumentUnitRepository documentUnitRepository) {
+            DocumentUnitRepository documentUnitRepository, RerankService rerankService) {
         this.openAiEmbeddingModel = openAiEmbeddingModel;
         this.embeddingStore = embeddingStore;
         this.fileDetailRepository = fileDetailRepository;
         this.applicationContext = applicationContext;
         this.documentUnitRepository = documentUnitRepository;
+        this.rerankService = rerankService;
     }
 
     /**
@@ -80,7 +84,10 @@ public class EmbeddingService implements MetadataConstant {
                         .queryEmbedding(Embedding.from(openAiEmbeddingModel.embed(question).content().vector()))
                         .build());
 
-        final List<String> documentId = Steam.of(textSegmentList.matches()).map(textSegmentEmbeddingSearchResult -> {
+        final List<EmbeddingMatch<TextSegment>> embeddingMatches = rerankService.rerankDocument(textSegmentList,
+                question);
+
+        final List<String> documentId = Steam.of(embeddingMatches).map(textSegmentEmbeddingSearchResult -> {
 
             if (textSegmentEmbeddingSearchResult.embedded().metadata().containsKey(DOCUMENT_ID)) {
                 return textSegmentEmbeddingSearchResult.embedded().metadata().getString(DOCUMENT_ID);
