@@ -18,7 +18,7 @@ import org.springframework.amqp.rabbit.annotation.RabbitHandler;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 import org.xhy.domain.rag.message.RagDocSyncStorageMessage;
-import org.xhy.domain.rag.service.EmbeddingService;
+import org.xhy.domain.rag.service.EmbeddingDomainService;
 import org.xhy.infrastructure.mq.events.RagDocSyncStorageEvent;
 import org.xhy.infrastructure.mq.model.MqMessage;
 
@@ -39,10 +39,10 @@ public class RagDocStorageConsumer {
 
     private static final Logger log = LoggerFactory.getLogger(RagDocStorageConsumer.class);
 
-    private final EmbeddingService embeddingService;
+    private final EmbeddingDomainService embeddingService;
 
 
-    public RagDocStorageConsumer(EmbeddingService embeddingService) {
+    public RagDocStorageConsumer(EmbeddingDomainService embeddingService) {
         this.embeddingService = embeddingService;
     }
 

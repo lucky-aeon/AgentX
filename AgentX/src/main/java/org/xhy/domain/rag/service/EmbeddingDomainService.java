@@ -44,9 +44,9 @@ import dev.langchain4j.store.embedding.filter.comparison.IsIn;
  * @date 18:28 <br/>
  */
 @Component
-public class EmbeddingService implements MetadataConstant {
+public class EmbeddingDomainService implements MetadataConstant {
 
-    private static final Logger log = LoggerFactory.getLogger(EmbeddingService.class);
+    private static final Logger log = LoggerFactory.getLogger(EmbeddingDomainService.class);
 
     private final OpenAiEmbeddingModel openAiEmbeddingModel;
 
@@ -58,11 +58,11 @@ public class EmbeddingService implements MetadataConstant {
 
     private final DocumentUnitRepository documentUnitRepository;
 
-    private final RerankService rerankService;
+    private final RerankDomainService rerankService;
 
-    public EmbeddingService(OpenAiEmbeddingModel openAiEmbeddingModel, EmbeddingStore<TextSegment> embeddingStore,
-            FileDetailRepository fileDetailRepository, ApplicationContext applicationContext,
-            DocumentUnitRepository documentUnitRepository, RerankService rerankService) {
+    public EmbeddingDomainService(OpenAiEmbeddingModel openAiEmbeddingModel, EmbeddingStore<TextSegment> embeddingStore,
+                                  FileDetailRepository fileDetailRepository, ApplicationContext applicationContext,
+                                  DocumentUnitRepository documentUnitRepository, RerankDomainService rerankService) {
         this.openAiEmbeddingModel = openAiEmbeddingModel;
         this.embeddingStore = embeddingStore;
         this.fileDetailRepository = fileDetailRepository;
@@ -77,6 +77,7 @@ public class EmbeddingService implements MetadataConstant {
      * @return List<Document> 文档列表
      */
     public List<DocumentUnitEntity> ragDoc(List<String> dataSetId, String question) {
+        // todo xhy valid  question dataSetId
         final EmbeddingSearchResult<TextSegment> textSegmentList = embeddingStore.search(
                 EmbeddingSearchRequest.builder()
                         .filter(new IsIn(DATA_SET_ID, dataSetId))

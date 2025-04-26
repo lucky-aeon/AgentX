@@ -1,7 +1,6 @@
 package org.xhy.domain.rag.straegy.impl;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
@@ -15,7 +14,7 @@ import org.dromara.x.file.storage.core.FileStorageService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import org.xhy.domain.rag.constant.PromptConstant;
+import org.xhy.domain.rag.constant.RAGSystemPrompt;
 import org.xhy.domain.rag.message.RagDocSyncOcrMessage;
 import org.xhy.domain.rag.model.DocumentUnitEntity;
 import org.xhy.domain.rag.model.FileDetailEntity;
@@ -23,7 +22,6 @@ import org.xhy.domain.rag.repository.DocumentUnitRepository;
 import org.xhy.domain.rag.repository.FileDetailRepository;
 
 
-import cn.hutool.core.io.FileUtil;
 import dev.langchain4j.data.document.Document;
 import dev.langchain4j.data.document.DocumentParser;
 import dev.langchain4j.data.document.parser.apache.poi.ApachePoiDocumentParser;
@@ -37,7 +35,7 @@ import jakarta.annotation.Resource;
  * @date 10:07 <br/>
  */
 @Service(value = "ragDocSyncOcr-WORD")
-public class WORDRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl implements PromptConstant {
+public class WORDRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl implements RAGSystemPrompt {
 
     private static final Logger log = LoggerFactory.getLogger(WORDRagDocSyncOcrStrategyImpl.class);
 
@@ -61,7 +59,6 @@ public class WORDRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl imp
      */
     @Override
     public void pushPageSize(byte[] bytes, RagDocSyncOcrMessage ragDocSyncOcrMessage) {
-
 
 
 

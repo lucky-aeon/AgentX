@@ -12,7 +12,7 @@ import org.dromara.x.file.storage.core.FileStorageService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import org.xhy.domain.rag.constant.PromptConstant;
+import org.xhy.domain.rag.constant.RAGSystemPrompt;
 import org.xhy.domain.rag.message.RagDocSyncOcrMessage;
 import org.xhy.domain.rag.model.DocumentUnitEntity;
 import org.xhy.domain.rag.model.FileDetailEntity;
@@ -36,7 +36,7 @@ import jakarta.annotation.Resource;
  * @date 10:20 <br/>
  */
 @Service(value = "ragDocSyncOcr-PDF")
-public class PDFRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl implements PromptConstant {
+public class PDFRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl implements RAGSystemPrompt {
 
     private static final Logger log = LoggerFactory.getLogger(PDFRagDocSyncOcrStrategyImpl.class);
 

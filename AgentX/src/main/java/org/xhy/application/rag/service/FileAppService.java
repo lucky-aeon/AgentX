@@ -4,7 +4,7 @@ package org.xhy.application.rag.service;
 import org.springframework.stereotype.Service;
 import org.xhy.application.rag.assembler.FileAssembler;
 import org.xhy.domain.rag.model.FileDetailEntity;
-import org.xhy.domain.rag.service.FileDetailService;
+import org.xhy.domain.rag.service.FileDetailDomainService;
 import org.xhy.interfaces.dto.rag.RagUploadRequest;
 
 /**
@@ -13,11 +13,11 @@ import org.xhy.interfaces.dto.rag.RagUploadRequest;
  */
 
 @Service
-public class FileService {
+public class FileAppService {
 
-    private final FileDetailService fileDetailService;
+    private final FileDetailDomainService fileDetailService;
 
-    public FileService(FileDetailService fileDetailService) {
+    public FileAppService(FileDetailDomainService fileDetailService) {
         this.fileDetailService = fileDetailService;
     }
 

@@ -2,10 +2,9 @@ package org.xhy.interfaces.api.rag;
 
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.xhy.application.rag.service.FileService;
+import org.xhy.application.rag.service.FileAppService;
 import org.xhy.interfaces.api.common.Result;
 import org.xhy.interfaces.dto.rag.RagUploadRequest;
 
@@ -17,9 +16,9 @@ import org.xhy.interfaces.dto.rag.RagUploadRequest;
 @RequestMapping("/rag/file")
 public class RagUploadController {
 
-    private final FileService fileService;
+    private final FileAppService fileService;
 
-    public RagUploadController(FileService fileService) {
+    public RagUploadController(FileAppService fileService) {
         this.fileService = fileService;
     }
 

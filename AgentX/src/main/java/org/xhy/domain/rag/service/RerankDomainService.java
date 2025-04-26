@@ -11,13 +11,11 @@ import dev.langchain4j.store.embedding.EmbeddingMatch;
 import dev.langchain4j.store.embedding.EmbeddingSearchResult;
 import jakarta.annotation.Resource;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import org.springframework.boot.autoconfigure.jms.artemis.ArtemisProperties.Embedded;
+
 import org.springframework.stereotype.Service;
 import org.xhy.domain.rag.dto.req.RerankRequest;
 import org.xhy.domain.rag.dto.resp.RerankResponse;
-import org.xhy.infrastructure.rag.config.EmbeddingProperties;
 import org.xhy.infrastructure.rag.config.RerankProperties;
 
 /**
@@ -25,7 +23,7 @@ import org.xhy.infrastructure.rag.config.RerankProperties;
  * @date 16:11 <br/>
  */
 @Service
-public class RerankService {
+public class RerankDomainService {
 
     @Resource
     private RerankProperties rerankProperties;
@@ -41,6 +39,9 @@ public class RerankService {
         rerankRequest.setQuery(question);
         rerankRequest.setDocuments(list);
 
+        // todo xhy 我觉得把这一块抽离出来做成 ReRankAPI放在 基础设施层，让 api 和业务剥离开来，这样
+        // /Users/xhy/course/AgentX/AgentX/src/main/java/org/xhy/domain/rag/dto/req/resp 就可以抽离了
+        // 也更利于维护， api 和业务不要强绑定，避免后续测试 api 的时候不能最小化测试
         final HttpRequest build = HttpRequest.builder()
                 .addHeader("accept", "application/json")
                 .addHeader("Content-Type", "application/json; charset=utf-8")

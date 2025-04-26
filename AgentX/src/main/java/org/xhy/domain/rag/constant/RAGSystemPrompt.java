@@ -4,7 +4,7 @@ package org.xhy.domain.rag.constant;
  * @author shilong.zang
  * @date 11:26 <br/>
  */
-public interface PromptConstant {
+public interface RAGSystemPrompt {
 
     String OCR_PROMPT = """
             请识别图片中的内容，注意以下要求：
