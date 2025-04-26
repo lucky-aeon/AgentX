@@ -103,7 +103,7 @@ public class PDFRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl impl
                 );
 
 
-                final ChatLanguageModel ocrModel = LLMProviderService.getNormal(ProviderProtocol.OpenAI, null);
+                final ChatLanguageModel ocrModel = LLMProviderService.getStrand(ProviderProtocol.OpenAI, null);
 
                 final ChatResponse chat = ocrModel.chat(userMessage);
 

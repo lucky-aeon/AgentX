@@ -15,7 +15,6 @@ import org.xhy.domain.rag.dto.resp.RerankResponse;
 import org.xhy.infrastructure.rag.config.EmbeddingProperties;
 import org.xhy.domain.rag.dto.req.EmbeddingReqDTO;
 import org.xhy.infrastructure.rag.config.RerankProperties;
-import org.xhy.infrastructure.util.JsonUtils;
 
 /**
  * @author shilong.zang
