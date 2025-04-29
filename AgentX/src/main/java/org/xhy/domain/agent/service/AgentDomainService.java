@@ -139,7 +139,7 @@ public class AgentDomainService {
                 .eq(AgentEntity::getUserId, userId);
         agentRepository.checkedDelete(wrapper);
         // 删除版本
-        agentVersionRepository.checkedDelete(Wrappers.<AgentVersionEntity>lambdaQuery()
+        agentVersionRepository.delete(Wrappers.<AgentVersionEntity>lambdaQuery()
                 .eq(AgentVersionEntity::getAgentId, agentId)
                 .eq(AgentVersionEntity::getUserId, userId));
     }
