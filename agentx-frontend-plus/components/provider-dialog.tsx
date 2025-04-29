@@ -62,7 +62,7 @@ const DEFAULT_PROTOCOL_CONFIG: ProtocolConfigFields = {
       type: "url" 
     }
   ],
-  "CLAUDE": [
+  "ANTHROPIC": [
     { 
       label: "API Key", 
       placeholder: "输入Anthropic API Key", 

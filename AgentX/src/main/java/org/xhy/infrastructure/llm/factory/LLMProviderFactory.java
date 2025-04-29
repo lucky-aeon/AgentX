@@ -12,8 +12,6 @@ import org.xhy.infrastructure.llm.protocol.enums.ProviderProtocol;
 
 import java.time.Duration;
 
-import static dev.langchain4j.model.anthropic.AnthropicChatModelName.CLAUDE_3_5_SONNET_20240620;
-
 
 public class LLMProviderFactory {
 
@@ -34,7 +32,7 @@ public class LLMProviderFactory {
             openAiChatModelBuilder.modelName(providerConfig.getModel());
             openAiChatModelBuilder.timeout(Duration.ofHours(1));
             model = new OpenAiChatModel(openAiChatModelBuilder);
-        } else if (protocol == ProviderProtocol.CLAUDE) {
+        } else if (protocol == ProviderProtocol.ANTHROPIC) {
             model = AnthropicChatModel.builder()
                     .apiKey(providerConfig.getApiKey())
                     .baseUrl(providerConfig.getBaseUrl())
@@ -56,7 +54,7 @@ public class LLMProviderFactory {
                     .modelName(providerConfig.getModel())
                     .timeout(Duration.ofHours(1))
                     .build();
-        }else if (protocol == ProviderProtocol.CLAUDE){
+        }else if (protocol == ProviderProtocol.ANTHROPIC){
             model = AnthropicStreamingChatModel.builder()
                     .apiKey(providerConfig.getApiKey())
                     .baseUrl(providerConfig.getBaseUrl())
