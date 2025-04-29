@@ -1,0 +1,36 @@
+name: Java Code Format Check
+
+on:
+  pull_request:
+    paths:
+      - 'src/**/*.java'
+      - 'pom.xml'
+    branches:
+      - '**'  # 对所有分支的PR都检查
+
+jobs:
+  format-check:
+    name: Format Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      
+      - name: 设置JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+      
+      - name: 使用Spotless检查格式
+        run: mvn spotless:check
+        
+      - name: 代码格式错误提示
+        if: ${{ failure() }}
+        run: |
+          echo "::error::代码格式检查失败！请在本地运行 'mvn spotless:apply' 修复格式问题后再提交。"
+          exit 1 
