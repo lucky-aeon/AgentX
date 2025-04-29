@@ -29,7 +29,7 @@ public class LLMAppService {
     public LLMAppService(LLMDomainService llmDomainService) {
         this.llmDomainService = llmDomainService;
     }
-public LLMAppService() {
+    public LLMAppService() {
         this.llmDomainService = llmDomainService;
     }
     /**
