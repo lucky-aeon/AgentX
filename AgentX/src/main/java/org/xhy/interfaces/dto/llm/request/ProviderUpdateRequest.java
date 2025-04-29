@@ -33,7 +33,7 @@ public class ProviderUpdateRequest {
     private String name;
 
     /**
-     * 服务商描述
+     * 服务商配置
      */
     private ProviderConfig config;
 
