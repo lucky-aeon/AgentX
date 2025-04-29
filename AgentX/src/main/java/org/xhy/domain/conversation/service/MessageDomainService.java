@@ -48,7 +48,10 @@ public class MessageDomainService {
      */
     public void saveMessage(List<MessageEntity> messageEntities){
         messageRepository.insert(messageEntities);
+    }
 
+    public void updateMessage(MessageEntity message){
+        messageRepository.updateById(message);
     }
 
 }

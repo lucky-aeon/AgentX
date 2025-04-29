@@ -243,7 +243,7 @@ public class LLMDomainService {
         providerRepository.checkedDelete(wrapper);
         // 删除模型
         Wrapper<ModelEntity> modelWrapper = Wrappers.<ModelEntity>lambdaQuery().eq(ModelEntity::getProviderId, providerId);
-        modelRepository.checkedDelete(modelWrapper);
+        modelRepository.delete(modelWrapper);
     }
 
     /**

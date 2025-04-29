@@ -61,6 +61,17 @@ public class LLMAppService {
      * @return ProviderDTO
      */
     public ProviderDTO updateProvider(ProviderUpdateRequest providerUpdateRequest, String userId) {
+        // 先获取当前服务商数据
+        ProviderEntity existingProvider = llmDomainService.getProvider(providerUpdateRequest.getId(), userId);
+        
+        // 判断是否需要保留原有的密钥
+        if (providerUpdateRequest.getConfig() != null && 
+            providerUpdateRequest.getConfig().getApiKey() != null && 
+            providerUpdateRequest.getConfig().getApiKey().matches("\\*+")) {
+            // 如果传入的是掩码，使用原有的密钥
+            providerUpdateRequest.getConfig().setApiKey(existingProvider.getConfig().getApiKey());
+        }
+        
         ProviderEntity provider = ProviderAssembler.toEntity(providerUpdateRequest, userId);
         llmDomainService.updateProvider(provider);
         return ProviderAssembler.toDTO(provider);

@@ -199,6 +199,7 @@ export default function ProvidersPage() {
       const response = await deleteProviderWithToast(selectedProvider.id);
       if (response.code === 200) {
         setDeleteConfirmOpen(false);
+        setShowDetailDialog(false);
         loadProviders();
       }
     } catch (error) {

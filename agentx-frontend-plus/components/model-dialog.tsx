@@ -243,18 +243,7 @@ export function ModelDialog({
               </SelectContent>
             </Select>
           </div>
-          
-          <div className="grid gap-2">
-            <Label htmlFor="maxContextLength">最大上下文长度</Label>
-            <Input
-              id="maxContextLength"
-              name="maxContextLength"
-              type="number"
-              value={formData.config.maxContextLength || ""}
-              onChange={handleConfigChange}
-              placeholder="最大上下文长度，例如：4096"
-            />
-          </div>
+       
         </div>
         
         <DialogFooter>

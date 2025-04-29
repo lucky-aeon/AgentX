@@ -1,11 +1,11 @@
 package org.xhy.infrastructure.llm.protocol.enums;
 
-import org.xhy.domain.conversation.constant.Role;
 import org.xhy.infrastructure.exception.BusinessException;
 
 public enum ProviderProtocol {
 
-    OpenAI;
+    OpenAI,
+    ANTHROPIC;
 
     public static ProviderProtocol fromCode(String code) {
         for (ProviderProtocol protocol : values()) {
