@@ -29,7 +29,9 @@ public class LLMAppService {
     public LLMAppService(LLMDomainService llmDomainService) {
         this.llmDomainService = llmDomainService;
     }
-
+public LLMAppService() {
+        this.llmDomainService = llmDomainService;
+    }
     /**
      * 获取服务商聚合根
      * @param providerId 服务商id
