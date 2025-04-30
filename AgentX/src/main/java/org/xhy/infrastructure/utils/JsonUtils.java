@@ -9,7 +9,8 @@ import java.util.List;
 /** JSON工具类，用于处理JSON转换 */
 public class JsonUtils {
 
-    private static final ObjectMapper objectMapper = new ObjectMapper();
+    private static final ObjectMapper objectMapper = new ObjectMapper();public JsonUtils() {
+    }
 
     /** 将对象转换为JSON字符串
      *
