@@ -17,7 +17,8 @@ import org.xhy.interfaces.dto.llm.request.ProviderUpdateRequest;
 @Service
 public class AdminLLMAppService {
 
-    private final LLMDomainService llmDomainService;public AdminLLMAppService(LLMDomainService llmDomainService) {
+    private final LLMDomainService llmDomainService;
+    public AdminLLMAppService(LLMDomainService llmDomainService) {
         this.llmDomainService = llmDomainService;
     }
 
