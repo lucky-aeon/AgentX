@@ -1,13 +1,12 @@
 package org.xhy.domain.token.service.impl;
 
+import java.util.List;
 import org.springframework.stereotype.Service;
+import org.xhy.domain.shared.enums.TokenOverflowStrategyEnum;
 import org.xhy.domain.token.model.TokenMessage;
 import org.xhy.domain.token.model.TokenProcessResult;
 import org.xhy.domain.token.model.config.TokenOverflowConfig;
-import org.xhy.domain.shared.enums.TokenOverflowStrategyEnum;
 import org.xhy.domain.token.service.TokenOverflowStrategy;
-
-import java.util.List;
 
 /** 无策略的Token超限处理实现 不对消息进行任何处理，保留所有消息 */
 @Service
@@ -22,7 +21,7 @@ public class NoTokenOverflowStrategy implements TokenOverflowStrategy {
     }
 
     /** 带配置的构造函数
-     * 
+     *
      * @param config 策略配置 */
     public NoTokenOverflowStrategy(TokenOverflowConfig config) {
         this.config = config != null ? config : TokenOverflowConfig.createDefault();

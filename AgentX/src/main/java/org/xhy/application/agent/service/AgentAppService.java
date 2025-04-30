@@ -1,22 +1,21 @@
 package org.xhy.application.agent.service;
 
+import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.xhy.application.agent.assembler.AgentAssembler;
 import org.xhy.application.agent.assembler.AgentVersionAssembler;
 import org.xhy.application.agent.dto.AgentDTO;
-import org.xhy.domain.agent.model.AgentEntity;
 import org.xhy.application.agent.dto.AgentVersionDTO;
+import org.xhy.domain.agent.constant.PublishStatus;
+import org.xhy.domain.agent.model.AgentEntity;
 import org.xhy.domain.agent.model.AgentVersionEntity;
 import org.xhy.domain.agent.model.AgentWorkspaceEntity;
 import org.xhy.domain.agent.model.LLMModelConfig;
 import org.xhy.domain.agent.service.AgentDomainService;
 import org.xhy.domain.agent.service.AgentWorkspaceDomainService;
 import org.xhy.infrastructure.exception.ParamValidationException;
-import org.xhy.domain.agent.constant.PublishStatus;
 import org.xhy.interfaces.dto.agent.request.*;
-
-import java.util.List;
 
 /** Agent应用服务，用于适配领域层的Agent服务 职责： 1. 接收和验证来自接口层的请求 2. 将请求转换为领域对象或参数 3. 调用领域服务执行业务逻辑 4. 转换和返回结果给接口层 */
 @Service
@@ -151,7 +150,7 @@ public class AgentAppService {
     }
 
     /** 根据发布状态获取版本列表
-     * 
+     *
      * @param status 发布状态
      * @return 版本列表（每个助理只返回最新版本） */
     public List<AgentVersionDTO> getVersionsByStatus(PublishStatus status) {

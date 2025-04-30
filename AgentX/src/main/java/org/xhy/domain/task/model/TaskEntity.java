@@ -1,11 +1,10 @@
 package org.xhy.domain.task.model;
 
 import com.baomidou.mybatisplus.annotation.*;
+import java.time.LocalDateTime;
 import org.xhy.domain.task.constant.TaskStatus;
 import org.xhy.infrastructure.converter.TaskStatusConverter;
 import org.xhy.infrastructure.entity.BaseEntity;
-
-import java.time.LocalDateTime;
 
 /** 任务实体类 */
 @TableName("agent_tasks")
@@ -168,15 +167,16 @@ public class TaskEntity extends BaseEntity {
     public void setEndTime(LocalDateTime endTime) {
         this.endTime = endTime;
     }
+
     /** 获取任务结果
-     * 
+     *
      * @return 任务结果 */
     public String getTaskResult() {
         return taskResult;
     }
 
     /** 设置任务结果
-     * 
+     *
      * @param taskResult 任务结果 */
     public void setTaskResult(String taskResult) {
         this.taskResult = taskResult;

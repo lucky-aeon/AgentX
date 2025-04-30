@@ -1,10 +1,9 @@
 package org.xhy.infrastructure.transport;
 
+import java.io.IOException;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import org.xhy.application.conversation.dto.AgentChatResponse;
-
-import java.io.IOException;
 
 /** SSE消息传输实现 */
 @Component

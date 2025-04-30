@@ -1,14 +1,13 @@
 package org.xhy.application.agent.service;
 
 import java.util.List;
-
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.xhy.application.conversation.assembler.SessionAssembler;
+import org.xhy.application.conversation.dto.SessionDTO;
 import org.xhy.domain.agent.model.AgentEntity;
 import org.xhy.domain.agent.service.AgentDomainService;
 import org.xhy.domain.agent.service.AgentWorkspaceDomainService;
-import org.xhy.application.conversation.dto.SessionDTO;
 import org.xhy.domain.conversation.constant.Role;
 import org.xhy.domain.conversation.model.MessageEntity;
 import org.xhy.domain.conversation.model.SessionEntity;
@@ -38,7 +37,7 @@ public class AgentSessionAppService {
     }
 
     /** 获取助理下的会话列表
-     * 
+     *
      * @param userId 用户id
      * @param agentId 助理id
      * @return 会话列表 */
@@ -60,11 +59,10 @@ public class AgentSessionAppService {
             sessions.add(session);
         }
         return SessionAssembler.toDTOs(sessions);
-
     }
 
     /** 创建会话
-     * 
+     *
      * @param userId 用户id
      * @param agentId 助理id
      * @return 会话 */
@@ -81,7 +79,7 @@ public class AgentSessionAppService {
     }
 
     /** 更新会话
-     * 
+     *
      * @param id 会话id
      * @param userId 用户id
      * @param title 标题 */
@@ -90,7 +88,7 @@ public class AgentSessionAppService {
     }
 
     /** 删除会话
-     * 
+     *
      * @param id 会话id */
     @Transactional
     public void deleteSession(String id, String userId) {
@@ -101,7 +99,7 @@ public class AgentSessionAppService {
     }
 
     /** 发送消息
-     * 
+     *
      * @param id 会话id
      * @param userId 用户id
      * @param conversationRequest 会话请求 */

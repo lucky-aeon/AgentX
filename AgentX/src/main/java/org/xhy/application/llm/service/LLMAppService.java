@@ -1,5 +1,7 @@
 package org.xhy.application.llm.service;
 
+import java.util.List;
+import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.xhy.application.llm.assembler.ModelAssembler;
 import org.xhy.application.llm.assembler.ProviderAssembler;
@@ -9,17 +11,14 @@ import org.xhy.domain.llm.model.ModelEntity;
 import org.xhy.domain.llm.model.ProviderAggregate;
 import org.xhy.domain.llm.model.ProviderEntity;
 import org.xhy.domain.llm.model.enums.ModelType;
-import org.xhy.infrastructure.entity.Operator;
-import org.xhy.infrastructure.llm.protocol.enums.ProviderProtocol;
 import org.xhy.domain.llm.model.enums.ProviderType;
 import org.xhy.domain.llm.service.LLMDomainService;
+import org.xhy.infrastructure.entity.Operator;
+import org.xhy.infrastructure.llm.protocol.enums.ProviderProtocol;
 import org.xhy.interfaces.dto.llm.request.ModelCreateRequest;
 import org.xhy.interfaces.dto.llm.request.ModelUpdateRequest;
 import org.xhy.interfaces.dto.llm.request.ProviderCreateRequest;
 import org.xhy.interfaces.dto.llm.request.ProviderUpdateRequest;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class LLMAppService {
@@ -31,6 +30,7 @@ public class LLMAppService {
     }
 
     /** 获取服务商聚合根
+     *
      * @param providerId 服务商id
      * @param userId 用户id
      * @return ProviderAggregate */
@@ -40,6 +40,7 @@ public class LLMAppService {
     }
 
     /** 创建服务商
+     *
      * @param providerCreateRequest 请求对象
      * @param userId 用户id
      * @return ProviderDTO */
@@ -51,6 +52,7 @@ public class LLMAppService {
     }
 
     /** 更新服务商
+     *
      * @param providerUpdateRequest 更新对象
      * @param userId 用户id
      * @return ProviderDTO */
@@ -71,6 +73,7 @@ public class LLMAppService {
     }
 
     /** 获取服务商
+     *
      * @param providerId 服务商id
      * @return ProviderDTO */
     public ProviderDTO getProvider(String providerId, String userId) {
@@ -79,6 +82,7 @@ public class LLMAppService {
     }
 
     /** 删除服务商
+     *
      * @param providerId 服务商id
      * @param userId 用户id */
     public void deleteProvider(String providerId, String userId) {
@@ -86,6 +90,7 @@ public class LLMAppService {
     }
 
     /** 获取用户自己的服务商
+     *
      * @param userId 用户id
      * @return List<ProviderDTO> */
     public List<ProviderDTO> getUserProviders(String userId) {
@@ -94,6 +99,7 @@ public class LLMAppService {
     }
 
     /** 获取所有服务商（包含官方和用户自定义）
+     *
      * @param userId 用户ID
      * @return 服务商DTO列表 */
     public List<ProviderDTO> getAllProviders(String userId) {
@@ -102,6 +108,7 @@ public class LLMAppService {
     }
 
     /** 获取官方服务商
+     *
      * @return 官方服务商DTO列表 */
     public List<ProviderDTO> getOfficialProviders() {
         List<ProviderAggregate> providers = llmDomainService.getOfficialProviders();
@@ -109,6 +116,7 @@ public class LLMAppService {
     }
 
     /** 获取用户自定义服务商
+     *
      * @param userId 用户ID
      * @return 用户自定义服务商DTO列表 */
     public List<ProviderDTO> getCustomProviders(String userId) {
@@ -117,12 +125,14 @@ public class LLMAppService {
     }
 
     /** 获取用户服务商协议
+     *
      * @return List<ProviderProtocol> */
     public List<ProviderProtocol> getUserProviderProtocols() {
         return llmDomainService.getProviderProtocols();
     }
 
     /** 创建模型
+     *
      * @param modelCreateRequest 请求对象
      * @param userId 用户id
      * @return ModelDTO */
@@ -136,6 +146,7 @@ public class LLMAppService {
     }
 
     /** 修改模型
+     *
      * @param modelUpdateRequest 请求对象
      * @param userId 用户id
      * @return ModelDTO */
@@ -146,6 +157,7 @@ public class LLMAppService {
     }
 
     /** 删除模型
+     *
      * @param modelId 模型id
      * @param userId 用户id */
     public void deleteModel(String modelId, String userId) {
@@ -153,6 +165,7 @@ public class LLMAppService {
     }
 
     /** 修改模型状态
+     *
      * @param modelId 模型id
      * @param userId 用户id */
     public void updateModelStatus(String modelId, String userId) {
@@ -160,6 +173,7 @@ public class LLMAppService {
     }
 
     /** 根据类型获取服务商
+     *
      * @param providerType 服务商类型编码：all-所有，official-官方，user-用户的
      * @param userId 用户ID
      * @return 服务商DTO列表 */
@@ -172,6 +186,7 @@ public class LLMAppService {
     }
 
     /** 修改服务商状态
+     *
      * @param providerId 服务商id
      * @param userId 用户id */
     public void updateProviderStatus(String providerId, String userId) {
@@ -179,6 +194,7 @@ public class LLMAppService {
     }
 
     /** 获取所有激活模型
+     *
      * @param providerType 服务商类型
      * @param userId 用户id
      * @param modelType 模型类型（可选）

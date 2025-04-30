@@ -1,11 +1,10 @@
 package org.xhy.application.conversation.assembler;
 
-import org.xhy.application.conversation.dto.SessionDTO;
-import org.xhy.domain.conversation.model.SessionEntity;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.xhy.application.conversation.dto.SessionDTO;
+import org.xhy.domain.conversation.model.SessionEntity;
 
 public class SessionAssembler {
 

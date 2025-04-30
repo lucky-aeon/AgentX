@@ -40,5 +40,4 @@ public interface MyBatisPlusExtRepository<T> extends BaseMapper<T> {
             throw new BusinessException("数据更新失败");
         }
     }
-
 }

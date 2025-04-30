@@ -1,13 +1,11 @@
 package org.xhy.domain.conversation.service;
 
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import java.util.List;
 import org.springframework.stereotype.Service;
 import org.xhy.domain.conversation.model.SessionEntity;
 import org.xhy.domain.conversation.repository.SessionRepository;
 import org.xhy.infrastructure.exception.BusinessException;
-
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-
-import java.util.List;
 
 @Service
 public class SessionDomainService {
@@ -19,7 +17,7 @@ public class SessionDomainService {
     }
 
     /** 根据 agentId 获取会话列表
-     * 
+     *
      * @param agentId 助理id */
     public List<SessionEntity> getSessionsByAgentId(String agentId) {
         return sessionRepository.selectList(Wrappers.<SessionEntity>lambdaQuery().eq(SessionEntity::getAgentId, agentId)
@@ -27,7 +25,7 @@ public class SessionDomainService {
     }
 
     /** 删除会话
-     * 
+     *
      * @param sessionId 会话id
      * @param userId 用户id */
     public void deleteSession(String sessionId, String userId) {
@@ -36,7 +34,7 @@ public class SessionDomainService {
     }
 
     /** 更新会话
-     * 
+     *
      * @param sessionId 会话id
      * @param userId 用户id
      * @param title 标题 */
@@ -50,7 +48,7 @@ public class SessionDomainService {
     }
 
     /** 创建会话
-     * 
+     *
      * @param agentId 助理id
      * @param userId 用户id */
     public SessionEntity createSession(String agentId, String userId) {
@@ -63,7 +61,7 @@ public class SessionDomainService {
     }
 
     /** 检查会话是否存在
-     * 
+     *
      * @param sessionId 会话id
      * @param userId 用户id */
     public void checkSessionExist(String sessionId, String userId) {

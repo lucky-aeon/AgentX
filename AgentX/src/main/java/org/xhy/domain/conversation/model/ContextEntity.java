@@ -4,13 +4,10 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import org.apache.ibatis.type.JdbcType;
-import org.xhy.infrastructure.converter.JsonToStringConverter;
-import org.xhy.infrastructure.converter.ListConverter;
-import org.xhy.infrastructure.entity.BaseEntity;
-
 import java.util.ArrayList;
 import java.util.List;
+import org.xhy.infrastructure.converter.ListConverter;
+import org.xhy.infrastructure.entity.BaseEntity;
 
 /** 上下文实体类，管理会话的上下文窗口 */
 @TableName("context")
@@ -67,5 +64,4 @@ public class ContextEntity extends BaseEntity {
     public void setSummary(String summary) {
         this.summary = summary;
     }
-
 }

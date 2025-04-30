@@ -1,6 +1,9 @@
 package org.xhy.infrastructure.config;
 
 import jakarta.servlet.http.HttpServletRequest;
+import java.io.IOException;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -17,10 +20,6 @@ import org.xhy.infrastructure.exception.BusinessException;
 import org.xhy.infrastructure.exception.EntityNotFoundException;
 import org.xhy.infrastructure.exception.ParamValidationException;
 import org.xhy.interfaces.api.common.Result;
-
-import java.io.IOException;
-import java.util.List;
-import java.util.stream.Collectors;
 
 /** 全局异常处理器 用于捕获应用中的各种异常，并将其转换为统一的API响应格式 */
 @RestControllerAdvice

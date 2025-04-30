@@ -1,11 +1,10 @@
 package org.xhy.application.task.assembler;
 
-import org.xhy.application.task.dto.TaskDTO;
-import org.xhy.domain.task.model.TaskEntity;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.xhy.application.task.dto.TaskDTO;
+import org.xhy.domain.task.model.TaskEntity;
 
 /** 任务对象转换器 */
 public class TaskAssembler {
@@ -47,5 +46,4 @@ public class TaskAssembler {
 
         return entities.stream().map(TaskAssembler::toDTO).collect(Collectors.toList());
     }
-
 }

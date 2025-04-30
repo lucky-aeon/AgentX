@@ -1,12 +1,11 @@
 package org.xhy.application.agent.dto;
 
-import org.xhy.domain.agent.constant.AgentStatus;
-import org.xhy.domain.agent.constant.AgentType;
-import org.xhy.domain.agent.model.*;
-
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import org.xhy.domain.agent.constant.AgentStatus;
+import org.xhy.domain.agent.constant.AgentType;
+import org.xhy.domain.agent.model.*;
 
 /** Agent数据传输对象，用于表示层和应用层之间传递数据 */
 public class AgentDTO {
@@ -183,6 +182,7 @@ public class AgentDTO {
     }
 
     /** 将当前DTO转换为Entity对象
+     *
      * @return 转换后的AgentEntity对象 */
     public AgentEntity toEntity() {
         AgentEntity entity = new AgentEntity();

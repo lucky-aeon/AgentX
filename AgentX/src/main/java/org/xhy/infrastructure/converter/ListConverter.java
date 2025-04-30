@@ -1,10 +1,7 @@
 package org.xhy.infrastructure.converter;
 
-import org.apache.ibatis.type.MappedTypes;
-import org.xhy.domain.agent.model.LLMModelConfig;
-
 import java.util.ArrayList;
-import java.util.List;
+import org.apache.ibatis.type.MappedTypes;
 
 /** List JSON转换器 */
 @MappedTypes(ArrayList.class)

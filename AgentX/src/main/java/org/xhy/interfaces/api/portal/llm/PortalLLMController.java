@@ -2,7 +2,6 @@ package org.xhy.interfaces.api.portal.llm;
 
 import java.util.Arrays;
 import java.util.List;
-
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,9 +16,9 @@ import org.xhy.application.llm.dto.ModelDTO;
 import org.xhy.application.llm.dto.ProviderDTO;
 import org.xhy.application.llm.service.LLMAppService;
 import org.xhy.domain.llm.model.enums.ModelType;
-import org.xhy.infrastructure.llm.protocol.enums.ProviderProtocol;
 import org.xhy.domain.llm.model.enums.ProviderType;
 import org.xhy.infrastructure.auth.UserContext;
+import org.xhy.infrastructure.llm.protocol.enums.ProviderProtocol;
 import org.xhy.interfaces.api.common.Result;
 import org.xhy.interfaces.dto.llm.request.ModelCreateRequest;
 import org.xhy.interfaces.dto.llm.request.ModelUpdateRequest;
@@ -38,6 +37,7 @@ public class PortalLLMController {
     }
 
     /** 获取服务商详细信息
+     *
      * @param providerId 服务商id */
     @GetMapping("/providers/{providerId}")
     public Result<ProviderDTO> getProviderDetail(@PathVariable String providerId) {
@@ -46,6 +46,7 @@ public class PortalLLMController {
     }
 
     /** 获取服务商列表，支持按类型过滤
+     *
      * @param type 服务商类型：all-所有，official-官方，user-用户的（默认）
      * @return 服务商列表 */
     @GetMapping("/providers")
@@ -57,6 +58,7 @@ public class PortalLLMController {
     }
 
     /** 创建服务提供商
+     *
      * @param providerCreateRequest 服务提供商创建请求 */
     @PostMapping("/providers")
     public Result<ProviderDTO> createProvider(@RequestBody ProviderCreateRequest providerCreateRequest) {
@@ -65,6 +67,7 @@ public class PortalLLMController {
     }
 
     /** 更新服务提供商
+     *
      * @param providerUpdateRequest 服务提供商更新请求 */
     @PutMapping("/providers")
     public Result<ProviderDTO> updateProvider(@RequestBody ProviderUpdateRequest providerUpdateRequest) {
@@ -73,6 +76,7 @@ public class PortalLLMController {
     }
 
     /** 修改服务商状态
+     *
      * @param providerId 服务商id */
     @PostMapping("/providers/{providerId}/status")
     public Result<Void> updateProviderStatus(@PathVariable String providerId) {
@@ -82,6 +86,7 @@ public class PortalLLMController {
     }
 
     /** 删除服务提供商
+     *
      * @param providerId 服务提供商ID */
     @DeleteMapping("/providers/{providerId}")
     public Result<Void> deleteProvider(@PathVariable String providerId) {
@@ -97,6 +102,7 @@ public class PortalLLMController {
     }
 
     /** 添加模型
+     *
      * @param modelCreateRequest ModelCreateRequest */
     @PostMapping("/models")
     public Result<ModelDTO> createModel(@RequestBody ModelCreateRequest modelCreateRequest) {
@@ -105,6 +111,7 @@ public class PortalLLMController {
     }
 
     /** 修改模型
+     *
      * @param modelUpdateRequest ModelUpdateRequest */
     @PutMapping("/models")
     public Result<ModelDTO> updateModel(@RequestBody @Validated ModelUpdateRequest modelUpdateRequest) {
@@ -113,6 +120,7 @@ public class PortalLLMController {
     }
 
     /** 删除模型
+     *
      * @param modelId 模型主键 */
     @DeleteMapping("/models/{modelId}")
     public Result<Void> deleteModel(@PathVariable String modelId) {
@@ -122,6 +130,7 @@ public class PortalLLMController {
     }
 
     /** 修改模型状态
+     *
      * @param modelId 模型主键 */
     @PutMapping("/models/{modelId}/status")
     public Result<Void> updateModelStatus(@PathVariable String modelId) {
@@ -131,6 +140,7 @@ public class PortalLLMController {
     }
 
     /** 获取模型类型
+     *
      * @return */
     @GetMapping("/models/types")
     public Result<List<ModelType>> getModelTypes() {
@@ -138,6 +148,7 @@ public class PortalLLMController {
     }
 
     /** 获取所有激活模型
+     *
      * @param modelType 模型类型（可选），不传则查询所有类型
      * @return 模型列表 */
     @GetMapping("/models")

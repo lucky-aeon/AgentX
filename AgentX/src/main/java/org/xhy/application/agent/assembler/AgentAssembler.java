@@ -1,18 +1,16 @@
 package org.xhy.application.agent.assembler;
 
-import org.springframework.beans.BeanUtils;
-import org.xhy.domain.agent.model.AgentEntity;
-import org.xhy.domain.agent.constant.AgentType;
-import org.xhy.application.agent.dto.AgentDTO;
-import org.xhy.interfaces.dto.agent.request.CreateAgentRequest;
-import org.xhy.interfaces.dto.agent.request.SearchAgentsRequest;
-import org.xhy.interfaces.dto.agent.request.UpdateAgentRequest;
-
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.xhy.application.agent.dto.AgentDTO;
+import org.xhy.domain.agent.constant.AgentType;
+import org.xhy.domain.agent.model.AgentEntity;
+import org.xhy.interfaces.dto.agent.request.CreateAgentRequest;
+import org.xhy.interfaces.dto.agent.request.SearchAgentsRequest;
+import org.xhy.interfaces.dto.agent.request.UpdateAgentRequest;
 
 /** Agent领域对象组装器 负责DTO、Entity和Request之间的转换 */
 public class AgentAssembler {

@@ -4,14 +4,11 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import org.apache.ibatis.type.JdbcType;
-import org.xhy.domain.agent.constant.AgentType;
-import org.xhy.infrastructure.entity.BaseEntity;
-import org.xhy.infrastructure.typehandler.JsonTypeHandler;
-
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import org.xhy.domain.agent.constant.AgentType;
+import org.xhy.infrastructure.entity.BaseEntity;
 
 /** Agent实体类，代表一个AI助手 */
 @TableName(value = "agents", autoResultMap = true)

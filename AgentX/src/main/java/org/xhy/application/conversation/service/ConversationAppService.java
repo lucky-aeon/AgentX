@@ -1,18 +1,21 @@
 package org.xhy.application.conversation.service;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import org.xhy.application.conversation.assembler.MessageAssembler;
 import org.xhy.application.conversation.dto.ChatRequest;
 import org.xhy.application.conversation.dto.MessageDTO;
+import org.xhy.application.conversation.service.handler.MessageHandlerFactory;
+import org.xhy.application.conversation.service.handler.context.ChatContext;
 import org.xhy.application.conversation.service.message.AbstractMessageHandler;
 import org.xhy.domain.agent.model.AgentEntity;
 import org.xhy.domain.agent.model.AgentWorkspaceEntity;
 import org.xhy.domain.agent.model.LLMModelConfig;
 import org.xhy.domain.agent.service.AgentDomainService;
 import org.xhy.domain.agent.service.AgentWorkspaceDomainService;
-import org.xhy.application.conversation.service.handler.context.ChatContext;
-import org.xhy.application.conversation.service.handler.MessageHandlerFactory;
 import org.xhy.domain.conversation.model.ContextEntity;
 import org.xhy.domain.conversation.model.MessageEntity;
 import org.xhy.domain.conversation.model.SessionEntity;
@@ -32,10 +35,6 @@ import org.xhy.infrastructure.exception.BusinessException;
 import org.xhy.infrastructure.llm.config.ProviderConfig;
 import org.xhy.infrastructure.transport.MessageTransport;
 import org.xhy.infrastructure.transport.MessageTransportFactory;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
 
 /** 对话应用服务，用于适配域层的对话服务 */
 @Service

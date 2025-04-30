@@ -4,15 +4,12 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import org.apache.ibatis.type.JdbcType;
-import org.xhy.domain.agent.constant.PublishStatus;
-import org.xhy.infrastructure.converter.ListConverter;
-import org.xhy.infrastructure.entity.BaseEntity;
-import org.xhy.infrastructure.typehandler.JsonTypeHandler;
-
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import org.xhy.domain.agent.constant.PublishStatus;
+import org.xhy.infrastructure.converter.ListConverter;
+import org.xhy.infrastructure.entity.BaseEntity;
 
 /** Agent版本实体类，代表一个Agent的发布版本 */
 @TableName(value = "agent_versions", autoResultMap = true)
@@ -228,6 +225,7 @@ public class AgentVersionEntity extends BaseEntity {
     public void setUserId(String userId) {
         this.userId = userId;
     }
+
     /** 获取发布状态枚举 */
     public PublishStatus getPublishStatusEnum() {
         return PublishStatus.fromCode(this.publishStatus);

@@ -1,5 +1,7 @@
 package org.xhy.application.agent.service;
 
+import java.util.List;
+import java.util.stream.Collectors;
 import org.springframework.boot.autoconfigure.info.ProjectInfoProperties;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,9 +21,6 @@ import org.xhy.domain.llm.model.ProviderEntity;
 import org.xhy.domain.llm.service.LLMDomainService;
 import org.xhy.infrastructure.exception.BusinessException;
 import org.xhy.interfaces.dto.agent.request.UpdateModelConfigRequest;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 /** Agent应用服务，用于适配领域层的Agent服务 职责： 1. 接收和验证来自接口层的请求 2. 将请求转换为领域对象或参数 3. 调用领域服务执行业务逻辑 4. 转换和返回结果给接口层 */
 @Service
@@ -50,7 +49,7 @@ public class AgentWorkspaceAppService {
     }
 
     /** 获取工作区下的助理
-     * 
+     *
      * @param userId 用户id
      * @return AgentDTO */
     public List<AgentDTO> getAgents(String userId) {
@@ -59,6 +58,7 @@ public class AgentWorkspaceAppService {
     }
 
     /** 删除工作区中的助理
+     *
      * @param agentId 助理id
      * @param userId 用户id */
     @Transactional
@@ -88,6 +88,7 @@ public class AgentWorkspaceAppService {
     }
 
     /** 保存agent的模型配置
+     *
      * @param agentId agent ID
      * @param userId 用户ID
      * @param request 模型配置 */

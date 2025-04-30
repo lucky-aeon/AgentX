@@ -72,5 +72,4 @@ public class AgentWorkspaceEntity extends BaseEntity {
     public void setUserId(String userId) {
         this.userId = userId;
     }
-
 }

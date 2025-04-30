@@ -1,10 +1,8 @@
 package org.xhy.domain.agent.repository;
 
-import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
-import org.xhy.application.agent.service.AgentWorkspaceAppService;
 import org.xhy.domain.agent.model.AgentWorkspaceEntity;
 import org.xhy.infrastructure.repository.MyBatisPlusExtRepository;
 

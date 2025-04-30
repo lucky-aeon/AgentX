@@ -1,11 +1,10 @@
 package org.xhy.domain.llm.model;
 
-import org.xhy.domain.llm.model.config.ProviderConfig;
-import org.xhy.infrastructure.llm.protocol.enums.ProviderProtocol;
-
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import org.xhy.domain.llm.model.config.ProviderConfig;
+import org.xhy.infrastructure.llm.protocol.enums.ProviderProtocol;
 
 /** 服务提供商聚合根 注意：这是领域模型中的聚合根，包含领域逻辑，与ProviderEntity（持久化实体）区分 */
 public class ProviderAggregate {

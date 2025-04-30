@@ -2,13 +2,12 @@ package org.xhy.domain.task.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import java.time.LocalDateTime;
+import java.util.List;
 import org.springframework.stereotype.Service;
 import org.xhy.domain.task.model.TaskAggregate;
 import org.xhy.domain.task.model.TaskEntity;
 import org.xhy.domain.task.repository.TaskRepository;
-
-import java.time.LocalDateTime;
-import java.util.List;
 
 /** 任务领域服务 */
 @Service
@@ -48,6 +47,7 @@ public class TaskDomainService {
     }
 
     /** 根据父任务id查出子任务
+     *
      * @param parentTaskId 父任务id
      * @return */
     public List<TaskEntity> getSubTasks(String parentTaskId) {

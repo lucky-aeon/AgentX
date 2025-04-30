@@ -1,15 +1,16 @@
 package org.xhy.infrastructure.utils;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.JavaType;
-
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Collections;
 import java.util.List;
 
 /** JSON工具类，用于处理JSON转换 */
 public class JsonUtils {
 
-    private static final ObjectMapper objectMapper = new ObjectMapper();public JsonUtils() {
+    private static final ObjectMapper objectMapper = new ObjectMapper();
+
+    public JsonUtils() {
     }
 
     /** 将对象转换为JSON字符串

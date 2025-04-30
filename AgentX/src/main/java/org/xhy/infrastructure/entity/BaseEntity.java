@@ -3,7 +3,6 @@ package org.xhy.infrastructure.entity;
 import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableLogic;
-
 import java.time.LocalDateTime;
 
 public class BaseEntity {

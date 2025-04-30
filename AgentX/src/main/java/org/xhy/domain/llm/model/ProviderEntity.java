@@ -19,6 +19,7 @@ public class ProviderEntity extends BaseEntity {
 
     @TableField(typeHandler = ProviderProtocolConverter.class)
     private ProviderProtocol protocol;
+
     private String name;
     private String description;
 

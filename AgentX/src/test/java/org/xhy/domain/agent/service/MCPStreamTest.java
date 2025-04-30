@@ -12,7 +12,6 @@ import dev.langchain4j.service.AiServices;
 import dev.langchain4j.service.TokenStream;
 import dev.langchain4j.service.tool.ToolExecution;
 import dev.langchain4j.service.tool.ToolProvider;
-
 import java.util.List;
 
 public class MCPStreamTest {
@@ -23,7 +22,8 @@ public class MCPStreamTest {
                 .modelName("Qwen/QwQ-32B").baseUrl("https://api.siliconflow.cn/v1").logRequests(true).logResponses(true)
                 .build();
         //
-        // npx -y @smithery/cli@latest run @smithery-ai/github --key def1f067-c5b7-443f-af21-2a80c5f176d9
+        // npx -y @smithery/cli@latest run @smithery-ai/github --key
+        // def1f067-c5b7-443f-af21-2a80c5f176d9
         McpTransport transport = new HttpMcpTransport.Builder().sseUrl("http://127.0.0.1:8006/time/sse")
                 .logRequests(true) // if you want to see the traffic in the log
                 .logResponses(true).build();
@@ -48,5 +48,4 @@ public class MCPStreamTest {
                     }
                 }).onError((Throwable error) -> error.printStackTrace()).start();
     }
-
 }

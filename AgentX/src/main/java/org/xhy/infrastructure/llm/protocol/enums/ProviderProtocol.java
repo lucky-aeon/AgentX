@@ -3,7 +3,6 @@ package org.xhy.infrastructure.llm.protocol.enums;
 import org.xhy.infrastructure.exception.BusinessException;
 
 public enum ProviderProtocol {
-
     OpenAI, ANTHROPIC;
 
     public static ProviderProtocol fromCode(String code) {

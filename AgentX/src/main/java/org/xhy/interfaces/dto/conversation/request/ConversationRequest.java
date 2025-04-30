@@ -11,5 +11,4 @@ public class ConversationRequest {
     public void setMessage(String message) {
         this.message = message;
     }
-
 }

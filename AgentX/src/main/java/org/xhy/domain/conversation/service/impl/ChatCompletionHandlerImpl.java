@@ -1,5 +1,7 @@
 package org.xhy.domain.conversation.service.impl;
 
+import java.util.Arrays;
+import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.xhy.domain.conversation.model.ContextEntity;
@@ -8,9 +10,6 @@ import org.xhy.domain.conversation.service.ChatCompletionHandler;
 import org.xhy.domain.conversation.service.ContextDomainService;
 import org.xhy.domain.conversation.service.ConversationDomainService;
 import org.xhy.infrastructure.exception.BusinessException;
-
-import java.util.Arrays;
-import java.util.List;
 
 /** 聊天完成处理器实现 负责处理聊天完成后的业务逻辑，如保存消息和更新上下文 */
 @Service

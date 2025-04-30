@@ -1,10 +1,9 @@
 package org.xhy.domain.token.service;
 
+import java.util.List;
 import org.xhy.domain.token.model.TokenMessage;
 import org.xhy.domain.token.model.TokenProcessResult;
 import org.xhy.domain.token.model.config.TokenOverflowConfig;
-
-import java.util.List;
 
 /** Token溢出处理策略接口 */
 public interface TokenOverflowStrategy {

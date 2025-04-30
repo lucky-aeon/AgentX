@@ -1,13 +1,12 @@
 package org.xhy.domain.conversation.model;
 
 import com.baomidou.mybatisplus.annotation.*;
+import java.time.LocalDateTime;
 import org.xhy.domain.conversation.constant.MessageType;
 import org.xhy.domain.conversation.constant.Role;
 import org.xhy.infrastructure.converter.MessageTypeConverter;
 import org.xhy.infrastructure.converter.RoleConverter;
 import org.xhy.infrastructure.entity.BaseEntity;
-
-import java.time.LocalDateTime;
 
 /** 消息实体类，代表对话中的一条消息 */
 @TableName("messages")

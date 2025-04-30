@@ -1,5 +1,8 @@
 package org.xhy.application.llm.assembler;
 
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.xhy.application.llm.dto.ModelDTO;
 import org.xhy.application.llm.dto.ProviderDTO;
 import org.xhy.domain.llm.model.ModelEntity;
@@ -7,10 +10,6 @@ import org.xhy.domain.llm.model.ProviderAggregate;
 import org.xhy.domain.llm.model.ProviderEntity;
 import org.xhy.interfaces.dto.llm.request.ProviderCreateRequest;
 import org.xhy.interfaces.dto.llm.request.ProviderUpdateRequest;
-
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.stream.Collectors;
 
 /** 服务提供商对象转换器 */
 public class ProviderAssembler {
@@ -62,6 +61,7 @@ public class ProviderAssembler {
 
         return provider;
     }
+
     /** 将更新请求转换为实体 */
     public static ProviderEntity toEntity(ProviderUpdateRequest request, String userId) {
         ProviderEntity provider = new ProviderEntity();
@@ -119,5 +119,4 @@ public class ProviderAssembler {
         }
         return dto;
     }
-
 }

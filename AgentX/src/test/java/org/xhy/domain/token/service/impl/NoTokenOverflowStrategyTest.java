@@ -1,19 +1,18 @@
 package org.xhy.domain.token.service.impl;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.xhy.domain.token.model.TokenMessage;
-import org.xhy.domain.token.model.TokenProcessResult;
-import org.xhy.domain.token.model.config.TokenOverflowConfig;
-import org.xhy.domain.shared.enums.TokenOverflowStrategyEnum;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.xhy.domain.shared.enums.TokenOverflowStrategyEnum;
+import org.xhy.domain.token.model.TokenMessage;
+import org.xhy.domain.token.model.TokenProcessResult;
+import org.xhy.domain.token.model.config.TokenOverflowConfig;
 
 /** 无策略测试类 */
 @SpringBootTest
@@ -95,5 +94,4 @@ public class NoTokenOverflowStrategyTest {
         assertFalse(strategy.needsProcessing(new ArrayList<>()));
         assertFalse(strategy.needsProcessing(null));
     }
-
 }

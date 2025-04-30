@@ -1,14 +1,13 @@
 package org.xhy.domain.conversation.service;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.xhy.domain.conversation.model.MessageEntity;
 import org.xhy.domain.conversation.repository.MessageRepository;
-
-import java.util.List;
 
 /** 对话服务实现 */
 @Service
@@ -40,7 +39,7 @@ public class ConversationDomainService {
     }
 
     /** 删除会话下的消息
-     * 
+     *
      * @param sessionId 会话id */
     public void deleteConversationMessages(String sessionId) {
         messageRepository
@@ -53,7 +52,7 @@ public class ConversationDomainService {
     }
 
     /** 更新消息的token数量
-     * 
+     *
      * @param message 消息实体 */
     @Transactional
     public void updateMessageTokenCount(MessageEntity message) {

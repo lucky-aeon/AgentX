@@ -1,14 +1,13 @@
 package org.xhy.application.agent.assembler;
 
-import org.xhy.application.agent.dto.AgentVersionDTO;
-import org.xhy.domain.agent.model.AgentEntity;
-import org.xhy.domain.agent.model.AgentVersionEntity;
-import org.xhy.interfaces.dto.agent.request.PublishAgentVersionRequest;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.xhy.application.agent.dto.AgentVersionDTO;
+import org.xhy.domain.agent.model.AgentEntity;
+import org.xhy.domain.agent.model.AgentVersionEntity;
+import org.xhy.interfaces.dto.agent.request.PublishAgentVersionRequest;
 
 public class AgentVersionAssembler {
 
@@ -62,5 +61,4 @@ public class AgentVersionAssembler {
         }
         return agents.stream().map(AgentVersionAssembler::toDTO).collect(Collectors.toList());
     }
-
 }

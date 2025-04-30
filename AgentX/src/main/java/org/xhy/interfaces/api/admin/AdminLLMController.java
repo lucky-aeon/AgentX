@@ -30,6 +30,7 @@ public class AdminLLMController {
     }
 
     /** 创建服务商
+     *
      * @param request 请求对象 */
     @PostMapping("")
     public Result<ProviderDTO> createProvider(@RequestBody @Validated ProviderCreateRequest request) {
@@ -38,6 +39,7 @@ public class AdminLLMController {
     }
 
     /** 更新服务商
+     *
      * @param id 服务商id
      * @param request 请求对象 */
     @PutMapping("/{id}")
@@ -49,6 +51,7 @@ public class AdminLLMController {
     }
 
     /** 删除服务商
+     *
      * @param id 服务商id */
     @DeleteMapping("/{id}")
     public Result<Void> deleteProvider(@PathVariable String id) {
@@ -58,6 +61,7 @@ public class AdminLLMController {
     }
 
     /** 创建模型
+     *
      * @param request 请求对象 */
     @PostMapping("/model")
     public Result<ModelDTO> createModel(@RequestBody @Validated ModelCreateRequest request) {
@@ -66,6 +70,7 @@ public class AdminLLMController {
     }
 
     /** 更新模型
+     *
      * @param id 更新的id
      * @param request 请求对象 */
     @PutMapping("/model/{id}")
@@ -76,6 +81,7 @@ public class AdminLLMController {
     }
 
     /** 删除模型
+     *
      * @param id 模型id */
     @DeleteMapping("/model/{id}")
     public Result<Void> deleteModel(@PathVariable String id) {
@@ -83,5 +89,4 @@ public class AdminLLMController {
         adminLLMAppService.deleteModel(id, userId);
         return Result.success();
     }
-
 }

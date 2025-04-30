@@ -62,5 +62,4 @@ public class ModelCreateRequest {
     public void setType(ModelType type) {
         this.type = type;
     }
-
 }

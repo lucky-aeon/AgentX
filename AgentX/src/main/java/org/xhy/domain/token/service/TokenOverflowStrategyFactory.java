@@ -1,8 +1,8 @@
 package org.xhy.domain.token.service;
 
 import org.springframework.stereotype.Service;
-import org.xhy.domain.token.model.config.TokenOverflowConfig;
 import org.xhy.domain.shared.enums.TokenOverflowStrategyEnum;
+import org.xhy.domain.token.model.config.TokenOverflowConfig;
 import org.xhy.domain.token.service.impl.NoTokenOverflowStrategy;
 import org.xhy.domain.token.service.impl.SlidingWindowTokenOverflowStrategy;
 import org.xhy.domain.token.service.impl.SummarizeTokenOverflowStrategy;

@@ -1,9 +1,8 @@
 package org.xhy.infrastructure.llm.config;
 
-import org.xhy.infrastructure.llm.protocol.enums.ProviderProtocol;
-
 import java.util.HashMap;
 import java.util.Map;
+import org.xhy.infrastructure.llm.protocol.enums.ProviderProtocol;
 
 public class ProviderConfig {
 

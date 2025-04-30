@@ -3,17 +3,16 @@ package org.xhy.domain.token.service.impl;
 import dev.langchain4j.data.message.*;
 import dev.langchain4j.model.chat.ChatLanguageModel;
 import dev.langchain4j.model.chat.response.ChatResponse;
-import org.xhy.domain.token.model.TokenMessage;
-import org.xhy.domain.token.model.TokenProcessResult;
-import org.xhy.domain.token.model.config.TokenOverflowConfig;
-import org.xhy.domain.shared.enums.TokenOverflowStrategyEnum;
-import org.xhy.domain.token.service.TokenOverflowStrategy;
-import org.xhy.infrastructure.llm.LLMProviderService;
-import org.xhy.infrastructure.llm.config.ProviderConfig;
-
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
+import org.xhy.domain.shared.enums.TokenOverflowStrategyEnum;
+import org.xhy.domain.token.model.TokenMessage;
+import org.xhy.domain.token.model.TokenProcessResult;
+import org.xhy.domain.token.model.config.TokenOverflowConfig;
+import org.xhy.domain.token.service.TokenOverflowStrategy;
+import org.xhy.infrastructure.llm.LLMProviderService;
+import org.xhy.infrastructure.llm.config.ProviderConfig;
 
 /** 摘要策略Token超限处理实现 将超出阈值的早期消息生成摘要，保留摘要和最新消息 */
 public class SummarizeTokenOverflowStrategy implements TokenOverflowStrategy {
@@ -31,7 +30,7 @@ public class SummarizeTokenOverflowStrategy implements TokenOverflowStrategy {
     private TokenMessage summaryMessage;
 
     /** 构造函数
-     * 
+     *
      * @param config 策略配置 */
     public SummarizeTokenOverflowStrategy(TokenOverflowConfig config) {
         this.config = config;
@@ -40,7 +39,7 @@ public class SummarizeTokenOverflowStrategy implements TokenOverflowStrategy {
     }
 
     /** 处理消息列表，应用摘要策略 将超过阈值的早期消息替换为一个摘要消息
-     * 
+     *
      * @param messages 待处理的消息列表
      * @return 处理后的消息列表（包含摘要消息+保留的消息） */
     @Override
@@ -85,7 +84,7 @@ public class SummarizeTokenOverflowStrategy implements TokenOverflowStrategy {
     }
 
     /** 创建表示摘要的TokenMessage对象
-     * 
+     *
      * @param summary 摘要内容
      * @return 摘要消息对象 */
     private TokenMessage createSummaryMessage(String summary) {
@@ -99,7 +98,7 @@ public class SummarizeTokenOverflowStrategy implements TokenOverflowStrategy {
     }
 
     /** 获取策略名称
-     * 
+     *
      * @return 策略名称 */
     @Override
     public String getName() {
@@ -107,7 +106,7 @@ public class SummarizeTokenOverflowStrategy implements TokenOverflowStrategy {
     }
 
     /** 判断是否需要进行Token超限处理
-     * 
+     *
      * @param messages 待处理的消息列表
      * @return 是否需要处理 */
     @Override
@@ -120,7 +119,7 @@ public class SummarizeTokenOverflowStrategy implements TokenOverflowStrategy {
     }
 
     /** 获取需要摘要的消息列表（按时间排序） 这是应用层应该使用的方法，用于获取需要进行摘要处理的消息对象
-     * 
+     *
      * @return 需要摘要的消息列表（按时间从旧到新排序） */
     public List<TokenMessage> getMessagesToSummarize() {
         return messagesToSummarize;
@@ -150,7 +149,7 @@ public class SummarizeTokenOverflowStrategy implements TokenOverflowStrategy {
     }
 
     /** 获取生成的摘要消息对象
-     * 
+     *
      * @return 摘要消息对象 */
     public TokenMessage getSummaryMessage() {
         return summaryMessage;

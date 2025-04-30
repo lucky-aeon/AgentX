@@ -3,6 +3,7 @@ package org.xhy.application.agent.dto;
 public class AgentWorkspaceDTO {
     /** 代理ID */
     private String agentId;
+
     /** 用户ID */
     private String userId;
 

@@ -1,11 +1,11 @@
 package org.xhy.domain.agent.service;
 
+import static java.lang.Thread.sleep;
+
 import dev.langchain4j.model.chat.response.ChatResponse;
 import dev.langchain4j.model.openai.OpenAiStreamingChatModel;
 import dev.langchain4j.service.AiServices;
 import dev.langchain4j.service.TokenStream;
-
-import static java.lang.Thread.sleep;
 
 public class ChatTest {
     public static void main(String[] args) throws InterruptedException {

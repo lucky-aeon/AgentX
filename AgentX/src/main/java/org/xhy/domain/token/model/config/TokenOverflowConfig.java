@@ -3,7 +3,6 @@ package org.xhy.domain.token.model.config;
 import org.springframework.stereotype.Service;
 import org.xhy.domain.shared.enums.TokenOverflowStrategyEnum;
 import org.xhy.infrastructure.llm.config.ProviderConfig;
-import org.xhy.infrastructure.llm.protocol.enums.ProviderProtocol;
 
 /** Token超限处理配置基础类 */
 @Service
@@ -29,21 +28,21 @@ public class TokenOverflowConfig {
     }
 
     /** 带策略类型的构造函数
-     * 
+     *
      * @param strategyType 策略类型 */
     public TokenOverflowConfig(TokenOverflowStrategyEnum strategyType) {
         this.strategyType = strategyType;
     }
 
     /** 获取策略类型
-     * 
+     *
      * @return 策略类型枚举值 */
     public TokenOverflowStrategyEnum getStrategyType() {
         return strategyType;
     }
 
     /** 设置策略类型
-     * 
+     *
      * @param strategyType 策略类型 */
     public void setStrategyType(TokenOverflowStrategyEnum strategyType) {
         this.strategyType = strategyType;
@@ -74,14 +73,14 @@ public class TokenOverflowConfig {
     }
 
     /** 创建默认的无策略配置
-     * 
+     *
      * @return 无策略配置实例 */
     public static TokenOverflowConfig createDefault() {
         return new TokenOverflowConfig(TokenOverflowStrategyEnum.NONE);
     }
 
     /** 创建滑动窗口策略配置
-     * 
+     *
      * @param maxTokens 最大Token数
      * @param reserveRatio 预留缓冲比例，默认0.1
      * @return 滑动窗口策略配置实例 */
@@ -93,7 +92,7 @@ public class TokenOverflowConfig {
     }
 
     /** 创建摘要策略配置
-     * 
+     *
      * @param maxTokens 最大Token数
      * @param summaryThreshold 摘要触发阈值，默认20
      * @return 摘要策略配置实例 */

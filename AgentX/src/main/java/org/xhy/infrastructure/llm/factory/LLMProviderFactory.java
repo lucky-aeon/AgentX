@@ -6,14 +6,14 @@ import dev.langchain4j.model.chat.ChatLanguageModel;
 import dev.langchain4j.model.chat.StreamingChatLanguageModel;
 import dev.langchain4j.model.openai.OpenAiChatModel;
 import dev.langchain4j.model.openai.OpenAiStreamingChatModel;
+import java.time.Duration;
 import org.xhy.infrastructure.llm.config.ProviderConfig;
 import org.xhy.infrastructure.llm.protocol.enums.ProviderProtocol;
-
-import java.time.Duration;
 
 public class LLMProviderFactory {
 
     /** 获取对应的服务商 不使用工厂模式，因为 OpenAiChatModel 没有无参构造器，并且其他类型的模型不能适配
+     *
      * @param protocol 协议
      * @param providerConfig 服务商信息 */
     public static ChatLanguageModel getLLMProvider(ProviderProtocol protocol, ProviderConfig providerConfig) {

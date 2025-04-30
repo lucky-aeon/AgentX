@@ -1,9 +1,8 @@
 package org.xhy.application.conversation.dto;
 
+import java.util.List;
 import org.xhy.application.task.dto.TaskDTO;
 import org.xhy.domain.conversation.constant.MessageType;
-
-import java.util.List;
 
 /** 流式聊天响应DTO */
 public class AgentChatResponse {
@@ -40,6 +39,7 @@ public class AgentChatResponse {
         streamChatResponse.setMessageType(messageType);
         return streamChatResponse;
     }
+
     public static AgentChatResponse buildEndMessage(String content, MessageType messageType) {
 
         AgentChatResponse streamChatResponse = new AgentChatResponse();

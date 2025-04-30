@@ -1,12 +1,11 @@
 package org.xhy.infrastructure.config;
 
 import com.baomidou.mybatisplus.core.handlers.MetaObjectHandler;
+import java.time.LocalDateTime;
 import org.apache.ibatis.reflection.MetaObject;
-import org.springframework.context.annotation.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.time.LocalDateTime;
+import org.springframework.context.annotation.Configuration;
 
 /** MyBatis-Plus配置类 用于配置MyBatis-Plus的自动填充等功能 */
 @Configuration

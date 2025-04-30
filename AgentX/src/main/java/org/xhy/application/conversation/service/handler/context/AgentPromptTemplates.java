@@ -1,7 +1,5 @@
 package org.xhy.application.conversation.service.handler.context;
 
-import java.util.Map;
-
 /** 提示词模板 集中管理各种场景的提示词 */
 public class AgentPromptTemplates {
 
@@ -17,8 +15,8 @@ public class AgentPromptTemplates {
 
     public static String getIgnoreSensitiveInfoPrompt() {
         return IGNORE_SENSITIVE_INFO_PROMPT;
-
     }
+
     /** 获取摘要算法的提示词 */
     public static String getSummaryPrefix() {
         return SUMMARY_PREFIX;

@@ -1,17 +1,17 @@
 package org.xhy.infrastructure.converter;
 
+import java.sql.CallableStatement;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import org.apache.ibatis.type.BaseTypeHandler;
 import org.apache.ibatis.type.JdbcType;
 import org.apache.ibatis.type.MappedJdbcTypes;
 import org.postgresql.util.PGobject;
 import org.xhy.infrastructure.utils.JsonUtils;
 
-import java.sql.CallableStatement;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-
 /** JSON类型转换器 用于处理数据库JSONB类型和Java对象之间的转换
+ *
  * @param <T> 要转换的对象类型 */
 @MappedJdbcTypes(JdbcType.OTHER)
 public abstract class JsonToStringConverter<T> extends BaseTypeHandler<T> {

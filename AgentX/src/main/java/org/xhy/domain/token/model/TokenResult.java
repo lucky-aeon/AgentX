@@ -66,7 +66,7 @@ public class TokenResult {
     }
 
     /** 获取保留消息的ID列表
-     * 
+     *
      * @return 消息ID列表 */
     public List<String> getRetainedMessageIds() {
         List<String> ids = new ArrayList<>();

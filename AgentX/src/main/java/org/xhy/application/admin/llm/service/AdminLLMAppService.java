@@ -24,6 +24,7 @@ public class AdminLLMAppService {
     }
 
     /** 创建官方服务商
+     *
      * @param providerCreateRequest 请求对象
      * @param userId 用户id */
     public ProviderDTO createProvider(ProviderCreateRequest providerCreateRequest, String userId) {
@@ -33,6 +34,7 @@ public class AdminLLMAppService {
     }
 
     /** 修改服务商
+     *
      * @param providerUpdateRequest 请求对象
      * @param userId 用户id */
     public ProviderDTO updateProvider(ProviderUpdateRequest providerUpdateRequest, String userId) {
@@ -53,6 +55,7 @@ public class AdminLLMAppService {
     }
 
     /** 删除服务商
+     *
      * @param providerId 服务商id
      * @param userId 用户id */
     public void deleteProvider(String providerId, String userId) {
@@ -60,6 +63,7 @@ public class AdminLLMAppService {
     }
 
     /** 创建模型
+     *
      * @param modelCreateRequest 模型对象
      * @param userId 用户id */
     public ModelDTO createModel(ModelCreateRequest modelCreateRequest, String userId) {
@@ -71,6 +75,7 @@ public class AdminLLMAppService {
     }
 
     /** 更新模型
+     *
      * @param modelUpdateRequest 模型请求对象
      * @param userId 用户id */
     public ModelDTO updateModel(ModelUpdateRequest modelUpdateRequest, String userId) {
@@ -81,6 +86,7 @@ public class AdminLLMAppService {
     }
 
     /** 删除模型
+     *
      * @param modelId 模型id
      * @param userId 用户id */
     public void deleteModel(String modelId, String userId) {

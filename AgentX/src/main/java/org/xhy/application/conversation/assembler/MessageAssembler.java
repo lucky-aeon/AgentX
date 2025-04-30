@@ -1,11 +1,10 @@
 package org.xhy.application.conversation.assembler;
 
-import org.xhy.domain.conversation.model.MessageEntity;
-import org.xhy.application.conversation.dto.MessageDTO;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.xhy.application.conversation.dto.MessageDTO;
+import org.xhy.domain.conversation.model.MessageEntity;
 
 /** 消息对象转换器 */
 public class MessageAssembler {

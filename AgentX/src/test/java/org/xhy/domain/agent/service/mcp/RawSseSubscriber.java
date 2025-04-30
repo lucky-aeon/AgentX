@@ -1,14 +1,13 @@
 // File: src/main/java/org/xhy/domain/agent/service/RawSseSubscriber.java
 package org.xhy.domain.agent.service.mcp;
 
+import java.util.function.Consumer;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 import okhttp3.sse.EventSource;
 import okhttp3.sse.EventSourceListener;
 import okhttp3.sse.EventSources;
-
-import java.util.function.Consumer;
 
 /** 并行开启一条 SSE 连接，只负责把服务器 data: 推送的原始字符串交给回调 */
 public class RawSseSubscriber {

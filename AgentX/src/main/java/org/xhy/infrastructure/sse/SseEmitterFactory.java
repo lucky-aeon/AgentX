@@ -1,10 +1,9 @@
 package org.xhy.infrastructure.sse;
 
+import java.io.IOException;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import org.xhy.application.conversation.dto.AgentChatResponse;
-
-import java.io.IOException;
 
 /** SSE发射器工厂 负责创建和配置Server-Sent Events发射器 */
 @Component

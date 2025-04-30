@@ -1,13 +1,11 @@
 package org.xhy.application.agent.dto;
 
-import org.xhy.domain.agent.constant.AgentType;
-import org.xhy.domain.agent.model.LLMModelConfig;
-import org.xhy.domain.agent.model.AgentTool;
-import org.xhy.domain.agent.constant.PublishStatus;
-
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import org.xhy.domain.agent.constant.AgentType;
+import org.xhy.domain.agent.constant.PublishStatus;
+import org.xhy.domain.agent.model.AgentTool;
 
 /** Agent版本数据传输对象，用于表示层和应用层之间传递Agent版本数据 */
 public class AgentVersionDTO {

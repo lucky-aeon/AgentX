@@ -13,5 +13,4 @@ public class AgentWorkspaceAssembler {
         BeanUtils.copyProperties(request, llmModelConfig);
         return llmModelConfig;
     }
-
 }

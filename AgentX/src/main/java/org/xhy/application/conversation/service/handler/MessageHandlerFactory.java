@@ -21,7 +21,7 @@ public class MessageHandlerFactory {
     }
 
     /** 根据智能体获取合适的消息处理器
-     * 
+     *
      * @param agent 智能体实体
      * @return 消息处理器 */
     public AbstractMessageHandler getHandler(AgentEntity agent) {
@@ -35,7 +35,7 @@ public class MessageHandlerFactory {
     }
 
     /** 根据处理器类型获取对应的处理器实例
-     * 
+     *
      * @param type 处理器类型
      * @return 消息处理器 */
     private AbstractMessageHandler getHandlerByType(MessageHandlerType type) {

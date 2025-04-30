@@ -22,6 +22,7 @@ public enum ProviderType {
     }
 
     /** 根据code获取对应的枚举值
+     *
      * @param code 类型编码
      * @return 对应的枚举，若不存在则默认返回USER类型 */
     public static ProviderType fromCode(String code) {

@@ -1,16 +1,16 @@
 package org.xhy.interfaces.dto.agent.request;
 
 import jakarta.validation.constraints.NotBlank;
-import org.xhy.domain.agent.model.AgentTool;
-import org.xhy.domain.agent.constant.AgentType;
-
 import java.util.List;
+import org.xhy.domain.agent.constant.AgentType;
+import org.xhy.domain.agent.model.AgentTool;
 
 /** 创建Agent的请求对象 */
 public class CreateAgentRequest {
 
     @NotBlank(message = "助理名称不可为空")
     private String name;
+
     private String description;
     private String avatar;
     private AgentType agentType = AgentType.CHAT_ASSISTANT;
@@ -22,6 +22,7 @@ public class CreateAgentRequest {
     // 构造方法
     public CreateAgentRequest() {
     }
+
     // Getter和Setter
     public String getName() {
         return name;

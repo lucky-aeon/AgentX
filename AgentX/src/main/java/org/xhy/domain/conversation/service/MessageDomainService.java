@@ -1,12 +1,11 @@
 package org.xhy.domain.conversation.service;
 
+import java.util.List;
 import org.springframework.stereotype.Service;
 import org.xhy.domain.conversation.model.ContextEntity;
 import org.xhy.domain.conversation.model.MessageEntity;
 import org.xhy.domain.conversation.repository.ContextRepository;
 import org.xhy.domain.conversation.repository.MessageRepository;
-
-import java.util.List;
 
 @Service
 public class MessageDomainService {
@@ -45,5 +44,4 @@ public class MessageDomainService {
     public void updateMessage(MessageEntity message) {
         messageRepository.updateById(message);
     }
-
 }

@@ -1,11 +1,13 @@
 package org.xhy.infrastructure.config;
 
+import jakarta.annotation.PostConstruct;
+import java.util.List;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.ibatis.type.TypeHandlerRegistry;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Configuration;
 import org.xhy.domain.agent.model.LLMModelConfig;
 import org.xhy.domain.conversation.constant.MessageType;
 import org.xhy.domain.conversation.constant.Role;
@@ -13,11 +15,7 @@ import org.xhy.domain.llm.model.config.ProviderConfig;
 import org.xhy.domain.llm.model.enums.ModelType;
 import org.xhy.domain.task.constant.TaskStatus;
 import org.xhy.infrastructure.converter.*;
-
-import jakarta.annotation.PostConstruct;
 import org.xhy.infrastructure.llm.protocol.enums.ProviderProtocol;
-
-import java.util.List;
 
 /** MyBatis类型处理器配置类 用于手动注册类型处理器 */
 @Configuration

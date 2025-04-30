@@ -1,5 +1,8 @@
 package org.xhy.domain.conversation.service;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.xhy.domain.conversation.model.ContextEntity;
 import org.xhy.domain.conversation.model.MessageEntity;
@@ -9,10 +12,6 @@ import org.xhy.domain.token.model.TokenProcessResult;
 import org.xhy.domain.token.model.config.TokenOverflowConfig;
 import org.xhy.domain.token.service.TokenDomainService;
 import org.xhy.infrastructure.llm.config.ProviderConfig;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
 
 /** 上下文处理器 负责处理对话上下文和消息列表的相关业务逻辑 */
 @Service

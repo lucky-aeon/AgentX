@@ -7,6 +7,8 @@ import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.chat.request.ChatRequest;
 import dev.langchain4j.model.openai.OpenAiChatRequestParameters;
+import java.util.ArrayList;
+import java.util.List;
 import org.xhy.domain.agent.model.AgentEntity;
 import org.xhy.domain.agent.model.LLMModelConfig;
 import org.xhy.domain.conversation.constant.Role;
@@ -14,9 +16,6 @@ import org.xhy.domain.conversation.model.ContextEntity;
 import org.xhy.domain.conversation.model.MessageEntity;
 import org.xhy.domain.llm.model.ModelEntity;
 import org.xhy.domain.llm.model.ProviderEntity;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /** chat 上下文，包含对话所需的所有信息 */
 public class ChatContext {

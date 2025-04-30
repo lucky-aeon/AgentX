@@ -4,23 +4,22 @@ import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import org.springframework.transaction.annotation.Transactional;
-import org.xhy.domain.llm.model.ModelEntity;
-import org.xhy.domain.llm.model.ProviderAggregate;
-import org.xhy.domain.llm.model.ProviderEntity;
-import org.xhy.infrastructure.entity.Operator;
-import org.xhy.infrastructure.llm.protocol.enums.ProviderProtocol;
-import org.xhy.domain.llm.model.enums.ProviderType;
-import org.xhy.domain.llm.repository.ModelRepository;
-import org.xhy.domain.llm.repository.ProviderRepository;
-import org.springframework.stereotype.Service;
-import org.xhy.infrastructure.exception.BusinessException;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.xhy.domain.llm.model.ModelEntity;
+import org.xhy.domain.llm.model.ProviderAggregate;
+import org.xhy.domain.llm.model.ProviderEntity;
+import org.xhy.domain.llm.model.enums.ProviderType;
+import org.xhy.domain.llm.repository.ModelRepository;
+import org.xhy.domain.llm.repository.ProviderRepository;
+import org.xhy.infrastructure.entity.Operator;
+import org.xhy.infrastructure.exception.BusinessException;
+import org.xhy.infrastructure.llm.protocol.enums.ProviderProtocol;
 
 /** LLM领域服务 负责服务提供商和模型的核心业务逻辑 */
 @Service
@@ -35,6 +34,7 @@ public class LLMDomainService {
     }
 
     /** 创建服务商
+     *
      * @param provider 服务商信息
      * @return 创建后的服务商ID */
     public ProviderEntity createProvider(ProviderEntity provider) {
@@ -44,6 +44,7 @@ public class LLMDomainService {
     }
 
     /** 更新服务商
+     *
      * @param provider 服务商信息 */
     public void updateProvider(ProviderEntity provider) {
         validateProviderProtocol(provider.getProtocol());
@@ -54,6 +55,7 @@ public class LLMDomainService {
     }
 
     /** 获取用户自己的服务商
+     *
      * @param userId 用户id */
     public List<ProviderAggregate> getUserProviders(String userId) {
         Wrapper<ProviderEntity> wrapper = Wrappers.<ProviderEntity>lambdaQuery().eq(ProviderEntity::getUserId, userId);
@@ -63,6 +65,7 @@ public class LLMDomainService {
     }
 
     /** 获取所有服务商（包含官方和用户自定义）
+     *
      * @param userId 用户ID
      * @return 服务商聚合根列表 */
     public List<ProviderAggregate> getAllProviders(String userId) {
@@ -74,6 +77,7 @@ public class LLMDomainService {
     }
 
     /** 获取官方服务商
+     *
      * @return 官方服务商聚合根列表 */
     public List<ProviderAggregate> getOfficialProviders() {
         Wrapper<ProviderEntity> wrapper = Wrappers.<ProviderEntity>lambdaQuery().eq(ProviderEntity::getIsOfficial,
@@ -84,6 +88,7 @@ public class LLMDomainService {
     }
 
     /** 获取用户自定义服务商
+     *
      * @param userId 用户ID
      * @return 用户自定义服务商聚合根列表 */
     public List<ProviderAggregate> getCustomProviders(String userId) {
@@ -95,6 +100,7 @@ public class LLMDomainService {
     }
 
     /** 构建服务商聚合根，只包含激活的模型
+     *
      * @param providers 服务商列表
      * @return 服务商聚合根列表 */
     private List<ProviderAggregate> buildProviderAggregatesWithActiveModels(List<ProviderEntity> providers) {
@@ -122,6 +128,7 @@ public class LLMDomainService {
     }
 
     /** 获取服务商
+     *
      * @param providerId 服务商id
      * @param userId 用户id */
     public ProviderEntity getProvider(String providerId, String userId) {
@@ -146,6 +153,7 @@ public class LLMDomainService {
     }
 
     /** 查找服务商
+     *
      * @param providerId 服务商id */
     public ProviderEntity findProviderById(String providerId) {
         Wrapper<ProviderEntity> wrapper = Wrappers.<ProviderEntity>lambdaQuery().eq(ProviderEntity::getId, providerId);
@@ -184,6 +192,7 @@ public class LLMDomainService {
     }
 
     /** 获取激活的模型列表
+     *
      * @param providerId 服务商ID
      * @param userId 用户ID
      * @return 激活的模型列表 */
@@ -194,6 +203,7 @@ public class LLMDomainService {
     }
 
     /** 删除服务商
+     *
      * @param providerId 服务商id
      * @param userId 用户id */
     @Transactional
@@ -208,6 +218,7 @@ public class LLMDomainService {
     }
 
     /** 验证服务商协议是否支持
+     *
      * @param protocol 协议 */
     private void validateProviderProtocol(ProviderProtocol protocol) {
         // TODO: 从配置或枚举中获取支持的服务商协议列表
@@ -217,6 +228,7 @@ public class LLMDomainService {
     }
 
     /** 检查是否是支持的服务商协议
+     *
      * @param protocol 服务商提供商编码
      * @return */
     private boolean isSupportedProvider(ProviderProtocol protocol) {
@@ -224,18 +236,21 @@ public class LLMDomainService {
     }
 
     /** 获取所有支持的服务商协议
+     *
      * @return */
     public List<ProviderProtocol> getProviderProtocols() {
         return Arrays.asList(ProviderProtocol.values());
     }
 
     /** 创建模型
+     *
      * @param model 模型信息 */
     public void createModel(ModelEntity model) {
         modelRepository.insert(model);
     }
 
     /** 修改模型
+     *
      * @param model 模型信息 */
     public void updateModel(ModelEntity model) {
         Wrapper<ModelEntity> wrapper = Wrappers.<ModelEntity>lambdaQuery().eq(ModelEntity::getId, model.getId())
@@ -244,6 +259,7 @@ public class LLMDomainService {
     }
 
     /** 删除模型
+     *
      * @param modelId 模型id */
     public void deleteModel(String modelId, String userId, Operator operator) {
         Wrapper<ModelEntity> wrapper = Wrappers.<ModelEntity>lambdaQuery().eq(ModelEntity::getId, modelId)
@@ -252,6 +268,7 @@ public class LLMDomainService {
     }
 
     /** 修改模型状态
+     *
      * @param modelId 模型id
      * @param userId 用户id */
     public void updateModelStatus(String modelId, String userId) {
@@ -262,6 +279,7 @@ public class LLMDomainService {
     }
 
     /** 根据类型获取服务商
+     *
      * @param providerType 服务商类型编码
      * @param userId 用户ID
      * @return 服务商聚合根列表 */
@@ -284,6 +302,7 @@ public class LLMDomainService {
     }
 
     /** 修改服务商状态
+     *
      * @param providerId 服务商id
      * @param userId 用户id */
     public void updateProviderStatus(String providerId, String userId) {
@@ -294,6 +313,7 @@ public class LLMDomainService {
     }
 
     /** 获取模型
+     *
      * @param modelId 模型id */
     public ModelEntity getModelById(String modelId) {
         ModelEntity modelEntity = modelRepository.selectById(modelId);

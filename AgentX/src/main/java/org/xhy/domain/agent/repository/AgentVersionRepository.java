@@ -1,19 +1,17 @@
 package org.xhy.domain.agent.repository;
 
-import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;
 import org.xhy.domain.agent.model.AgentVersionEntity;
 import org.xhy.infrastructure.repository.MyBatisPlusExtRepository;
-
-import java.util.List;
 
 /** Agent版本仓库接口 */
 @Mapper
 public interface AgentVersionRepository extends MyBatisPlusExtRepository<AgentVersionEntity> {
 
     /** 查询每个agentId的最新版本（按publishStatus过滤）
-     * 
+     *
      * @param publishStatus 发布状态，为null时查询所有状态
      * @return 每个agentId的最新版本列表 */
     @Select("<script>" + "SELECT a.* FROM agent_versions a "
@@ -24,7 +22,7 @@ public interface AgentVersionRepository extends MyBatisPlusExtRepository<AgentVe
     List<AgentVersionEntity> selectLatestVersionsByStatus(Integer publishStatus);
 
     /** 按名称搜索每个agentId的最新版本
-     * 
+     *
      * @param name 搜索的名称，模糊匹配
      * @return 符合条件的每个agentId的最新版本列表 */
     @Select("<script>" + "SELECT a.* FROM agent_versions a "

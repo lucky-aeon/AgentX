@@ -1,34 +1,41 @@
 package org.xhy.application.llm.dto;
 
-import org.xhy.domain.llm.model.config.ProviderConfig;
-import org.xhy.infrastructure.llm.protocol.enums.ProviderProtocol;
-
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import org.xhy.domain.llm.model.config.ProviderConfig;
+import org.xhy.infrastructure.llm.protocol.enums.ProviderProtocol;
 
 /** 服务提供商DTO */
 public class ProviderDTO {
 
     /** 服务商id */
     private String id;
+
     /** 服务商协议 */
     private ProviderProtocol protocol;
+
     /** 服务商名称 */
     private String name;
+
     /** 服务商描述 */
     private String description;
+
     /** 服务商配置 */
     private ProviderConfig config;
+
     /** 是否官方 */
     private Boolean isOfficial;
+
     /** 服务商状态 */
     private Boolean status;
+
     /** 创建时间 */
     private LocalDateTime createdAt;
 
     /** 更新时间 */
     private LocalDateTime updatedAt;
+
     /** 模型列表 */
     private List<ModelDTO> models = new ArrayList<>();
 

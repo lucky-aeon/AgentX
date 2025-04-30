@@ -1,21 +1,20 @@
 package org.xhy.interfaces.api.portal.agent;
 
-import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.*;
-import org.xhy.application.agent.service.AgentSessionAppService;
-import org.xhy.application.conversation.dto.ChatRequest;
-import org.xhy.application.conversation.service.ConversationAppService;
-import org.xhy.application.conversation.dto.MessageDTO;
-import org.xhy.application.conversation.dto.SessionDTO;
-import org.xhy.infrastructure.auth.UserContext;
-import org.xhy.interfaces.api.common.Result;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import org.xhy.application.agent.service.AgentSessionAppService;
+import org.xhy.application.conversation.dto.ChatRequest;
+import org.xhy.application.conversation.dto.MessageDTO;
+import org.xhy.application.conversation.dto.SessionDTO;
+import org.xhy.application.conversation.service.ConversationAppService;
+import org.xhy.infrastructure.auth.UserContext;
+import org.xhy.interfaces.api.common.Result;
 
 /** Agent会话管理 */
 @RestController
@@ -71,6 +70,7 @@ public class PortalAgentSessionController {
     }
 
     /** 发送消息
+     *
      * @param chatRequest 消息对象
      * @return */
     @PostMapping("/chat")
