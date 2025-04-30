@@ -142,6 +142,19 @@ CREATE TABLE agent_tasks (
     deleted_at TIMESTAMP
 );
 
+CREATE TABLE users (
+                             id varchar(36) PRIMARY KEY,
+                             nickname varchar(255) NOT NULL,
+                             email varchar(255),
+                             phone varchar(11),
+                             password varchar NOT NULL,
+                             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                             updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                             deleted_at TIMESTAMP
+);
+
+
+
 -- 创建索引
 CREATE INDEX idx_sessions_user_id ON sessions(user_id);
 CREATE INDEX idx_sessions_agent_id ON sessions(agent_id);
@@ -283,3 +296,14 @@ COMMENT ON COLUMN agent_tasks.task_result IS '任务结果';
 COMMENT ON COLUMN agent_tasks.created_at IS '创建时间';
 COMMENT ON COLUMN agent_tasks.updated_at IS '更新时间';
 COMMENT ON COLUMN agent_tasks.deleted_at IS '逻辑删除时间';
+
+COMMENT ON COLUMN users.id IS '主键';
+COMMENT ON COLUMN users.nickname IS '昵称';
+COMMENT ON COLUMN users.email IS '邮箱';
+COMMENT ON COLUMN users.phone IS '手机号';
+COMMENT ON COLUMN users.password IS '密码';
+COMMENT ON COLUMN users.created_at IS '创建时间';
+COMMENT ON COLUMN users.updated_at IS '更新时间';
+COMMENT ON COLUMN users.deleted_at IS '逻辑删除时间';
+    
+    
