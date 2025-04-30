@@ -7,11 +7,7 @@ import org.springframework.web.servlet.HandlerInterceptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
-/**
- * 用户鉴权拦截器
- * 用于拦截需要鉴权的请求，验证用户身份并设置用户上下文
- */
+/** 用户鉴权拦截器 用于拦截需要鉴权的请求，验证用户身份并设置用户上下文 */
 @Component
 public class UserAuthInterceptor implements HandlerInterceptor {
 

@@ -2,11 +2,9 @@ package org.xhy.infrastructure.entity;
 
 public enum Operator {
 
-    USER,
-    ADMIN;
+    USER, ADMIN;
 
-
-    public boolean needCheckUserId(){
+    public boolean needCheckUserId() {
         return this == Operator.USER;
     }
 }

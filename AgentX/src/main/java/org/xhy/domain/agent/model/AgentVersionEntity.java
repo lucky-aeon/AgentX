@@ -14,124 +14,83 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Agent版本实体类，代表一个Agent的发布版本
- */
+/** Agent版本实体类，代表一个Agent的发布版本 */
 @TableName(value = "agent_versions", autoResultMap = true)
 public class AgentVersionEntity extends BaseEntity {
 
-    /**
-     * 版本唯一ID
-     */
+    /** 版本唯一ID */
     @TableId(value = "id", type = IdType.ASSIGN_UUID)
     private String id;
 
-    /**
-     * 关联的Agent ID
-     */
+    /** 关联的Agent ID */
     @TableField("agent_id")
     private String agentId;
 
-    /**
-     * Agent名称
-     */
+    /** Agent名称 */
     @TableField("name")
     private String name;
 
-    /**
-     * Agent头像URL
-     */
+    /** Agent头像URL */
     @TableField("avatar")
     private String avatar;
 
-    /**
-     * Agent描述
-     */
+    /** Agent描述 */
     @TableField("description")
     private String description;
 
-    /**
-     * 版本号，如1.0.0
-     */
+    /** 版本号，如1.0.0 */
     @TableField("version_number")
     private String versionNumber;
 
-    /**
-     * Agent系统提示词
-     */
+    /** Agent系统提示词 */
     @TableField("system_prompt")
     private String systemPrompt;
 
-    /**
-     * 欢迎消息
-     */
+    /** 欢迎消息 */
     @TableField("welcome_message")
     private String welcomeMessage;
 
-    /**
-     * Agent可使用的工具列表
-     */
+    /** Agent可使用的工具列表 */
     @TableField(value = "tools", typeHandler = ListConverter.class)
     private List<AgentTool> tools;
 
-    /**
-     * 关联的知识库ID列表
-     */
+    /** 关联的知识库ID列表 */
     @TableField(value = "knowledge_base_ids", typeHandler = ListConverter.class)
     private List<String> knowledgeBaseIds;
 
-    /**
-     * 版本更新日志
-     */
+    /** 版本更新日志 */
     @TableField("change_log")
     private String changeLog;
 
-    /**
-     * Agent类型：1-聊天助手, 2-功能性Agent
-     */
+    /** Agent类型：1-聊天助手, 2-功能性Agent */
     @TableField("agent_type")
     private Integer agentType;
 
-    /**
-     * 发布状态：1-审核中, 2-已发布, 3-拒绝, 4-已下架
-     */
+    /** 发布状态：1-审核中, 2-已发布, 3-拒绝, 4-已下架 */
     @TableField("publish_status")
     private Integer publishStatus;
 
-    /**
-     * 审核拒绝原因
-     */
+    /** 审核拒绝原因 */
     @TableField("reject_reason")
     private String rejectReason;
 
-    /**
-     * 审核时间
-     */
+    /** 审核时间 */
     @TableField("review_time")
     private LocalDateTime reviewTime;
 
-    /**
-     * 发布时间
-     */
+    /** 发布时间 */
     @TableField("published_at")
     private LocalDateTime publishedAt;
 
-    /**
-     * 创建者用户ID
-     */
+    /** 创建者用户ID */
     @TableField("user_id")
     private String userId;
 
-
-
-    /**
-     * 无参构造函数
-     */
+    /** 无参构造函数 */
     public AgentVersionEntity() {
         this.tools = new ArrayList<>();
         this.knowledgeBaseIds = new ArrayList<>();
     }
-
 
     // Getter和Setter方法
     public String getId() {
@@ -269,33 +228,25 @@ public class AgentVersionEntity extends BaseEntity {
     public void setUserId(String userId) {
         this.userId = userId;
     }
-    /**
-     * 获取发布状态枚举
-     */
+    /** 获取发布状态枚举 */
     public PublishStatus getPublishStatusEnum() {
         return PublishStatus.fromCode(this.publishStatus);
     }
 
-    /**
-     * 更新发布状态
-     */
+    /** 更新发布状态 */
     public void updatePublishStatus(PublishStatus status) {
         this.publishStatus = status.getCode();
         this.reviewTime = LocalDateTime.now();
     }
 
-    /**
-     * 拒绝发布
-     */
+    /** 拒绝发布 */
     public void reject(String reason) {
         this.publishStatus = PublishStatus.REJECTED.getCode();
         this.rejectReason = reason;
         this.reviewTime = LocalDateTime.now();
     }
 
-    /**
-     * 从Agent实体创建一个新的版本实体
-     */
+    /** 从Agent实体创建一个新的版本实体 */
     public static AgentVersionEntity createFromAgent(AgentEntity agent, String versionNumber, String changeLog) {
         AgentVersionEntity version = new AgentVersionEntity();
         version.setAgentId(agent.getId());

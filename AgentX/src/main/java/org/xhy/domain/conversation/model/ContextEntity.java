@@ -12,39 +12,27 @@ import org.xhy.infrastructure.entity.BaseEntity;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * 上下文实体类，管理会话的上下文窗口
- */
+/** 上下文实体类，管理会话的上下文窗口 */
 @TableName("context")
 public class ContextEntity extends BaseEntity {
 
-    /**
-     * 上下文唯一ID
-     */
+    /** 上下文唯一ID */
     @TableId(value = "id", type = IdType.ASSIGN_UUID)
     private String id;
 
-    /**
-     * 所属会话ID
-     */
+    /** 所属会话ID */
     @TableField("session_id")
     private String sessionId;
 
-    /**
-     * 活跃消息ID列表
-     */
+    /** 活跃消息ID列表 */
     @TableField(value = "active_messages", typeHandler = ListConverter.class)
     private List<String> activeMessages = new ArrayList<>();
 
-    /**
-     * 历史消息摘要
-     */
+    /** 历史消息摘要 */
     @TableField("summary")
     private String summary;
 
-    /**
-     * 无参构造函数
-     */
+    /** 无参构造函数 */
     public ContextEntity() {
     }
 

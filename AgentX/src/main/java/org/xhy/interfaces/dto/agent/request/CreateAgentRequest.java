@@ -6,9 +6,7 @@ import org.xhy.domain.agent.constant.AgentType;
 
 import java.util.List;
 
-/**
- * 创建Agent的请求对象
- */
+/** 创建Agent的请求对象 */
 public class CreateAgentRequest {
 
     @NotBlank(message = "助理名称不可为空")

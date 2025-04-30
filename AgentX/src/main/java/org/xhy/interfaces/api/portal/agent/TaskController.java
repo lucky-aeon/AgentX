@@ -10,9 +10,7 @@ import org.xhy.interfaces.api.common.Result;
 
 import java.util.List;
 
-/**
- * agent任务管理
- */
+/** agent任务管理 */
 @RestController
 @RequestMapping("/tasks")
 public class TaskController {
@@ -24,13 +22,11 @@ public class TaskController {
         this.taskAppService = taskAppService;
     }
 
-    /**
-     * 获取当前会话的任务
-     * @param sessionId 会话id
-     */
+    /** 获取当前会话的任务
+     * @param sessionId 会话id */
     @GetMapping("/session/{sessionId}/latest")
     public Result<TaskAggregate> getSessionTasks(@PathVariable String sessionId) {
         String userId = UserContext.getCurrentUserId();
-        return Result.success(taskAppService.getCurrentSessionTask(sessionId,userId));
+        return Result.success(taskAppService.getCurrentSessionTask(sessionId, userId));
     }
 }

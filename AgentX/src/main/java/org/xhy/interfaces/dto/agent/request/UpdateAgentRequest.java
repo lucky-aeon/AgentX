@@ -6,12 +6,8 @@ import org.xhy.domain.agent.model.AgentTool;
 
 import java.util.List;
 
-/**
- * 更新Agent信息的请求对象
- * 整合了基本信息和配置信息
- */
+/** 更新Agent信息的请求对象 整合了基本信息和配置信息 */
 public class UpdateAgentRequest {
-
 
     private String agentId;
     @NotBlank(message = "助理名称不可为空")
@@ -47,57 +43,56 @@ public class UpdateAgentRequest {
     public String getName() {
         return name;
     }
-    
+
     public void setName(String name) {
         this.name = name;
     }
-    
+
     public String getAvatar() {
         return avatar;
     }
-    
+
     public void setAvatar(String avatar) {
         this.avatar = avatar;
     }
-    
+
     public String getDescription() {
         return description;
     }
-    
+
     public void setDescription(String description) {
         this.description = description;
     }
-    
+
     public String getSystemPrompt() {
         return systemPrompt;
     }
-    
+
     public void setSystemPrompt(String systemPrompt) {
         this.systemPrompt = systemPrompt;
     }
-    
+
     public String getWelcomeMessage() {
         return welcomeMessage;
     }
-    
+
     public void setWelcomeMessage(String welcomeMessage) {
         this.welcomeMessage = welcomeMessage;
     }
 
-    
     public List<AgentTool> getTools() {
         return tools;
     }
-    
+
     public void setTools(List<AgentTool> tools) {
         this.tools = tools;
     }
-    
+
     public List<String> getKnowledgeBaseIds() {
         return knowledgeBaseIds;
     }
-    
+
     public void setKnowledgeBaseIds(List<String> knowledgeBaseIds) {
         this.knowledgeBaseIds = knowledgeBaseIds;
     }
-} 
+}

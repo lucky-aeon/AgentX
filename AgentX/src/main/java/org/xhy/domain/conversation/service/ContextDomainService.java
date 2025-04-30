@@ -19,10 +19,9 @@ public class ContextDomainService {
     // 获取历史消息id
     public ContextEntity getBySessionId(String sessionId) {
         LambdaQueryWrapper<ContextEntity> wrapper = Wrappers.<ContextEntity>lambdaQuery()
-                .eq(ContextEntity::getSessionId, sessionId)
-                .select();
+                .eq(ContextEntity::getSessionId, sessionId).select();
         ContextEntity contextEntity = contextRepository.selectOne(wrapper);
-        if (contextEntity==null){
+        if (contextEntity == null) {
             throw new BusinessException("消息上下文不存在");
         }
         return contextEntity;
@@ -34,11 +33,10 @@ public class ContextDomainService {
         return contextRepository.selectOne(wrapper);
     }
 
-
     public ContextEntity insertOrUpdate(ContextEntity contextEntity) {
         try {
             contextRepository.insertOrUpdate(contextEntity);
-        }catch (Exception e){
+        } catch (Exception e) {
             System.out.println(e);
         }
         return contextEntity;

@@ -8,18 +8,13 @@ import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 
-/**
- * MyBatis-Plus配置类
- * 用于配置MyBatis-Plus的自动填充等功能
- */
+/** MyBatis-Plus配置类 用于配置MyBatis-Plus的自动填充等功能 */
 @Configuration
 public class MybatisPlusConfig implements MetaObjectHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(MybatisPlusConfig.class);
 
-    /**
-     * 插入操作自动填充
-     */
+    /** 插入操作自动填充 */
     @Override
     public void insertFill(MetaObject metaObject) {
 
@@ -29,9 +24,7 @@ public class MybatisPlusConfig implements MetaObjectHandler {
         this.strictInsertFill(metaObject, "updatedAt", LocalDateTime.class, now);
     }
 
-    /**
-     * 更新操作自动填充
-     */
+    /** 更新操作自动填充 */
     @Override
     public void updateFill(MetaObject metaObject) {
 

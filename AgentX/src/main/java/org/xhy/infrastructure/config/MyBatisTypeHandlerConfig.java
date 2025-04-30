@@ -19,10 +19,7 @@ import org.xhy.infrastructure.llm.protocol.enums.ProviderProtocol;
 
 import java.util.List;
 
-/**
- * MyBatis类型处理器配置类
- * 用于手动注册类型处理器
- */
+/** MyBatis类型处理器配置类 用于手动注册类型处理器 */
 @Configuration
 public class MyBatisTypeHandlerConfig {
 
@@ -31,13 +28,11 @@ public class MyBatisTypeHandlerConfig {
     @Autowired
     private SqlSessionFactory sqlSessionFactory;
 
-    /**
-     * 初始化注册类型处理器
-     */
+    /** 初始化注册类型处理器 */
     @PostConstruct
     public void registerTypeHandlers() {
         TypeHandlerRegistry typeHandlerRegistry = sqlSessionFactory.getConfiguration().getTypeHandlerRegistry();
-        
+
         // 确保自动扫描没有生效时，我们手动注册需要的转换器
         typeHandlerRegistry.register(ProviderConfig.class, new ProviderConfigConverter());
         typeHandlerRegistry.register(List.class, new ListConverter());
@@ -49,8 +44,8 @@ public class MyBatisTypeHandlerConfig {
         typeHandlerRegistry.register(TaskStatus.class, new TaskStatusConverter());
 
         log.info("手动注册类型处理器：ProviderConfigConverter");
-        
+
         // 打印所有已注册的类型处理器
         log.info("已注册的类型处理器: {}", typeHandlerRegistry.getTypeHandlers().size());
     }
-} 
+}

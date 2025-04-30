@@ -14,10 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * 上下文处理器
- * 负责处理对话上下文和消息列表的相关业务逻辑
- */
+/** 上下文处理器 负责处理对话上下文和消息列表的相关业务逻辑 */
 @Service
 public class ContextProcessor {
 
@@ -25,31 +22,23 @@ public class ContextProcessor {
     private final MessageDomainService messageDomainService;
     private final TokenDomainService tokenDomainService;
 
-    public ContextProcessor(
-            ContextDomainService contextDomainService,
-            MessageDomainService messageDomainService,
+    public ContextProcessor(ContextDomainService contextDomainService, MessageDomainService messageDomainService,
             TokenDomainService tokenDomainService) {
         this.contextDomainService = contextDomainService;
         this.messageDomainService = messageDomainService;
         this.tokenDomainService = tokenDomainService;
     }
 
-    /**
-     * 处理会话上下文和消息列表
+    /** 处理会话上下文和消息列表
      *
-     * @param sessionId       会话ID
-     * @param maxTokens       最大token数
-     * @param strategyType    策略类型
+     * @param sessionId 会话ID
+     * @param maxTokens 最大token数
+     * @param strategyType 策略类型
      * @param summaryThreshold 摘要阈值
-     * @param providerConfig  提供商配置
-     * @return 处理后的上下文和消息信息
-     */
-    public ContextResult processContext(
-            String sessionId,
-            int maxTokens,
-            TokenOverflowStrategyEnum strategyType,
-            int summaryThreshold,
-            ProviderConfig providerConfig) {
+     * @param providerConfig 提供商配置
+     * @return 处理后的上下文和消息信息 */
+    public ContextResult processContext(String sessionId, int maxTokens, TokenOverflowStrategyEnum strategyType,
+            int summaryThreshold, ProviderConfig providerConfig) {
 
         ContextEntity contextEntity = contextDomainService.findBySessionId(sessionId);
         List<MessageEntity> messageEntities = new ArrayList<>();
@@ -67,15 +56,15 @@ public class ContextProcessor {
             tokenOverflowConfig.setMaxTokens(maxTokens);
             tokenOverflowConfig.setSummaryThreshold(summaryThreshold);
             tokenOverflowConfig.setProviderConfig(providerConfig);
-            TokenProcessResult tokenProcessResult = tokenDomainService.processMessages(tokenMessages, tokenOverflowConfig);
+            TokenProcessResult tokenProcessResult = tokenDomainService.processMessages(tokenMessages,
+                    tokenOverflowConfig);
 
             if (tokenProcessResult.isProcessed()) {
                 // 保留后的消息列表
                 List<TokenMessage> retainedMessages = tokenProcessResult.getRetainedMessages();
-                List<String> retainedMessageIds = retainedMessages.stream()
-                        .map(TokenMessage::getId)
+                List<String> retainedMessageIds = retainedMessages.stream().map(TokenMessage::getId)
                         .collect(Collectors.toList());
-                
+
                 if (strategyType == TokenOverflowStrategyEnum.SUMMARIZE) {
                     String newSummary = tokenProcessResult.getSummary();
                     String oldSummary = contextEntity.getSummary();
@@ -91,9 +80,7 @@ public class ContextProcessor {
         return new ContextResult(contextEntity, messageEntities);
     }
 
-    /**
-     * 将消息实体转换为Token消息
-     */
+    /** 将消息实体转换为Token消息 */
     private List<TokenMessage> tokenizeMessage(List<MessageEntity> messageEntities) {
         return messageEntities.stream().map(message -> {
             TokenMessage tokenMessage = new TokenMessage();
@@ -106,9 +93,7 @@ public class ContextProcessor {
         }).collect(Collectors.toList());
     }
 
-    /**
-     * 上下文处理结果
-     */
+    /** 上下文处理结果 */
     public static class ContextResult {
         private final ContextEntity contextEntity;
         private final List<MessageEntity> messageEntities;
@@ -126,4 +111,4 @@ public class ContextProcessor {
             return messageEntities;
         }
     }
-} 
+}

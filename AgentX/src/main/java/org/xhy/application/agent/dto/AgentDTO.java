@@ -8,84 +8,52 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Agent数据传输对象，用于表示层和应用层之间传递数据
- */
+/** Agent数据传输对象，用于表示层和应用层之间传递数据 */
 public class AgentDTO {
 
-    /**
-     * Agent唯一ID
-     */
+    /** Agent唯一ID */
     private String id;
 
-    /**
-     * Agent名称
-     */
+    /** Agent名称 */
     private String name;
 
-    /**
-     * Agent头像URL
-     */
+    /** Agent头像URL */
     private String avatar;
 
-    /**
-     * Agent描述
-     */
+    /** Agent描述 */
     private String description;
 
-    /**
-     * Agent系统提示词
-     */
+    /** Agent系统提示词 */
     private String systemPrompt;
 
-    /**
-     * 欢迎消息
-     */
+    /** 欢迎消息 */
     private String welcomeMessage;
 
-    /**
-     * Agent可使用的工具列表
-     */
+    /** Agent可使用的工具列表 */
     private List<AgentTool> tools;
 
-    /**
-     * 关联的知识库ID列表
-     */
+    /** 关联的知识库ID列表 */
     private List<String> knowledgeBaseIds;
 
-    /**
-     * 当前发布的版本ID
-     */
+    /** 当前发布的版本ID */
     private String publishedVersion;
 
-    /**
-     * Agent状态：true-启用，false-禁用
-     */
+    /** Agent状态：true-启用，false-禁用 */
     private Boolean enabled = Boolean.TRUE;
 
-    /**
-     * Agent类型：1-聊天助手, 2-功能性Agent
-     */
+    /** Agent类型：1-聊天助手, 2-功能性Agent */
     private Integer agentType;
 
-    /**
-     * 创建者用户ID
-     */
+    /** 创建者用户ID */
     private String userId;
 
-    /**
-     * 创建时间
-     */
+    /** 创建时间 */
     private LocalDateTime createdAt;
 
-    /**
-     * 最后更新时间
-     */
+    /** 最后更新时间 */
     private LocalDateTime updatedAt;
 
-    /**
-     * 无参构造函数
-     */
+    /** 无参构造函数 */
     public AgentDTO() {
         this.tools = new ArrayList<>();
         this.knowledgeBaseIds = new ArrayList<>();
@@ -204,24 +172,18 @@ public class AgentDTO {
         this.updatedAt = updatedAt;
     }
 
-    /**
-     * 获取状态文本描述
-     */
+    /** 获取状态文本描述 */
     public String getStatusText() {
         return AgentStatus.fromCode(enabled ? 1 : 0).getDescription();
     }
 
-    /**
-     * 获取类型文本描述
-     */
+    /** 获取类型文本描述 */
     public String getAgentTypeText() {
         return AgentType.fromCode(agentType).getDescription();
     }
 
-    /**
-     * 将当前DTO转换为Entity对象
-     * @return 转换后的AgentEntity对象
-     */
+    /** 将当前DTO转换为Entity对象
+     * @return 转换后的AgentEntity对象 */
     public AgentEntity toEntity() {
         AgentEntity entity = new AgentEntity();
         entity.setId(this.id);
@@ -240,4 +202,4 @@ public class AgentDTO {
         entity.setUpdatedAt(this.updatedAt);
         return entity;
     }
-} 
+}

@@ -37,9 +37,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * 对话应用服务，用于适配域层的对话服务
- */
+/** 对话应用服务，用于适配域层的对话服务 */
 @Service
 public class ConversationAppService {
 
@@ -55,17 +53,11 @@ public class ConversationAppService {
     private final MessageHandlerFactory messageHandlerFactory;
     private final MessageTransportFactory transportFactory;
 
-
-    public ConversationAppService(
-            ConversationDomainService conversationDomainService,
-            SessionDomainService sessionDomainService,
-            AgentDomainService agentDomainService,
-            AgentWorkspaceDomainService agentWorkspaceDomainService,
-            LLMDomainService llmDomainService,
-            ContextDomainService contextDomainService,
-            TokenDomainService tokenDomainService,
-            MessageDomainService messageDomainService,
-            MessageHandlerFactory messageHandlerFactory,
+    public ConversationAppService(ConversationDomainService conversationDomainService,
+            SessionDomainService sessionDomainService, AgentDomainService agentDomainService,
+            AgentWorkspaceDomainService agentWorkspaceDomainService, LLMDomainService llmDomainService,
+            ContextDomainService contextDomainService, TokenDomainService tokenDomainService,
+            MessageDomainService messageDomainService, MessageHandlerFactory messageHandlerFactory,
             MessageTransportFactory transportFactory) {
         this.conversationDomainService = conversationDomainService;
         this.sessionDomainService = sessionDomainService;
@@ -79,13 +71,11 @@ public class ConversationAppService {
         this.transportFactory = transportFactory;
     }
 
-    /**
-     * 获取会话中的消息列表
+    /** 获取会话中的消息列表
      *
      * @param sessionId 会话id
-     * @param userId    用户id
-     * @return 消息列表
-     */
+     * @param userId 用户id
+     * @return 消息列表 */
     public List<MessageDTO> getConversationMessages(String sessionId, String userId) {
         // 查询对应会话是否存在
         SessionEntity sessionEntity = sessionDomainService.find(sessionId, userId);
@@ -98,19 +88,18 @@ public class ConversationAppService {
         return MessageAssembler.toDTOs(conversationMessages);
     }
 
-    /**
-     * 对话方法 - 统一入口
+    /** 对话方法 - 统一入口
      *
      * @param chatRequest 聊天请求
      * @param userId 用户ID
-     * @return SSE发射器
-     */
+     * @return SSE发射器 */
     public SseEmitter chat(ChatRequest chatRequest, String userId) {
         // 1. 准备对话环境
         ChatContext environment = prepareEnvironment(chatRequest, userId);
 
         // 2. 获取传输方式 (当前仅支持SSE，将来支持WebSocket)
-        MessageTransport<SseEmitter> transport = transportFactory.getTransport(MessageTransportFactory.TRANSPORT_TYPE_SSE);
+        MessageTransport<SseEmitter> transport = transportFactory
+                .getTransport(MessageTransportFactory.TRANSPORT_TYPE_SSE);
 
         // 3. 获取适合的消息处理器 (根据agent类型)
         AbstractMessageHandler handler = messageHandlerFactory.getHandler(environment.getAgent());
@@ -119,13 +108,11 @@ public class ConversationAppService {
         return handler.chat(environment, transport);
     }
 
-    /**
-     * 准备对话环境
+    /** 准备对话环境
      *
      * @param chatRequest 聊天请求
      * @param userId 用户ID
-     * @return 对话环境
-     */
+     * @return 对话环境 */
     private ChatContext prepareEnvironment(ChatRequest chatRequest, String userId) {
         // 1. 获取会话
         String sessionId = chatRequest.getSessionId();
@@ -165,11 +152,9 @@ public class ConversationAppService {
         return environment;
     }
 
-    /**
-     * 设置上下文和历史消息
+    /** 设置上下文和历史消息
      *
-     * @param environment 对话环境
-     */
+     * @param environment 对话环境 */
     private void setupContextAndHistory(ChatContext environment) {
         String sessionId = environment.getSessionId();
 
@@ -193,16 +178,12 @@ public class ConversationAppService {
         environment.setMessageHistory(messageEntities);
     }
 
-    /**
-     * 应用Token溢出策略
+    /** 应用Token溢出策略
      *
      * @param environment 对话环境
      * @param contextEntity 上下文实体
-     * @param messageEntities 消息实体列表
-     */
-    private void applyTokenOverflowStrategy(
-            ChatContext environment,
-            ContextEntity contextEntity,
+     * @param messageEntities 消息实体列表 */
+    private void applyTokenOverflowStrategy(ChatContext environment, ContextEntity contextEntity,
             List<MessageEntity> messageEntities) {
 
         LLMModelConfig llmModelConfig = environment.getLlmModelConfig();
@@ -222,11 +203,8 @@ public class ConversationAppService {
 
         // 设置提供商配置
         org.xhy.domain.llm.model.config.ProviderConfig providerConfig = provider.getConfig();
-        tokenOverflowConfig.setProviderConfig(new ProviderConfig(
-                providerConfig.getApiKey(),
-                providerConfig.getBaseUrl(),
-                environment.getModel().getModelId(),
-                provider.getProtocol()));
+        tokenOverflowConfig.setProviderConfig(new ProviderConfig(providerConfig.getApiKey(),
+                providerConfig.getBaseUrl(), environment.getModel().getModelId(), provider.getProtocol()));
 
         // 处理Token
         TokenProcessResult result = tokenDomainService.processMessages(tokenMessages, tokenOverflowConfig);
@@ -234,8 +212,7 @@ public class ConversationAppService {
         // 更新上下文
         if (result.isProcessed()) {
             List<TokenMessage> retainedMessages = result.getRetainedMessages();
-            List<String> retainedMessageIds = retainedMessages.stream()
-                    .map(TokenMessage::getId)
+            List<String> retainedMessageIds = retainedMessages.stream().map(TokenMessage::getId)
                     .collect(Collectors.toList());
 
             if (strategyType == TokenOverflowStrategyEnum.SUMMARIZE) {
@@ -248,9 +225,7 @@ public class ConversationAppService {
         }
     }
 
-    /**
-     * 消息实体转换为token消息
-     */
+    /** 消息实体转换为token消息 */
     private List<TokenMessage> tokenizeMessage(List<MessageEntity> messageEntities) {
         return messageEntities.stream().map(message -> {
             TokenMessage tokenMessage = new TokenMessage();

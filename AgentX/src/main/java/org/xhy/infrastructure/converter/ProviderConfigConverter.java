@@ -16,14 +16,10 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-/**
- * 服务商配置转换器
- * 处理加密存储的配置信息
- */
+/** 服务商配置转换器 处理加密存储的配置信息 */
 @MappedTypes(ProviderConfig.class)
 @MappedJdbcTypes({JdbcType.VARCHAR, JdbcType.LONGVARCHAR, JdbcType.OTHER})
 public class ProviderConfigConverter extends BaseTypeHandler<ProviderConfig> {
-
 
     @Override
     public void setNonNullParameter(PreparedStatement ps, int i, ProviderConfig parameter, JdbcType jdbcType)
@@ -57,7 +53,7 @@ public class ProviderConfigConverter extends BaseTypeHandler<ProviderConfig> {
 
         String jsonStr = ValidationUtils.EncryptUtils.decrypt(encryptedStr);;
 
-        return  JsonUtils.parseObject(jsonStr,ProviderConfig.class);
+        return JsonUtils.parseObject(jsonStr, ProviderConfig.class);
 
     }
 }
