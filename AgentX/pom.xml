@@ -186,29 +186,6 @@
                     </execution>
                 </executions>
             </plugin>
-            <!-- Spotless格式化插件 -->
-            <plugin>
-                <groupId>com.diffplug.spotless</groupId>
-                <artifactId>spotless-maven-plugin</artifactId>
-                <version>2.43.0</version>
-                <configuration>
-                    <java>
-                        <includes>
-                            <include>src/main/java/**/*.java</include>
-                            <include>src/test/java/**/*.java</include>
-                        </includes>
-                        <!-- 谷歌Java代码风格 -->
-                        <googleJavaFormat>
-                            <version>1.17.0</version>
-                            <style>GOOGLE</style>
-                        </googleJavaFormat>
-                        <!-- 移除不需要的imports -->
-                        <removeUnusedImports />
-                        <!-- 确保文件以换行符结束 -->
-                        <endWithNewline />
-                    </java>
-                </configuration>
-            </plugin>
         </plugins>
     </build>
 </project>
