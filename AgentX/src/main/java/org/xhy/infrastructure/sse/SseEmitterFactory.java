@@ -6,19 +6,14 @@ import org.xhy.application.conversation.dto.AgentChatResponse;
 
 import java.io.IOException;
 
-/**
- * SSE发射器工厂
- * 负责创建和配置Server-Sent Events发射器
- */
+/** SSE发射器工厂 负责创建和配置Server-Sent Events发射器 */
 @Component
 public class SseEmitterFactory {
 
-    /**
-     * 创建带有超时和错误处理的SSE发射器
+    /** 创建带有超时和错误处理的SSE发射器
      *
      * @param timeoutMillis 超时时间(毫秒)
-     * @return 配置好的SSE发射器
-     */
+     * @return 配置好的SSE发射器 */
     public SseEmitter createEmitter(long timeoutMillis) {
         SseEmitter emitter = new SseEmitter(timeoutMillis);
 
@@ -51,19 +46,13 @@ public class SseEmitterFactory {
         return emitter;
     }
 
-    /**
-     * 发送部分响应
+    /** 发送部分响应
      *
-     * @param emitter      SSE发射器
-     * @param content      响应内容
+     * @param emitter SSE发射器
+     * @param content 响应内容
      * @param providerName 提供商名称
-     * @param modelId      模型ID
-     */
-    public void sendPartialResponse(
-            SseEmitter emitter,
-            String content,
-            String providerName,
-            String modelId) {
+     * @param modelId 模型ID */
+    public void sendPartialResponse(SseEmitter emitter, String content, String providerName, String modelId) {
         try {
             AgentChatResponse response = new AgentChatResponse();
             response.setContent(content);
@@ -74,17 +63,12 @@ public class SseEmitterFactory {
         }
     }
 
-    /**
-     * 发送完成响应
+    /** 发送完成响应
      *
-     * @param emitter      SSE发射器
+     * @param emitter SSE发射器
      * @param providerName 提供商名称
-     * @param modelId      模型ID
-     */
-    public void sendCompleteResponse(
-            SseEmitter emitter,
-            String providerName,
-            String modelId) {
+     * @param modelId 模型ID */
+    public void sendCompleteResponse(SseEmitter emitter, String providerName, String modelId) {
         try {
             AgentChatResponse response = new AgentChatResponse();
             response.setContent("");
@@ -96,12 +80,10 @@ public class SseEmitterFactory {
         }
     }
 
-    /**
-     * 发送错误响应
+    /** 发送错误响应
      *
      * @param emitter SSE发射器
-     * @param error   错误信息
-     */
+     * @param error 错误信息 */
     public void sendErrorResponse(SseEmitter emitter, String error) {
         try {
             AgentChatResponse response = new AgentChatResponse();
@@ -113,4 +95,4 @@ public class SseEmitterFactory {
             throw new RuntimeException(e);
         }
     }
-} 
+}

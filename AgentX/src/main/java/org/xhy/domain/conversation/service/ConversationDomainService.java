@@ -10,62 +10,51 @@ import org.xhy.domain.conversation.repository.MessageRepository;
 
 import java.util.List;
 
-/**
- * 对话服务实现
- */
+/** 对话服务实现 */
 @Service
 public class ConversationDomainService {
 
     private final Logger logger = LoggerFactory.getLogger(ConversationDomainService.class);
     private final MessageRepository messageRepository;
 
-
-
     public ConversationDomainService(MessageRepository messageRepository) {
         this.messageRepository = messageRepository;
     }
 
-
-
-    /**
-     * 获取会话中的消息列表
+    /** 获取会话中的消息列表
      *
      * @param sessionId 会话id
-     * @return 消息列表
-     */
+     * @return 消息列表 */
     public List<MessageEntity> getConversationMessages(String sessionId) {
-        return messageRepository.selectList(
-                Wrappers.<MessageEntity>lambdaQuery().eq(MessageEntity::getSessionId, sessionId).orderByAsc(MessageEntity::getCreatedAt));
+        return messageRepository.selectList(Wrappers.<MessageEntity>lambdaQuery()
+                .eq(MessageEntity::getSessionId, sessionId).orderByAsc(MessageEntity::getCreatedAt));
     }
 
+    public void insertBathMessage(List<MessageEntity> messages) {
+        messageRepository.insert(messages);
+    }
 
-   public void insertBathMessage(List<MessageEntity> messages){
-       messageRepository.insert(messages);
-   }
+    public MessageEntity saveMessage(MessageEntity message) {
+        messageRepository.insert(message);
+        return message;
+    }
 
-   public MessageEntity saveMessage(MessageEntity message){
-       messageRepository.insert(message);
-       return message;
-   }
-
-    /**
-     * 删除会话下的消息
+    /** 删除会话下的消息
      * 
-     * @param sessionId 会话id
-     */
+     * @param sessionId 会话id */
     public void deleteConversationMessages(String sessionId) {
-        messageRepository.checkedDelete(Wrappers.<MessageEntity>lambdaQuery().eq(MessageEntity::getSessionId, sessionId));
+        messageRepository
+                .checkedDelete(Wrappers.<MessageEntity>lambdaQuery().eq(MessageEntity::getSessionId, sessionId));
     }
 
     public void deleteConversationMessages(List<String> sessionIds) {
-        messageRepository.checkedDelete(Wrappers.<MessageEntity>lambdaQuery().in(MessageEntity::getSessionId, sessionIds));
+        messageRepository
+                .checkedDelete(Wrappers.<MessageEntity>lambdaQuery().in(MessageEntity::getSessionId, sessionIds));
     }
 
-    /**
-     * 更新消息的token数量
+    /** 更新消息的token数量
      * 
-     * @param message 消息实体
-     */
+     * @param message 消息实体 */
     @Transactional
     public void updateMessageTokenCount(MessageEntity message) {
         logger.info("更新消息token数量，消息ID: {}, token数量: {}", message.getId(), message.getTokenCount());

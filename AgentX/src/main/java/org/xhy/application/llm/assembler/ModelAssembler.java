@@ -10,20 +10,15 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * 模型对象转换器
- */
+/** 模型对象转换器 */
 public class ModelAssembler {
-    
 
-    /**
-     * 将领域对象转换为DTO
-     */
+    /** 将领域对象转换为DTO */
     public static ModelDTO toDTO(ModelEntity model) {
         if (model == null) {
             return null;
         }
-        
+
         ModelDTO dto = new ModelDTO();
         dto.setId(model.getId());
         dto.setUserId(model.getUserId());
@@ -38,22 +33,16 @@ public class ModelAssembler {
         dto.setIsOfficial(model.getOfficial());
         return dto;
     }
-    
-    /**
-     * 将多个领域对象转换为DTO列表
-     */
+
+    /** 将多个领域对象转换为DTO列表 */
     public static List<ModelDTO> toDTOs(List<ModelEntity> models) {
         if (models == null || models.isEmpty()) {
             return Collections.emptyList();
         }
-        return models.stream()
-                .map(ModelAssembler::toDTO)
-                .collect(Collectors.toList());
+        return models.stream().map(ModelAssembler::toDTO).collect(Collectors.toList());
     }
-    
-    /**
-     * 将创建请求转换为领域对象
-     */
+
+    /** 将创建请求转换为领域对象 */
     public static ModelEntity toEntity(ModelCreateRequest request, String userId) {
         ModelEntity model = new ModelEntity();
         model.setUserId(userId);
@@ -64,10 +53,9 @@ public class ModelAssembler {
         model.setType(request.getType());
         model.setCreatedAt(LocalDateTime.now());
         model.setUpdatedAt(LocalDateTime.now());
-        
+
         return model;
     }
-
 
     public static ModelEntity toEntity(ModelUpdateRequest request, String userId) {
         ModelEntity model = new ModelEntity();
@@ -82,4 +70,4 @@ public class ModelAssembler {
         return model;
     }
 
-} 
+}

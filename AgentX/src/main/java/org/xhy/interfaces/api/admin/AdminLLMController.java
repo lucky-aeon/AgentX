@@ -18,9 +18,7 @@ import org.xhy.interfaces.dto.llm.request.ModelUpdateRequest;
 import org.xhy.interfaces.dto.llm.request.ProviderCreateRequest;
 import org.xhy.interfaces.dto.llm.request.ProviderUpdateRequest;
 
-/**
- * 管理员LLM管理
- */
+/** 管理员LLM管理 */
 @RestController
 @RequestMapping("/admin/llm")
 public class AdminLLMController {
@@ -31,68 +29,56 @@ public class AdminLLMController {
         this.adminLLMAppService = adminLLMAppService;
     }
 
-    /**
-     * 创建服务商
-     * @param request 请求对象
-     */
+    /** 创建服务商
+     * @param request 请求对象 */
     @PostMapping("")
-    public Result<ProviderDTO> createProvider(@RequestBody @Validated ProviderCreateRequest  request){
+    public Result<ProviderDTO> createProvider(@RequestBody @Validated ProviderCreateRequest request) {
         String userId = UserContext.getCurrentUserId();
         return Result.success(adminLLMAppService.createProvider(request, userId));
     }
 
-    /**
-     * 更新服务商
+    /** 更新服务商
      * @param id 服务商id
-     * @param request 请求对象
-     */
+     * @param request 请求对象 */
     @PutMapping("/{id}")
-    public Result<ProviderDTO> updateProvider(@PathVariable String id, @RequestBody @Validated ProviderUpdateRequest request){
+    public Result<ProviderDTO> updateProvider(@PathVariable String id,
+            @RequestBody @Validated ProviderUpdateRequest request) {
         String userId = UserContext.getCurrentUserId();
         request.setId(id);
         return Result.success(adminLLMAppService.updateProvider(request, userId));
     }
 
-    /**
-     * 删除服务商
-     * @param id 服务商id
-     */
+    /** 删除服务商
+     * @param id 服务商id */
     @DeleteMapping("/{id}")
-    public Result<Void> deleteProvider(@PathVariable String id){
+    public Result<Void> deleteProvider(@PathVariable String id) {
         String userId = UserContext.getCurrentUserId();
         adminLLMAppService.deleteProvider(id, userId);
         return Result.success();
     }
 
-    /**
-     * 创建模型
-     * @param request 请求对象
-     */
+    /** 创建模型
+     * @param request 请求对象 */
     @PostMapping("/model")
-    public Result<ModelDTO> createModel(@RequestBody @Validated ModelCreateRequest request){
+    public Result<ModelDTO> createModel(@RequestBody @Validated ModelCreateRequest request) {
         String userId = UserContext.getCurrentUserId();
         return Result.success(adminLLMAppService.createModel(request, userId));
     }
 
-    /**
-     * 更新模型
+    /** 更新模型
      * @param id 更新的id
-     * @param request 请求对象
-     */
+     * @param request 请求对象 */
     @PutMapping("/model/{id}")
-    public Result<ModelDTO> updateModel(@PathVariable String id, @RequestBody @Validated ModelUpdateRequest request){
+    public Result<ModelDTO> updateModel(@PathVariable String id, @RequestBody @Validated ModelUpdateRequest request) {
         String userId = UserContext.getCurrentUserId();
         request.setId(id);
         return Result.success(adminLLMAppService.updateModel(request, userId));
     }
 
-
-    /**
-     * 删除模型
-     * @param id 模型id
-     */
+    /** 删除模型
+     * @param id 模型id */
     @DeleteMapping("/model/{id}")
-    public Result<Void> deleteModel(@PathVariable String id){
+    public Result<Void> deleteModel(@PathVariable String id) {
         String userId = UserContext.getCurrentUserId();
         adminLLMAppService.deleteModel(id, userId);
         return Result.success();

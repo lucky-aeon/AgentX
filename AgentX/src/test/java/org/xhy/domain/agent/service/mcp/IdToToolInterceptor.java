@@ -13,9 +13,7 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * 拦截出站 JSON‑RPC 请求，将 id → 真正的工具名 映射保存起来
- */
+/** 拦截出站 JSON‑RPC 请求，将 id → 真正的工具名 映射保存起来 */
 public class IdToToolInterceptor implements Interceptor {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();

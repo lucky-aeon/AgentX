@@ -15,9 +15,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * 无策略测试类
- */
+/** 无策略测试类 */
 @SpringBootTest
 public class NoTokenOverflowStrategyTest {
 
@@ -30,10 +28,10 @@ public class NoTokenOverflowStrategyTest {
         // 初始化配置
         config = new TokenOverflowConfig();
         config.setStrategyType(TokenOverflowStrategyEnum.NONE);
-        
+
         // 初始化策略
         strategy = new NoTokenOverflowStrategy(config);
-        
+
         // 准备测试数据
         messages = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
@@ -50,7 +48,7 @@ public class NoTokenOverflowStrategyTest {
     @Test
     public void process_shouldReturnOriginalMessages() {
         // 执行处理
-        TokenProcessResult process = strategy.process(messages,new TokenOverflowConfig());
+        TokenProcessResult process = strategy.process(messages, new TokenOverflowConfig());
         List<TokenMessage> result = process.getRetainedMessages();
 
         // 验证结果
@@ -62,7 +60,7 @@ public class NoTokenOverflowStrategyTest {
     @Test
     public void process_withEmptyList_shouldReturnEmptyList() {
         // 执行处理
-        TokenProcessResult process = strategy.process(new ArrayList<>(),new TokenOverflowConfig());
+        TokenProcessResult process = strategy.process(new ArrayList<>(), new TokenOverflowConfig());
         List<TokenMessage> result = process.getRetainedMessages();
 
         // 验证结果
@@ -73,7 +71,7 @@ public class NoTokenOverflowStrategyTest {
     @Test
     public void process_withNullList_shouldReturnEmptyList() {
         // 执行处理
-        TokenProcessResult process = strategy.process(null,new TokenOverflowConfig());
+        TokenProcessResult process = strategy.process(null, new TokenOverflowConfig());
         List<TokenMessage> result = process.getRetainedMessages();
 
         // 验证结果
@@ -85,7 +83,7 @@ public class NoTokenOverflowStrategyTest {
     public void getName_shouldReturnCorrectName() {
         // 执行方法
         String name = strategy.getName();
-        
+
         // 验证结果
         assertEquals(TokenOverflowStrategyEnum.NONE.name(), name);
     }
@@ -98,5 +96,4 @@ public class NoTokenOverflowStrategyTest {
         assertFalse(strategy.needsProcessing(null));
     }
 
-
-} 
+}
