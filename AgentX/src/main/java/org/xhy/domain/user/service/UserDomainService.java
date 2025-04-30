@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.xhy.domain.user.model.UserEntity;
 import org.xhy.domain.user.repository.UserRepository;
 import org.xhy.infrastructure.exception.BusinessException;
+import org.xhy.infrastructure.utils.PasswordUtils;
 
 import java.util.UUID;
 
@@ -30,7 +31,7 @@ public class UserDomainService {
         UserEntity userEntity = new UserEntity();
         userEntity.setEmail(email);
         userEntity.setPhone(phone);
-        userEntity.setPassword(password);
+        userEntity.setPassword(PasswordUtils.encode(password));
         userEntity.valid();
         checkAccountExist(userEntity.getEmail(),userEntity.getPhone());
 
@@ -46,11 +47,11 @@ public class UserDomainService {
         LambdaQueryWrapper<UserEntity> wrapper = Wrappers.<UserEntity>lambdaQuery()
                 .eq(UserEntity::getEmail, account)
                 .or()
-                .eq(UserEntity::getPhone, account)
-                .eq(UserEntity::getPassword,password);
+                .eq(UserEntity::getPhone, account);
 
         UserEntity userEntity = userRepository.selectOne(wrapper);
-        if (userEntity == null){
+
+        if (userEntity == null || !PasswordUtils.matches(password,userEntity.getPassword())){
             throw new BusinessException("账号密码错误");
         }
         return userEntity;

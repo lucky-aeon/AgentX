@@ -1,9 +1,11 @@
 package org.xhy.interfaces.dto.user.request;
 
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 
 public class RegisterRequest {
 
+    @Email(message = "不是一个合法的邮箱")
     private String email;
 
     private String phone;
