@@ -1,5 +1,5 @@
 import { API_CONFIG } from "@/lib/api-config"
-import { toast } from "@/components/ui/use-toast"
+import { toast } from "@/hooks/use-toast"
 
 import { log } from "console";
 
@@ -12,6 +12,7 @@ export interface RequestConfig extends RequestInit {
 // 请求选项类型
 export interface RequestOptions {
   raw?: boolean; // 是否返回原始响应，不自动解析json
+  showToast?: boolean; // 是否显示toast提示
 }
 
 // 拦截器类型
@@ -32,12 +33,6 @@ const defaultInterceptor: Interceptor = {
       ...(config.headers || {}),
     };
 
-    // 可以在这里添加认证令牌
-    // const token = localStorage.getItem('token');
-    // if (token) {
-    //   config.headers.Authorization = `Bearer ${token}`;
-    // }
-
     return config;
   },
 
@@ -54,12 +49,15 @@ const defaultInterceptor: Interceptor = {
       return response;
     }
 
-    const result = await response.json();
-    toast({
-      description: result.message,
-      variant: "destructive",
-    });
-    return result;
+    // 非成功响应
+    if (!response.ok) {
+      const errorData = await response.json();
+      // 不显示toast，只返回错误数据
+      return errorData;
+    }
+
+    // 正常响应，解析JSON并返回
+    return await response.json();
   },
 
   // 错误拦截器
@@ -179,8 +177,6 @@ class HttpClient {
         }, processedConfig.timeout || this.defaultTimeout);
       }
 
-      // 发送请求
-      console.log(`[HttpClient] ${processedConfig.method || 'GET'} ${url}`);
       const response = await fetch(url, processedConfig);
       
       // 清除超时定时器
@@ -188,31 +184,68 @@ class HttpClient {
         clearTimeout(timeoutId);
       }
 
-      // 应用响应拦截器 - 只应用第一个有效的响应拦截器
-      for (const interceptor of this.interceptors) {
-        if (interceptor.response) {
-          return await interceptor.response(response, options) as T;
-        }
-      }
-
-      // 默认处理 - 如果是原始响应模式，直接返回
+      // 处理响应
+      let result: any;
+      
+      // 如果是原始响应模式，直接返回
       if (options?.raw) {
         return response as unknown as T;
       }
-      
-      // 否则解析JSON
-      return await response.json();
-    } catch (error) {
-      // 应用错误拦截器 - 只应用第一个有效的错误拦截器
-      for (const interceptor of this.interceptors) {
-        if (interceptor.error) {
-          return await interceptor.error(error) as T;
-        }
+      if (response.status === 401) {
+        window.location.href = '/login';
       }
-
-      // 默认错误处理
-      console.error(`[HttpClient] Error in ${endpoint}:`, error);
-      throw error;
+      // 解析响应
+      if (!response.ok) {
+        // 处理错误响应
+        try {
+          const errorData = await response.json();
+          result = {
+            code: response.status,
+            message: errorData.message || `请求失败 (${response.status})`,
+            data: null
+          };
+        } catch (e) {
+          result = {
+            code: response.status,
+            message: `请求失败 (${response.status})`,
+            data: null
+          };
+        }
+      } else {
+        // 处理成功响应
+        result = await response.json();
+      }
+      
+      // 显示toast提示
+      if (options?.showToast) {
+        toast({
+          variant: result.code === 200 ? "default" : "destructive",
+          title: result.code === 200 ? "成功" : "错误",
+          description: result.message
+        });
+      }
+      
+      return result;
+      
+    } catch (error: any) {
+      // 处理异常
+      const errorResult = {
+        code: error.status || 500,
+        message: error.message || "未知错误",
+        data: null,
+        timestamp: Date.now(),
+      };
+      
+      // 显示toast提示
+      if (options?.showToast) {
+        toast({
+          variant: "destructive",
+          title: "错误",
+          description: errorResult.message
+        });
+      }
+      
+      return errorResult as unknown as T;
     }
   }
 
@@ -245,54 +278,7 @@ class HttpClient {
 // 导出单例实例
 export const httpClient = new HttpClient();
 
-// 添加toast提示拦截器
-export const addToastInterceptor = (
-  options: {
-    showSuccessToast?: boolean;
-    showErrorToast?: boolean;
-    successTitle?: string;
-    errorTitle?: string;
-  } = {}
-) => {
-  const {
-    showSuccessToast = false,
-    showErrorToast = true,
-    successTitle = "操作成功",
-    errorTitle = "操作失败"
-  } = options;
-
-  httpClient.addInterceptor({
-    response: async (response, requestOptions) => {
-      // 如果是原始响应模式，直接返回响应不处理
-      if (requestOptions?.raw) {
-        return response;
-      }
-
-      const result = await response.json();
-      // 假设API返回格式为 { code: number, message: string, data: any }
-      if (result.code === 200 && showSuccessToast) {
-        toast({
-          title: successTitle,
-          description: result.message || "操作已完成",
-        });
-      }
-      return result;
-    },
-    error: async (error) => {
-      const result = await defaultInterceptor.error!(error);
-      if (showErrorToast) {
-        toast({
-          title: errorTitle,
-          description: result.message,
-          variant: "destructive",
-        });
-      }
-      return result;
-    }
-  });
-};
-
-// 可选：添加认证拦截器
+// 添加认证拦截器
 export const addAuthInterceptor = () => {
   httpClient.addInterceptor({
     request: (config) => {
@@ -308,6 +294,13 @@ export const addAuthInterceptor = () => {
   });
 };
 
-// 初始化：添加常用拦截器
-addToastInterceptor();
-addAuthInterceptor(); 
+// 初始化：添加认证拦截器
+addAuthInterceptor();
+
+// API响应类型接口
+export interface ApiResponse<T> {
+  code: number;
+  message: string;
+  data: T;
+  timestamp?: number;
+} 

@@ -29,23 +29,11 @@ function buildQueryString(params: Record<string, any>): string {
 // 创建会话
 export async function createSession(params: CreateSessionParams): Promise<ApiResponse<Session>> {
   try {
-    const queryString = buildQueryString(params)
-    const url = `/api/proxy/sessions${queryString}`
-
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        Accept: "*/*",
-        "Content-Type": "application/json",
-      },
-    })
-
-    const data = await response.json()
-
-    if (!response.ok && !data.code) {
-      throw new Error(`创建会话失败: ${response.status}, ${data.error || "Unknown error"}`)
-    }
-
+    const data = await httpClient.post<ApiResponse<Session>>(
+      API_ENDPOINTS.SESSION,
+      {},
+      { params }
+    )
     return data
   } catch (error) {
     console.error("创建会话错误:", error)
@@ -62,25 +50,12 @@ export async function createSession(params: CreateSessionParams): Promise<ApiRes
 // 获取会话列表
 export async function getSessions(params: GetSessionsParams): Promise<ApiResponse<Session[]>> {
   try {
-    const queryString = buildQueryString(params)
-    const url = `/api/proxy/sessions${queryString}`
+    console.log(`Fetching sessions`)
 
-    console.log(`Fetching sessions with URL: ${url}`)
-
-    const response = await fetch(url, {
-      method: "GET",
-      headers: {
-        Accept: "*/*",
-        "Content-Type": "application/json",
-      },
-    })
-
-    const data = await response.json()
-
-    if (!response.ok && !data.code) {
-      throw new Error(`获取会话列表失败: ${response.status}, ${data.error || "Unknown error"}`)
-    }
-
+    const data = await httpClient.get<ApiResponse<Session[]>>(
+      API_ENDPOINTS.SESSION,
+      { params }
+    )
     return data
   } catch (error) {
     console.error("获取会话列表错误:", error)
@@ -97,24 +72,11 @@ export async function getSessions(params: GetSessionsParams): Promise<ApiRespons
 // 获取单个会话详情
 export async function getSession(sessionId: string): Promise<ApiResponse<Session>> {
   try {
-    const url = `/api/proxy/sessions/${sessionId}`
+    console.log(`Fetching session details for ${sessionId}`)
 
-    console.log(`Fetching session with URL: ${url}`)
-
-    const response = await fetch(url, {
-      method: "GET",
-      headers: {
-        Accept: "*/*",
-        "Content-Type": "application/json",
-      },
-    })
-
-    const data = await response.json()
-
-    if (!response.ok && !data.code) {
-      throw new Error(`获取会话详情失败: ${response.status}, ${data.error || "Unknown error"}`)
-    }
-
+    const data = await httpClient.get<ApiResponse<Session>>(
+      API_ENDPOINTS.SESSION_DETAIL(sessionId)
+    )
     return data
   } catch (error) {
     console.error("获取会话详情错误:", error)
@@ -131,25 +93,13 @@ export async function getSession(sessionId: string): Promise<ApiResponse<Session
 // 更新会话
 export async function updateSession(sessionId: string, params: UpdateSessionParams): Promise<ApiResponse<Session>> {
   try {
-    const queryString = buildQueryString(params)
-    const url = `/api/proxy/sessions/${sessionId}${queryString}`
+    console.log(`Updating session ${sessionId}`)
 
-    console.log(`Updating session with URL: ${url}`)
-
-    const response = await fetch(url, {
-      method: "PUT",
-      headers: {
-        Accept: "*/*",
-        "Content-Type": "application/json",
-      },
-    })
-
-    const data = await response.json()
-
-    if (!response.ok && !data.code) {
-      throw new Error(`更新会话失败: ${response.status}, ${data.error || "Unknown error"}`)
-    }
-
+    const data = await httpClient.put<ApiResponse<Session>>(
+      API_ENDPOINTS.SESSION_DETAIL(sessionId),
+      {},
+      { params }
+    )
     return data
   } catch (error) {
     console.error("更新会话错误:", error)
@@ -166,24 +116,11 @@ export async function updateSession(sessionId: string, params: UpdateSessionPara
 // 删除会话
 export async function deleteSession(sessionId: string): Promise<ApiResponse<null>> {
   try {
-    const url = `/api/proxy/sessions/${sessionId}`
+    console.log(`Deleting session ${sessionId}`)
 
-    console.log(`Deleting session with URL: ${url}`)
-
-    const response = await fetch(url, {
-      method: "DELETE",
-      headers: {
-        Accept: "*/*",
-        "Content-Type": "application/json",
-      },
-    })
-
-    const data = await response.json()
-
-    if (!response.ok && !data.code) {
-      throw new Error(`删除会话失败: ${response.status}, ${data.error || "Unknown error"}`)
-    }
-
+    const data = await httpClient.delete<ApiResponse<null>>(
+      API_ENDPOINTS.DELETE_SESSION(sessionId)
+    )
     return data
   } catch (error) {
     console.error("删除会话错误:", error)
@@ -652,11 +589,11 @@ export const getWorkspaceAgentsWithToast = withToast(getWorkspaceAgents, {
 })
 
 // 登录
-export async function loginApi(data: { account: string; password: string }) {
-  return httpClient.post<{ code: number; message: string; data: { token: string } }>('/login', data)
+export async function loginApi(data: { account: string; password: string }, showToast: boolean = false) {
+  return httpClient.post<{ code: number; message: string; data: { token: string } }>('/login', data, {}, { showToast })
 }
 
 // 注册
-export async function registerApi(data: { email?: string; phone?: string; password: string }) {
-  return httpClient.post<{ code: number; message: string; data: any }>('/register', data)
+export async function registerApi(data: { email?: string; phone?: string; password: string }, showToast: boolean = false) {
+  return httpClient.post<{ code: number; message: string; data: any }>('/register', data, {}, { showToast })
 }

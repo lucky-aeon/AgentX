@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Skeleton } from "@/components/ui/skeleton"
 import { getSessions, getSessionsWithToast } from "@/lib/api-services"
-import { toast } from "@/components/ui/use-toast"
+import { toast } from "@/hooks/use-toast"
 import type { Session } from "@/types/conversation"
 
 // 将会话转换为代理

@@ -3,6 +3,9 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { Bot, Search, MessageCircle, Zap, Filter, X } from "lucide-react"
+import { Metadata } from "next"
+import { redirect } from "next/navigation"
+import { toast } from "@/hooks/use-toast"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -10,7 +13,6 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { toast } from "@/components/ui/use-toast"
 import { getPublishedAgents } from "@/lib/agent-service"
 import type { AgentVersion } from "@/types/agent"
 

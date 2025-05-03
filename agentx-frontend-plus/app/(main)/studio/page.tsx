@@ -1,6 +1,8 @@
 "use client"
 
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
+import { Metadata } from "next"
+import { redirect } from "next/navigation"
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
@@ -15,7 +17,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { toast } from "@/components/ui/use-toast"
+import { toast } from "@/hooks/use-toast"
 import { 
   getUserAgents, 
   deleteAgent, 

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { streamChat } from "@/lib/api"
-import { toast } from "@/components/ui/use-toast"
+import { toast } from "@/hooks/use-toast"
 import { getSessionMessages, getSessionMessagesWithToast, type MessageDTO } from "@/lib/session-message-service"
 import { getSessionTasksWithToast } from "@/lib/task-service"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -567,8 +567,12 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
       // 发送消息到服务器并获取流式响应
       const response = await streamChat(userMessage, conversationId)
 
+      // 检查响应状态，如果不是成功状态，则关闭思考状态并返回
       if (!response.ok) {
-        throw new Error(`Stream chat failed with status ${response.status}`)
+        // 错误已在streamChat中处理并显示toast
+        setIsTyping(false)
+        setIsThinking(false) // 关闭思考状态，修复动画一直显示的问题
+        return // 直接返回，不继续处理
       }
 
       const reader = response.body?.getReader()
@@ -628,6 +632,7 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
       console.error("Error in stream chat:", error)
       setIsThinking(false) // 错误发生时关闭思考状态
       toast({
+        title: "发送消息失败",
         description: error instanceof Error ? error.message : "未知错误",
         variant: "destructive",
       })

@@ -30,10 +30,13 @@ import {
 } from "@/lib/api-services"
 import { ProviderDialog } from "@/components/provider-dialog"
 import { ModelDialog } from "@/components/model-dialog"
-import { toast } from "@/components/ui/use-toast"
+import { toast } from "@/hooks/use-toast"
 import { Separator } from "@/components/ui/separator"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Switch } from "@/components/ui/switch"
+import { Metadata } from "next"
+import { redirect } from "next/navigation"
+import Image from "next/image"
 
 // 服务商接口
 interface Model {

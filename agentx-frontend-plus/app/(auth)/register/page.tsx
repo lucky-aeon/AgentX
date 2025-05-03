@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { toast } from "sonner"
+import { toast } from "@/hooks/use-toast"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -28,17 +28,29 @@ export default function RegisterPage() {
   const validateForm = () => {
     // 验证密码
     if (!formData.password) {
-      toast.error("请输入密码")
+      toast({
+        variant: "destructive",
+        title: "错误",
+        description: "请输入密码"
+      })
       return false
     }
     if (formData.password !== formData.confirmPassword) {
-      toast.error("两次输入的密码不一致")
+      toast({
+        variant: "destructive",
+        title: "错误",
+        description: "两次输入的密码不一致"
+      })
       return false
     }
     
     // 验证邮箱和手机号至少填一个
     if (!formData.email && !formData.phone) {
-      toast.error("邮箱和手机号至少填写一个")
+      toast({
+        variant: "destructive",
+        title: "错误",
+        description: "邮箱和手机号至少填写一个"
+      })
       return false
     }
 
@@ -55,15 +67,18 @@ export default function RegisterPage() {
     setLoading(true)
     try {
       const { email, phone, password } = formData
-      const res = await registerApi({ email: email || undefined, phone: phone || undefined, password })
+      const res = await registerApi({ 
+        email: email || undefined, 
+        phone: phone || undefined, 
+        password 
+      }, true)
+      
       if (res.code === 200) {
-        toast.success("注册成功，请登录")
         router.push("/login")
-      } else {
-        toast.error(res.message || "注册失败")
       }
     } catch (error: any) {
-      toast.error(error?.message || "注册失败")
+      // 错误已由API处理
+      console.error("注册失败:", error)
     } finally {
       setLoading(false)
     }

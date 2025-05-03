@@ -2,6 +2,8 @@
 
 import { useState } from "react"
 import { Copy, EyeOff, Key, Plus, Trash } from "lucide-react"
+import { Metadata } from "next"
+import { redirect } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -17,7 +19,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { toast } from "@/components/ui/use-toast"
+import { toast } from "@/hooks/use-toast"
 
 // Mock data for API keys
 const apiKeys = [

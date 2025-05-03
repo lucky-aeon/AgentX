@@ -10,7 +10,7 @@ export const API_ENDPOINTS = {
   SESSION_DETAIL: (id: string) => `/agent/session/${id}`,
   SESSION_MESSAGES: (id: string) => `/agent/session/${id}/messages`,
   DELETE_SESSION: (id: string) => `/agent/session/${id}`,
-  CHAT: (sessionId: string) => `/conversation/chat/${sessionId}`,
+  CHAT: "/agent/session/chat",
   SEND_MESSAGE: (sessionId: string) => `/agent/session/${sessionId}/message`,
   
   // 任务相关

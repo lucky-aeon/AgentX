@@ -2,13 +2,15 @@
 
 import { useEffect, useState } from "react"
 import { Bot, Search, Plus } from "lucide-react"
+import { Metadata } from "next"
+import { redirect } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
-import { toast } from "@/components/ui/use-toast"
+import { toast } from "@/hooks/use-toast"
 import { getPublishedAgents } from "@/lib/agent-service"
 import type { AgentVersion } from "@/types/agent"
 import { Sidebar } from "@/components/sidebar"

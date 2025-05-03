@@ -11,7 +11,7 @@ import { useWorkspace } from "@/contexts/workspace-context"
 import { getWorkspaceAgents, deleteWorkspaceAgent, deleteWorkspaceAgentWithToast } from "@/lib/agent-service"
 import { getAgentSessions, createAgentSession, type SessionDTO, getAgentSessionsWithToast, createAgentSessionWithToast, updateAgentSessionWithToast } from "@/lib/agent-session-service"
 import type { Agent } from "@/types/agent"
-import { toast } from "@/components/ui/use-toast"
+import { toast } from "@/hooks/use-toast"
 import { MoreHorizontal, Trash2, Settings, Grid, Terminal } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import {
@@ -32,6 +32,8 @@ import {
 // 导入模型选择对话框组件
 import { ModelSelectDialog } from "@/components/model-select-dialog"
 import { AgentType } from "@/types/agent"
+import { Metadata } from "next"
+import { redirect } from "next/navigation"
 
 export default function WorkspacePage() {
   const { selectedWorkspaceId, selectedConversationId, setSelectedWorkspaceId, setSelectedConversationId } =
