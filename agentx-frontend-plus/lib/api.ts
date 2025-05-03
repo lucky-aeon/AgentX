@@ -1,35 +1,24 @@
+import { httpClient } from "@/lib/http-client";
+
 export async function streamChat(message: string, sessionId?: string) {
   if (!sessionId) {
-    throw new Error("Session ID is required")
+    throw new Error("Session ID is required");
   }
 
-  // 构建完整的API URL - 通过本地Next.js API路由代理请求
-  const url = new URL(`/api/agent/session/chat`, window.location.origin)
-
-  // 发送请求
+  // 使用 httpClient 但启用 raw 模式，返回原始 Response 对象
   try {
-    console.log("发送聊天请求:", url.toString()) // 添加日志以便调试
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "*/*",
-      },
-      body: JSON.stringify({ 
-        message, 
-        sessionId  // 将sessionId作为请求体的一部分发送
-      }),
-    })
+    const response = await httpClient.post<Response>(
+      "/agent/session/chat",
+      { message, sessionId },
+      {}, // 请求配置，保持默认
+      { raw: true } // 启用原始响应模式，不自动JSON解析，保留流
+    );
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => null)
-      throw new Error(errorData?.error || `API request failed with status ${response.status}`)
-    }
-
-    return response
+    // raw 模式下 response 就是原始 Response 对象，可以直接使用 response.body 等
+    return response;
   } catch (error) {
-    console.error("Stream chat error:", error)
-    throw error
+    console.error("Stream chat error:", error);
+    throw error;
   }
 }
 

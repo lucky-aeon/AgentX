@@ -20,7 +20,10 @@ public class UserDomainService {
         this.userRepository = userRepository;
     }
 
-    public UserEntity getInfo(String id){
+    /**
+     * 获取用户信息
+     */
+    public UserEntity getUserInfo(String id){
         return userRepository.selectById(id);
     }
 
@@ -42,7 +45,6 @@ public class UserDomainService {
         return userEntity;
     }
 
-    // todo xhy 密码加密校验
     public UserEntity login(String account, String password){
         LambdaQueryWrapper<UserEntity> wrapper = Wrappers.<UserEntity>lambdaQuery()
                 .eq(UserEntity::getEmail, account)

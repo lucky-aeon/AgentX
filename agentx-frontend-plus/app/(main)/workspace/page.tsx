@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/dialog"
 
 // 导入模型选择对话框组件
-import { ModelSelectDialog } from "../../components/model-select-dialog"
+import { ModelSelectDialog } from "@/components/model-select-dialog"
 import { AgentType } from "@/types/agent"
 
 export default function WorkspacePage() {

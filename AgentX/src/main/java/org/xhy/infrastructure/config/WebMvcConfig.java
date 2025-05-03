@@ -18,10 +18,10 @@ public class WebMvcConfig implements WebMvcConfigurer {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(userAuthInterceptor)
-                .addPathPatterns("/api/**")  // 拦截所有/api/开头的请求
-                .excludePathPatterns(        // 不拦截以下路径
-                        "/api/user/login",   // 登录接口
-                        "/api/user/register" // 注册接口
+                .addPathPatterns("/**")  // 拦截所有请求
+                .excludePathPatterns(    // 不拦截以下路径
+                        "/login",   // 登录接口
+                        "/register" // 注册接口
                 );
     }
 }

@@ -650,3 +650,13 @@ export const getWorkspaceAgentsWithToast = withToast(getWorkspaceAgents, {
   showErrorToast: true,
   errorTitle: "获取工作区Agent列表失败"
 })
+
+// 登录
+export async function loginApi(data: { account: string; password: string }) {
+  return httpClient.post<{ code: number; message: string; data: { token: string } }>('/login', data)
+}
+
+// 注册
+export async function registerApi(data: { email?: string; phone?: string; password: string }) {
+  return httpClient.post<{ code: number; message: string; data: any }>('/register', data)
+}

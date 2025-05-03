@@ -2,6 +2,7 @@ import { API_CONFIG, API_ENDPOINTS } from "./api-config"
 import type { ApiResponse } from "@/types/agent"
 import { MessageType } from "@/types/conversation"
 import { withToast } from "./toast-utils"
+import { httpClient } from "@/lib/http-client"
 
 // 消息类型定义
 export interface MessageDTO {
@@ -17,8 +18,9 @@ export interface MessageDTO {
 // 获取会话消息列表
 export async function getSessionMessages(sessionId: string): Promise<ApiResponse<MessageDTO[]>> {
   try {
-    const response = await fetch(`${API_CONFIG.BASE_URL}${API_ENDPOINTS.SESSION_MESSAGES(sessionId)}`)
-    const data = await response.json()
+    const data = await httpClient.get<ApiResponse<MessageDTO[]>>(
+      API_ENDPOINTS.SESSION_MESSAGES(sessionId)
+    )
     return data
   } catch (error) {
     console.error("Error fetching session messages:", error)
@@ -33,17 +35,13 @@ export async function getSessionMessages(sessionId: string): Promise<ApiResponse
 
 export async function createSession(title: string, userId: string, description?: string): Promise<ApiResponse<any>> {
   try {
-    const queryParams = new URLSearchParams()
-    queryParams.append("title", title)
-    queryParams.append("userId", userId)
-    if (description) {
-      queryParams.append("description", description)
-    }
-
-    const response = await fetch(`${API_CONFIG.BASE_URL}${API_ENDPOINTS.SESSION}?${queryParams.toString()}`, {
-      method: "POST",
-    })
-    const data = await response.json()
+    const params: Record<string, any> = { title, userId }
+    if (description) params.description = description
+    const data = await httpClient.post<ApiResponse<any>>(
+      API_ENDPOINTS.SESSION,
+      {},
+      { method: "POST", params }
+    )
     return data
   } catch (error) {
     console.error("Error creating session:", error)
@@ -58,16 +56,13 @@ export async function createSession(title: string, userId: string, description?:
 
 export async function updateSession(id: string, title: string, description?: string): Promise<ApiResponse<any>> {
   try {
-    const queryParams = new URLSearchParams()
-    queryParams.append("title", title)
-    if (description) {
-      queryParams.append("description", description)
-    }
-
-    const response = await fetch(`${API_CONFIG.BASE_URL}${API_ENDPOINTS.SESSION_DETAIL(id)}?${queryParams.toString()}`, {
-      method: "PUT",
-    })
-    const data = await response.json()
+    const params: Record<string, any> = { title }
+    if (description) params.description = description
+    const data = await httpClient.put<ApiResponse<any>>(
+      API_ENDPOINTS.SESSION_DETAIL(id),
+      {},
+      { method: "PUT", params }
+    )
     return data
   } catch (error) {
     console.error("Error updating session:", error)
@@ -83,10 +78,9 @@ export async function updateSession(id: string, title: string, description?: str
 // 删除会话
 export async function deleteSession(sessionId: string): Promise<ApiResponse<null>> {
   try {
-    const response = await fetch(`${API_CONFIG.BASE_URL}${API_ENDPOINTS.DELETE_SESSION(sessionId)}`, {
-      method: "DELETE",
-    })
-    const data = await response.json()
+    const data = await httpClient.delete<ApiResponse<null>>(
+      API_ENDPOINTS.DELETE_SESSION(sessionId)
+    )
     return data
   } catch (error) {
     console.error("Error deleting session:", error)
@@ -101,14 +95,12 @@ export async function deleteSession(sessionId: string): Promise<ApiResponse<null
 
 export async function getSessions(userId: string, archived?: boolean): Promise<ApiResponse<any>> {
   try {
-    const queryParams = new URLSearchParams()
-    queryParams.append("userId", userId)
-    if (archived !== undefined) {
-      queryParams.append("archived", String(archived))
-    }
-
-    const response = await fetch(`${API_CONFIG.BASE_URL}${API_ENDPOINTS.SESSION}?${queryParams.toString()}`)
-    const data = await response.json()
+    const params: Record<string, any> = { userId }
+    if (archived !== undefined) params.archived = archived
+    const data = await httpClient.get<ApiResponse<any>>(
+      API_ENDPOINTS.SESSION,
+      { params }
+    )
     return data
   } catch (error) {
     console.error("Error fetching sessions:", error)

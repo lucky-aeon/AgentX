@@ -1,16 +1,23 @@
 import { API_CONFIG } from "@/lib/api-config"
 import { toast } from "@/components/ui/use-toast"
 
+import { log } from "console";
+
 // 请求配置类型
 export interface RequestConfig extends RequestInit {
   params?: Record<string, any>; // 查询参数
   timeout?: number; // 超时时间（毫秒）
 }
 
+// 请求选项类型
+export interface RequestOptions {
+  raw?: boolean; // 是否返回原始响应，不自动解析json
+}
+
 // 拦截器类型
 export interface Interceptor {
   request?: (config: RequestConfig) => RequestConfig;
-  response?: (response: Response) => Promise<any>;
+  response?: (response: Response, options?: RequestOptions) => Promise<any>;
   error?: (error: any) => Promise<any>;
 }
 
@@ -35,20 +42,24 @@ const defaultInterceptor: Interceptor = {
   },
 
   // 响应拦截器
-  response: async (response) => {
-    // 如果响应不成功，抛出错误
-    if (!response.ok) {
-      // 尝试解析错误响应
-      const errorData = await response.json().catch(() => null);
-      throw {
-        status: response.status,
-        message: errorData?.message || response.statusText,
-        data: errorData,
-      };
+  response: async (response, options) => {
+    if (response.status === 401) {
+      const error: any = new Error("未登录或登录已过期");
+      error.status = 401;
+      throw error;
     }
 
-    // 解析响应JSON
-    return response.json();
+    // 如果是原始响应模式，直接返回response不消费流
+    if (options?.raw) {
+      return response;
+    }
+
+    const result = await response.json();
+    toast({
+      description: result.message,
+      variant: "destructive",
+    });
+    return result;
   },
 
   // 错误拦截器
@@ -68,6 +79,19 @@ const defaultInterceptor: Interceptor = {
       return {
         code: 503,
         message: "网络连接失败",
+        data: null,
+        timestamp: Date.now(),
+      };
+    }
+
+    // 处理 401
+    if (error.status === 401) {
+      if (typeof window !== "undefined") {
+        window.location.href = "/login";
+      }
+      return {
+        code: 401,
+        message: "未登录或登录已过期",
         data: null,
         timestamp: Date.now(),
       };
@@ -129,7 +153,7 @@ class HttpClient {
   }
 
   // 执行请求
-  private async request<T>(endpoint: string, config: RequestConfig = {}): Promise<T> {
+  private async request<T>(endpoint: string, config: RequestConfig = {}, options?: RequestOptions): Promise<T> {
     // 应用请求拦截器 - 使用reduce串联所有拦截器确保只应用一次
     const processedConfig = this.interceptors.reduce(
       (cfg, interceptor) => (interceptor.request ? interceptor.request(cfg) : cfg),
@@ -167,11 +191,16 @@ class HttpClient {
       // 应用响应拦截器 - 只应用第一个有效的响应拦截器
       for (const interceptor of this.interceptors) {
         if (interceptor.response) {
-          return await interceptor.response(response);
+          return await interceptor.response(response, options) as T;
         }
       }
 
-      // 默认处理
+      // 默认处理 - 如果是原始响应模式，直接返回
+      if (options?.raw) {
+        return response as unknown as T;
+      }
+      
+      // 否则解析JSON
       return await response.json();
     } catch (error) {
       // 应用错误拦截器 - 只应用第一个有效的错误拦截器
@@ -188,28 +217,28 @@ class HttpClient {
   }
 
   // HTTP方法
-  async get<T>(endpoint: string, config: RequestConfig = {}): Promise<T> {
-    return this.request<T>(endpoint, { ...config, method: "GET" });
+  async get<T>(endpoint: string, config: RequestConfig = {}, options?: RequestOptions): Promise<T> {
+    return this.request<T>(endpoint, { ...config, method: "GET" }, options);
   }
 
-  async post<T>(endpoint: string, data?: any, config: RequestConfig = {}): Promise<T> {
+  async post<T>(endpoint: string, data?: any, config: RequestConfig = {}, options?: RequestOptions): Promise<T> {
     return this.request<T>(endpoint, {
       ...config,
       method: "POST",
       body: data ? JSON.stringify(data) : undefined,
-    });
+    }, options);
   }
 
-  async put<T>(endpoint: string, data?: any, config: RequestConfig = {}): Promise<T> {
+  async put<T>(endpoint: string, data?: any, config: RequestConfig = {}, options?: RequestOptions): Promise<T> {
     return this.request<T>(endpoint, {
       ...config,
       method: "PUT",
       body: data ? JSON.stringify(data) : undefined,
-    });
+    }, options);
   }
 
-  async delete<T>(endpoint: string, config: RequestConfig = {}): Promise<T> {
-    return this.request<T>(endpoint, { ...config, method: "DELETE" });
+  async delete<T>(endpoint: string, config: RequestConfig = {}, options?: RequestOptions): Promise<T> {
+    return this.request<T>(endpoint, { ...config, method: "DELETE" }, options);
   }
 }
 
@@ -233,9 +262,13 @@ export const addToastInterceptor = (
   } = options;
 
   httpClient.addInterceptor({
-    response: async (response) => {
+    response: async (response, requestOptions) => {
+      // 如果是原始响应模式，直接返回响应不处理
+      if (requestOptions?.raw) {
+        return response;
+      }
+
       const result = await response.json();
-      
       // 假设API返回格式为 { code: number, message: string, data: any }
       if (result.code === 200 && showSuccessToast) {
         toast({
@@ -243,12 +276,10 @@ export const addToastInterceptor = (
           description: result.message || "操作已完成",
         });
       }
-      
       return result;
     },
     error: async (error) => {
       const result = await defaultInterceptor.error!(error);
-      
       if (showErrorToast) {
         toast({
           title: errorTitle,
@@ -256,7 +287,6 @@ export const addToastInterceptor = (
           variant: "destructive",
         });
       }
-      
       return result;
     }
   });
@@ -274,21 +304,10 @@ export const addAuthInterceptor = () => {
         };
       }
       return config;
-    },
-    response: async (response) => {
-      // 处理401认证错误
-      if (response.status === 401) {
-        // 可以在这里处理登录过期逻辑
-        // 例如：重定向到登录页面
-        window.location.href = "/login";
-      }
-      
-      // 继续处理响应
-      const result = await response.json();
-      return result;
     }
   });
 };
 
 // 初始化：添加常用拦截器
-addToastInterceptor(); 
+addToastInterceptor();
+addAuthInterceptor(); 

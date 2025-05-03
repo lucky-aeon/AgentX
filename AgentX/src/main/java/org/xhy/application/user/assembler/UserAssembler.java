@@ -11,7 +11,7 @@ public class UserAssembler {
     public static UserDTO toDTO(UserEntity userEntity){
         UserDTO userDTO = new UserDTO();
 
-        BeanUtils.copyProperties(userDTO,userDTO);
+        BeanUtils.copyProperties(userEntity,userDTO);
         return userDTO;
     }
 

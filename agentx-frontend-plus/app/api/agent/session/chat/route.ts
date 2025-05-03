@@ -16,18 +16,32 @@ export async function POST(request: NextRequest) {
       })
     }
 
+    // 获取Authorization请求头并转发
+    const authHeader = request.headers.get("authorization")
+
     // 构建明确的API URL，直接请求后端8080端口
     const apiUrl = `${BACKEND_URL}/api/agent/session/chat`
     console.log(`直接请求后端API: ${apiUrl}`)
 
+    // 准备请求头，包括Authorization
+    const headers: HeadersInit = {
+      "Content-Type": "application/json",
+      Accept: "*/*",
+      Connection: "keep-alive",
+    }
+
+    // 如果有Authorization头，添加到请求中
+    if (authHeader) {
+      headers["Authorization"] = authHeader
+      console.log("转发Authorization头到后端")
+    } else {
+      console.log("请求中未包含Authorization头")
+    }
+
     // 发送请求到后端API
     const response = await fetch(apiUrl, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "*/*",
-        Connection: "keep-alive",
-      },
+      headers,
       body: JSON.stringify({ sessionId, message }),
     })
 
