@@ -16,7 +16,7 @@ export function middleware(request: NextRequest) {
   return NextResponse.next()
 }
 
-// 配置中间件只处理登录和注册页面
+// 只处理登录和注册页面
 export const config = {
   matcher: ["/login", "/register"]
 } 

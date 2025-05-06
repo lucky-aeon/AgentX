@@ -38,7 +38,14 @@ const defaultInterceptor: Interceptor = {
 
   // 响应拦截器
   response: async (response, options) => {
+    console.log('ggg')
     if (response.status === 401) {
+      // 清除本地存储的 token
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("auth_token");
+        document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+        window.location.href = "/login";
+      }
       const error: any = new Error("未登录或登录已过期");
       error.status = 401;
       throw error;
@@ -62,6 +69,7 @@ const defaultInterceptor: Interceptor = {
 
   // 错误拦截器
   error: async (error) => {
+    console.log('ggg')
     // 处理超时错误
     if (error.name === "AbortError") {
       return {
@@ -85,6 +93,8 @@ const defaultInterceptor: Interceptor = {
     // 处理 401
     if (error.status === 401) {
       if (typeof window !== "undefined") {
+        localStorage.removeItem("auth_token");
+        document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
         window.location.href = "/login";
       }
       return {
@@ -184,6 +194,21 @@ class HttpClient {
         clearTimeout(timeoutId);
       }
 
+      // 处理 401 状态码
+      if (response.status === 401) {
+        // 清除认证信息
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("auth_token");
+          document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+          // 如果当前不在登录页面，则重定向到登录页面
+          if (!window.location.pathname.includes('/login')) {
+            window.location.href = '/login';
+            // 抛出错误以中断后续处理
+            throw new Error("未登录或登录已过期");
+          }
+        }
+      }
+
       // 处理响应
       let result: any;
       
@@ -191,31 +216,18 @@ class HttpClient {
       if (options?.raw) {
         return response as unknown as T;
       }
-      if (response.status === 401) {
-        window.location.href = '/login';
-      }
+
       // 解析响应
-      if (!response.ok) {
-        // 处理错误响应
-        try {
-          const errorData = await response.json();
-          result = {
-            code: response.status,
-            message: errorData.message || `请求失败 (${response.status})`,
-            data: null
-          };
-        } catch (e) {
-          result = {
-            code: response.status,
-            message: `请求失败 (${response.status})`,
-            data: null
-          };
-        }
-      } else {
-        // 处理成功响应
+      try {
         result = await response.json();
+      } catch (e) {
+        result = {
+          code: response.status,
+          message: response.statusText || `请求失败 (${response.status})`,
+          data: null
+        };
       }
-      
+
       // 显示toast提示
       if (options?.showToast) {
         toast({
