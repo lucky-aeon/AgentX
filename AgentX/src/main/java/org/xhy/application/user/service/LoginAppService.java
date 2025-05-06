@@ -22,8 +22,8 @@ public class LoginAppService {
         return JwtUtils.generateToken(userEntity.getId());
     }
 
-
-    public void register(RegisterRequest registerRequest){
-        userDomainService.register(registerRequest.getEmail(), registerRequest.getPhone(), registerRequest.getPassword());
+    public void register(RegisterRequest registerRequest) {
+        userDomainService.register(registerRequest.getEmail(), registerRequest.getPhone(),
+                registerRequest.getPassword());
     }
 }

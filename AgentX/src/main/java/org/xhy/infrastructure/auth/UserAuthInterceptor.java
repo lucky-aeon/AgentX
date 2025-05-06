@@ -18,7 +18,6 @@ public class UserAuthInterceptor implements HandlerInterceptor {
 
     private static final String BEARER_PREFIX = "Bearer ";
 
-
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
         try {
@@ -28,7 +27,6 @@ public class UserAuthInterceptor implements HandlerInterceptor {
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 return false;
             }
-
 
             // 提取token
             String token = authHeader.substring(BEARER_PREFIX.length());
@@ -53,7 +51,7 @@ public class UserAuthInterceptor implements HandlerInterceptor {
 
     @Override
     public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler,
-                                Exception ex) {
+            Exception ex) {
         // 请求结束后清除上下文，防止内存泄漏
         UserContext.clear();
     }

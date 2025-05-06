@@ -1,6 +1,5 @@
 package org.xhy.interfaces.api.portal.user;
 
-
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.xhy.application.user.dto.UserDTO;
@@ -12,27 +11,22 @@ import org.xhy.interfaces.dto.user.request.RegisterRequest;
 
 import java.util.Map;
 
-/**
- * 用户
- */
+/** 用户 */
 @RestController
 @RequestMapping("/users")
 public class UserController {
 
-   private final UserAppService userAppService;
-
+    private final UserAppService userAppService;
 
     public UserController(UserAppService userAppService) {
         this.userAppService = userAppService;
     }
 
-    /**
-     * 获取用户信息
+    /** 获取用户信息
      * @param userId
-     * @return
-     */
+     * @return */
     @GetMapping("/{userId}")
-    public Result<UserDTO> getUserInfo(@PathVariable String userId){
+    public Result<UserDTO> getUserInfo(@PathVariable String userId) {
         return Result.success(userAppService.getUserInfo(userId));
     }
 }

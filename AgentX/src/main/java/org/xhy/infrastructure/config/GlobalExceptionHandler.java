@@ -59,8 +59,7 @@ public class GlobalExceptionHandler {
     public Result<Void> handleMethodArgumentNotValidException(MethodArgumentNotValidException e,
             HttpServletRequest request) {
         List<FieldError> fieldErrors = e.getBindingResult().getFieldErrors();
-        String errorMessage = fieldErrors.stream()
-                .map(DefaultMessageSourceResolvable::getDefaultMessage)
+        String errorMessage = fieldErrors.stream().map(DefaultMessageSourceResolvable::getDefaultMessage)
                 .collect(Collectors.joining(", "));
 
         logger.error("方法参数校验异常: {}, URL: {}", errorMessage, request.getRequestURL(), e);

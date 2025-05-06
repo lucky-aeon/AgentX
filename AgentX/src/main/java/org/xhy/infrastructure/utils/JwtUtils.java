@@ -23,43 +23,25 @@ public class JwtUtils {
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
-    /**
-     * 生成JWT Token
-     */
+    /** 生成JWT Token */
     public static String generateToken(String userId) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + EXPIRATION_TIME);
 
-        return Jwts.builder()
-                .subject(userId)
-                .issuedAt(now)
-                .expiration(expiryDate)
-                .signWith(getSigningKey())
-                .compact();
+        return Jwts.builder().subject(userId).issuedAt(now).expiration(expiryDate).signWith(getSigningKey()).compact();
     }
 
-    /**
-     * 从token中获取用户ID
-     */
+    /** 从token中获取用户ID */
     public static String getUserIdFromToken(String token) {
-        Claims claims = Jwts.parser()
-                .verifyWith(getSigningKey())
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
+        Claims claims = Jwts.parser().verifyWith(getSigningKey()).build().parseSignedClaims(token).getPayload();
 
         return claims.getSubject();
     }
 
-    /**
-     * 验证token是否有效
-     */
+    /** 验证token是否有效 */
     public static boolean validateToken(String token) {
         try {
-            Jwts.parser()
-                    .verifyWith(getSigningKey())
-                    .build()
-                    .parseSignedClaims(token);
+            Jwts.parser().verifyWith(getSigningKey()).build().parseSignedClaims(token);
             return true;
         } catch (JwtException | IllegalArgumentException e) {
             return false;

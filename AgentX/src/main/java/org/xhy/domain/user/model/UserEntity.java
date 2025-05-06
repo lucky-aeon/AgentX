@@ -1,6 +1,5 @@
 package org.xhy.domain.user.model;
 
-
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -58,7 +57,7 @@ public class UserEntity extends BaseEntity {
     }
 
     public void valid() {
-        if (StringUtils.isEmpty(email) && StringUtils.isNotEmpty(phone)){
+        if (StringUtils.isEmpty(email) && StringUtils.isNotEmpty(phone)) {
             throw new BusinessException("必须使用邮箱或者手机号来作为账号");
         }
     }

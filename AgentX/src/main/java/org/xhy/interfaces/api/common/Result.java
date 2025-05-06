@@ -138,7 +138,7 @@ public class Result<T> {
         this.timestamp = timestamp;
     }
 
-    public Result <T> message(String message) {
+    public Result<T> message(String message) {
         return this;
     }
 }

@@ -17,10 +17,9 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(userAuthInterceptor)
-                .addPathPatterns("/**")  // 拦截所有请求
-                .excludePathPatterns(    // 不拦截以下路径
-                        "/login",   // 登录接口
+        registry.addInterceptor(userAuthInterceptor).addPathPatterns("/**") // 拦截所有请求
+                .excludePathPatterns( // 不拦截以下路径
+                        "/login", // 登录接口
                         "/register" // 注册接口
                 );
     }

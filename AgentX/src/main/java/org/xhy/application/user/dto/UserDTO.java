@@ -1,7 +1,5 @@
 package org.xhy.application.user.dto;
 
-
-
 public class UserDTO {
 
     private String id;

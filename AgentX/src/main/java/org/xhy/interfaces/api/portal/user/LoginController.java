@@ -1,6 +1,5 @@
 package org.xhy.interfaces.api.portal.user;
 
-
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -24,13 +23,13 @@ public class LoginController {
     }
 
     @PostMapping("/login")
-    public Result<Map<String,Object>> login(@RequestBody @Validated LoginRequest loginRequest){
+    public Result<Map<String, Object>> login(@RequestBody @Validated LoginRequest loginRequest) {
         String token = loginAppService.login(loginRequest);
-        return Result.success(Map.of("token",token));
+        return Result.success(Map.of("token", token));
     }
 
     @PostMapping("/register")
-    public Result<?> register(@RequestBody @Validated RegisterRequest registerRequest){
+    public Result<?> register(@RequestBody @Validated RegisterRequest registerRequest) {
         loginAppService.register(registerRequest);
         return Result.success().message("注册成功");
     }
