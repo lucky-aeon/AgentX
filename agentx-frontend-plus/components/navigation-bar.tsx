@@ -2,8 +2,9 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { Database, FileText, Home, Menu, Search, Settings, PenToolIcon as Tool, UploadCloud } from "lucide-react"
+import { usePathname, useRouter } from "next/navigation"
+import { Database, FileText, Home, Menu, Search, Settings, PenToolIcon as Tool, UploadCloud, LogOut } from "lucide-react"
+import { toast } from "@/hooks/use-toast"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -17,6 +18,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { deleteCookie } from "@/lib/utils"
 
 const navItems = [
   {
@@ -43,6 +45,7 @@ const navItems = [
 
 export function NavigationBar() {
   const pathname = usePathname()
+  const router = useRouter()
   const [open, setOpen] = useState(false)
 
   // Check if current path matches the menu item's href
@@ -51,6 +54,23 @@ export function NavigationBar() {
       return true // Main page also counts as explore
     }
     return pathname === href || pathname.startsWith(`${href}/`)
+  }
+
+  const handleLogout = () => {
+    // 清除localStorage中的token
+    localStorage.removeItem("auth_token")
+    
+    // 清除cookie中的token
+    deleteCookie("token")
+    
+    // 显示退出成功提示
+    toast({
+      title: "成功",
+      description: "退出登录成功"
+    })
+    
+    // 跳转到登录页
+    router.push("/login")
   }
 
   return (
@@ -161,7 +181,10 @@ export function NavigationBar() {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>退出登录</DropdownMenuItem>
+                <DropdownMenuItem onSelect={handleLogout}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  退出登录
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
