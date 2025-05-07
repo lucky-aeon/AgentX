@@ -251,6 +251,28 @@ export async function getAgentVersion(agentId: string, versionNumber: string): P
   }
 }
 
+// 获取助理最新版本
+export async function getAgentLatestVersion(agentId: string): Promise<ApiResponse<AgentVersion>> {
+  try {
+    console.log(`Fetching agent latest version: ${agentId}`)
+    
+    const response = await httpClient.get<ApiResponse<AgentVersion>>(
+      API_ENDPOINTS.AGENT_LATEST_VERSION(agentId)
+    );
+    
+    return response;
+  } catch (error) {
+    console.error("获取助理最新版本错误:", error)
+    // 返回格式化的错误响应
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : "未知错误",
+      data: null as unknown as AgentVersion,
+      timestamp: Date.now(),
+    }
+  }
+}
+
 // 搜索助理
 export async function searchAgents(params: SearchAgentsRequest): Promise<ApiResponse<Agent[]>> {
   try {

@@ -26,6 +26,7 @@ export const API_ENDPOINTS = {
   TOGGLE_AGENT_STATUS: (id: string) => `/agent/${id}/toggle-status`,
   AGENT_VERSIONS: (id: string) => `/agent/${id}/versions`,
   AGENT_VERSION_DETAIL: (id: string, version: string) => `/agent/${id}/versions/${version}`,
+  AGENT_LATEST_VERSION: (id: string) => `/agent/${id}/versions/latest`,
   PUBLISH_AGENT_VERSION: (id: string) => `/agent/${id}/publish`,
   PUBLISHED_AGENTS: "/agent/published",
   

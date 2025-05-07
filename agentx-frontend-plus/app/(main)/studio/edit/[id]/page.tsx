@@ -57,6 +57,7 @@ import {
   updateAgentWithToast,
   publishAgentVersionWithToast,
   deleteAgentWithToast,
+  getAgentLatestVersion,
 } from "@/lib/agent-service"
 import { PublishStatus } from "@/types/agent"
 import type { AgentVersion } from "@/types/agent"
@@ -114,6 +115,8 @@ export default function EditAgentPage() {
   const [changeLog, setChangeLog] = useState("")
   const [versions, setVersions] = useState<AgentVersion[]>([])
   const [selectedVersion, setSelectedVersion] = useState<AgentVersion | null>(null)
+  const [latestVersion, setLatestVersion] = useState<AgentVersion | null>(null)
+  const [isLoadingLatestVersion, setIsLoadingLatestVersion] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // 表单数据
@@ -177,6 +180,45 @@ export default function EditAgentPage() {
 
     fetchAgentDetail()
   }, [agentId, router])
+
+  // 获取助理最新版本
+  const fetchLatestVersion = async () => {
+    setIsLoadingLatestVersion(true)
+    try {
+      const response = await getAgentLatestVersion(agentId)
+      
+      if (response.code === 200) {
+        setLatestVersion(response.data)
+        
+        // 如果有最新版本，预填写下一个版本号
+        if (response.data && response.data.versionNumber) {
+          const versionParts = response.data.versionNumber.split('.')
+          if (versionParts.length >= 3) {
+            // 增加补丁版本号
+            const major = parseInt(versionParts[0])
+            const minor = parseInt(versionParts[1])
+            const patch = parseInt(versionParts[2]) + 1
+            setVersionNumber(`${major}.${minor}.${patch}`)
+          } else {
+            // 无法解析版本号，设置为原版本号 + .1
+            setVersionNumber(`${response.data.versionNumber}.1`)
+          }
+        } else {
+          // 没有版本，设置初始版本号
+          setVersionNumber("1.0.0")
+        }
+      } else {
+        // 没有版本或获取失败，设置初始版本号
+        setVersionNumber("1.0.0")
+      }
+    } catch (error) {
+      console.error("获取最新版本错误:", error)
+      // 出错，设置初始版本号
+      setVersionNumber("1.0.0")
+    } finally {
+      setIsLoadingLatestVersion(false)
+    }
+  }
 
   // 更新表单字段
   const updateFormField = (field: string, value: any) => {
@@ -375,6 +417,8 @@ export default function EditAgentPage() {
         setShowPublishDialog(false)
         setVersionNumber("")
         setChangeLog("")
+        // 更新最新版本信息
+        fetchLatestVersion()
       } else {
         // 错误已由withToast处理
       }
@@ -384,6 +428,13 @@ export default function EditAgentPage() {
     } finally {
       setIsPublishing(false)
     }
+  }
+
+  // 打开发布对话框
+  const openPublishDialog = async () => {
+    // 先加载最新版本
+    await fetchLatestVersion()
+    setShowPublishDialog(true)
   }
 
   // 加载助理版本列表
@@ -561,7 +612,7 @@ export default function EditAgentPage() {
                 <History className="mr-2 h-4 w-4" />
                 版本历史
               </Button>
-              <Button variant="outline" onClick={() => setShowPublishDialog(true)}>
+              <Button variant="outline" onClick={openPublishDialog}>
                 发布版本
               </Button>
               <Button
@@ -1027,6 +1078,20 @@ export default function EditAgentPage() {
             <DialogDescription>发布新版本将创建当前配置的快照，用户可以使用此版本。</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
+            {isLoadingLatestVersion ? (
+              <div className="flex items-center justify-center py-2">
+                <RefreshCw className="h-4 w-4 animate-spin text-blue-500 mr-2" />
+                <span className="text-sm">加载版本信息...</span>
+              </div>
+            ) : latestVersion ? (
+              <div className="flex items-center p-2 bg-blue-50 rounded-md border border-blue-100 mb-2">
+                <span className="text-sm text-blue-600">当前最新版本：{latestVersion.versionNumber}</span>
+              </div>
+            ) : (
+              <div className="flex items-center p-2 bg-gray-50 rounded-md border border-gray-200 mb-2">
+                <span className="text-sm text-gray-600">当前还没有发布过版本</span>
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="version-number">版本号</Label>
               <Input
