@@ -50,7 +50,8 @@ public class PortalAgentController {
     /** 获取已上架的Agent列表，支持名称搜索 */
     @GetMapping("/published")
     public Result<List<AgentVersionDTO>> getPublishedAgents(SearchAgentsRequest searchAgentsRequest) {
-        return Result.success(agentAppService.getPublishedAgentsByName(searchAgentsRequest));
+        String userId = UserContext.getCurrentUserId();
+        return Result.success(agentAppService.getPublishedAgentsByName(searchAgentsRequest, userId));
     }
 
     /** 更新Agent信息（基本信息和配置合并更新） */

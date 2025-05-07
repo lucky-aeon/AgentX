@@ -1,9 +1,9 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Bot, Search, Plus } from "lucide-react"
+import { Bot, Search, Plus, Check } from "lucide-react"
 import { Metadata } from "next"
-import { redirect } from "next/navigation"
+import { redirect, useRouter } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -11,18 +11,20 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "@/hooks/use-toast"
-import { getPublishedAgents } from "@/lib/agent-service"
+import { getPublishedAgents, addAgentToWorkspaceWithToast } from "@/lib/agent-service"
 import type { AgentVersion } from "@/types/agent"
 import { Sidebar } from "@/components/sidebar"
 import Link from "next/link"
 
 export default function ExplorePage() {
+  const router = useRouter()
   const [searchQuery, setSearchQuery] = useState("")
   const [debouncedQuery, setDebouncedQuery] = useState("")
   const [agents, setAgents] = useState<AgentVersion[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState("推荐")
+  const [addingAgentId, setAddingAgentId] = useState<string | null>(null)
 
   // 防抖处理搜索查询
   useEffect(() => {
@@ -34,39 +36,56 @@ export default function ExplorePage() {
   }, [searchQuery])
 
   // 获取已发布的助理列表
-  useEffect(() => {
-    async function fetchAgents() {
-      try {
-        setLoading(true)
-        setError(null)
+  const fetchAgents = async () => {
+    try {
+      setLoading(true)
+      setError(null)
 
-        const response = await getPublishedAgents(debouncedQuery)
+      const response = await getPublishedAgents(debouncedQuery)
 
-        if (response.code === 200) {
-          setAgents(response.data)
-        } else {
-          setError(response.message)
-          toast({
-            title: "获取助理列表失败",
-            description: response.message,
-            variant: "destructive",
-          })
-        }
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : "未知错误"
-        setError(errorMessage)
+      if (response.code === 200) {
+        setAgents(response.data)
+      } else {
+        setError(response.message)
         toast({
           title: "获取助理列表失败",
-          description: errorMessage,
+          description: response.message,
           variant: "destructive",
         })
-      } finally {
-        setLoading(false)
       }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "未知错误"
+      setError(errorMessage)
+      toast({
+        title: "获取助理列表失败",
+        description: errorMessage,
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
     }
+  }
 
+  useEffect(() => {
     fetchAgents()
   }, [debouncedQuery])
+
+  // 处理添加助理到工作区
+  const handleAddToWorkspace = async (agentId: string) => {
+    try {
+      setAddingAgentId(agentId)
+      const response = await addAgentToWorkspaceWithToast(agentId)
+      if (response.code === 200) {
+        // 局部刷新列表，而不是跳转到首页
+        await fetchAgents()
+      }
+    } catch (error) {
+      // 错误已由withToast处理
+      console.error("添加助理到工作区失败:", error)
+    } finally {
+      setAddingAgentId(null)
+    }
+  }
 
   // 根据类型过滤助理
   const getFilteredAgents = (tab: string) => {
@@ -197,12 +216,30 @@ export default function ExplorePage() {
                           <p className="text-sm text-gray-600 line-clamp-3">{agent.description || "无描述"}</p>
 
                           <div className="mt-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Button className="w-full bg-blue-500 hover:bg-blue-600 text-white" asChild>
-                              <Link href={`/explore/chat/${agent.agentId}`}>
-                                <Plus className="h-4 w-4 mr-2" />
-                                添加到工作区
-                              </Link>
-                            </Button>
+                            {agent.addWorkspace ? (
+                              <Button 
+                                className="w-full bg-green-500 text-white cursor-default" 
+                                disabled
+                              >
+                                <Check className="h-4 w-4 mr-2" />
+                                已添加到工作区
+                              </Button>
+                            ) : (
+                              <Button 
+                                className="w-full bg-blue-500 hover:bg-blue-600 text-white" 
+                                onClick={() => handleAddToWorkspace(agent.agentId)}
+                                disabled={addingAgentId === agent.agentId}
+                              >
+                                {addingAgentId === agent.agentId ? (
+                                  "添加中..."
+                                ) : (
+                                  <>
+                                    <Plus className="h-4 w-4 mr-2" />
+                                    添加到工作区
+                                  </>
+                                )}
+                              </Button>
+                            )}
                           </div>
                         </div>
                       </Card>

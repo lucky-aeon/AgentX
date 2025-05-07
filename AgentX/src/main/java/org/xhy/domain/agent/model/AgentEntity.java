@@ -4,10 +4,9 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import org.apache.ibatis.type.JdbcType;
 import org.xhy.domain.agent.constant.AgentType;
 import org.xhy.infrastructure.entity.BaseEntity;
-import org.xhy.infrastructure.typehandler.JsonTypeHandler;
+import org.xhy.infrastructure.exception.BusinessException;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -227,5 +226,11 @@ public class AgentEntity extends BaseEntity {
     /** 获取Agent类型枚举 */
     public AgentType getAgentTypeEnum() {
         return AgentType.fromCode(this.agentType);
+    }
+
+    public void isEnable() {
+        if (!this.enabled) {
+            throw new BusinessException("助理未激活");
+        }
     }
 }

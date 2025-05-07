@@ -314,6 +314,28 @@ export async function deleteWorkspaceAgent(agentId: string): Promise<ApiResponse
   }
 }
 
+// 添加助理到工作区
+export async function addAgentToWorkspace(agentId: string): Promise<ApiResponse<Agent>> {
+  try {
+    console.log(`Adding agent to workspace: ${agentId}`)
+    
+    const response = await httpClient.post<ApiResponse<Agent>>(
+      API_ENDPOINTS.ADD_AGENT_TO_WORKSPACE(agentId)
+    );
+    
+    return response;
+  } catch (error) {
+    console.error("添加助理到工作区错误:", error)
+    // 返回格式化的错误响应
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : "未知错误",
+      data: null as unknown as Agent,
+      timestamp: Date.now(),
+    }
+  }
+}
+
 // 使用toast包装的API函数
 export const getUserAgentsWithToast = withToast(getUserAgents, {
   showSuccessToast: false,
@@ -373,5 +395,12 @@ export const getAgentBySessionIdWithToast = withToast(getAgentBySessionId, {
 export const deleteWorkspaceAgentWithToast = withToast(deleteWorkspaceAgent, {
   successTitle: "移除工作区助理成功",
   errorTitle: "移除工作区助理失败"
+})
+
+export const addAgentToWorkspaceWithToast = withToast(addAgentToWorkspace, {
+  showSuccessToast: true,
+  showErrorToast: true,
+  successTitle: "已成功添加助理到工作区",
+  errorTitle: "添加失败"
 })
 

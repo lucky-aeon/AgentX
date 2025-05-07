@@ -1,5 +1,6 @@
 package org.xhy.application.agent.service;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.xhy.application.agent.assembler.AgentAssembler;
@@ -17,6 +18,8 @@ import org.xhy.domain.agent.constant.PublishStatus;
 import org.xhy.interfaces.dto.agent.request.*;
 
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /** Agent应用服务，用于适配领域层的Agent服务 职责： 1. 接收和验证来自接口层的请求 2. 将请求转换为领域对象或参数 3. 调用领域服务执行业务逻辑 4. 转换和返回结果给接口层 */
 @Service
@@ -59,10 +62,23 @@ public class AgentAppService {
     }
 
     /** 获取已上架的Agent列表，支持名称搜索 */
-    public List<AgentVersionDTO> getPublishedAgentsByName(SearchAgentsRequest searchAgentsRequest) {
+    public List<AgentVersionDTO> getPublishedAgentsByName(SearchAgentsRequest searchAgentsRequest, String userId) {
         AgentEntity entity = AgentAssembler.toEntity(searchAgentsRequest);
         List<AgentVersionEntity> agentVersionEntities = agentServiceDomainService.getPublishedAgentsByName(entity);
-        return AgentVersionAssembler.toDTOs(agentVersionEntities);
+
+        List<String> agentIds = agentVersionEntities.stream().map(AgentVersionEntity::getAgentId).toList();
+        List<AgentWorkspaceEntity> agentWorkspaceEntities = agentWorkspaceDomainService.listAgents(agentIds, userId);
+        Set<String> agentIdsSet = agentWorkspaceEntities.stream().map(AgentWorkspaceEntity::getAgentId)
+                .collect(Collectors.toSet());
+
+        List<AgentVersionDTO> agentVersionDTOS = AgentVersionAssembler.toDTOs(agentVersionEntities);
+        if (agentIdsSet.isEmpty()) {
+            return agentVersionDTOS;
+        }
+        for (AgentVersionDTO agentVersionDTO : agentVersionDTOS) {
+            agentVersionDTO.setAddWorkspace(agentIdsSet.contains(agentVersionDTO.getAgentId()));
+        }
+        return agentVersionDTOS;
     }
 
     /** 更新Agent信息（基本信息和配置合并更新） */

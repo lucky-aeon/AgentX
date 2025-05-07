@@ -63,6 +63,9 @@ public class AgentVersionDTO {
     /** 创建者用户ID */
     private String userId;
 
+    /** 是否已添加到工作区 */
+    private Boolean isAddWorkspace;
+
     /** 创建时间 */
     private LocalDateTime createdAt;
 
@@ -256,5 +259,13 @@ public class AgentVersionDTO {
     /** 是否已下架状态 */
     public boolean isRemoved() {
         return PublishStatus.REMOVED.getCode().equals(publishStatus);
+    }
+
+    public Boolean getAddWorkspace() {
+        return isAddWorkspace;
+    }
+
+    public void setAddWorkspace(Boolean addWorkspace) {
+        isAddWorkspace = addWorkspace;
     }
 }

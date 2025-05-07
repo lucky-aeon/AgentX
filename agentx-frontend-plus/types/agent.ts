@@ -131,6 +131,7 @@ export interface AgentVersion {
   rejected?: boolean
   reviewing?: boolean
   removed?: boolean
+  addWorkspace?: boolean // 是否已添加到工作区
 }
 
 // 发布状态枚举
