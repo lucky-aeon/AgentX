@@ -68,4 +68,8 @@ public class UserDomainService {
     private String generateNickname() {
         return "agent-x" + UUID.randomUUID().toString().replace("-", "").substring(0, 6);
     }
+
+    public void updateUserInfo(UserEntity user) {
+        userRepository.checkedUpdateById(user);
+    }
 }

@@ -31,6 +31,7 @@ export const API_ENDPOINTS = {
   
   // Agent工作区相关
   AGENT_WORKSPACE: "/agent/workspace",
+  ADD_AGENT_TO_WORKSPACE: (agentId: string) => `/agent/workspace/${agentId}`,
   AGENT_MODEL_CONFIG: (agentId: string) => `/agent/workspace/${agentId}/model-config`,
   SET_AGENT_MODEL_CONFIG: (agentId: string) => `/agent/workspace/${agentId}/model/config`,
   

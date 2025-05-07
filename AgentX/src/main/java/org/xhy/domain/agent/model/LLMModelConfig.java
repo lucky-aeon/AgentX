@@ -21,7 +21,7 @@ public class LLMModelConfig {
     /** 最大Token数，适用于滑动窗口和摘要策略 */
     private Integer maxTokens;
     /** 策略类型 @link TokenOverflowStrategyEnum */
-    private TokenOverflowStrategyEnum strategyType;
+    private TokenOverflowStrategyEnum strategyType = TokenOverflowStrategyEnum.NONE;
     /** 预留缓冲比例，适用于滑动窗口策略 范围0-1之间的小数，表示预留的空间比例 */
     private Double reserveRatio;
     /** 摘要触发阈值（消息数量），适用于摘要策略 */

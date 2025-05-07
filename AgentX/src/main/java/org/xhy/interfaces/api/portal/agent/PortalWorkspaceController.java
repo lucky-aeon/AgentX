@@ -62,4 +62,14 @@ public class PortalWorkspaceController {
         String userId = UserContext.getCurrentUserId();
         return Result.success(agentWorkspaceAppService.getConfiguredModelId(agentId, userId));
     }
+
+    /** 添加助理到工作区
+     * @param agentId 助理 id
+     * @return */
+    @PostMapping("/{agentId}")
+    public Result<?> addAgent(@PathVariable String agentId) {
+        String userId = UserContext.getCurrentUserId();
+        agentWorkspaceAppService.addAgent(agentId, userId);
+        return Result.success();
+    }
 }

@@ -6,7 +6,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.xhy.application.agent.assembler.AgentAssembler;
 import org.xhy.application.agent.assembler.AgentWorkspaceAssembler;
 import org.xhy.application.agent.dto.AgentDTO;
+import org.xhy.domain.agent.constant.PublishStatus;
 import org.xhy.domain.agent.model.AgentEntity;
+import org.xhy.domain.agent.model.AgentVersionEntity;
 import org.xhy.domain.agent.model.AgentWorkspaceEntity;
 import org.xhy.domain.agent.model.LLMModelConfig;
 import org.xhy.domain.agent.service.AgentDomainService;
@@ -35,7 +37,6 @@ public class AgentWorkspaceAppService {
 
     private final ConversationDomainService conversationDomainService;
     private final LLMDomainService llmDomainService;
-    private final ProjectInfoProperties projectInfoProperties;
 
     public AgentWorkspaceAppService(AgentWorkspaceDomainService agentWorkspaceDomainService,
             AgentDomainService agentServiceDomainService, SessionDomainService sessionDomainService,
@@ -46,7 +47,6 @@ public class AgentWorkspaceAppService {
         this.sessionDomainService = sessionDomainService;
         this.conversationDomainService = conversationDomainService;
         this.llmDomainService = llmDomainService;
-        this.projectInfoProperties = projectInfoProperties;
     }
 
     /** 获取工作区下的助理
@@ -101,5 +101,25 @@ public class AgentWorkspaceAppService {
         ProviderEntity provider = llmDomainService.getProvider(model.getProviderId());
         provider.isActive();
         agentWorkspaceDomainService.update(new AgentWorkspaceEntity(agentId, userId, llmModelConfig));
+    }
+
+    // 添加到工作区
+    public void addAgent(String agentId, String userId) {
+        AgentEntity agent = agentServiceDomainService.getAgentById(agentId);
+        if (agent.getUserId().equals(userId)) {
+            throw new BusinessException("不可添加自己的助理");
+        }
+        if (agentWorkspaceDomainService.exist(agentId, userId)) {
+            throw new BusinessException("不可重复添加助理");
+        }
+
+        agent.isEnable();
+        String publishedVersion = agent.getPublishedVersion();
+        AgentVersionEntity agentVersionEntity = agentServiceDomainService.getAgentVersionById(publishedVersion);
+        if (!agentVersionEntity.getPublishStatusEnum().equals(PublishStatus.PUBLISHED)) {
+            throw new BusinessException("助理未发布");
+        }
+
+        agentWorkspaceDomainService.save(new AgentWorkspaceEntity(agentId, userId, new LLMModelConfig()));
     }
 }
