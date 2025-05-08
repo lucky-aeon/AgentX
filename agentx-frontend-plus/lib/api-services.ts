@@ -594,6 +594,39 @@ export async function loginApi(data: { account: string; password: string }, show
 }
 
 // 注册
-export async function registerApi(data: { email?: string; phone?: string; password: string }, showToast: boolean = false) {
+export async function registerApi(data: { 
+  email?: string; 
+  phone?: string; 
+  password: string;
+  code?: string;
+}, showToast: boolean = false) {
   return httpClient.post<{ code: number; message: string; data: any }>('/register', data, {}, { showToast })
+}
+
+// 获取图形验证码
+export async function getCaptchaApi() {
+  return httpClient.post<{ code: number; message: string; data: { uuid: string; imageBase64: string } }>(
+    '/get-captcha',
+    {}
+  )
+}
+
+// 发送邮箱验证码
+export async function sendEmailCodeApi(email: string, captchaUuid: string, captchaCode: string, showToast: boolean = true) {
+  return httpClient.post<{ code: number; message: string; data: any }>(
+    '/send-email-code', 
+    { email, captchaUuid, captchaCode }, 
+    {}, 
+    { showToast }
+  )
+}
+
+// 验证邮箱验证码
+export async function verifyEmailCodeApi(email: string, code: string, showToast: boolean = true) {
+  return httpClient.post<{ code: number; message: string; data: boolean }>(
+    '/verify-email-code', 
+    { email, code }, 
+    {}, 
+    { showToast }
+  )
 }

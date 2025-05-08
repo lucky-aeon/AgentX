@@ -20,7 +20,10 @@ public class WebMvcConfig implements WebMvcConfigurer {
         registry.addInterceptor(userAuthInterceptor).addPathPatterns("/**") // 拦截所有请求
                 .excludePathPatterns( // 不拦截以下路径
                         "/login", // 登录接口
-                        "/register" // 注册接口
+                        "/register", // 注册接口
+                        "/send-email-code",
+                        "/verify-email-code",
+                        "/get-captcha"
                 );
     }
 }
