@@ -29,12 +29,14 @@
         <hutool.version>5.8.26</hutool.version>
         <httpclient.version>4.5.14</httpclient.version>
         <langchain4j.version>1.0.0-beta3</langchain4j.version>
+        <spotless.version>2.37.0</spotless.version>
     </properties>
 
     <pluginRepositories>
         <pluginRepository>
-            <id>diffplug</id>
-            <url>https://plugins.gradle.org/m2/</url>
+            <id>maven-central</id>
+            <name>Maven Central</name>
+            <url>https://repo.maven.apache.org/maven2</url>
         </pluginRepository>
     </pluginRepositories>
 
@@ -54,7 +56,6 @@
             <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
             <version>${mybatis-plus.version}</version>
         </dependency>
-
 
         <!-- 数据库相关依赖 -->
         <dependency>
@@ -151,7 +152,6 @@
             <version>${langchain4j.version}</version>
         </dependency>
 
-
         <dependency>
             <groupId>dev.langchain4j</groupId>
             <artifactId>langchain4j-mcp</artifactId>
@@ -168,10 +168,6 @@
             <artifactId>slf4j-tinylog</artifactId>
             <version>2.6.2</version>
         </dependency>
-
-
-
-
     </dependencies>
 
     <build>
@@ -179,9 +175,8 @@
             <plugin>
                 <groupId>com.diffplug.spotless</groupId>
                 <artifactId>spotless-maven-plugin</artifactId>
-                <version>2.37.0</version> <!-- 使用最新版本 -->
+                <version>${spotless.version}</version>
                 <configuration>
-                    <!-- 配置格式化规则，例如 Java 格式化 -->
                     <java>
                         <eclipse>
                             <file>${project.basedir}/eclipse-formatter.xml</file>
