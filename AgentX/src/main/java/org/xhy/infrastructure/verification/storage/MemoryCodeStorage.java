@@ -12,7 +12,6 @@ public class MemoryCodeStorage implements CodeStorage {
     public void storeCode(String key, String code, long expirationMillis) {
         long expirationTime = System.currentTimeMillis() + expirationMillis;
         codeMap.put(key, new CodeInfo(code, expirationTime));
-        System.out.println(code);
     }
 
     @Override
