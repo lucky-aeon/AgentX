@@ -12,19 +12,19 @@ import java.util.Properties;
 public class EmailService {
     @Value("${mail.smtp.host}")
     private String host;
-    
+
     @Value("${mail.smtp.port}")
     private int port;
-    
+
     @Value("${mail.smtp.username}")
     private String username;
-    
+
     @Value("${mail.smtp.password}")
     private String password;
-    
+
     @Value("${mail.verification.subject}")
     private String verificationSubject;
-    
+
     @Value("${mail.verification.template}")
     private String verificationTemplate;
 
@@ -53,4 +53,4 @@ public class EmailService {
             throw new RuntimeException("发送邮件失败: " + e.getMessage(), e);
         }
     }
-} 
+}

@@ -12,7 +12,7 @@ public class RegisterRequest {
 
     @NotBlank(message = "密码不能为空")
     private String password;
-    
+
     // 如果是邮箱注册，验证码必填
     private String code;
 
@@ -39,11 +39,11 @@ public class RegisterRequest {
     public void setPassword(String password) {
         this.password = password;
     }
-    
+
     public String getCode() {
         return code;
     }
-    
+
     public void setCode(String code) {
         this.code = code;
     }

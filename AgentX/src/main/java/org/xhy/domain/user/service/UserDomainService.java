@@ -23,17 +23,13 @@ public class UserDomainService {
     public UserEntity getUserInfo(String id) {
         return userRepository.selectById(id);
     }
-    
-    /**
-     * 根据邮箱或手机号查找用户
+
+    /** 根据邮箱或手机号查找用户
      * @param account 邮箱或手机号
-     * @return 用户实体，如果不存在则返回null
-     */
+     * @return 用户实体，如果不存在则返回null */
     public UserEntity findUserByAccount(String account) {
-        LambdaQueryWrapper<UserEntity> wrapper = Wrappers.<UserEntity>lambdaQuery()
-                .eq(UserEntity::getEmail, account)
-                .or()
-                .eq(UserEntity::getPhone, account);
+        LambdaQueryWrapper<UserEntity> wrapper = Wrappers.<UserEntity>lambdaQuery().eq(UserEntity::getEmail, account)
+                .or().eq(UserEntity::getPhone, account);
 
         return userRepository.selectOne(wrapper);
     }
@@ -86,22 +82,20 @@ public class UserDomainService {
     public void updateUserInfo(UserEntity user) {
         userRepository.checkedUpdateById(user);
     }
-    
-    /**
-     * 更新用户密码
+
+    /** 更新用户密码
      * @param userId 用户ID
-     * @param newPassword 新密码
-     */
+     * @param newPassword 新密码 */
     public void updatePassword(String userId, String newPassword) {
         UserEntity user = userRepository.selectById(userId);
         if (user == null) {
             throw new BusinessException("用户不存在");
         }
-        
+
         // 加密新密码
         String encodedPassword = PasswordUtils.encode(newPassword);
         user.setPassword(encodedPassword);
-        
+
         userRepository.checkedUpdateById(user);
     }
 }
