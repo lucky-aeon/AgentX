@@ -12,8 +12,11 @@ import org.xhy.interfaces.api.common.Result;
 import org.xhy.interfaces.dto.user.request.GetCaptchaRequest;
 import org.xhy.interfaces.dto.user.request.LoginRequest;
 import org.xhy.interfaces.dto.user.request.RegisterRequest;
+import org.xhy.interfaces.dto.user.request.ResetPasswordRequest;
 import org.xhy.interfaces.dto.user.request.SendEmailCodeRequest;
+import org.xhy.interfaces.dto.user.request.SendResetPasswordCodeRequest;
 import org.xhy.interfaces.dto.user.request.VerifyEmailCodeRequest;
+import org.xhy.interfaces.dto.user.request.VerifyResetPasswordCodeRequest;
 import org.xhy.interfaces.dto.user.response.CaptchaResponse;
 
 import java.util.Map;
@@ -28,19 +31,33 @@ public class LoginController {
         this.loginAppService = loginAppService;
     }
 
+    /**
+     * 登录
+     * @param loginRequest
+     * @return
+     */
     @PostMapping("/login")
     public Result<Map<String, Object>> login(@RequestBody @Validated LoginRequest loginRequest) {
         String token = loginAppService.login(loginRequest);
-        return Result.success(Map.of("token", token));
+        return Result.success("登录成功",Map.of("token", token));
     }
 
+    /**
+     * 注册
+     * @param registerRequest
+     * @return
+     */
     @PostMapping("/register")
     public Result<?> register(@RequestBody @Validated RegisterRequest registerRequest) {
         loginAppService.register(registerRequest);
         return Result.success().message("注册成功");
     }
     
-    // 获取图形验证码
+    /**
+     * 获取图形验证码
+     * @param request
+     * @return
+     */
     @PostMapping("/get-captcha")
     public Result<CaptchaResponse> getCaptcha(@RequestBody(required = false) GetCaptchaRequest request) {
         CaptchaUtils.CaptchaResult captchaResult = CaptchaUtils.generateCaptcha();
@@ -48,7 +65,12 @@ public class LoginController {
         return Result.success(response);
     }
     
-    // 修改发送邮箱验证码接口
+    /**
+     * 发送邮箱验证码接口
+     * @param request
+     * @param httpRequest
+     * @return
+     */
     @PostMapping("/send-email-code")
     public Result<?> sendEmailCode(@RequestBody @Validated SendEmailCodeRequest request, HttpServletRequest httpRequest) {
         // 获取客户端IP
@@ -63,6 +85,31 @@ public class LoginController {
         return Result.success().message("验证码已发送，请查收邮件");
     }
     
+    /**
+     * 发送重置密码邮箱验证码接口
+     * @param request
+     * @param httpRequest
+     * @return
+     */
+    @PostMapping("/send-reset-password-code")
+    public Result<?> sendResetPasswordCode(@RequestBody @Validated SendResetPasswordCodeRequest request, HttpServletRequest httpRequest) {
+        // 获取客户端IP
+        String clientIp = getClientIp(httpRequest);
+        
+        loginAppService.sendResetPasswordCode(
+                request.getEmail(),
+                request.getCaptchaUuid(),
+                request.getCaptchaCode(),
+                clientIp
+        );
+        return Result.success().message("验证码已发送，请查收邮件");
+    }
+    
+    /**
+     * 验证邮箱验证码接口
+     * @param request
+     * @return
+     */
     @PostMapping("/verify-email-code")
     public Result<Boolean> verifyEmailCode(@RequestBody @Validated VerifyEmailCodeRequest request) {
         boolean isValid = loginAppService.verifyEmailCode(request.getEmail(), request.getCode());
@@ -73,7 +120,22 @@ public class LoginController {
         }
     }
     
-    // 获取客户端IP
+    /**
+     * 重置密码接口
+     * @param request
+     * @return
+     */
+    @PostMapping("/reset-password")
+    public Result<?> resetPassword(@RequestBody @Validated ResetPasswordRequest request) {
+        loginAppService.resetPassword(request.getEmail(), request.getNewPassword(), request.getCode());
+        return Result.success().message("密码重置成功");
+    }
+    
+    /**
+     * 获取客户端IP
+     * @param request
+     * @return
+     */
     private String getClientIp(HttpServletRequest request) {
         String ip = request.getHeader("X-Forwarded-For");
         if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {

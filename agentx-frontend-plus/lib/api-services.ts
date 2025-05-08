@@ -630,3 +630,33 @@ export async function verifyEmailCodeApi(email: string, code: string, showToast:
     { showToast }
   )
 }
+
+// 发送重置密码的验证码
+export async function sendResetPasswordCodeApi(
+  email: string, 
+  captchaUuid: string, 
+  captchaCode: string, 
+  showToast: boolean = true
+) {
+  return httpClient.post<{ code: number; message: string; data: null }>(
+    '/send-reset-password-code',
+    { email, captchaUuid, captchaCode },
+    {},
+    { showToast }
+  )
+}
+
+// 重置密码
+export async function resetPasswordApi(
+  email: string, 
+  newPassword: string, 
+  code: string, 
+  showToast: boolean = true
+) {
+  return httpClient.post<{ code: number; message: string; data: null }>(
+    '/reset-password',
+    { email, newPassword, code },
+    {},
+    { showToast }
+  )
+}

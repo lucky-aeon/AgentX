@@ -23,7 +23,9 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         "/register", // 注册接口
                         "/send-email-code",
                         "/verify-email-code",
-                        "/get-captcha"
+                        "/get-captcha",
+                        "/reset-password",
+                        "/send-reset-password-code"
                 );
     }
 }
