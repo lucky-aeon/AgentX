@@ -48,21 +48,18 @@ mybatis-plus:
       logic-not-delete-value: "null"
     banner: false
 
-# LLM服务配置
-llm:
-  provider:
-    default: ${LLM_DEFAULT_PROVIDER:siliconflow}
-    providers:
-      siliconflow:
-        name: SiliconFlow
-        api-url: ${SILICONFLOW_API_URL:https://api.siliconflow.cn/v1/chat/completions}
-        api-key: ${SILICONFLOW_API_KEY:}
-        model: ${SILICONFLOW_MODEL:Qwen/Qwen2.5-VL-72B-Instruct}
-        timeout: ${SILICONFLOW_TIMEOUT:30000}
-
 logging:
   level:
     root: info
     org.xhy: debug
   file:
     name: logs/agent-x.log
+mail:
+  smtp:
+    host: ${MAIL_SMTP_HOST:qq}
+    port: ${MAIL_SMTP_PORT:25}
+    username: ${MAIL_SMTP_USERNAME:xx}
+    password: ${MAIL_SMTP_PASSWORD:xx}
+  verification:
+    template: ${MAIL_VERIFICATION_TEMPLATE:您的验证码是:%s，有效期10分钟，请勿泄露给他人。}
+    subject: ${MAIL_VERIFICATION_SUBJECT:AgentX - 邮箱验证码}

@@ -93,11 +93,18 @@ export default function LoginPage() {
             <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90" disabled={loading}>
               {loading ? "登录中..." : "登录"}
             </Button>
-            <div className="text-sm text-center text-muted-foreground">
-              还没有账号？{" "}
-              <Link href="/register" className="text-primary hover:underline">
-                立即注册
-              </Link>
+            <div className="flex justify-between text-sm text-muted-foreground mb-2 mt-2">
+              <div>
+                还没有账号？{" "}
+                <Link href="/register" className="text-primary hover:underline">
+                  立即注册
+                </Link>
+              </div>
+              <div>
+                <Link href="/reset-password" className="text-primary hover:underline">
+                  忘记密码
+                </Link>
+              </div>
             </div>
           </div>
         </form>
