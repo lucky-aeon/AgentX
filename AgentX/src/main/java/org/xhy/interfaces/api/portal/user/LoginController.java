@@ -21,6 +21,7 @@ import org.xhy.interfaces.dto.user.response.CaptchaResponse;
 
 import java.util.Map;
 
+/** 登录注册 */
 @RestController
 @RequestMapping
 public class LoginController {

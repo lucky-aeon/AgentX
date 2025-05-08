@@ -2,6 +2,7 @@ package org.xhy.domain.user.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import dev.langchain4j.service.output.ServiceOutputParser;
 import org.springframework.stereotype.Service;
 import org.xhy.domain.user.model.UserEntity;
 import org.xhy.domain.user.repository.UserRepository;
@@ -46,7 +47,7 @@ public class UserDomainService {
         // 生成昵称
         String nickname = generateNickname();
         userEntity.setNickname(nickname);
-        userRepository.insert(userEntity);
+        userRepository.checkInsert(userEntity);
         return userEntity;
     }
 

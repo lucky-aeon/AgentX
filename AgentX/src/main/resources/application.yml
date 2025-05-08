@@ -56,10 +56,10 @@ logging:
     name: logs/agent-x.log
 mail:
   smtp:
-    host: ${MAIL_SMTP_HOST}
-    port: ${MAIL_SMTP_PORT}
-    username: ${MAIL_SMTP_USERNAME}
-    password: ${MAIL_SMTP_PASSWORD}
+    host: ${MAIL_SMTP_HOST:qq}
+    port: ${MAIL_SMTP_PORT:25}
+    username: ${MAIL_SMTP_USERNAME:xx}
+    password: ${MAIL_SMTP_PASSWORD:xx}
   verification:
     template: ${MAIL_VERIFICATION_TEMPLATE:您的验证码是:%s，有效期10分钟，请勿泄露给他人。}
     subject: ${MAIL_VERIFICATION_SUBJECT:AgentX - 邮箱验证码}
