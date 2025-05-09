@@ -150,7 +150,10 @@ CREATE TABLE users (
                              password varchar NOT NULL,
                              created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                              updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                             deleted_at TIMESTAMP
+                             deleted_at TIMESTAMP,
+                             github_id varchar(255),
+                             github_login varchar(255),
+                             avatar_url varchar(255)
 );
 
 
