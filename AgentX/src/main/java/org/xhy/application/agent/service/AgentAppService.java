@@ -60,13 +60,12 @@ public class AgentAppService {
         AgentEntity entity = AgentAssembler.toEntity(searchAgentsRequest);
         List<AgentEntity> agents = agentServiceDomainService.getUserAgents(userId, entity);
         return AgentAssembler.toDTOs(agents);
-    }
+    }/** 获取已上架的Agent列表，支持名称搜索 */
 
-    /** 获取已上架的Agent列表，支持名称搜索 */
     public List<AgentVersionDTO> getPublishedAgentsByName(SearchAgentsRequest searchAgentsRequest, String userId) {
         AgentEntity entity = AgentAssembler.toEntity(searchAgentsRequest);
         List<AgentVersionEntity> agentVersionEntities = agentServiceDomainService.getPublishedAgentsByName(entity);
-        if (agentVersionEntities.isEmpty()){
+        if (agentVersionEntities.isEmpty()) {
             return new ArrayList<>();
         }
         List<String> agentIds = agentVersionEntities.stream().map(AgentVersionEntity::getAgentId).toList();

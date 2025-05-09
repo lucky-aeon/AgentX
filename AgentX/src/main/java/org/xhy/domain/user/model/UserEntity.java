@@ -15,6 +15,9 @@ public class UserEntity extends BaseEntity {
     private String email;
     private String phone;
     private String password;
+    private String githubId;
+    private String githubLogin;
+    private String avatarUrl;
 
     public String getId() {
         return id;
@@ -55,10 +58,34 @@ public class UserEntity extends BaseEntity {
     public void setPassword(String password) {
         this.password = password;
     }
+    
+    public String getGithubId() {
+        return githubId;
+    }
+
+    public void setGithubId(String githubId) {
+        this.githubId = githubId;
+    }
+
+    public String getGithubLogin() {
+        return githubLogin;
+    }
+
+    public void setGithubLogin(String githubLogin) {
+        this.githubLogin = githubLogin;
+    }
+
+    public String getAvatarUrl() {
+        return avatarUrl;
+    }
+
+    public void setAvatarUrl(String avatarUrl) {
+        this.avatarUrl = avatarUrl;
+    }
 
     public void valid() {
-        if (StringUtils.isEmpty(email) && StringUtils.isNotEmpty(phone)) {
-            throw new BusinessException("必须使用邮箱或者手机号来作为账号");
+        if (StringUtils.isEmpty(email) && StringUtils.isEmpty(phone) && StringUtils.isEmpty(githubId)) {
+            throw new BusinessException("必须使用邮箱、手机号或GitHub账号来作为账号");
         }
     }
 }

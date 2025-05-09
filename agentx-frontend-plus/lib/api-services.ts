@@ -660,3 +660,17 @@ export async function resetPasswordApi(
     { showToast }
   )
 }
+
+// 获取GitHub授权URL
+export async function getGithubAuthorizeUrlApi() {
+  return httpClient.get<{ code: number; message: string; data: { authorizeUrl: string } }>(
+    '/oauth/github/authorize'
+  )
+}
+
+// 处理GitHub回调
+export async function handleGithubCallbackApi(code: string) {
+  return httpClient.get<{ code: number; message: string; data: { token: string } }>(
+    `/oauth/github/callback?code=${code}`
+  )
+}
