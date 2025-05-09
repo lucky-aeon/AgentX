@@ -63,3 +63,10 @@ mail:
   verification:
     template: ${MAIL_VERIFICATION_TEMPLATE:您的验证码是:%s，有效期10分钟，请勿泄露给他人。}
     subject: ${MAIL_VERIFICATION_SUBJECT:AgentX - 邮箱验证码}
+
+# GitHub OAuth 配置
+oauth:
+  github:
+    client-id: ${GITHUB_CLIENT_ID}
+    client-secret: ${GITHUB_CLIENT_SECRET}
+    redirect-uri: ${GITHUB_REDIRECT_URI:https://xxx/oauth/github/callback}

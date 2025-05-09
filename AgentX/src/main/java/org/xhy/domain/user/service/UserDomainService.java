@@ -34,6 +34,15 @@ public class UserDomainService {
 
         return userRepository.selectOne(wrapper);
     }
+    
+    /** 根据GitHub ID查找用户
+     * @param githubId GitHub ID
+     * @return 用户实体，如果不存在则返回null */
+    public UserEntity findUserByGithubId(String githubId) {
+        LambdaQueryWrapper<UserEntity> wrapper = Wrappers.<UserEntity>lambdaQuery()
+                .eq(UserEntity::getGithubId, githubId);
+        return userRepository.selectOne(wrapper);
+    }
 
     /** 注册 密码加密存储 */
     public UserEntity register(String email, String phone, String password) {
@@ -49,6 +58,13 @@ public class UserDomainService {
         userEntity.setNickname(nickname);
         userRepository.checkInsert(userEntity);
         return userEntity;
+    }
+    
+    /** 加密密码
+     * @param password 原始密码
+     * @return 加密后的密码 */
+    public String encryptPassword(String password) {
+        return PasswordUtils.encode(password);
     }
 
     public UserEntity login(String account, String password) {

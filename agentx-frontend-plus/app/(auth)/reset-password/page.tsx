@@ -238,7 +238,9 @@ export default function ResetPasswordPage() {
         return (
           <>
             <div className="space-y-2">
-              <Label htmlFor="email">邮箱</Label>
+              <Label htmlFor="email">
+                邮箱 <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id="email"
                 name="email"
@@ -251,7 +253,9 @@ export default function ResetPasswordPage() {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="captcha">图形验证码</Label>
+              <Label htmlFor="captcha">
+                图形验证码 <span className="text-red-500">*</span>
+              </Label>
               <div className="flex space-x-2">
                 <Input
                   id="captchaCode"
@@ -308,7 +312,9 @@ export default function ResetPasswordPage() {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="code">验证码</Label>
+              <Label htmlFor="code">
+                验证码 <span className="text-red-500">*</span>
+              </Label>
               <div className="flex space-x-2">
                 <Input
                   id="code"
@@ -332,7 +338,9 @@ export default function ResetPasswordPage() {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="newPassword">新密码</Label>
+              <Label htmlFor="newPassword">
+                新密码 <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id="newPassword"
                 name="newPassword"
@@ -346,7 +354,9 @@ export default function ResetPasswordPage() {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">确认密码</Label>
+              <Label htmlFor="confirmPassword">
+                确认密码 <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id="confirmPassword"
                 name="confirmPassword"
@@ -432,22 +442,20 @@ export default function ResetPasswordPage() {
         <div className="w-full bg-muted h-1 rounded-full overflow-hidden">
           <div 
             className="bg-primary h-full transition-all duration-300"
-            style={{ width: `${(currentStep / 2) * 100}%` }}
-          />
+            style={{ width: `${(currentStep / (Object.keys(ResetStep).length / 2 - 1)) * 100}%` }}
+          ></div>
         </div>
       </div>
       
       <div className="space-y-4">
+        <p className="text-xs text-muted-foreground">带 <span className="text-red-500">*</span> 的字段为必填项</p>
         {renderCurrentStep()}
-        
-        {currentStep !== ResetStep.Done && (
-          <div className="text-sm text-center text-muted-foreground">
-            记住密码？{" "}
-            <Link href="/login" className="text-primary hover:underline">
-              立即登录
-            </Link>
-          </div>
-        )}
+      </div>
+      
+      <div className="mt-6 text-sm text-center text-muted-foreground">
+        <Link href="/login" className="text-primary hover:underline">
+          返回登录
+        </Link>
       </div>
     </div>
   )

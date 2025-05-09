@@ -251,6 +251,8 @@ export default function RegisterPage() {
       </div>
       <form onSubmit={handleSubmit}>
         <div className="space-y-4">
+          <p className="text-xs text-muted-foreground">带 <span className="text-red-500">*</span> 的字段为必填项</p>
+          
           <div className="space-y-2">
             <Label htmlFor="email">电子邮件</Label>
             <div className="flex space-x-2">
@@ -269,7 +271,9 @@ export default function RegisterPage() {
           
           {formData.email && (
             <div className="space-y-2">
-              <Label htmlFor="captcha">图形验证码</Label>
+              <Label htmlFor="captcha">
+                图形验证码 <span className="text-red-500">*</span>
+              </Label>
               <div className="flex space-x-2">
                 <Input
                   id="captchaCode"
@@ -309,7 +313,9 @@ export default function RegisterPage() {
 
           {formData.email && (
             <div className="space-y-2">
-              <Label htmlFor="code">邮箱验证码</Label>
+              <Label htmlFor="code">
+                邮箱验证码 <span className="text-red-500">*</span>
+              </Label>
               <div className="flex space-x-2">
                 <Input
                   id="code"
@@ -346,7 +352,9 @@ export default function RegisterPage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password">密码</Label>
+            <Label htmlFor="password">
+              密码 <span className="text-red-500">*</span>
+            </Label>
             <Input
               id="password"
               name="password"
@@ -359,7 +367,9 @@ export default function RegisterPage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="confirmPassword">确认密码</Label>
+            <Label htmlFor="confirmPassword">
+              确认密码 <span className="text-red-500">*</span>
+            </Label>
             <Input
               id="confirmPassword"
               name="confirmPassword"
