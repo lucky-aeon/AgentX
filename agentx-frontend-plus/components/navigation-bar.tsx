@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { Database, FileText, Home, Menu, Search, Settings, PenToolIcon as Tool, UploadCloud, LogOut } from "lucide-react"
+import { Database, FileText, Home, Menu, Search, Settings, PenToolIcon as Tool, UploadCloud, LogOut, Wrench } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 
 import { cn } from "@/lib/utils"
@@ -37,9 +37,9 @@ const navItems = [
     icon: Database,
   },
   {
-    name: "工具",
+    name: "工具市场",
     href: "/tools",
-    icon: Tool,
+    icon: Wrench,
   },
 ]
 
@@ -131,10 +131,6 @@ export function NavigationBar() {
             ))}
           </nav>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" className="hidden md:flex">
-              <UploadCloud className="mr-2 h-4 w-4" />
-              插件
-            </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="rounded-full">

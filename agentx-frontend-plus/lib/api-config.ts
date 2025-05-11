@@ -52,6 +52,17 @@ export const API_ENDPOINTS = {
   DELETE_MODEL: (id: string) => `/llm/models/${id}`,
   TOGGLE_MODEL_STATUS: (id: string) => `/llm/models/${id}/status`,
   MODEL_TYPES: "/llm/models/types",
+  
+  // 工具市场相关
+  MARKET_TOOLS: "/tools/market",
+  MARKET_TOOL_DETAIL: (id: string) => `/tools/market/${id}`,
+  MARKET_TOOL_VERSIONS: (id: string) => `/tools/market/${id}/versions`,
+  MARKET_TOOL_LABELS: "/tools/market/labels",
+  INSTALL_TOOL: "/tools/install",
+  USER_TOOLS: "/tools/user",
+  DELETE_USER_TOOL: (id: string) => `/tools/user/${id}`,
+  UPLOAD_TOOL: "/tools/upload",
+  UPDATE_TOOL: (id: string) => `/tools/${id}`,
 }
 
 // 构建完整的API URL
