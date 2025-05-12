@@ -2,6 +2,7 @@ package org.xhy.domain.agent.service.mcp;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.mcp.client.DefaultMcpClient;
@@ -15,18 +16,17 @@ import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.store.memory.chat.InMemoryChatMemoryStore;
 import okhttp3.OkHttpClient;
 import org.xhy.domain.agent.service.AgentStandTest;
+import org.xhy.infrastructure.utils.JsonUtils;
 
 import java.lang.reflect.Field;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class MCPStandTest {
 
     public static void main(String[] args) throws Exception {
         // 1) 要监听的 SSE 地址列表
-        List<String> sseUrls = List.of("xxx", "xxx");
+        List<String> sseUrls = List.of( "http://localhost:8005/surge/sse/sse?api_key=123456");
 
         // 用于并行监听的订阅器和 McpClient 列表
         List<RawSseSubscriber> subscribers = new ArrayList<>();
@@ -52,6 +52,14 @@ public class MCPStandTest {
             McpClient client = new DefaultMcpClient.Builder().transport(transport)
                     .logHandler(new AgentMcpLogMessageHandler()).build();
             mcpClients.add(client);
+            
+            // 获取工具列表
+            List<ToolSpecification> toolSpecifications = client.listTools();
+            
+            // 使用ToolSpecificationConverter转换为DTO对象
+            List<ToolSpecificationConverter.ToolDto> toolDtos = ToolSpecificationConverter.convert(toolSpecifications);
+
+            System.out.println(JsonUtils.toJsonString(toolDtos));
         }
 
         // 3) 构造 OpenAI 聊天模型

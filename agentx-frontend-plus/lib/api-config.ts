@@ -61,8 +61,10 @@ export const API_ENDPOINTS = {
   INSTALL_TOOL: "/tools/install",
   USER_TOOLS: "/tools/user",
   DELETE_USER_TOOL: (id: string) => `/tools/user/${id}`,
-  UPLOAD_TOOL: "/tools/upload",
+  UPLOAD_TOOL: "/tools",
   UPDATE_TOOL: (id: string) => `/tools/${id}`,
+  TOOL_DETAIL: (id: string) => `/tools/${id}`,
+  DELETE_TOOL: (id: string) => `/tools/${id}`,
 }
 
 // 构建完整的API URL

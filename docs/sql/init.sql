@@ -8,7 +8,7 @@ CREATE TABLE sessions (
     agent_id VARCHAR(36),
     description TEXT,
     is_archived BOOLEAN DEFAULT FALSE,
-    metadata TEXT,
+    metadata JSONB,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP
@@ -24,7 +24,7 @@ CREATE TABLE messages (
     token_count INTEGER DEFAULT 0,
     provider VARCHAR(50),
     model VARCHAR(50),
-    metadata TEXT,
+    metadata JSONB,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP
@@ -34,7 +34,7 @@ CREATE TABLE messages (
 CREATE TABLE context (
     id VARCHAR(36) PRIMARY KEY,
     session_id VARCHAR(36) NOT NULL,
-    active_messages TEXT,
+    active_messages JSONB,
     summary TEXT,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -68,8 +68,8 @@ CREATE TABLE agent_versions (
     version_number VARCHAR(20) NOT NULL,
     system_prompt TEXT,
     welcome_message TEXT,
-    tools TEXT,
-    knowledge_base_ids TEXT,
+    tools JSONB,
+    knowledge_base_ids JSONB,
     change_log TEXT,
     agent_type INTEGER DEFAULT 1,
     publish_status INTEGER DEFAULT 1,
@@ -100,7 +100,7 @@ CREATE TABLE providers (
     protocol VARCHAR(50) NOT NULL,
     name VARCHAR(100) NOT NULL,
     description TEXT,
-    config TEXT,
+    config JSONB,
     is_official BOOLEAN DEFAULT FALSE,
     status BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -156,7 +156,66 @@ CREATE TABLE users (
                              avatar_url varchar(255)
 );
 
+-- 工具相关表
 
+-- 工具表
+CREATE TABLE tools (
+    id VARCHAR(36) PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    icon VARCHAR(255),
+    subtitle VARCHAR(255),
+    description TEXT,
+    user_id VARCHAR(36) NOT NULL,
+    labels JSONB,
+    tool_type VARCHAR(50) NOT NULL,
+    upload_type VARCHAR(20) NOT NULL,
+    upload_url VARCHAR(255),
+    install_command JSONB,
+    tool_list JSONB,
+    status VARCHAR(20) NOT NULL,
+    is_office BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP
+);
+
+-- 工具版本表
+CREATE TABLE tool_versions (
+    id VARCHAR(36) PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    icon VARCHAR(255),
+    subtitle VARCHAR(255),
+    description TEXT,
+    user_id VARCHAR(36) NOT NULL,
+    version VARCHAR(50) NOT NULL,
+    tool_id VARCHAR(36) NOT NULL,
+    upload_type VARCHAR(20) NOT NULL,
+    upload_url VARCHAR(255),
+    tool_list JSONB,
+    labels JSONB,
+    is_office BOOLEAN DEFAULT FALSE,
+    public_status BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP
+);
+
+-- 用户工具关联表
+CREATE TABLE user_tools (
+    id VARCHAR(36) PRIMARY KEY,
+    user_id VARCHAR(36) NOT NULL,
+    tool_version_id VARCHAR(36) NOT NULL,
+    version VARCHAR(50) NOT NULL,
+    upload_type VARCHAR(20) NOT NULL,
+    upload_url VARCHAR(255),
+    tool_list JSONB,
+    labels JSONB,
+    is_office BOOLEAN DEFAULT FALSE,
+    public_state BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP
+);
 
 -- 创建索引
 CREATE INDEX idx_sessions_user_id ON sessions(user_id);
@@ -174,6 +233,11 @@ CREATE INDEX idx_agent_versions_user_id ON agent_versions(user_id);
 CREATE INDEX idx_models_provider_id ON models(provider_id);
 CREATE INDEX idx_models_user_id ON models(user_id);
 CREATE INDEX idx_providers_user_id ON providers(user_id);
+CREATE INDEX idx_tools_user_id ON tools(user_id);
+CREATE INDEX idx_tool_versions_tool_id ON tool_versions(tool_id);
+CREATE INDEX idx_tool_versions_user_id ON tool_versions(user_id);
+CREATE INDEX idx_user_tools_user_id ON user_tools(user_id);
+CREATE INDEX idx_user_tools_tool_version_id ON user_tools(tool_version_id);
 
 -- 添加表和列的注释
 COMMENT ON TABLE sessions IS '会话实体类，代表一个独立的对话会话/主题';
@@ -183,7 +247,7 @@ COMMENT ON COLUMN sessions.user_id IS '所属用户ID';
 COMMENT ON COLUMN sessions.agent_id IS '关联的Agent版本ID';
 COMMENT ON COLUMN sessions.description IS '会话描述';
 COMMENT ON COLUMN sessions.is_archived IS '是否归档';
-COMMENT ON COLUMN sessions.metadata IS '会话元数据，可存储其他自定义信息';
+COMMENT ON COLUMN sessions.metadata IS '会话元数据，可存储其他自定义信息，JSON格式';
 COMMENT ON COLUMN sessions.created_at IS '创建时间';
 COMMENT ON COLUMN sessions.updated_at IS '更新时间';
 COMMENT ON COLUMN sessions.deleted_at IS '逻辑删除时间';
@@ -197,7 +261,7 @@ COMMENT ON COLUMN messages.message_type IS '消息类型';
 COMMENT ON COLUMN messages.token_count IS 'Token数量';
 COMMENT ON COLUMN messages.provider IS '服务提供商';
 COMMENT ON COLUMN messages.model IS '使用的模型';
-COMMENT ON COLUMN messages.metadata IS '消息元数据';
+COMMENT ON COLUMN messages.metadata IS '消息元数据，JSON格式';
 COMMENT ON COLUMN messages.created_at IS '创建时间';
 COMMENT ON COLUMN messages.updated_at IS '更新时间';
 COMMENT ON COLUMN messages.deleted_at IS '逻辑删除时间';
@@ -263,7 +327,7 @@ COMMENT ON COLUMN providers.user_id IS '用户ID';
 COMMENT ON COLUMN providers.protocol IS '协议类型';
 COMMENT ON COLUMN providers.name IS '服务提供商名称';
 COMMENT ON COLUMN providers.description IS '服务提供商描述';
-COMMENT ON COLUMN providers.config IS '服务提供商配置';
+COMMENT ON COLUMN providers.config IS '服务提供商配置，JSON格式';
 COMMENT ON COLUMN providers.is_official IS '是否官方服务提供商';
 COMMENT ON COLUMN providers.status IS '服务提供商状态';
 COMMENT ON COLUMN providers.created_at IS '创建时间';
@@ -308,5 +372,58 @@ COMMENT ON COLUMN users.password IS '密码';
 COMMENT ON COLUMN users.created_at IS '创建时间';
 COMMENT ON COLUMN users.updated_at IS '更新时间';
 COMMENT ON COLUMN users.deleted_at IS '逻辑删除时间';
+
+COMMENT ON TABLE tools IS '工具实体类';
+COMMENT ON COLUMN tools.id IS '工具唯一ID';
+COMMENT ON COLUMN tools.name IS '工具名称';
+COMMENT ON COLUMN tools.icon IS '工具图标';
+COMMENT ON COLUMN tools.subtitle IS '副标题';
+COMMENT ON COLUMN tools.description IS '工具描述';
+COMMENT ON COLUMN tools.user_id IS '用户ID';
+COMMENT ON COLUMN tools.labels IS '标签列表，JSON数组格式';
+COMMENT ON COLUMN tools.tool_type IS '工具类型';
+COMMENT ON COLUMN tools.upload_type IS '上传方式';
+COMMENT ON COLUMN tools.upload_url IS '上传URL';
+COMMENT ON COLUMN tools.install_command IS '安装命令，JSON格式';
+COMMENT ON COLUMN tools.tool_list IS '工具列表，JSON数组格式';
+COMMENT ON COLUMN tools.status IS '审核状态';
+COMMENT ON COLUMN tools.is_office IS '是否官方工具';
+COMMENT ON COLUMN tools.created_at IS '创建时间';
+COMMENT ON COLUMN tools.updated_at IS '更新时间';
+COMMENT ON COLUMN tools.deleted_at IS '逻辑删除时间';
+
+COMMENT ON TABLE tool_versions IS '工具版本实体类';
+COMMENT ON COLUMN tool_versions.id IS '版本唯一ID';
+COMMENT ON COLUMN tool_versions.name IS '工具名称';
+COMMENT ON COLUMN tool_versions.icon IS '工具图标';
+COMMENT ON COLUMN tool_versions.subtitle IS '副标题';
+COMMENT ON COLUMN tool_versions.description IS '工具描述';
+COMMENT ON COLUMN tool_versions.user_id IS '用户ID';
+COMMENT ON COLUMN tool_versions.version IS '版本号';
+COMMENT ON COLUMN tool_versions.tool_id IS '工具ID';
+COMMENT ON COLUMN tool_versions.upload_type IS '上传方式';
+COMMENT ON COLUMN tool_versions.upload_url IS '上传URL';
+COMMENT ON COLUMN tool_versions.tool_list IS '工具列表，JSON数组格式';
+COMMENT ON COLUMN tool_versions.labels IS '标签列表，JSON数组格式';
+COMMENT ON COLUMN tool_versions.is_office IS '是否官方工具';
+COMMENT ON COLUMN tool_versions.public_status IS '公开状态';
+COMMENT ON COLUMN tool_versions.created_at IS '创建时间';
+COMMENT ON COLUMN tool_versions.updated_at IS '更新时间';
+COMMENT ON COLUMN tool_versions.deleted_at IS '逻辑删除时间';
+
+COMMENT ON TABLE user_tools IS '用户工具关联实体类';
+COMMENT ON COLUMN user_tools.id IS '唯一ID';
+COMMENT ON COLUMN user_tools.user_id IS '用户ID';
+COMMENT ON COLUMN user_tools.tool_version_id IS '工具版本ID';
+COMMENT ON COLUMN user_tools.version IS '版本号';
+COMMENT ON COLUMN user_tools.upload_type IS '上传方式';
+COMMENT ON COLUMN user_tools.upload_url IS '上传URL';
+COMMENT ON COLUMN user_tools.tool_list IS '工具列表，JSON数组格式';
+COMMENT ON COLUMN user_tools.labels IS '标签列表，JSON数组格式';
+COMMENT ON COLUMN user_tools.is_office IS '是否官方工具';
+COMMENT ON COLUMN user_tools.public_state IS '公开状态';
+COMMENT ON COLUMN user_tools.created_at IS '创建时间';
+COMMENT ON COLUMN user_tools.updated_at IS '更新时间';
+COMMENT ON COLUMN user_tools.deleted_at IS '逻辑删除时间';
     
     

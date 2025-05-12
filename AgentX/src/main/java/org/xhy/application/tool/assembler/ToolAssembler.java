@@ -1,0 +1,70 @@
+package org.xhy.application.tool.assembler;
+
+import org.springframework.beans.BeanUtils;
+import org.xhy.application.tool.dto.ToolDTO;
+import org.xhy.domain.tool.constant.ToolStatus;
+import org.xhy.domain.tool.constant.ToolType;
+import org.xhy.domain.tool.model.ToolEntity;
+import org.xhy.infrastructure.utils.JsonUtils;
+import org.xhy.interfaces.dto.tool.request.CreateToolRequest;
+import org.xhy.interfaces.dto.tool.request.UpdateToolRequest;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
+
+/**
+ * 工具实体转换器
+ */
+public class ToolAssembler {
+
+    /**
+     * 将创建工具请求转换为工具实体
+     *
+     * @param request 创建工具请求
+     * @param userId  用户ID
+     * @return 工具实体
+     */
+    public static ToolEntity toEntity(CreateToolRequest request, String userId) {
+        ToolEntity toolEntity = new ToolEntity();
+        BeanUtils.copyProperties(request, toolEntity);
+        toolEntity.setUserId(userId);
+
+        return toolEntity;
+    }
+
+    /**
+     * 将工具实体转换为DTO
+     *
+     * @param entity 工具实体
+     * @return 工具DTO
+     */
+    public static ToolDTO toDTO(ToolEntity entity) {
+        ToolDTO toolDTO = new ToolDTO();
+        BeanUtils.copyProperties(entity, toolDTO);
+        toolDTO.setInstallCommand(JsonUtils.toJsonString(entity.getInstallCommand()));
+        return toolDTO;
+    }
+
+    /**
+     * 将工具实体列表转换为DTO列表
+     *
+     * @param entities 工具实体列表
+     * @return 工具DTO列表
+     */
+    public static List<ToolDTO> toDTOs(List<ToolEntity> entities) {
+        if (entities == null || entities.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return entities.stream().map(ToolAssembler::toDTO).collect(Collectors.toList());
+    }
+
+    public static ToolEntity toEntity(UpdateToolRequest request, String userId) {
+        ToolEntity toolEntity = new ToolEntity();
+        BeanUtils.copyProperties(request, toolEntity);
+        toolEntity.setUserId(userId);
+        return toolEntity;
+    }
+}

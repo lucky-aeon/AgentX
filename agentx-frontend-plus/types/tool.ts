@@ -10,7 +10,7 @@ export interface Tool {
   tool_type: string
   upload_type: string
   upload_url: string
-  install_command: PluginConfig
+  install_command: PluginInstallConfig
   tool_list: ToolItem[]
   status: ToolStatus
   is_office: boolean
@@ -54,7 +54,7 @@ export interface ToolItem {
   }
 }
 
-export type PluginConfig = SsePluginConfig | StdioPluginConfig;
+export type PluginInstallConfig = SsePluginConfig | StdioPluginConfig;
 
 export interface SsePluginConfig {
   type: 'sse'

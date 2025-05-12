@@ -1,9 +1,10 @@
 "use client"
 
-import { useState, useRef, KeyboardEvent } from "react"
-import { ArrowLeft, Loader2, X, Bold, Italic, Strikethrough, Heading, List, Quote, Table, Code, Image, Eye, Upload } from "lucide-react"
+import { useState, useRef, KeyboardEvent, useEffect } from "react"
+import { ArrowLeft, Loader2, X, Bold, Italic, Strikethrough, Heading, List, Quote, Table, Code, Image, Eye, Upload, Save } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent } from "@/components/ui/card"
 import { 
   Form,
@@ -22,10 +23,10 @@ import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import Link from "next/link"
-import { uploadToolWithToast } from "@/lib/tool-service"
+import { updateToolWithToast, getToolDetailWithToast } from "@/lib/tool-service"
 import ReactMarkdown from "react-markdown"
-
-const mcpServerCommandTemp = '例如：{"mcpServers": {"file-system": {"args": ["-y", "@modelcontextprotocol/server-filesystem", "/etc/proxy"], "command": "npx"}}}';
+import { useParams, useRouter } from "next/navigation"
+import { Tool } from "@/types/tool"
 
 // 表单验证模式
 const formSchema = z.object({
@@ -40,14 +41,20 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-export default function UploadToolPage() {
+export default function EditToolPage() {
+  const params = useParams();
+  const router = useRouter();
+  const toolId = params.id as string;
+  
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [previewMode, setPreviewMode] = useState(false);
   const [newLabel, setNewLabel] = useState("");
   const [iconPreview, setIconPreview] = useState<string | null>(null);
   const labelInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [tool, setTool] = useState<Tool | null>(null);
   
   // 初始化表单
   const form = useForm<FormValues>({
@@ -61,6 +68,59 @@ export default function UploadToolPage() {
       installCommand: ""
     }
   });
+
+  // 获取工具详情数据
+  useEffect(() => {
+    async function fetchToolDetail() {
+      try {
+        setIsLoading(true);
+        const response = await getToolDetailWithToast(toolId);
+        
+        if (response.code === 200 && response.data) {
+          const tool = response.data;
+          console.log("获取到的工具信息:", tool);
+          
+          // 填充表单数据
+          form.reset({
+            name: tool.name || "",
+            subtitle: tool.subtitle || "",
+            description: tool.description || "",
+            uploadUrl: (tool as any).uploadUrl || "", 
+            labels: tool.labels || [],
+            installCommand: typeof (tool as any).installCommand === 'object' 
+              ? JSON.stringify((tool as any).installCommand, null, 2) 
+              : ((tool as any).installCommand || ""),
+          });
+          
+          // 如果有图标，设置图标预览
+          if (tool.icon) {
+            setIconPreview(tool.icon);
+          }
+          setTool(tool);
+        } else {
+          toast({
+            title: "获取工具详情失败",
+            description: response.message || "无法加载工具数据",
+            variant: "destructive",
+          });
+          // 获取失败后返回工具列表页
+          router.push("/tools");
+        }
+      } catch (error) {
+        console.error("获取工具详情失败", error);
+        toast({
+          title: "获取工具详情失败",
+          description: "无法加载工具数据，请稍后重试",
+          variant: "destructive",
+        });
+        router.push("/tools");
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    
+    fetchToolDetail();
+  }, [toolId, form, router]);
 
   // 添加标签
   const addLabel = () => {
@@ -135,7 +195,8 @@ export default function UploadToolPage() {
     // 设置预览
     const reader = new FileReader();
     reader.onload = (e) => {
-      setIconPreview(e.target?.result as string);
+      const result = e.target?.result;
+      setIconPreview(result ? result.toString() : null);
     };
     reader.readAsDataURL(file);
     
@@ -156,41 +217,46 @@ export default function UploadToolPage() {
   const onSubmit = async (values: FormValues) => {
     try {
       setIsSubmitting(true);
-      // 真实环境下调用API
-      let installCommandObj = values.installCommand;
+      
+      // 准备更新数据
+      let installCommandData;
       try {
-        installCommandObj = JSON.parse(values.installCommand);
+        // 尝试解析为JSON对象
+        installCommandData = JSON.parse(values.installCommand);
       } catch (e) {
-        // 如果不是合法JSON，提示错误并返回
-        toast({
-          title: "安装命令格式错误",
-          description: "请填写合法的 JSON 格式安装命令",
-          variant: "destructive"
-        });
-        setIsSubmitting(false);
-        return;
+        // 如果无法解析，直接使用原始字符串
+        installCommandData = values.installCommand;
       }
-      const payload = {
+      
+      const updateData = {
         name: values.name,
         subtitle: values.subtitle,
         description: values.description,
         uploadUrl: values.uploadUrl,
         labels: values.labels,
-        installCommand: installCommandObj,
+        installCommand: installCommandData,
         icon: iconPreview,
       };
-      const response = await uploadToolWithToast(payload);
+      
+      console.log("提交的数据:", updateData);
+      
+      // 调用API更新工具
+      const response = await updateToolWithToast(toolId, updateData);
+      
       if (response.code === 200) {
-        form.reset();
-        setIconPreview(null);
-        window.location.href = "/tools";
+        toast({
+          title: "工具更新成功",
+          description: "您的工具已更新成功",
+        });
+        
+        router.push("/tools");
       }
     } catch (error) {
-      console.error("提交工具失败", error);
+      console.error("更新工具失败", error);
       toast({
-        title: "提交失败",
-        description: "提交工具时出现错误，请稍后重试",
-        variant: "destructive"
+        title: "更新失败",
+        description: "无法更新工具，请稍后重试",
+        variant: "destructive",
       });
     } finally {
       setIsSubmitting(false);
@@ -301,17 +367,31 @@ export default function UploadToolPage() {
     }
   };
 
+  // 加载状态
+  if (isLoading) {
+    return (
+      <div className="container py-6">
+        <div className="flex items-center justify-center h-60">
+          <div className="flex flex-col items-center gap-2">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <p className="text-muted-foreground">正在加载工具数据...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container py-6">
       <div className="mb-6">
         <Button variant="ghost" size="sm" asChild className="mb-2">
           <Link href="/tools">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            返回工具市场
+            返回工具列表
           </Link>
         </Button>
-        <h1 className="text-3xl font-bold tracking-tight">上传工具</h1>
-        <p className="text-muted-foreground">创建并分享您的工具到工具市场</p>
+        <h1 className="text-3xl font-bold tracking-tight">编辑工具</h1>
+        <p className="text-muted-foreground">更新您的工具信息</p>
       </div>
       
       <Form {...form}>
@@ -435,7 +515,7 @@ export default function UploadToolPage() {
                           <FormControl>
                             <textarea
                               className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                              placeholder={mcpServerCommandTemp}
+                              placeholder="输入安装命令..."
                               {...field}
                             />
                           </FormControl>
@@ -446,206 +526,187 @@ export default function UploadToolPage() {
                         </FormItem>
                       )}
                     />
-
-                    {/* 工具图标上传 */}
-                    <div className="space-y-2">
-                      <div className="font-medium">
-                        工具图标
-                      </div>
+                    
+                    <div className="pt-2">
+                      <FormLabel className="block mb-2">工具图标</FormLabel>
                       <div className="flex items-center gap-4">
-                        <div className="flex-shrink-0 h-20 w-20 rounded-md border-2 border-dashed border-muted-foreground/25 flex items-center justify-center overflow-hidden relative">
+                        <div className="h-16 w-16 rounded-md border flex items-center justify-center bg-muted/20 overflow-hidden">
                           {iconPreview ? (
-                            <>
-                              <img src={iconPreview} alt="Icon preview" className="h-full w-full object-cover" />
-                              <Button 
-                                type="button" 
-                                variant="destructive" 
-                                size="icon" 
-                                className="absolute top-1 right-1 h-5 w-5 rounded-full"
-                                onClick={clearIcon}
-                              >
-                                <X className="h-3 w-3" />
-                              </Button>
-                            </>
+                            <img 
+                              src={iconPreview} 
+                              alt="工具图标预览" 
+                              className="h-full w-full object-cover"
+                            />
                           ) : (
-                            <Upload className="h-6 w-6 text-muted-foreground/50" />
+                            <Upload className="h-6 w-6 text-muted-foreground" />
                           )}
                         </div>
-                        <div className="flex-1">
+                        <div className="flex flex-col gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => fileInputRef.current?.click()}
+                          >
+                            更换图标
+                          </Button>
+                          {iconPreview && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={clearIcon}
+                            >
+                              清除图标
+                            </Button>
+                          )}
                           <input
-                            type="file"
                             ref={fileInputRef}
+                            type="file"
                             accept="image/*"
                             className="hidden"
                             onChange={handleIconUpload}
                           />
-                          <Button 
-                            type="button" 
-                            variant="outline" 
-                            onClick={() => fileInputRef.current?.click()}
-                          >
-                            上传图标
-                          </Button>
-                          <p className="text-sm text-muted-foreground mt-2">
-                            推荐尺寸 512x512px，大小不超过2MB
-                          </p>
                         </div>
                       </div>
+                      <FormDescription className="mt-2">
+                        建议上传正方形PNG图标，尺寸为200x200
+                      </FormDescription>
                     </div>
                   </div>
                 </CardContent>
               </Card>
-              
-              <div className="flex justify-end">
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  提交工具
-                </Button>
-              </div>
             </div>
             
-            {/* 右侧 - Markdown编辑器 */}
-            <div className="space-y-4">
+            {/* 右侧描述编辑器 */}
+            <div className="space-y-6">
               <Card>
                 <CardContent className="p-6">
                   <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <h2 className="text-xl font-semibold">
-                        详细描述 <span className="text-red-500">*</span>
-                      </h2>
-                      <div className="flex gap-2">
-                        <Button 
-                          type="button" 
-                          variant={previewMode ? "outline" : "default"} 
-                          size="sm"
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-xl font-semibold">详细描述</h2>
+                      <ToggleGroup type="single" value={previewMode ? "preview" : "edit"} className="border rounded-md">
+                        <ToggleGroupItem 
+                          value="edit" 
                           onClick={() => setPreviewMode(false)}
+                          className="text-xs"
                         >
                           编辑
-                        </Button>
-                        <Button 
-                          type="button" 
-                          variant={previewMode ? "default" : "outline"} 
-                          size="sm"
+                        </ToggleGroupItem>
+                        <ToggleGroupItem 
+                          value="preview" 
                           onClick={() => setPreviewMode(true)}
+                          className="text-xs"
                         >
                           预览
-                        </Button>
-                      </div>
+                        </ToggleGroupItem>
+                      </ToggleGroup>
                     </div>
                     
+                    {/* Markdown 工具栏 */}
                     {!previewMode && (
-                      <div className="border rounded-md bg-muted/30 p-1">
-                        <div className="flex items-center flex-wrap gap-1 p-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleMarkdownFormat('bold')}
-                            type="button"
-                            className="h-9 w-9 p-0"
-                          >
-                            <Bold className="h-4 w-4" />
-                            <span className="sr-only">粗体</span>
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleMarkdownFormat('italic')}
-                            type="button"
-                            className="h-9 w-9 p-0"
-                          >
-                            <Italic className="h-4 w-4" />
-                            <span className="sr-only">斜体</span>
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleMarkdownFormat('strikethrough')}
-                            type="button"
-                            className="h-9 w-9 p-0"
-                          >
-                            <Strikethrough className="h-4 w-4" />
-                            <span className="sr-only">删除线</span>
-                          </Button>
-                          <Separator orientation="vertical" className="mx-1 h-6" />
-                          <ToggleGroup type="single" className="flex-wrap">
-                            <ToggleGroupItem 
-                              value="h1" 
-                              size="sm"
-                              onClick={() => handleMarkdownFormat('h1')}
-                              className="text-sm px-2"
-                            >
-                              H1
-                            </ToggleGroupItem>
-                            <ToggleGroupItem 
-                              value="h2" 
-                              size="sm"
-                              onClick={() => handleMarkdownFormat('h2')}
-                              className="text-sm px-2"
-                            >
-                              H2
-                            </ToggleGroupItem>
-                            <ToggleGroupItem 
-                              value="h3" 
-                              size="sm"
-                              onClick={() => handleMarkdownFormat('h3')}
-                              className="text-sm px-2"
-                            >
-                              H3
-                            </ToggleGroupItem>
-                          </ToggleGroup>
-                          <Separator orientation="vertical" className="mx-1 h-6" />
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleMarkdownFormat('list')}
-                            type="button"
-                            className="h-9 w-9 p-0"
-                          >
-                            <List className="h-4 w-4" />
-                            <span className="sr-only">列表</span>
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleMarkdownFormat('quote')}
-                            type="button"
-                            className="h-9 w-9 p-0"
-                          >
-                            <Quote className="h-4 w-4" />
-                            <span className="sr-only">引用</span>
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleMarkdownFormat('table')}
-                            type="button"
-                            className="h-9 w-9 p-0"
-                          >
-                            <Table className="h-4 w-4" />
-                            <span className="sr-only">表格</span>
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleMarkdownFormat('code')}
-                            type="button"
-                            className="h-9 w-9 p-0"
-                          >
-                            <Code className="h-4 w-4" />
-                            <span className="sr-only">代码</span>
-                          </Button>
-                          <Separator orientation="vertical" className="mx-1 h-6" />
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleMarkdownFormat('image')}
-                            type="button"
-                            className="h-9 w-9 p-0"
-                          >
-                            <Image className="h-4 w-4" />
-                            <span className="sr-only">图片</span>
-                          </Button>
-                        </div>
+                      <div className="flex flex-wrap items-center gap-1 border rounded-md p-1 mt-2 mb-3 bg-muted/5">
+                        <Button 
+                          type="button"
+                          variant="ghost" 
+                          size="sm"
+                          className="h-8 px-2"
+                          onClick={() => handleMarkdownFormat('bold')}
+                        >
+                          <Bold className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          type="button"
+                          variant="ghost" 
+                          size="sm"
+                          className="h-8 px-2"
+                          onClick={() => handleMarkdownFormat('italic')}
+                        >
+                          <Italic className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          type="button"
+                          variant="ghost" 
+                          size="sm"
+                          className="h-8 px-2"
+                          onClick={() => handleMarkdownFormat('strikethrough')}
+                        >
+                          <Strikethrough className="h-4 w-4" />
+                        </Button>
+                        <Separator orientation="vertical" className="mx-1 h-8" />
+                        <Button 
+                          type="button"
+                          variant="ghost" 
+                          size="sm"
+                          className="h-8 px-2"
+                          onClick={() => handleMarkdownFormat('h1')}
+                        >
+                          <span className="text-xs font-bold">H1</span>
+                        </Button>
+                        <Button 
+                          type="button"
+                          variant="ghost" 
+                          size="sm"
+                          className="h-8 px-2"
+                          onClick={() => handleMarkdownFormat('h2')}
+                        >
+                          <span className="text-xs font-bold">H2</span>
+                        </Button>
+                        <Button 
+                          type="button"
+                          variant="ghost" 
+                          size="sm"
+                          className="h-8 px-2"
+                          onClick={() => handleMarkdownFormat('h3')}
+                        >
+                          <span className="text-xs font-bold">H3</span>
+                        </Button>
+                        <Separator orientation="vertical" className="mx-1 h-8" />
+                        <Button 
+                          type="button"
+                          variant="ghost" 
+                          size="sm"
+                          className="h-8 px-2"
+                          onClick={() => handleMarkdownFormat('list')}
+                        >
+                          <List className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          type="button"
+                          variant="ghost" 
+                          size="sm"
+                          className="h-8 px-2"
+                          onClick={() => handleMarkdownFormat('quote')}
+                        >
+                          <Quote className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          type="button"
+                          variant="ghost" 
+                          size="sm"
+                          className="h-8 px-2"
+                          onClick={() => handleMarkdownFormat('table')}
+                        >
+                          <Table className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          type="button"
+                          variant="ghost" 
+                          size="sm"
+                          className="h-8 px-2"
+                          onClick={() => handleMarkdownFormat('code')}
+                        >
+                          <Code className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          type="button"
+                          variant="ghost" 
+                          size="sm"
+                          className="h-8 px-2"
+                          onClick={() => handleMarkdownFormat('image')}
+                        >
+                          <Image className="h-4 w-4" />
+                        </Button>
                       </div>
                     )}
                     
@@ -654,49 +715,59 @@ export default function UploadToolPage() {
                       name="description"
                       render={({ field }) => (
                         <FormItem>
-                          {previewMode ? (
-                            <div className="border rounded-md p-4 min-h-[400px] prose dark:prose-invert max-w-none">
-                              <ReactMarkdown>
-                                {field.value || '### 预览\n\n开始编辑以查看预览'}
-                              </ReactMarkdown>
+                          {!previewMode ? (
+                            <div className="mt-4">
+                              <FormControl>
+                                <textarea
+                                  className="flex min-h-[400px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                  placeholder="使用Markdown语法编写工具的详细描述..."
+                                  {...field}
+                                  ref={(e) => {
+                                    textareaRef.current = e as HTMLTextAreaElement;
+                                  }}
+                                />
+                              </FormControl>
+                              <FormDescription>
+                                使用 Markdown 格式说明工具的功能、特点和使用方法
+                              </FormDescription>
+                              <FormMessage />
                             </div>
                           ) : (
-                            <FormControl>
-                              <textarea
-                                className="flex min-h-[400px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 font-mono"
-                                placeholder="# 工具名称
-
-## 功能简介
-描述工具的主要功能和用途
-
-## 特性
-- 特性1
-- 特性2
-- 特性3
-
-## 使用方法
-安装后，您可以在聊天中通过以下方式使用此工具"
-                                {...field}
-                                ref={(element) => {
-                                  textareaRef.current = element;
-                                }}
-                              />
-                            </FormControl>
+                            <div className="mt-4 border rounded-md p-4 min-h-[400px] prose dark:prose-invert max-w-none">
+                              <ReactMarkdown>
+                                {field.value}
+                              </ReactMarkdown>
+                            </div>
                           )}
-                          <FormDescription>
-                            支持Markdown格式，可以添加标题、列表、代码块等
-                          </FormDescription>
-                          <FormMessage />
                         </FormItem>
                       )}
                     />
                   </div>
                 </CardContent>
               </Card>
+              
+              <div className="flex justify-end gap-4">
+                <Button 
+                  type="button" 
+                  variant="outline"
+                  onClick={() => router.push("/tools")}
+                >
+                  取消
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
+                  更新工具
+                </Button>
+              </div>
             </div>
           </div>
         </form>
       </Form>
     </div>
-  )
+  );
 } 

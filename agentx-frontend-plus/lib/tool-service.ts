@@ -100,41 +100,14 @@ export const installToolWithToast = withToast(
 /**
  * 获取用户已安装的工具和推荐工具列表
  */
-export async function getUserToolsWithToast(params?: any) {
-  return withToast(getUserTools, {
-    successTitle: "获取成功",
-    errorTitle: "获取失败",
-    showSuccessToast: true
-  })(params);
-}
-
-/**
- * 获取用户已安装的工具和推荐工具列表
- */
-async function getUserTools(params?: any): Promise<ApiResponse<any>> {
+export async function getUserTools(params?: any): Promise<ApiResponse<Tool[]>> {
   try {
-    if (process.env.NODE_ENV === 'development') {
-      // 开发环境模拟数据
-      return mockUserToolsResponse();
-    }
-    
-    const response = await fetch(`/api/tools/user`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`获取工具数据失败: ${response.status}`);
-    }
-
-    return await response.json();
+    return await httpClient.get(API_ENDPOINTS.USER_TOOLS, { params });
   } catch (error) {
-    console.error("获取工具失败", error);
+    console.error("获取用户工具失败", error);
     return {
       code: 500,
-      message: "获取工具数据失败",
+      message: "获取用户工具数据失败",
       data: [],
       timestamp: Date.now()
     }
@@ -142,35 +115,16 @@ async function getUserTools(params?: any): Promise<ApiResponse<any>> {
 }
 
 /**
- * 模拟用户工具数据响应
+ * 获取用户已安装的工具（带Toast提示）
  */
-function mockUserToolsResponse(): ApiResponse<any> {
-  return {
-    code: 200,
-    message: "获取成功",
-    data: {
-      userTools: [
-        // 示例数据，实际开发时应该替换
-        {
-          id: "tool-1",
-          name: "示例工具1",
-          subtitle: "这是一个示例工具",
-          // 其他必要属性...
-        }
-      ],
-      recommendedTools: [
-        // 示例数据，实际开发时应该替换
-        {
-          id: "tool-rec-1",
-          name: "推荐工具1",
-          subtitle: "这是一个推荐工具",
-          // 其他必要属性...
-        }
-      ]
-    },
-    timestamp: Date.now()
-  };
-}
+export const getUserToolsWithToast = withToast(
+  getUserTools, 
+  {
+    successTitle: "获取成功",
+    errorTitle: "获取失败",
+    showSuccessToast: false
+  }
+);
 
 // 删除用户安装的工具
 export async function deleteUserTool(id: string): Promise<ApiResponse<any>> {
@@ -216,6 +170,72 @@ export const uploadToolWithToast = withToast(
   uploadTool,
   {
     successTitle: "上传成功",
+    showSuccessToast: true
+  }
+)
+
+// 删除工具
+export async function deleteTool(id: string): Promise<ApiResponse<any>> {
+  try {
+    return await httpClient.delete(API_ENDPOINTS.DELETE_TOOL(id))
+  } catch (error) {
+    console.error("删除工具失败", error)
+    return {
+      code: 500,
+      message: "删除工具失败",
+      data: null,
+      timestamp: Date.now()
+    }
+  }
+}
+
+// 删除工具（带Toast提示）
+export const deleteToolWithToast = withToast(
+  deleteTool,
+  {
+    successTitle: "删除成功",
+    showSuccessToast: true
+  }
+)
+
+// 获取用户工具详情
+export async function getToolDetail(id: string): Promise<ApiResponse<Tool>> {
+  try {
+    return await httpClient.get(API_ENDPOINTS.TOOL_DETAIL(id))
+  } catch (error) {
+    console.error("获取工具详情失败", error)
+    return {
+      code: 500,
+      message: "获取工具详情失败",
+      data: null as any,
+      timestamp: Date.now()
+    }
+  }
+}
+
+// 获取用户工具详情（带Toast提示）
+export const getToolDetailWithToast = withToast(getToolDetail)
+
+// 更新工具
+export async function updateTool(id: string, data: any): Promise<ApiResponse<Tool>> {
+  try {
+    return await httpClient.put(API_ENDPOINTS.UPDATE_TOOL(id), data)
+  } catch (error) {
+    console.error("更新工具失败", error)
+    return {
+      code: 500,
+      message: "更新工具失败",
+      data: null as any,
+      timestamp: Date.now()
+    }
+  }
+}
+
+// 更新工具（带Toast提示）
+export const updateToolWithToast = withToast(
+  updateTool,
+  {
+    successTitle: "更新成功",
     showSuccessToast: true
   }
 ) 
