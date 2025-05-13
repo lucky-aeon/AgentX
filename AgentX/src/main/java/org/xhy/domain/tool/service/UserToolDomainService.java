@@ -23,15 +23,6 @@ public class UserToolDomainService {
         this.userToolRepository = userToolRepository;
     }
 
-    public  void checkUserToolExist(String userId, String toolVersionId) {
-        LambdaQueryWrapper<UserToolEntity> wrapper = Wrappers.<UserToolEntity>lambdaQuery()
-                .eq(UserToolEntity::getUserId, userId)
-                .eq(UserToolEntity::getToolVersionId, toolVersionId);
-        UserToolEntity userToolEntity = userToolRepository.selectOne(wrapper);
-        if (userToolEntity != null) {
-            throw new BusinessException("工具已安装");
-        }
-    }
 
     public void add(UserToolEntity userToolEntity) {
         userToolRepository.checkInsert(userToolEntity);
@@ -41,6 +32,28 @@ public class UserToolDomainService {
         LambdaQueryWrapper<UserToolEntity> wrapper = Wrappers.<UserToolEntity>lambdaQuery()
                 .eq(UserToolEntity::getUserId, userId);
         return userToolRepository.selectPage(new Page<>(queryToolRequest.getPage(), queryToolRequest.getPageSize()), wrapper);
+    }
+
+
+    public UserToolEntity findByToolIdAndUserId(String toolId, String userId) {
+        LambdaQueryWrapper<UserToolEntity> wrapper = Wrappers.<UserToolEntity>lambdaQuery()
+                .eq(UserToolEntity::getToolId, toolId)
+                .eq(UserToolEntity::getUserId, userId);
+        return userToolRepository.selectOne(wrapper);
+    }
+
+
+    public void update(UserToolEntity userToolEntity) {
+       
+        userToolRepository.checkedUpdateById(userToolEntity);
+    }
+
+
+    public void delete(String toolId, String userId) {
+        LambdaQueryWrapper<UserToolEntity> wrapper = Wrappers.<UserToolEntity>lambdaQuery()
+                .eq(UserToolEntity::getToolId, toolId)
+                .eq(UserToolEntity::getUserId, userId);
+        userToolRepository.checkedDelete(wrapper);
     }
 
 

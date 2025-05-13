@@ -15,6 +15,9 @@ import org.xhy.interfaces.dto.tool.request.CreateToolRequest;
 import org.xhy.interfaces.dto.tool.request.MarketToolRequest;
 import org.xhy.interfaces.dto.tool.request.QueryToolRequest;
 import org.xhy.interfaces.dto.tool.request.UpdateToolRequest;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+
 
 /**
  * 工具市场
@@ -145,13 +148,49 @@ public class PortalToolController {
     }
 
     /**
-     * 获取已安装的工具列表
+     * 卸载工具
      * 
+     * @param toolId 工具id
+     * @return
+     */
+    @PostMapping("uninstall/{toolId}")
+    public Result uninstallTool(@PathVariable String toolId) {
+        String userId = UserContext.getCurrentUserId();
+        toolAppService.uninstallTool(toolId, userId);
+        return Result.success().message("卸载成功");
+    }
+    
+
+    /**
+     * 获取已安装的工具列表
+     *
      * @return
      */
     @GetMapping("/installed")
-    public Result<Page<ToolDTO>> getInstalledTools(QueryToolRequest queryToolRequest) {
+    public Result<Page<ToolVersionDTO>> getInstalledTools(QueryToolRequest queryToolRequest) {
         String userId = UserContext.getCurrentUserId();
         return Result.success(toolAppService.getInstalledTools(userId, queryToolRequest));
     }
+
+    /**
+     * 获取工具已发布的所有版本
+     * 
+     * @param toolId 工具id
+     * @return
+     */
+    @GetMapping("/market/{toolId}/versions")
+    public Result<List<ToolVersionDTO>> getToolVersions(@PathVariable String toolId) {
+        return Result.success(toolAppService.getToolVersions(toolId));
+    }
+
+    /**
+     * 推荐工具
+     *
+     * @return
+     */
+    @GetMapping("/recommend")
+    public Result<List<ToolVersionDTO>> getRecommendTools() {
+        return Result.success(toolAppService.getRecommendTools());
+    }
+
 }

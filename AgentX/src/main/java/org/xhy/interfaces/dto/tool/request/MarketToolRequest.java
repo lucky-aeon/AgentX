@@ -35,7 +35,7 @@ public class MarketToolRequest {
 
         // 确保两个版本号都符合格式
         if (!VERSION_PATTERN.matcher(version).matches() || !VERSION_PATTERN.matcher(lastVersion).matches()) {
-            throw new ParamValidationException("versionNumber", "版本号必须遵循 x.y.z 格式");
+            throw new ParamValidationException("版本号", "版本号必须遵循 x.y.z 格式");
         }
 
         // 分割版本号

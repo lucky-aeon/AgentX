@@ -78,9 +78,10 @@ public class ToolAssembler {
         return toolEntity;
     }
 
-    public static ToolDTO toDTO(UserToolEntity userToolEntity) {
-        ToolDTO toolDTO = new ToolDTO();
-        BeanUtils.copyProperties(userToolEntity, toolDTO);
-        return toolDTO;
+    public static ToolVersionDTO toDTO(UserToolEntity userToolEntity) {
+        ToolVersionDTO toolVersionDTO = new ToolVersionDTO();
+        BeanUtils.copyProperties(userToolEntity, toolVersionDTO);
+        return toolVersionDTO;
     }
+
 }

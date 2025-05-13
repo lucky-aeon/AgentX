@@ -1,6 +1,7 @@
 package org.xhy.application.tool.service.impl;
 
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collector;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 
@@ -146,23 +147,64 @@ public class ToolAppService {
     }
 
     public void installTool(String toolId, String version, String userId) {
-
+        UserToolEntity userToolEntity = userToolDomainService.findByToolIdAndUserId(toolId, userId);
         ToolVersionEntity toolVersionEntity = toolVersionDomainService.getToolVersion(toolId, version);
-        // 检查是否已安装
-        userToolDomainService.checkUserToolExist(userId, toolVersionEntity.getId());
-        // 安装工具
-        UserToolEntity userToolEntity = new UserToolEntity();
+
+        if (userToolEntity == null) {
+            userToolEntity = new UserToolEntity();
+            userToolEntity.setUserId(userId);
+            userToolEntity.setToolId(toolVersionEntity.getToolId());
+        }
+        String userToolId = userToolEntity.getId();
         BeanUtils.copyProperties(toolVersionEntity, userToolEntity);
-        userToolEntity.setUserId(userId);
-        userToolEntity.setToolVersionId(toolVersionEntity.getId());
-        userToolDomainService.add(userToolEntity);
+        // 使用工具版本实体更新用户工具实体的信息
+        userToolEntity.setVersion(toolVersionEntity.getVersion());
+        userToolEntity.setId(userToolId);
+        if (userToolEntity.getId() == null) {
+            userToolDomainService.add(userToolEntity);
+        } else {
+            userToolDomainService.update(userToolEntity);
+        }
     }
 
-    public Page<ToolDTO> getInstalledTools(String userId, QueryToolRequest queryToolRequest) {
+    public Page<ToolVersionDTO> getInstalledTools(String userId, QueryToolRequest queryToolRequest) {
+
         Page<UserToolEntity> userToolEntityPage = userToolDomainService.listByUserId(userId, queryToolRequest);
-        List<ToolDTO> list = userToolEntityPage.getRecords().stream().map(ToolAssembler::toDTO).toList();
-        Page<ToolDTO> tPage = new Page<>(userToolEntityPage.getCurrent(), userToolEntityPage.getSize(), userToolEntityPage.getTotal());
+        List<ToolVersionDTO> list = userToolEntityPage.getRecords().stream().map(ToolAssembler::toDTO).toList();
+        Page<ToolVersionDTO> tPage = new Page<>(userToolEntityPage.getCurrent(), userToolEntityPage.getSize(), userToolEntityPage.getTotal());
         tPage.setRecords(list);
         return tPage;
+    }
+
+    public List<ToolVersionDTO> getToolVersions(String toolId) {
+        List<ToolVersionEntity> toolVersionEntities = toolVersionDomainService.getToolVersions(toolId);
+        return toolVersionEntities.stream().map(ToolAssembler::toDTO).toList();
+    }
+
+    public void uninstallTool(String toolId, String userId) {
+        userToolDomainService.delete(toolId, userId);
+    }
+
+    public List<ToolVersionDTO> getRecommendTools() {
+        QueryToolRequest queryToolRequest = new QueryToolRequest();
+        queryToolRequest.setPage(1);
+        queryToolRequest.setPageSize(Integer.MAX_VALUE);
+        Page<ToolVersionEntity> listToolVersion = toolVersionDomainService.listToolVersion(queryToolRequest);
+        List<ToolVersionEntity> records = listToolVersion.getRecords();
+
+        if (records.size() <= 10) {
+            return records.stream().map(ToolAssembler::toDTO).toList();
+        } else {
+            // 使用随机数从所有记录中选取10条不重复的记录
+            Random random = new Random();
+            Set<ToolVersionEntity> toolVersionSet = new HashSet<>();
+
+            while (toolVersionSet.size() < 10) {
+                int randomIndex = random.nextInt(records.size());
+                toolVersionSet.add(records.get(randomIndex));
+            }
+
+            return toolVersionSet.stream().map(ToolAssembler::toDTO).toList();
+        }
     }
 }

@@ -59,8 +59,8 @@ public class UserToolEntity extends BaseEntity {
     /**
      * 工具版本ID
      */
-    @TableField("tool_version_id")
-    private String toolVersionId;
+    @TableField("tool_id")
+    private String toolId;
 
     /**
      * 版本号
@@ -68,17 +68,6 @@ public class UserToolEntity extends BaseEntity {
     @TableField("version")
     private String version;
 
-    /**
-     * 上传方式：1-github, 2-zip
-     */
-    @TableField(value = "upload_type", typeHandler = UploadTypeConverter.class)
-    private UploadType uploadType;
-
-    /**
-     * 上传URL
-     */
-    @TableField("upload_url")
-    private String uploadUrl;
 
     /**
      * 工具列表
@@ -120,12 +109,12 @@ public class UserToolEntity extends BaseEntity {
         this.userId = userId;
     }
 
-    public String getToolVersionId() {
-        return toolVersionId;
+    public String getToolId() {
+        return toolId;
     }
 
-    public void setToolVersionId(String toolVersionId) {
-        this.toolVersionId = toolVersionId;
+    public void setToolId(String toolId) {
+        this.toolId = toolId;
     }
 
     public String getVersion() {
@@ -134,22 +123,6 @@ public class UserToolEntity extends BaseEntity {
 
     public void setVersion(String version) {
         this.version = version;
-    }
-
-    public UploadType getUploadType() {
-        return uploadType;
-    }
-
-    public void setUploadType(UploadType uploadType) {
-        this.uploadType = uploadType;
-    }
-
-    public String getUploadUrl() {
-        return uploadUrl;
-    }
-
-    public void setUploadUrl(String uploadUrl) {
-        this.uploadUrl = uploadUrl;
     }
 
     public List<ToolDefinition> getToolList() {

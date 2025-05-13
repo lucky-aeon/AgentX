@@ -23,7 +23,7 @@ public class ToolVersionDomainService {
         this.toolVersionRepository = toolVersionRepository;
     }
 
-    
+
     public Page<ToolVersionEntity> listToolVersion(QueryToolRequest queryToolRequest) {
         long page = queryToolRequest.getPage();
         long pageSize = queryToolRequest.getPageSize();

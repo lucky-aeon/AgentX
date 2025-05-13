@@ -28,7 +28,7 @@ public class PublishAgentVersionRequest {
     public void validate() {
         // 验证版本号格式
         if (!VERSION_PATTERN.matcher(versionNumber).matches()) {
-            throw new ParamValidationException("versionNumber", "版本号必须遵循 x.y.z 格式");
+            throw new ParamValidationException("版本号", "版本号必须遵循 x.y.z 格式");
         }
     }
 
