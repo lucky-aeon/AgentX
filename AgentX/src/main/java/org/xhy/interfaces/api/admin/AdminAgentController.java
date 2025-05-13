@@ -33,7 +33,7 @@ public class AdminAgentController {
     /** 更新版本状态（包括审核通过/拒绝/下架等操作）
      *
      * @param versionId 版本ID
-     * @param status 目标状态: PUBLISHED, REJECTED, REMOVED
+     * @param status 目标状态: 1 审核中，2 已发布, 3 拒绝, 4 已下架
      * @param reason 原因（拒绝时需要提供）
      * @return 更新后的版本 */
     @PostMapping("/versions/{versionId}/status")

@@ -2,9 +2,12 @@ package org.xhy.application.tool.assembler;
 
 import org.springframework.beans.BeanUtils;
 import org.xhy.application.tool.dto.ToolDTO;
+import org.xhy.application.tool.dto.ToolVersionDTO;
 import org.xhy.domain.tool.constant.ToolStatus;
 import org.xhy.domain.tool.constant.ToolType;
 import org.xhy.domain.tool.model.ToolEntity;
+import org.xhy.domain.tool.model.ToolVersionEntity;
+import org.xhy.domain.tool.model.UserToolEntity;
 import org.xhy.infrastructure.utils.JsonUtils;
 import org.xhy.interfaces.dto.tool.request.CreateToolRequest;
 import org.xhy.interfaces.dto.tool.request.UpdateToolRequest;
@@ -48,6 +51,13 @@ public class ToolAssembler {
         return toolDTO;
     }
 
+    public static ToolVersionDTO toDTO(ToolVersionEntity entity) {
+        ToolVersionDTO toolVersionDTO = new ToolVersionDTO();
+        BeanUtils.copyProperties(entity, toolVersionDTO);
+        return toolVersionDTO;
+    }
+
+
     /**
      * 将工具实体列表转换为DTO列表
      *
@@ -66,5 +76,11 @@ public class ToolAssembler {
         BeanUtils.copyProperties(request, toolEntity);
         toolEntity.setUserId(userId);
         return toolEntity;
+    }
+
+    public static ToolDTO toDTO(UserToolEntity userToolEntity) {
+        ToolDTO toolDTO = new ToolDTO();
+        BeanUtils.copyProperties(userToolEntity, toolDTO);
+        return toolDTO;
     }
 }

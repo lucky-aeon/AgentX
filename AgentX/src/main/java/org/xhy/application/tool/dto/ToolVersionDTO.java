@@ -1,113 +1,50 @@
-package org.xhy.domain.tool.model;
+package org.xhy.application.tool.dto;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
-import org.xhy.domain.tool.constant.UploadType;
 import org.xhy.domain.tool.model.config.ToolDefinition;
-import org.xhy.infrastructure.converter.ListStringConverter;
-import org.xhy.infrastructure.converter.ToolDefinitionListConverter;
-import org.xhy.infrastructure.converter.UploadTypeConverter;
-import org.xhy.infrastructure.entity.BaseEntity;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
-/**
- * 工具版本实体类
- */
-@TableName(value = "tool_versions", autoResultMap = true)
-public class ToolVersionEntity extends BaseEntity {
+public class ToolVersionDTO {
 
-    /**
-     * 版本唯一ID
-     */
-    @TableId(value = "id", type = IdType.ASSIGN_UUID)
     private String id;
 
-    /**
-     * 工具名称
-     */
-    @TableField("name")
     private String name;
 
-    /**
-     * 工具图标
-     */
-    @TableField("icon")
     private String icon;
 
-    /**
-     * 副标题
-     */
-    @TableField("subtitle")
     private String subtitle;
 
-    /**
-     * 工具描述
-     */
-    @TableField("description")
     private String description;
 
-    /**
-     * 用户ID
-     */
-    @TableField("user_id")
     private String userId;
 
-    /**
-     * 版本号
-     */
-    @TableField("version")
     private String version;
 
-    /**
-     * 工具ID
-     */
-    @TableField("tool_id")
     private String toolId;
 
-    /**
-     * 上传方式：github, zip
-     */
-    @TableField(value = "upload_type", typeHandler = UploadTypeConverter.class)
-    private UploadType uploadType;
+    private String uploadType;
 
-    /**
-     * 上传URL
-     */
-    @TableField("upload_url")
     private String uploadUrl;
 
-    /**
-     * 工具列表
-     */
-    @TableField(value = "tool_list", typeHandler = ToolDefinitionListConverter.class)
     private List<ToolDefinition> toolList;
 
-    /**
-     * 标签列表
-     */
-    @TableField(value = "labels", typeHandler = ListStringConverter.class)
     private List<String> labels;
 
-    /**
-     * 是否官方工具
-     */
-    @TableField("is_office")
     private Boolean isOffice;
 
-    /**
-     * 公开状态
-     */
-    @TableField("public_status")
     private Boolean publicStatus;
 
-    /**
-     * 变更日志
-     */
-    @TableField("change_log")
     private String changeLog;
+
+    private LocalDateTime createdAt;
+
+    private LocalDateTime updatedAt;
+
+    private String userName;
+
+    private List<ToolVersionDTO> versions;
+
 
     public String getId() {
         return id;
@@ -173,11 +110,11 @@ public class ToolVersionEntity extends BaseEntity {
         this.toolId = toolId;
     }
 
-    public UploadType getUploadType() {
+    public String getUploadType() {
         return uploadType;
     }
 
-    public void setUploadType(UploadType uploadType) {
+    public void setUploadType(String uploadType) {
         this.uploadType = uploadType;
     }
 
@@ -205,12 +142,12 @@ public class ToolVersionEntity extends BaseEntity {
         this.labels = labels;
     }
 
-    public Boolean getIsOffice() {
+    public Boolean getOffice() {
         return isOffice;
     }
 
-    public void setIsOffice(Boolean isOffice) {
-        this.isOffice = isOffice;
+    public void setOffice(Boolean office) {
+        isOffice = office;
     }
 
     public Boolean getPublicStatus() {
@@ -219,14 +156,45 @@ public class ToolVersionEntity extends BaseEntity {
 
     public void setPublicStatus(Boolean publicStatus) {
         this.publicStatus = publicStatus;
-        }
+    }
 
     public String getChangeLog() {
         return changeLog;
     }
-    
+
     public void setChangeLog(String changeLog) {
         this.changeLog = changeLog;
-    }   
-    
-} 
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
+    public String getUserName() {
+        return userName;
+    }
+
+    public void setUserName(String userName) {
+        this.userName = userName;
+    }
+
+    public List<ToolVersionDTO> getVersions() {
+        return versions;
+    }
+
+    public void setVersions(List<ToolVersionDTO> versions) {
+        this.versions = versions;
+    }
+}

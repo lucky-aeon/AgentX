@@ -2,7 +2,9 @@ package org.xhy.domain.tool.service;
 
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -10,7 +12,9 @@ import org.xhy.domain.tool.constant.ToolStatus;
 import org.xhy.domain.tool.model.ToolEntity;
 import org.xhy.domain.tool.model.ToolVersionEntity;
 import org.xhy.domain.tool.repository.ToolRepository;
+import org.xhy.domain.tool.repository.ToolVersionRepository;
 import org.xhy.infrastructure.exception.BusinessException;
+import org.xhy.interfaces.dto.tool.request.QueryToolRequest;
 
 import java.util.List;
 
@@ -64,7 +68,10 @@ public class ToolDomainService {
          * 修改 namedescriptionicon labels触发 人工审核 状态
          * 修改 upload_urlupload_command触发整个状态扭转
          */
-        toolRepository.checkedUpdateById(toolEntity);
+        LambdaUpdateWrapper<ToolEntity> wrapper = Wrappers.<ToolEntity>lambdaUpdate()
+                .eq(ToolEntity::getId, toolEntity.getId())
+                .eq(toolEntity.needCheckUserId(), ToolEntity::getUserId, toolEntity.getUserId());
+        toolRepository.update(toolEntity, wrapper);
         return toolEntity;
     }
 
@@ -83,15 +90,13 @@ public class ToolDomainService {
 
     }
 
-    public void marketTool(String toolId, String userId) {
-        ToolEntity toolEntity = getTool(toolId, userId);
-        // 必须是审核通过才能上架
-        if (toolEntity.getStatus() != ToolStatus.APPROVED) {
-            throw new BusinessException("工具未审核通过，不能上架");
+    public ToolEntity getTool(String toolId) {
+        Wrapper<ToolEntity> wrapper = Wrappers.<ToolEntity>lambdaQuery()
+                .eq(ToolEntity::getId, toolId);
+        ToolEntity toolEntity = toolRepository.selectOne(wrapper);
+        if (toolEntity == null) {
+            throw new BusinessException("工具不存在: " + toolId);
         }
-        // 创建工具版本进行上架
-        ToolVersionEntity toolVersionEntity = new ToolVersionEntity();
-        BeanUtils.copyProperties(toolEntity, toolVersionEntity);
-        toolVersionRepository.insert(toolVersionEntity);
+        return toolEntity;
     }
 }

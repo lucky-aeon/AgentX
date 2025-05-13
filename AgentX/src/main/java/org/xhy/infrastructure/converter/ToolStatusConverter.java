@@ -4,6 +4,7 @@ import org.apache.ibatis.type.BaseTypeHandler;
 import org.apache.ibatis.type.JdbcType;
 import org.apache.ibatis.type.MappedJdbcTypes;
 import org.apache.ibatis.type.MappedTypes;
+import org.xhy.domain.conversation.constant.Role;
 import org.xhy.domain.tool.constant.ToolStatus;
 
 import java.sql.CallableStatement;
@@ -28,16 +29,19 @@ public class ToolStatusConverter extends BaseTypeHandler<ToolStatus> {
     @Override
     public ToolStatus getNullableResult(ResultSet rs, String columnName) throws SQLException {
 
-        return rs.wasNull() ? null : ToolStatus.fromCode(rs.getString(columnName));
+        String value = rs.getString(columnName);
+        return value == null ? null : ToolStatus.fromCode(value);
     }
 
     @Override
     public ToolStatus getNullableResult(ResultSet rs, int columnIndex) throws SQLException {
-        return rs.wasNull() ? null : ToolStatus.fromCode(rs.getString(columnIndex));
+        String value = rs.getString(columnIndex);
+        return value == null ? null : ToolStatus.fromCode(value);
     }
 
     @Override
     public ToolStatus getNullableResult(CallableStatement cs, int columnIndex) throws SQLException {
-        return cs.wasNull() ? null : ToolStatus.fromCode(cs.getString(columnIndex));
+        String value = cs.getString(columnIndex);
+        return value == null ? null : ToolStatus.fromCode(value);
     }
 }

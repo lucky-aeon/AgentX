@@ -31,6 +31,31 @@ public class UserToolEntity extends BaseEntity {
     @TableField("user_id")
     private String userId;
 
+     /**
+     * 工具名称
+     */
+    @TableField("name")
+    private String name;
+
+    /**
+     * 工具描述
+     */
+    @TableField("description")
+    private String description;
+
+    /**
+     * 工具图标
+     */
+    @TableField("icon")
+    private String icon;
+
+        /**
+     * 副标题
+     */
+    @TableField("subtitle")
+    private String subtitle;
+
+
     /**
      * 工具版本ID
      */
@@ -158,4 +183,44 @@ public class UserToolEntity extends BaseEntity {
     public void setPublicState(Boolean publicState) {
         this.publicState = publicState;
     }
-} 
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public String getIcon() {
+        return icon;
+    }
+
+    public void setIcon(String icon) {
+        this.icon = icon;
+    }
+
+    public String getSubtitle() {
+        return subtitle;
+    }
+
+    public void setSubtitle(String subtitle) {
+        this.subtitle = subtitle;
+    }
+
+    public Boolean getOffice() {
+        return isOffice;
+    }
+
+    public void setOffice(Boolean office) {
+        isOffice = office;
+    }
+}

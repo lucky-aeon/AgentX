@@ -2,13 +2,18 @@ package org.xhy.interfaces.api.portal.tool;
 
 import java.util.List;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.xhy.application.tool.dto.ToolDTO;
+import org.xhy.application.tool.dto.ToolVersionDTO;
 import org.xhy.application.tool.service.impl.ToolAppService;
+import org.xhy.domain.tool.model.UserToolEntity;
 import org.xhy.infrastructure.auth.UserContext;
 import org.xhy.interfaces.api.common.Result;
 import org.xhy.interfaces.dto.tool.request.CreateToolRequest;
+import org.xhy.interfaces.dto.tool.request.MarketToolRequest;
+import org.xhy.interfaces.dto.tool.request.QueryToolRequest;
 import org.xhy.interfaces.dto.tool.request.UpdateToolRequest;
 
 /**
@@ -89,22 +94,64 @@ public class PortalToolController {
         return Result.success();
     }
 
-    /**
-     * 上架工具，根据工具 id 进行上架
-     * 
-     * @return
-     */
-    @PostMapping("/market/{toolId}")
-    public Result marketTool(@PathVariable String toolId) {
+   /**
+    * 上架工具
+    *
+    * 工具审核通过即可上架，并且还需要上传的版本号以及更新日志
+    * @param marketToolRequest 工具id
+    * @return
+    */
+    @PostMapping("/market")
+    public Result marketTool(@RequestBody @Validated MarketToolRequest marketToolRequest) {
         String userId = UserContext.getCurrentUserId();
-        toolAppService.marketTool(toolId, userId);
+        toolAppService.marketTool(marketToolRequest, userId);
         return Result.success().message("上架成功");
     }
 
-    // 获取工具市场的工具详情
-    // @GetMapping("/market/{toolId}")
-    // public Result<ToolDTO> getMarketToolDetail(@PathVariable String toolId) {
-    // ToolDTO tool = toolAppService.getMarketToolDetail(toolId);
-    // return Result.success(tool);
-    // }
+    /**
+     * 工具市场列表
+     * 
+     * @param queryToolRequest 查询对象
+     * @return
+     */
+    @GetMapping("/market")
+    public Result market(QueryToolRequest queryToolRequest) {
+        return Result.success(toolAppService.marketTools(queryToolRequest));
+    }
+ 
+    /**
+     * 获取工具版本详情
+     * 
+     * @param toolId 工具id
+     * @param version 版本id
+     * @return
+     */
+    @GetMapping("/market/{toolId}/{version}")
+    public Result<ToolVersionDTO> getToolVersionDetail(@PathVariable String toolId, @PathVariable String version) {
+        return Result.success(toolAppService.getToolVersionDetail(toolId, version));
+    }
+
+    /**
+     * 安装工具
+     * @param toolId 工具id
+     * @param version 版本id
+     * @return
+     */
+    @PostMapping("/install/{toolId}/{version}")
+    public Result installTool(@PathVariable String toolId, @PathVariable String version) {
+        String userId = UserContext.getCurrentUserId();
+        toolAppService.installTool(toolId, version, userId);
+        return Result.success().message("安装成功");
+    }
+
+    /**
+     * 获取已安装的工具列表
+     * 
+     * @return
+     */
+    @GetMapping("/installed")
+    public Result<Page<ToolDTO>> getInstalledTools(QueryToolRequest queryToolRequest) {
+        String userId = UserContext.getCurrentUserId();
+        return Result.success(toolAppService.getInstalledTools(userId, queryToolRequest));
+    }
 }

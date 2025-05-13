@@ -29,7 +29,6 @@ public class ToolDTO {
     private Integer installCount; // 安装数量
     private String currentVersion; // 当前版本号
     private String installCommand;
-    // todo xhy tool_version_dto
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 

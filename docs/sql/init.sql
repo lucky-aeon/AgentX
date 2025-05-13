@@ -172,6 +172,7 @@ CREATE TABLE tools (
     upload_url VARCHAR(255),
     install_command JSONB,
     tool_list JSONB,
+    reject_reason TEXT
     status VARCHAR(20) NOT NULL,
     is_office BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -190,6 +191,7 @@ CREATE TABLE tool_versions (
     version VARCHAR(50) NOT NULL,
     tool_id VARCHAR(36) NOT NULL,
     upload_type VARCHAR(20) NOT NULL,
+    change_log TEXT,
     upload_url VARCHAR(255),
     tool_list JSONB,
     labels JSONB,
@@ -204,6 +206,10 @@ CREATE TABLE tool_versions (
 CREATE TABLE user_tools (
     id VARCHAR(36) PRIMARY KEY,
     user_id VARCHAR(36) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    icon VARCHAR(255),
+    subtitle VARCHAR(255),
     tool_version_id VARCHAR(36) NOT NULL,
     version VARCHAR(50) NOT NULL,
     upload_type VARCHAR(20) NOT NULL,
@@ -234,10 +240,7 @@ CREATE INDEX idx_models_provider_id ON models(provider_id);
 CREATE INDEX idx_models_user_id ON models(user_id);
 CREATE INDEX idx_providers_user_id ON providers(user_id);
 CREATE INDEX idx_tools_user_id ON tools(user_id);
-CREATE INDEX idx_tool_versions_tool_id ON tool_versions(tool_id);
-CREATE INDEX idx_tool_versions_user_id ON tool_versions(user_id);
-CREATE INDEX idx_user_tools_user_id ON user_tools(user_id);
-CREATE INDEX idx_user_tools_tool_version_id ON user_tools(tool_version_id);
+
 
 -- 添加表和列的注释
 COMMENT ON TABLE sessions IS '会话实体类，代表一个独立的对话会话/主题';
