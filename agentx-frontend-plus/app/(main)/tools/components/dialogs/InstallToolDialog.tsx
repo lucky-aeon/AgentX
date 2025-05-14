@@ -18,6 +18,7 @@ interface InstallToolDialogProps {
   isInstalling?: boolean;
   onConfirm: () => Promise<boolean>;
   onSuccess?: () => void;
+  version?: string;
 }
 
 export function InstallToolDialog({
@@ -26,7 +27,8 @@ export function InstallToolDialog({
   tool,
   isInstalling = false,
   onConfirm,
-  onSuccess
+  onSuccess,
+  version
 }: InstallToolDialogProps) {
   if (!tool) return null;
 
@@ -61,7 +63,9 @@ export function InstallToolDialog({
         <div className="py-4">
           <div className="mb-4">
             <h3 className="font-medium mb-1">{tool.name}</h3>
-            <p className="text-sm text-muted-foreground mb-2">{tool.subtitle}</p>
+            <p className="text-sm text-muted-foreground mb-2">
+              {tool.subtitle} {version && <span className="font-medium">(v{version})</span>}
+            </p>
             <ToolLabels 
               labels={tool.labels} 
               className="mb-4 flex flex-wrap gap-2"

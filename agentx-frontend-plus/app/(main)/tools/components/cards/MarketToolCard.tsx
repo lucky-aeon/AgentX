@@ -74,7 +74,7 @@ export function MarketToolCard({ tool, onInstallClick }: MarketToolCardProps) {
             className="bg-white"
             asChild
           >
-            <Link href={`/tools/${tool.id}`}>
+            <Link href={`/tools/${tool.toolId || tool.id}/${tool.current_version || '0.0.1'}`}>
               <Info className="mr-2 h-4 w-4" />
               详情
             </Link>

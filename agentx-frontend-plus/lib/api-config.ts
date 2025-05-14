@@ -59,6 +59,7 @@ export const API_ENDPOINTS = {
   MARKET_TOOL_VERSION_DETAIL: (id: string, version: string) => `/tools/market/${id}/${version}`,
   MARKET_TOOL_VERSIONS: (id: string) => `/tools/market/${id}/versions`,
   MARKET_TOOL_LABELS: "/tools/market/labels",
+  RECOMMEND_TOOLS: "/tools/recommend", // 推荐工具列表
   INSTALL_TOOL: (toolId: string, version: string) => `/tools/install/${toolId}/${version}`,
   USER_TOOLS: "/tools/user",
   INSTALLED_TOOLS: "/tools/installed", // 已安装的工具列表

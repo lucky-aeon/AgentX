@@ -322,4 +322,33 @@ export const uninstallToolWithToast = withToast(
     errorTitle: "卸载失败",
     showSuccessToast: true
   }
+);
+
+/**
+ * 获取推荐工具列表
+ */
+export async function getRecommendTools(): Promise<ApiResponse<any>> {
+  try {
+    return await httpClient.get(API_ENDPOINTS.RECOMMEND_TOOLS);
+  } catch (error) {
+    console.error("获取推荐工具失败", error);
+    return {
+      code: 500,
+      message: "获取推荐工具失败",
+      data: [],
+      timestamp: Date.now()
+    }
+  }
+}
+
+/**
+ * 获取推荐工具列表（带Toast提示）
+ */
+export const getRecommendToolsWithToast = withToast(
+  getRecommendTools,
+  {
+    successTitle: "获取成功",
+    errorTitle: "获取失败",
+    showSuccessToast: false
+  }
 ); 

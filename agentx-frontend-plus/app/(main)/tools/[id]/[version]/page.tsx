@@ -482,8 +482,8 @@ export default function ToolDetailPage({ params }: { params: { id: string, versi
                     </div>
                   </div>
                 ))}
-              </div>
-            )}
+                  </div>
+                )}
               </div>
             </DialogContent>
           </Dialog>

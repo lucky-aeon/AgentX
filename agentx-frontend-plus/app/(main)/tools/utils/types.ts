@@ -1,6 +1,7 @@
 // 基础工具类型，用于市场工具
 export interface MarketTool {
   id: string;
+  toolId?: string;         // 工具ID，用于API调用（新增）
   name: string;
   icon: string | null;
   subtitle: string;
@@ -12,12 +13,13 @@ export interface MarketTool {
   upload_type: string;
   upload_url: string;
   install_command: {
-    type: string;
+    type: 'sse'; // 明确指定为sse类型，兼容全局Tool类型
     url: string;
   };
   is_office?: boolean;
   installCount: number;
   status: ToolStatus;
+  current_version?: string; // 当前版本（新增）
   createdAt: string;
   updatedAt: string;
   tool_list?: ToolFunction[];

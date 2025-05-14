@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { useMarketTools } from "./hooks/useMarketTools"
 import { useUserTools } from "./hooks/useUserTools"
 import { useToolDialogs } from "./hooks/useToolDialogs"
+import { useRecommendTools } from "./hooks/useRecommendTools"
 
 // 页面部分组件
 import { CreatedToolsSection } from "./components/sections/CreatedToolsSection"
@@ -19,14 +20,15 @@ import { RecommendedToolsSection } from "./components/sections/RecommendedToolsS
 import { UserToolDetailDialog } from "./components/dialogs/UserToolDetailDialog"
 import { InstallToolDialog } from "./components/dialogs/InstallToolDialog"
 import { DeleteToolDialog } from "./components/dialogs/DeleteToolDialog"
+import { InstallToolDialog as GlobalInstallToolDialog } from "@/components/tool/install-tool-dialog"
 
 export default function ToolsPage() {
-  // 获取市场工具数据
+  // 获取推荐工具数据
   const {
     tools,
     loading: marketToolsLoading,
     error: marketToolsError
-  } = useMarketTools({ limit: 10 });
+  } = useRecommendTools(10);
   
   // 获取用户工具数据
   const {
@@ -139,12 +141,18 @@ export default function ToolsPage() {
         />
         
         {/* 工具安装确认对话框 */}
-        <InstallToolDialog 
+        <GlobalInstallToolDialog 
           open={isInstallDialogOpen}
           onOpenChange={closeInstallDialog}
           tool={selectedTool}
-          isInstalling={!!installingToolId}
-          onConfirm={handleInstallTool}
+          version={selectedTool?.current_version}
+          onSuccess={() => {
+            // 标记选中工具为已安装
+            if (selectedTool) {
+              // 可能需要实现安装成功后的逻辑
+              console.log(`已安装工具: ${selectedTool.name}`);
+            }
+          }}
         />
 
         {/* 删除工具确认对话框 */}

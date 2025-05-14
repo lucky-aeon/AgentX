@@ -52,9 +52,9 @@ async function getUserTools(): Promise<ApiResponse<UserTool[]>> {
 export const getUserToolsWithToast = withToast(getUserTools);
 
 // 安装工具
-async function installTool(toolId: string): Promise<ApiResponse<any>> {
+async function installTool(toolId: string, version: string = "0.0.1"): Promise<ApiResponse<any>> {
   try {
-    return await httpClient.post(API_ENDPOINTS.INSTALL_TOOL, { toolVersionId: toolId });
+    return await httpClient.post(API_ENDPOINTS.INSTALL_TOOL(toolId, version));
   } catch (error) {
     console.error("安装工具失败", error);
     return {

@@ -80,7 +80,11 @@ export function useToolDialogs(
     try {
       setInstallingToolId(selectedTool.id);
       
-      const response = await installToolWithToast(selectedTool.id);
+      // 优先使用toolId，确保API调用正确
+      const actualToolId = selectedTool.toolId || selectedTool.id;
+      const version = selectedTool.current_version || "0.0.1";
+      
+      const response = await installToolWithToast(actualToolId, version);
       
       if (response.code !== 200) {
         setInstallingToolId(null);
