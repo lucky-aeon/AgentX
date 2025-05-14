@@ -84,13 +84,13 @@ export default function ToolDetailPage({ params }: { params: { id: string, versi
             if (versionsResponse.code === 200 && versionsResponse.data.length > 0) {
               // 转换版本历史数据
               const versions = versionsResponse.data.map((v: any) => ({
-                version: v.version,
-                date: new Date(v.createdAt).toLocaleDateString(),
-                author: v.userName || toolData.author,
+              version: v.version,
+              date: new Date(v.createdAt).toLocaleDateString(),
+              author: v.userName || toolData.author,
                 notes: v.changeLog || "无更新说明",
-                changes: []
-              }));
-              setVersionHistory(versions);
+              changes: []
+            }));
+            setVersionHistory(versions);
             }
           } catch (versionError) {
             console.error("获取版本历史失败", versionError);
@@ -416,12 +416,12 @@ export default function ToolDetailPage({ params }: { params: { id: string, versi
       />
       
       {/* 版本历史对话框 - 始终可用 */}
-      <Dialog open={isVersionHistoryOpen} onOpenChange={setIsVersionHistoryOpen}>
+          <Dialog open={isVersionHistoryOpen} onOpenChange={setIsVersionHistoryOpen}>
         <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>版本历史</DialogTitle>
-          </DialogHeader>
-          
+              <DialogHeader>
+                <DialogTitle>版本历史</DialogTitle>
+              </DialogHeader>
+              
           <div className="mt-4 border rounded-lg overflow-hidden">
             {versionHistory.length === 0 ? (
               <div className="p-6 text-center text-muted-foreground">
@@ -432,7 +432,7 @@ export default function ToolDetailPage({ params }: { params: { id: string, versi
                 {versionHistory.map((version, index) => (
                   <div key={index} className="p-4">
                     <div className="flex items-center justify-between">
-                      <div>
+                        <div>
                         <div className="flex items-center gap-2">
                           <span className="font-semibold text-lg">v{version.version}</span>
                           {index === 0 && <Badge className="ml-1 text-xs py-0 px-2">最新</Badge>}
@@ -452,19 +452,19 @@ export default function ToolDetailPage({ params }: { params: { id: string, versi
                           <Settings className="mr-2 h-3.5 w-3.5" />
                           查看详情
                         </Button>
-                        <Button 
+                          <Button 
                           variant="outline" 
-                          size="sm"
+                            size="sm" 
                           onClick={() => {
                             handleInstallVersion(version.version)
                           }}
-                        >
+                          >
                           <Download className="mr-2 h-3.5 w-3.5" />
-                          安装此版本
-                        </Button>
+                            安装此版本
+                          </Button>
                       </div>
-                    </div>
-                    
+                      </div>
+                      
                     <div className="mt-4 bg-muted/50 p-3 rounded">
                       <h4 className="font-medium mb-2 text-sm">更新说明:</h4>
                       <p className="text-sm text-muted-foreground">{version.notes}</p>
@@ -484,17 +484,17 @@ export default function ToolDetailPage({ params }: { params: { id: string, versi
                 ))}
               </div>
             )}
-          </div>
-        </DialogContent>
-      </Dialog>
-      
+              </div>
+            </DialogContent>
+          </Dialog>
+          
       {/* 版本安装对话框 - 始终可用 */}
-      {selectedVersionToInstall && (
-        <InstallToolDialog
-          open={isVersionInstallDialogOpen}
-          onOpenChange={setIsVersionInstallDialogOpen}
-          tool={tool}
-          version={selectedVersionToInstall}
+          {selectedVersionToInstall && (
+            <InstallToolDialog
+              open={isVersionInstallDialogOpen}
+              onOpenChange={setIsVersionInstallDialogOpen}
+              tool={tool}
+              version={selectedVersionToInstall}
           onSuccess={() => {
             toast({
               title: "安装成功",

@@ -5,13 +5,19 @@ import { UserTool, ToolFunction } from "../../utils/types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Command, Wrench } from "lucide-react";
+import { Command, Wrench, Clock, Download, ChevronDown } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { getMarketToolVersionDetail } from "@/lib/tool-service";
+import { getMarketToolVersionDetail, getMarketToolVersions, installToolWithToast } from "@/lib/tool-service";
 import { DeleteToolDialog } from "./DeleteToolDialog";
 import { formatDate } from '@/lib/utils';
+import { toast } from "@/hooks/use-toast";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 interface UserToolDetailDialogProps {
   open: boolean;
@@ -29,6 +35,10 @@ export function UserToolDetailDialog({
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [toolDetailLoading, setToolDetailLoading] = useState(false);
   const [toolDetailData, setToolDetailData] = useState<any>(null);
+  const [versionsLoading, setVersionsLoading] = useState(false);
+  const [versions, setVersions] = useState<any[]>([]);
+  const [isVersionPopoverOpen, setIsVersionPopoverOpen] = useState(false);
+  const [installingVersion, setInstallingVersion] = useState<string | null>(null);
 
   // 当工具信息改变时，获取详细信息
   useEffect(() => {
@@ -36,6 +46,8 @@ export function UserToolDetailDialog({
     
     // 获取工具详情
     fetchToolDetail(tool, open);
+    // 获取版本列表
+    fetchToolVersions(tool);
   }, [tool, open]);
   
   // 获取工具详情
@@ -67,19 +79,107 @@ export function UserToolDetailDialog({
     }
   }
 
+  // 获取工具版本列表
+  async function fetchToolVersions(currentTool: UserTool) {
+    if (!currentTool) return;
+    
+    try {
+      setVersionsLoading(true);
+      
+      // 优先使用toolId，其次使用id
+      const toolId = currentTool.toolId || currentTool.id;
+      
+      // 调用API获取版本列表
+      const response = await getMarketToolVersions(toolId);
+      
+      if (response.code === 200 && response.data.length > 0) {
+        // 按照版本号排序
+        const sortedVersions = [...response.data].sort((a, b) => {
+          return compareVersions(b.version, a.version);
+        });
+        setVersions(sortedVersions);
+      } else {
+        console.error("获取工具版本列表失败", response.message);
+        setVersions([]);
+      }
+    } catch (error) {
+      console.error("获取工具版本列表失败", error);
+      setVersions([]);
+    } finally {
+      setVersionsLoading(false);
+    }
+  }
+
+  // 比较版本号的函数
+  function compareVersions(v1: string, v2: string) {
+    const parts1 = v1.split('.').map(Number);
+    const parts2 = v2.split('.').map(Number);
+    
+    for (let i = 0; i < Math.max(parts1.length, parts2.length); i++) {
+      const part1 = parts1[i] || 0;
+      const part2 = parts2[i] || 0;
+      
+      if (part1 > part2) return 1;
+      if (part1 < part2) return -1;
+    }
+    
+    return 0;
+  }
+
+  // 处理版本切换（重新安装指定版本）
+  const handleSwitchVersion = async (version: string) => {
+    if (!tool) return;
+    
+    try {
+      setInstallingVersion(version);
+      setIsVersionPopoverOpen(false);
+      
+      // 优先使用toolId，其次使用id
+      const toolId = tool.toolId || tool.id;
+      
+      // 调用安装API
+      const response = await installToolWithToast(toolId, version);
+      
+      if (response.code === 200) {
+        toast({
+          title: "版本切换成功",
+          description: `已成功切换到版本 ${version}`,
+        });
+        
+        // 更新当前显示的版本信息
+        if (toolDetailData) {
+          setToolDetailData({
+            ...toolDetailData,
+            version: version,
+            current_version: version
+          });
+        }
+      }
+    } catch (error) {
+      console.error("版本切换失败", error);
+      toast({
+        title: "版本切换失败",
+        description: error instanceof Error ? error.message : "切换版本时出错",
+        variant: "destructive"
+      });
+    } finally {
+      setInstallingVersion(null);
+    }
+  };
+
   // 处理删除确认
   const handleConfirmDelete = async (): Promise<boolean> => {
     if (!tool || !onDelete) return false;
     
     try {
-      // 在删除确认对话框中点击确认后，直接调用onDelete执行删除操作
       const success = await onDelete(tool);
       
-      // 关闭删除确认对话框和主对话框
+      // 无论删除是否成功，先关闭删除确认对话框
       setIsDeleteDialogOpen(false);
       
-      // 如果删除成功，或者onDelete返回undefined（void），关闭主对话框
+      // 处理onDelete可能返回void或boolean的情况
       if (typeof success === 'undefined' || (typeof success === 'boolean' && success === true)) {
+        // 删除成功后关闭主对话框
         onOpenChange(false);
         return true;
       }
@@ -124,6 +224,11 @@ export function UserToolDetailDialog({
     return formatDate(new Date(mergedTool.createdAt));
   }, [mergedTool]);
 
+  // 当前版本
+  const currentVersion = useMemo(() => {
+    return mergedTool?.current_version || mergedTool?.currentVersion || mergedTool?.version || "0.0.1";
+  }, [mergedTool]);
+
   if (!mergedTool) return null;
 
   return (
@@ -149,14 +254,79 @@ export function UserToolDetailDialog({
           </DialogHeader>
 
           <div className="space-y-4 flex-1 overflow-hidden">
-            {/* 作者和创建日期信息 */}
-            <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted-foreground">
+            {/* 作者和版本信息 */}
+            <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
               {authorName && (
                 <div className="flex items-center gap-1">
                   <span>作者:</span>
                   <span className="font-medium">{authorName}</span>
                 </div>
               )}
+              
+              {/* 版本信息和切换版本下拉菜单 */}
+              <div className="flex items-center gap-1">
+                <Clock className="h-3.5 w-3.5" />
+                <span>当前版本:</span>
+                
+                <Popover open={isVersionPopoverOpen} onOpenChange={setIsVersionPopoverOpen}>
+                  <PopoverTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="h-6 px-2 gap-1 ml-1"
+                    >
+                      <span className="font-medium">{currentVersion}</span>
+                      <ChevronDown className="h-3.5 w-3.5" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-56 p-0" align="start">
+                    <div className="text-xs font-medium p-2 border-b">
+                      切换版本
+                    </div>
+                    <ScrollArea className="h-[200px]">
+                      {versionsLoading ? (
+                        <div className="p-2 text-center text-sm text-muted-foreground">
+                          加载中...
+                        </div>
+                      ) : versions.length > 0 ? (
+                        <div className="py-1">
+                          {versions.map((version, index) => (
+                            <Button
+                              key={version.version}
+                              variant="ghost"
+                              size="sm"
+                              className={`w-full justify-between rounded-none h-8 px-2 text-sm ${
+                                version.version === currentVersion ? 'bg-muted' : ''
+                              }`}
+                              onClick={() => handleSwitchVersion(version.version)}
+                              disabled={installingVersion !== null}
+                            >
+                              <div className="flex items-center">
+                                <span className="font-medium">v{version.version}</span>
+                                {version.version === currentVersion && (
+                                  <Badge variant="outline" className="ml-2 h-5 px-1 text-[10px]">
+                                    当前
+                                  </Badge>
+                                )}
+                              </div>
+                              {installingVersion === version.version ? (
+                                <span className="text-xs text-muted-foreground">切换中...</span>
+                              ) : (
+                                <Download className="h-3.5 w-3.5 text-muted-foreground" />
+                              )}
+                            </Button>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="p-2 text-center text-sm text-muted-foreground">
+                          无可用版本
+                        </div>
+                      )}
+                    </ScrollArea>
+                  </PopoverContent>
+                </Popover>
+              </div>
+              
               {formattedDate && (
                 <div className="flex items-center gap-1">
                   <span>创建于:</span>
