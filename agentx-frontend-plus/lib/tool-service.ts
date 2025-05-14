@@ -74,7 +74,9 @@ export async function getMarketToolVersions(id: string): Promise<ApiResponse<Too
 }
 
 // 获取工具版本列表（带Toast提示）
-export const getMarketToolVersionsWithToast = withToast(getMarketToolVersions)
+export const getMarketToolVersionsWithToast = withToast(getMarketToolVersions, {
+  showSuccessToast: false
+});
 
 // 获取工具标签列表
 export async function getMarketToolLabels(): Promise<ApiResponse<string[]>> {
