@@ -5,7 +5,7 @@ import { Tool, ToolVersion, ApiResponse, GetMarketToolsParams } from "@/types/to
 import { withToast } from "./toast-utils"
 
 // 获取工具市场列表
-export async function getMarketTools(params?: GetMarketToolsParams): Promise<ApiResponse<Tool[]>> {
+export async function getMarketTools(params?: GetMarketToolsParams): Promise<ApiResponse<any>> {
   try {
     return await httpClient.get(API_ENDPOINTS.MARKET_TOOLS, { params })
   } catch (error) {
@@ -13,7 +13,7 @@ export async function getMarketTools(params?: GetMarketToolsParams): Promise<Api
     return {
       code: 500,
       message: "获取工具市场列表失败",
-      data: [],
+      data: { records: [], total: 0, size: 10, current: 1, pages: 0 },
       timestamp: Date.now()
     }
   }
@@ -39,6 +39,24 @@ export async function getMarketToolDetail(id: string): Promise<ApiResponse<Tool>
 
 // 获取工具详情（带Toast提示）
 export const getMarketToolDetailWithToast = withToast(getMarketToolDetail)
+
+// 获取工具版本详情
+export async function getMarketToolVersionDetail(id: string, version: string): Promise<ApiResponse<any>> {
+  try {
+    return await httpClient.get(API_ENDPOINTS.MARKET_TOOL_VERSION_DETAIL(id, version))
+  } catch (error) {
+    console.error("获取工具版本详情失败", error)
+    return {
+      code: 500,
+      message: "获取工具版本详情失败",
+      data: null,
+      timestamp: Date.now()
+    }
+  }
+}
+
+// 获取工具版本详情（带Toast提示）
+export const getMarketToolVersionDetailWithToast = withToast(getMarketToolVersionDetail)
 
 // 获取工具版本列表
 export async function getMarketToolVersions(id: string): Promise<ApiResponse<ToolVersion[]>> {
@@ -74,9 +92,10 @@ export async function getMarketToolLabels(): Promise<ApiResponse<string[]>> {
 }
 
 // 安装工具
-export async function installTool(toolVersionId: string): Promise<ApiResponse<any>> {
+export async function installTool(toolId: string, version: string): Promise<ApiResponse<any>> {
   try {
-    return await httpClient.post(API_ENDPOINTS.INSTALL_TOOL, { toolVersionId })
+    console.log(`安装工具：toolId=${toolId}, version=${version}`);
+    return await httpClient.post(API_ENDPOINTS.INSTALL_TOOL(toolId, version))
   } catch (error) {
     console.error("安装工具失败", error)
     return {

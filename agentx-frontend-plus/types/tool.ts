@@ -1,5 +1,6 @@
 export interface Tool {
   id: string
+  toolId?: string // 工具ID
   name: string
   icon: string | null
   subtitle: string
@@ -85,9 +86,18 @@ export interface ApiResponse<T> {
   timestamp: number
 }
 
+// 分页响应结构
+export interface PageResponse<T> {
+  records: T[]
+  total: number
+  size: number
+  current: number
+  pages: number
+}
+
 // 获取工具市场工具列表请求参数
 export interface GetMarketToolsParams {
-  name?: string
+  toolName?: string
   labels?: string[]
   toolType?: string
   isOffice?: boolean
@@ -95,7 +105,32 @@ export interface GetMarketToolsParams {
   pageSize?: number
 }
 
+// 工具版本详情响应
+export interface ToolVersionDTO {
+  id: string
+  name: string
+  icon: string
+  subtitle: string
+  description: string
+  userId: string
+  version: string
+  toolId: string
+  uploadType: string
+  uploadUrl: string
+  toolList: ToolItem[]
+  labels: string[]
+  isOffice: boolean
+  publicStatus: boolean
+  changeLog: string
+  createdAt: string
+  updatedAt: string
+  userName: string
+  versions: ToolVersionDTO[]
+  office: boolean
+}
+
 // 用户安装工具请求参数
 export interface InstallToolParams {
-  toolVersionId: string
+  toolId: string
+  version: string
 } 

@@ -39,19 +39,29 @@ export function InstallToolDialog({
     try {
       setInstalling(true)
       
-      // 在实际环境中使用API调用安装
-      if (process.env.NODE_ENV !== 'development') {
-        const response = await installToolWithToast(tool.id)
-        
-        if (response.code !== 200) {
-          // 错误处理由withToast处理
-          setInstalling(false)
-          onOpenChange(false)
-          return
-        }
-      } else {
-        // 模拟安装过程
-        await new Promise(resolve => setTimeout(resolve, 1500))
+      // 使用传入的version或默认版本
+      const versionToUse = version || tool.current_version || "0.0.1"
+      // 优先使用toolId
+      const actualToolId = tool.toolId || tool.id
+      
+      if (!actualToolId) {
+        toast({
+          title: "安装失败", 
+          description: "工具ID不存在",
+          variant: "destructive"
+        });
+        setInstalling(false);
+        return;
+      }
+      
+      // 直接调用API
+      const response = await installToolWithToast(actualToolId, versionToUse)
+      
+      if (response.code !== 200) {
+        // 错误处理由withToast处理
+        setInstalling(false)
+        onOpenChange(false)
+        return
       }
       
       toast({
