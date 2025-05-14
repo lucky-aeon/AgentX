@@ -44,3 +44,10 @@ export function getCookie(name: string): string | null {
 export function deleteCookie(name: string) {
   document.cookie = name + "=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;"
 }
+
+/**
+ * 格式化日期为易读格式 YYYY-MM-DD
+ */
+export function formatDate(date: Date): string {
+  return date.toISOString().split('T')[0];
+}
