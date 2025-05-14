@@ -135,6 +135,7 @@ export default function ToolsPage() {
           open={isUserToolDetailOpen}
           onOpenChange={closeUserToolDetail}
           tool={selectedUserTool}
+          onDelete={handleDeleteTool}
         />
         
         {/* 工具安装确认对话框 */}

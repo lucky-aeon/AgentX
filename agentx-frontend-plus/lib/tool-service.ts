@@ -259,4 +259,67 @@ export const updateToolWithToast = withToast(
     successTitle: "更新成功",
     showSuccessToast: true
   }
-) 
+)
+
+/**
+ * 获取用户已安装的工具列表
+ */
+export async function getInstalledTools(params?: {
+  page?: number;
+  pageSize?: number;
+  toolName?: string;
+}): Promise<ApiResponse<any>> {
+  try {
+    return await httpClient.get(API_ENDPOINTS.INSTALLED_TOOLS, { params });
+  } catch (error) {
+    console.error("获取已安装工具失败", error);
+    return {
+      code: 500,
+      message: "获取已安装工具失败",
+      data: [],
+      timestamp: Date.now()
+    }
+  }
+}
+
+/**
+ * 获取用户已安装的工具列表（带Toast提示）
+ */
+export const getInstalledToolsWithToast = withToast(
+  getInstalledTools, 
+  {
+    successTitle: "获取成功",
+    errorTitle: "获取失败",
+    showSuccessToast: false
+  }
+);
+
+/**
+ * 卸载工具
+ */
+export async function uninstallTool(toolId: string): Promise<ApiResponse<any>> {
+  try {
+    console.log(`卸载工具：toolId=${toolId}`);
+    return await httpClient.post(API_ENDPOINTS.UNINSTALL_TOOL(toolId))
+  } catch (error) {
+    console.error("卸载工具失败", error);
+    return {
+      code: 500,
+      message: "卸载工具失败",
+      data: null,
+      timestamp: Date.now()
+    }
+  }
+}
+
+/**
+ * 卸载工具（带Toast提示）
+ */
+export const uninstallToolWithToast = withToast(
+  uninstallTool,
+  {
+    successTitle: "卸载成功",
+    errorTitle: "卸载失败",
+    showSuccessToast: true
+  }
+); 

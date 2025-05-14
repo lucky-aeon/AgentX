@@ -26,6 +26,7 @@ export interface MarketTool {
 // 用户工具类型，包含后端API返回的字段
 export interface UserTool {
   id: string;
+  toolId?: string;         // 工具ID，用于API调用（新增）
   name: string;
   icon: string | null;
   subtitle: string;

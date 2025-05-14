@@ -61,6 +61,8 @@ export const API_ENDPOINTS = {
   MARKET_TOOL_LABELS: "/tools/market/labels",
   INSTALL_TOOL: (toolId: string, version: string) => `/tools/install/${toolId}/${version}`,
   USER_TOOLS: "/tools/user",
+  INSTALLED_TOOLS: "/tools/installed", // 已安装的工具列表
+  UNINSTALL_TOOL: (toolId: string) => `/tools/uninstall/${toolId}`, // 卸载工具
   DELETE_USER_TOOL: (id: string) => `/tools/user/${id}`,
   UPLOAD_TOOL: "/tools",
   UPDATE_TOOL: (id: string) => `/tools/${id}`,

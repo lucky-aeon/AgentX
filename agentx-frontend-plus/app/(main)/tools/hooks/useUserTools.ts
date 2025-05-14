@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { UserTool } from '../utils/types';
-import { getUserToolsWithToast, deleteToolWithToast, deleteUserToolWithToast } from '../utils/tool-service';
-import { generateMockUserTools } from '../utils/mock-data';
+import { getUserToolsWithToast, deleteToolWithToast, getInstalledToolsWithToast, uninstallToolWithToast } from '@/lib/tool-service';
 import { toast } from '@/hooks/use-toast';
 
 export function useUserTools() {
@@ -21,20 +20,29 @@ export function useUserTools() {
     try {
       setUserToolsLoading(true);
       
-      // 获取用户工具数据(专注于获取用户创建的工具)
-      const response = await getUserToolsWithToast();
+      // 获取用户创建的工具
+      const createdToolsResponse = await getUserToolsWithToast();
       
-      if (response.code === 200) {
+      // 获取用户安装的工具
+      const installedToolsResponse = await getInstalledToolsWithToast({
+        page: 1,
+        pageSize: 50
+      });
+      
+      // 处理用户创建的工具
+      let apiUserTools: UserTool[] = [];
+      if (createdToolsResponse.code === 200) {
         // 将API返回的数据转换为UserTool类型
-        const toolsList = Array.isArray(response.data) ? response.data : [];
+        const toolsList = Array.isArray(createdToolsResponse.data) ? createdToolsResponse.data : [];
         
         // 标记用户自己创建的工具，同时处理字段的兼容性
-        const apiUserTools = toolsList.map((tool: any) => {
+        apiUserTools = toolsList.map((tool: any) => {
           // 处理工具元数据
           const processedTool: UserTool = {
             ...tool,
             // 确保基础字段存在
             id: tool.id,
+            toolId: tool.toolId || tool.id,
             name: tool.name,
             icon: tool.icon,
             subtitle: tool.subtitle || '',
@@ -59,45 +67,72 @@ export function useUserTools() {
           return processedTool;
         });
         
-        // 设置用户创建的工具(使用API数据)
+        // 设置用户创建的工具
         setOwnedTools(apiUserTools);
-        
-        // 使用模拟数据作为安装的工具
-        const mockInstalled = generateMockUserTools().filter(tool => !tool.isOwner);
-        setInstalledTools(mockInstalled);
-        
-        // 合并用户创建的工具(API数据)和安装的工具(模拟数据)
-        setUserTools([...apiUserTools, ...mockInstalled]);
       } else {
         toast({
-          title: "获取用户工具失败",
-          description: response.message,
+          title: "获取用户创建的工具失败",
+          description: createdToolsResponse.message,
           variant: "destructive",
         });
-        
-        // API调用失败时，不显示用户创建的工具
         setOwnedTools([]);
-        
-        // 安装的工具使用模拟数据
-        const mockInstalled = generateMockUserTools().filter(tool => !tool.isOwner);
-        setInstalledTools(mockInstalled);
-        setUserTools(mockInstalled);
       }
+      
+      // 处理用户安装的工具
+      let apiInstalledTools: UserTool[] = [];
+      if (installedToolsResponse.code === 200) {
+        // 将API返回的数据转换为UserTool类型
+        const toolsList = Array.isArray(installedToolsResponse.data.records) 
+          ? installedToolsResponse.data.records 
+          : [];
+          
+        // 转换用户安装的工具
+        apiInstalledTools = toolsList.map((tool: any) => {
+          return {
+            ...tool,
+            id: tool.id,
+            toolId: tool.toolId || tool.id,
+            name: tool.name,
+            icon: tool.icon,
+            subtitle: tool.subtitle || '',
+            description: tool.description || '',
+            labels: tool.labels || [],
+            author: tool.userName || tool.author || '',
+            tool_list: tool.toolList || tool.tool_list || [],
+            toolList: tool.toolList || tool.tool_list || [],
+            usageCount: tool.usageCount || 0,
+            current_version: tool.version || "0.0.1",
+            isOwner: false, // 安装的工具不是用户创建的
+            status: tool.status || "active",
+            createdAt: tool.createdAt,
+            updatedAt: tool.updatedAt
+          } as UserTool;
+        });
+        
+        // 设置用户安装的工具
+        setInstalledTools(apiInstalledTools);
+      } else {
+        toast({
+          title: "获取用户安装的工具失败",
+          description: installedToolsResponse.message,
+          variant: "destructive",
+        });
+        setInstalledTools([]);
+      }
+      
+      // 合并用户创建的工具和安装的工具
+      setUserTools([...apiUserTools, ...apiInstalledTools]);
+      
     } catch (error) {
       console.error("获取用户工具失败", error);
       toast({
         title: "获取用户工具失败",
-        description: "无法加载已创建的工具",
+        description: "无法加载工具列表",
         variant: "destructive",
       });
-      
-      // 发生错误时，不显示用户创建的工具
       setOwnedTools([]);
-      
-      // 安装的工具使用模拟数据
-      const mockInstalled = generateMockUserTools().filter(tool => !tool.isOwner);
-      setInstalledTools(mockInstalled);
-      setUserTools(mockInstalled);
+      setInstalledTools([]);
+      setUserTools([]);
     } finally {
       setUserToolsLoading(false);
     }
@@ -118,7 +153,10 @@ export function useUserTools() {
         response = await deleteToolWithToast(toolToDelete.id);
       } else {
         // 卸载（删除）用户安装的工具
-        response = await deleteUserToolWithToast(toolToDelete.id);
+        // 优先使用toolId，其次使用id
+        const idToDelete = toolToDelete.toolId || toolToDelete.id;
+        console.log(`准备卸载工具: toolId=${idToDelete}`);
+        response = await uninstallToolWithToast(idToDelete);
       }
       
       if (response.code !== 200) {
@@ -134,9 +172,19 @@ export function useUserTools() {
         setInstalledTools(prev => prev.filter(tool => tool.id !== toolToDelete.id));
       }
       
+      toast({
+        title: toolToDelete.isOwner ? "删除成功" : "卸载成功",
+        description: `工具 "${toolToDelete.name}" 已${toolToDelete.isOwner ? '删除' : '卸载'}`,
+      });
+      
       return true;
     } catch (error) {
-      console.error("删除工具失败", error);
+      console.error(toolToDelete.isOwner ? "删除工具失败" : "卸载工具失败", error);
+      toast({
+        title: toolToDelete.isOwner ? "删除失败" : "卸载失败",
+        description: error instanceof Error ? error.message : "操作失败，请重试",
+        variant: "destructive"
+      });
       return false;
     } finally {
       setIsDeletingTool(false);
