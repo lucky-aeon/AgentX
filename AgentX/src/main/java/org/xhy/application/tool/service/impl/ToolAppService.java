@@ -221,4 +221,8 @@ public class ToolAppService {
 
         return toolVersionDTOs;
     }
+
+    public void updateUserToolVersionStatus(String toolId, String version, Boolean publishStatus, String userId) {
+        toolVersionDomainService.updateToolVersionStatus(toolId, version,userId, publishStatus);
+    }
 }

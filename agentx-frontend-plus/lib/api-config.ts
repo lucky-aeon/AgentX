@@ -69,6 +69,7 @@ export const API_ENDPOINTS = {
   UPDATE_TOOL: (id: string) => `/tools/${id}`,
   TOOL_DETAIL: (id: string) => `/tools/${id}`,
   DELETE_TOOL: (id: string) => `/tools/${id}`,
+  UPDATE_TOOL_VERSION_STATUS: (toolId: string, version: string) => `/tools/user/${toolId}/${version}/status`, // 修改工具版本发布状态
 }
 
 // 构建完整的API URL

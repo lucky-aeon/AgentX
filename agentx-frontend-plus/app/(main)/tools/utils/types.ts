@@ -100,4 +100,27 @@ export interface DialogState {
   deleteOpen: boolean;
   selectedTool: MarketTool | UserTool | null;
   toolToDelete: UserTool | null;
+}
+
+// 工具版本数据类型
+export interface VersionData {
+  id: string;
+  name: string;
+  icon: string | null;
+  subtitle: string;
+  description: string;
+  userId: string;
+  version: string;
+  toolId: string;
+  uploadType: string | null;
+  uploadUrl: string | null;
+  toolList: ToolFunction[];
+  labels: string[];
+  publicStatus: boolean;
+  changeLog: string;
+  createdAt: string;
+  updatedAt: string;
+  userName: string | null;
+  installCount: number | null;
+  office: boolean;
 } 
