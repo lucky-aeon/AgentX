@@ -131,7 +131,8 @@ public class PortalToolController {
      */
     @GetMapping("/market/{toolId}/{version}")
     public Result<ToolVersionDTO> getToolVersionDetail(@PathVariable String toolId, @PathVariable String version) {
-        return Result.success(toolAppService.getToolVersionDetail(toolId, version));
+        String userId = UserContext.getCurrentUserId();
+        return Result.success(toolAppService.getToolVersionDetail(toolId, version,userId));
     }
 
     /**
@@ -180,7 +181,8 @@ public class PortalToolController {
      */
     @GetMapping("/market/{toolId}/versions")
     public Result<List<ToolVersionDTO>> getToolVersions(@PathVariable String toolId) {
-        return Result.success(toolAppService.getToolVersions(toolId));
+        String userId = UserContext.getCurrentUserId();
+        return Result.success(toolAppService.getToolVersions(toolId,userId));
     }
 
     /**

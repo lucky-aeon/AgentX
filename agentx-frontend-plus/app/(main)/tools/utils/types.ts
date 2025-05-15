@@ -46,6 +46,8 @@ export interface UserTool {
   toolList?: ToolFunction[]; // 后端返回的toolList
   tool_list?: ToolFunction[]; // 兼容旧字段
   status: ToolStatus;
+  failedStepStatus?: ToolStatus; // 审核失败的具体环节
+  rejectReason?: string;   // 审核失败原因
   isOffice?: boolean;      // 后端返回的isOffice
   is_office?: boolean;     // 兼容旧字段
   office?: boolean;        // 后端返回的office
@@ -81,9 +83,14 @@ export interface ToolFunction {
 
 // 工具状态枚举
 export enum ToolStatus {
-  PENDING = 'PENDING',
-  APPROVED = 'APPROVED',
-  REJECTED = 'REJECTED'
+  WAITING_REVIEW = 'WAITING_REVIEW', // 等待审核
+  DEPLOYING = 'DEPLOYING',           // 部署中
+  FETCHING_TOOLS = 'FETCHING_TOOLS', // 获取工具列表
+  MANUAL_REVIEW = 'MANUAL_REVIEW',   // 人工审核
+  APPROVED = 'APPROVED',             // 已通过
+  FAILED = 'FAILED',                 // 失败
+  PENDING = 'PENDING',               // 兼容旧状态
+  REJECTED = 'REJECTED'              // 兼容旧状态
 }
 
 // 弹窗状态类型

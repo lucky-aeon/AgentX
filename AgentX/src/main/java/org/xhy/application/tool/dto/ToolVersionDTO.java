@@ -45,6 +45,8 @@ public class ToolVersionDTO {
 
     private List<ToolVersionDTO> versions;
 
+    private Long installCount;
+
 
     public String getId() {
         return id;
@@ -146,7 +148,7 @@ public class ToolVersionDTO {
         return isOffice;
     }
 
-    public void setOffice(Boolean office) {
+    public void setIsOffice(Boolean office) {
         isOffice = office;
     }
 
@@ -196,5 +198,13 @@ public class ToolVersionDTO {
 
     public void setVersions(List<ToolVersionDTO> versions) {
         this.versions = versions;
+    }
+
+    public Long getInstallCount() {
+        return installCount;
+    }
+
+    public void setInstallCount(Long installCount) {
+        this.installCount = installCount;
     }
 }

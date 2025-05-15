@@ -281,7 +281,7 @@ export function UserToolDetailDialog({
                   </PopoverTrigger>
                   <PopoverContent className="w-56 p-0" align="start">
                     <div className="text-xs font-medium p-2 border-b">
-                      切换版本
+                      {mergedTool.isOwner ? "历史版本" : "切换版本"}
                     </div>
                     <ScrollArea className="h-[200px]">
                       {versionsLoading ? (
@@ -298,8 +298,8 @@ export function UserToolDetailDialog({
                               className={`w-full justify-between rounded-none h-8 px-2 text-sm ${
                                 version.version === currentVersion ? 'bg-muted' : ''
                               }`}
-                              onClick={() => handleSwitchVersion(version.version)}
-                              disabled={installingVersion !== null}
+                              onClick={() => mergedTool.isOwner ? undefined : handleSwitchVersion(version.version)}
+                              disabled={installingVersion !== null || mergedTool.isOwner}
                             >
                               <div className="flex items-center">
                                 <span className="font-medium">v{version.version}</span>
@@ -309,11 +309,11 @@ export function UserToolDetailDialog({
                                   </Badge>
                                 )}
                               </div>
-                              {installingVersion === version.version ? (
+                              {!mergedTool.isOwner && installingVersion === version.version ? (
                                 <span className="text-xs text-muted-foreground">切换中...</span>
-                              ) : (
+                              ) : !mergedTool.isOwner ? (
                                 <Download className="h-3.5 w-3.5 text-muted-foreground" />
-                              )}
+                              ) : null}
                             </Button>
                           ))}
                         </div>

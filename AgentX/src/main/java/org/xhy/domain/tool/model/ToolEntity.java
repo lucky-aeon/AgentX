@@ -116,6 +116,11 @@ public class ToolEntity extends BaseEntity {
     @TableField("reject_reason")
     private String rejectReason;
 
+
+    @TableField(value = "failed_step_status", typeHandler = ToolStatusConverter.class)
+    private ToolStatus failedStepStatus;
+
+    
     public String getId() {
         return id;
     }
@@ -235,5 +240,12 @@ public class ToolEntity extends BaseEntity {
     public void setRejectReason(String rejectReason) {
         this.rejectReason = rejectReason;
     }
-    
+
+    public ToolStatus getFailedStepStatus() {
+        return failedStepStatus;
+    }
+
+    public void setFailedStepStatus(ToolStatus failedStepStatus) {
+        this.failedStepStatus = failedStepStatus;
+    }
 }

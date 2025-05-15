@@ -1,7 +1,6 @@
 package org.xhy.application.tool.service.impl;
 
 import java.util.*;
-import java.util.stream.Collector;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 
@@ -126,14 +125,20 @@ public class ToolAppService {
     }
 
     public Page<ToolVersionDTO> marketTools(QueryToolRequest queryToolRequest) {
-        Page<ToolVersionEntity> listToolVersion = toolVersionDomainService.listToolVersion(queryToolRequest);;
-        List<ToolVersionDTO> list = listToolVersion.getRecords().stream().map(ToolAssembler::toDTO).toList();
+        Page<ToolVersionEntity> listToolVersion = toolVersionDomainService.listToolVersion(queryToolRequest);
+        List<ToolVersionEntity> records = listToolVersion.getRecords();
+        Map<String, Long> toolsInstallMap = userToolDomainService.getToolsInstall(records.stream().map(ToolVersionEntity::getToolId).toList());
+        List<ToolVersionDTO> list = records.stream().map(toolVersionEntity -> {
+            ToolVersionDTO toolVersionDTO = ToolAssembler.toDTO(toolVersionEntity);
+            toolVersionDTO.setInstallCount(toolsInstallMap.get(toolVersionEntity.getToolId()));
+            return toolVersionDTO;
+        }).toList();
         Page<ToolVersionDTO> tPage = new Page<>(listToolVersion.getCurrent(), listToolVersion.getSize(), listToolVersion.getTotal());
         tPage.setRecords(list);
         return tPage;
     }
 
-    public ToolVersionDTO getToolVersionDetail(String toolId, String version) {
+    public ToolVersionDTO getToolVersionDetail(String toolId, String version, String userId) {
         ToolVersionEntity toolVersionEntity = toolVersionDomainService.getToolVersion(toolId, version);
         ToolVersionDTO toolVersionDTO = ToolAssembler.toDTO(toolVersionEntity);
         // 设置创建者昵称
@@ -141,8 +146,11 @@ public class ToolAppService {
         toolVersionDTO.setUserName(userInfo.getNickname());
 
         // 设置历史版本
-        List<ToolVersionEntity> toolVersionEntities = toolVersionDomainService.getToolVersions(toolId);
+        List<ToolVersionEntity> toolVersionEntities = toolVersionDomainService.getToolVersions(toolId,userId);
         toolVersionDTO.setVersions(toolVersionEntities.stream().map(ToolAssembler::toDTO).toList());
+
+        Map<String, Long> toolsInstall = userToolDomainService.getToolsInstall(Arrays.asList(toolId));
+        toolVersionDTO.setInstallCount(toolsInstall.get(toolId));
         return toolVersionDTO;
     }
 
@@ -176,8 +184,8 @@ public class ToolAppService {
         return tPage;
     }
 
-    public List<ToolVersionDTO> getToolVersions(String toolId) {
-        List<ToolVersionEntity> toolVersionEntities = toolVersionDomainService.getToolVersions(toolId);
+    public List<ToolVersionDTO> getToolVersions(String toolId,String userId) {
+        List<ToolVersionEntity> toolVersionEntities = toolVersionDomainService.getToolVersions(toolId,userId);
         return toolVersionEntities.stream().map(ToolAssembler::toDTO).toList();
     }
 
@@ -192,19 +200,25 @@ public class ToolAppService {
         Page<ToolVersionEntity> listToolVersion = toolVersionDomainService.listToolVersion(queryToolRequest);
         List<ToolVersionEntity> records = listToolVersion.getRecords();
 
-        if (records.size() <= 10) {
-            return records.stream().map(ToolAssembler::toDTO).toList();
-        } else {
+        Map<String, Long> toolsInstallMap = userToolDomainService.getToolsInstall(records.stream().map(ToolVersionEntity::getToolId).toList());
+
+        List<ToolVersionDTO> toolVersionDTOs = records.stream()
+                .map(toolVersionEntity -> {
+                    ToolVersionDTO dto = ToolAssembler.toDTO(toolVersionEntity);
+                    dto.setInstallCount(toolsInstallMap.get(dto.getToolId()));
+                    return dto;
+                })
+                .toList();
+
+        if (records.size() > 10) {
             // 使用随机数从所有记录中选取10条不重复的记录
             Random random = new Random();
-            Set<ToolVersionEntity> toolVersionSet = new HashSet<>();
-
-            while (toolVersionSet.size() < 10) {
-                int randomIndex = random.nextInt(records.size());
-                toolVersionSet.add(records.get(randomIndex));
-            }
-
-            return toolVersionSet.stream().map(ToolAssembler::toDTO).toList();
+            toolVersionDTOs = toolVersionDTOs.stream()
+                    .sorted((a, b) -> random.nextInt(2) - 1)
+                    .limit(10)
+                    .toList();
         }
+
+        return toolVersionDTOs;
     }
 }

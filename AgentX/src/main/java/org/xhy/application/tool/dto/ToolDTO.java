@@ -31,6 +31,8 @@ public class ToolDTO {
     private String installCommand;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private String rejectReason;
+    private ToolStatus failedStepStatus;
 
     // 构造方法
     public ToolDTO() {
@@ -196,5 +198,21 @@ public class ToolDTO {
 
     public void setOffice(Boolean office) {
         isOffice = office;
+    }
+
+    public String getRejectReason() {
+        return rejectReason;
+    }
+
+    public void setRejectReason(String rejectReason) {
+        this.rejectReason = rejectReason;
+    }   
+
+    public ToolStatus getFailedStepStatus() {
+        return failedStepStatus;
+    }
+
+    public void setFailedStepStatus(ToolStatus failedStepStatus) {
+        this.failedStepStatus = failedStepStatus;
     }
 }

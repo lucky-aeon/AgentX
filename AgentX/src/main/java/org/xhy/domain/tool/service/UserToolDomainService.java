@@ -10,6 +10,10 @@ import org.xhy.domain.tool.repository.UserToolRepository;
 import org.xhy.infrastructure.exception.BusinessException;
 import org.xhy.interfaces.dto.tool.request.QueryToolRequest;
 
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 
 /**
  * 用户已安装工具 service
@@ -56,5 +60,17 @@ public class UserToolDomainService {
         userToolRepository.checkedDelete(wrapper);
     }
 
+    // 获取工具的安装次数
+    public Map<String,Long> getToolsInstall(List<String> toolIds){
+        LambdaQueryWrapper<UserToolEntity> wrapper = Wrappers.<UserToolEntity>lambdaQuery()
+        .in(UserToolEntity::getToolId, toolIds);
+        List<UserToolEntity> userToolEntities = userToolRepository.selectList(wrapper);
+        
+        // 根据 userToolEntities 进行 toolId 分组，key toolId，value 是分组数量
+        Map<String, Long> toolInstallMap = userToolEntities.stream()
+        .collect(Collectors.groupingBy(UserToolEntity::getToolId, Collectors.counting()));
+        
+        return toolInstallMap;
+    }
 
 }

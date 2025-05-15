@@ -1,15 +1,17 @@
-import { UserTool } from "../../utils/types";
+import { UserTool, ToolStatus } from "../../utils/types";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ToolLabels } from "../shared/ToolLabels";
-import { MoreVertical, PencilIcon, Settings, Trash, Wrench } from "lucide-react";
+import { MoreVertical, PencilIcon, Settings, Trash, Wrench, AlertCircle, History } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useMemo } from "react";
+import { Badge } from "@/components/ui/badge";
+import { useMemo, useState } from "react";
+import { ReviewStatusDialog } from "../dialogs/ReviewStatusDialog";
 
 interface UserToolCardProps {
   tool: UserTool;
@@ -24,9 +26,39 @@ export function UserToolCard({
   onEditClick,
   onDeleteClick 
 }: UserToolCardProps) {
+  const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false);
+  
   // 获取作者信息，优先使用userName，其次使用author
   const authorName = useMemo(() => {
     return tool.userName || tool.author || '';
+  }, [tool]);
+
+  // 判断是否显示状态
+  const showStatus = useMemo(() => {
+    return tool.isOwner && tool.status !== ToolStatus.APPROVED;
+  }, [tool]);
+
+  // 获取状态文本
+  const statusText = useMemo(() => {
+    if (!tool.isOwner) return "";
+    
+    if (tool.status === ToolStatus.FAILED) {
+      return "审核失败";
+    }
+    
+    if (tool.status !== ToolStatus.APPROVED) {
+      return "审核中";
+    }
+    
+    return "";
+  }, [tool]);
+
+  // 状态标签颜色
+  const statusColor = useMemo(() => {
+    if (tool.status === ToolStatus.FAILED) {
+      return "text-red-500 bg-red-50";
+    }
+    return "text-amber-500 bg-amber-50"; // 审核中
   }, [tool]);
 
   return (
@@ -45,8 +77,15 @@ export function UserToolCard({
             </div>
             <div className="w-[calc(100%-60px)] min-w-0">
               <h3 className="font-semibold line-clamp-1 truncate text-ellipsis overflow-hidden whitespace-nowrap max-w-full">{tool.name}</h3>
+              {showStatus && (
+                <div className="mt-1">
+                  <Badge variant="outline" className={`${statusColor} border-0 text-xs`}>
+                    {statusText}
+                  </Badge>
+                </div>
+              )}
               {authorName && (
-                <p className="text-sm text-muted-foreground">{authorName}</p>
+                <p className="text-sm text-muted-foreground mt-1">{authorName}</p>
               )}
             </div>
           </div>
@@ -58,6 +97,13 @@ export function UserToolCard({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+               {/* 审核状态查询（只对非APPROVED状态的自己创建的工具显示） */}
+               {tool.isOwner && tool.status !== ToolStatus.APPROVED && (
+                <DropdownMenuItem onClick={() => setIsReviewDialogOpen(true)}>
+                  <History className="mr-2 h-4 w-4" />
+                  查看审核状态
+                </DropdownMenuItem>
+              )}
               {tool.isOwner && onEditClick && (
                 <DropdownMenuItem onClick={(e) => onEditClick(tool, e as unknown as React.MouseEvent)}>
                   <PencilIcon className="mr-2 h-4 w-4" />
@@ -80,6 +126,13 @@ export function UserToolCard({
         
         <ToolLabels labels={tool.labels} />
       </CardContent>
+      
+      {/* 审核状态对话框 */}
+      <ReviewStatusDialog
+        open={isReviewDialogOpen}
+        onOpenChange={setIsReviewDialogOpen}
+        tool={tool}
+      />
     </Card>
   );
 } 

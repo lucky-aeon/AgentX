@@ -172,7 +172,8 @@ CREATE TABLE tools (
     upload_url VARCHAR(255),
     install_command JSONB,
     tool_list JSONB,
-    reject_reason TEXT
+    reject_reason TEXT,
+    failed_step_status VARCHAR(20),
     status VARCHAR(20) NOT NULL,
     is_office BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
