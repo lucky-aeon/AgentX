@@ -351,4 +351,48 @@ export const getRecommendToolsWithToast = withToast(
     errorTitle: "获取失败",
     showSuccessToast: false
   }
+);
+
+/**
+ * 修改工具版本发布状态
+ * @param toolId 工具ID
+ * @param version 版本号
+ * @param publishStatus 发布状态
+ */
+export async function updateToolVersionStatus(
+  toolId: string, 
+  version: string, 
+  publishStatus: boolean
+): Promise<ApiResponse<any>> {
+  try {
+    return await httpClient.post(
+      API_ENDPOINTS.UPDATE_TOOL_VERSION_STATUS(toolId, version), 
+      null, 
+      { 
+        params: { 
+          publishStatus: publishStatus.toString() 
+        } 
+      }
+    );
+  } catch (error) {
+    console.error("修改工具版本状态失败", error);
+    return {
+      code: 500,
+      message: "修改工具版本状态失败",
+      data: null,
+      timestamp: Date.now()
+    };
+  }
+}
+
+/**
+ * 修改工具版本发布状态（带Toast提示）
+ */
+export const updateToolVersionStatusWithToast = withToast(
+  updateToolVersionStatus,
+  {
+    successTitle: "状态修改成功",
+    errorTitle: "状态修改失败",
+    showSuccessToast: true
+  }
 ); 

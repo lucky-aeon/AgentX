@@ -5,12 +5,13 @@ import { UserTool, ToolFunction } from "../../utils/types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Command, Wrench, Clock, Download, ChevronDown } from "lucide-react";
+import { Command, Wrench, Clock, Download, ChevronDown, History } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { getMarketToolVersionDetail, getMarketToolVersions, installToolWithToast } from "@/lib/tool-service";
 import { DeleteToolDialog } from "./DeleteToolDialog";
+import { ToolHistoryVersionsDialog } from "./ToolHistoryVersionsDialog";
 import { formatDate } from '@/lib/utils';
 import { toast } from "@/hooks/use-toast";
 import {
@@ -37,6 +38,7 @@ export function UserToolDetailDialog({
   const [toolDetailData, setToolDetailData] = useState<any>(null);
   const [versionsLoading, setVersionsLoading] = useState(false);
   const [versions, setVersions] = useState<any[]>([]);
+  const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
   const [isVersionPopoverOpen, setIsVersionPopoverOpen] = useState(false);
   const [installingVersion, setInstallingVersion] = useState<string | null>(null);
 
@@ -126,47 +128,6 @@ export function UserToolDetailDialog({
     return 0;
   }
 
-  // 处理版本切换（重新安装指定版本）
-  const handleSwitchVersion = async (version: string) => {
-    if (!tool) return;
-    
-    try {
-      setInstallingVersion(version);
-      setIsVersionPopoverOpen(false);
-      
-      // 优先使用toolId，其次使用id
-      const toolId = tool.toolId || tool.id;
-      
-      // 调用安装API
-      const response = await installToolWithToast(toolId, version);
-      
-      if (response.code === 200) {
-        toast({
-          title: "版本切换成功",
-          description: `已成功切换到版本 ${version}`,
-        });
-        
-        // 更新当前显示的版本信息
-        if (toolDetailData) {
-          setToolDetailData({
-            ...toolDetailData,
-            version: version,
-            current_version: version
-          });
-        }
-      }
-    } catch (error) {
-      console.error("版本切换失败", error);
-      toast({
-        title: "版本切换失败",
-        description: error instanceof Error ? error.message : "切换版本时出错",
-        variant: "destructive"
-      });
-    } finally {
-      setInstallingVersion(null);
-    }
-  };
-
   // 处理删除确认
   const handleConfirmDelete = async (): Promise<boolean> => {
     if (!tool || !onDelete) return false;
@@ -229,6 +190,47 @@ export function UserToolDetailDialog({
     return mergedTool?.current_version || mergedTool?.currentVersion || mergedTool?.version || "0.0.1";
   }, [mergedTool]);
 
+  // 处理版本切换（重新安装指定版本）
+  const handleSwitchVersion = async (version: string) => {
+    if (!tool) return;
+    
+    try {
+      setInstallingVersion(version);
+      setIsVersionPopoverOpen(false);
+      
+      // 优先使用toolId，其次使用id
+      const toolId = tool.toolId || tool.id;
+      
+      // 调用安装API
+      const response = await installToolWithToast(toolId, version);
+      
+      if (response.code === 200) {
+        toast({
+          title: "版本切换成功",
+          description: `已成功切换到版本 ${version}`,
+        });
+        
+        // 更新当前显示的版本信息
+        if (toolDetailData) {
+          setToolDetailData({
+            ...toolDetailData,
+            version: version,
+            current_version: version
+          });
+        }
+      }
+    } catch (error) {
+      console.error("版本切换失败", error);
+      toast({
+        title: "版本切换失败",
+        description: error instanceof Error ? error.message : "切换版本时出错",
+        variant: "destructive"
+      });
+    } finally {
+      setInstallingVersion(null);
+    }
+  };
+
   if (!mergedTool) return null;
 
   return (
@@ -263,68 +265,83 @@ export function UserToolDetailDialog({
                 </div>
               )}
               
-              {/* 版本信息和切换版本下拉菜单 */}
+              {/* 版本信息区域 */}
               <div className="flex items-center gap-1">
                 <Clock className="h-3.5 w-3.5" />
                 <span>当前版本:</span>
                 
-                <Popover open={isVersionPopoverOpen} onOpenChange={setIsVersionPopoverOpen}>
-                  <PopoverTrigger asChild>
+                {mergedTool.isOwner ? (
+                  <>
+                    <span className="font-medium ml-1">{currentVersion}</span>
                     <Button 
                       variant="outline" 
                       size="sm" 
-                      className="h-6 px-2 gap-1 ml-1"
+                      className="h-6 px-2 gap-1 ml-2"
+                      onClick={() => setIsHistoryDialogOpen(true)}
                     >
-                      <span className="font-medium">{currentVersion}</span>
-                      <ChevronDown className="h-3.5 w-3.5" />
+                      <History className="h-3.5 w-3.5" />
+                      <span className="text-xs">历史版本</span>
                     </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-56 p-0" align="start">
-                    <div className="text-xs font-medium p-2 border-b">
-                      {mergedTool.isOwner ? "历史版本" : "切换版本"}
-                    </div>
-                    <ScrollArea className="h-[200px]">
-                      {versionsLoading ? (
-                        <div className="p-2 text-center text-sm text-muted-foreground">
-                          加载中...
-                        </div>
-                      ) : versions.length > 0 ? (
-                        <div className="py-1">
-                          {versions.map((version, index) => (
-                            <Button
-                              key={version.version}
-                              variant="ghost"
-                              size="sm"
-                              className={`w-full justify-between rounded-none h-8 px-2 text-sm ${
-                                version.version === currentVersion ? 'bg-muted' : ''
-                              }`}
-                              onClick={() => mergedTool.isOwner ? undefined : handleSwitchVersion(version.version)}
-                              disabled={installingVersion !== null || mergedTool.isOwner}
-                            >
-                              <div className="flex items-center">
-                                <span className="font-medium">v{version.version}</span>
-                                {version.version === currentVersion && (
-                                  <Badge variant="outline" className="ml-2 h-5 px-1 text-[10px]">
-                                    当前
-                                  </Badge>
+                  </>
+                ) : (
+                  <Popover open={isVersionPopoverOpen} onOpenChange={setIsVersionPopoverOpen}>
+                    <PopoverTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="h-6 px-2 gap-1 ml-1"
+                      >
+                        <span className="font-medium">{currentVersion}</span>
+                        <ChevronDown className="h-3.5 w-3.5" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-56 p-0" align="start">
+                      <div className="text-xs font-medium p-2 border-b">
+                        切换版本
+                      </div>
+                      <ScrollArea className="h-[200px]">
+                        {versionsLoading ? (
+                          <div className="p-2 text-center text-sm text-muted-foreground">
+                            加载中...
+                          </div>
+                        ) : versions.length > 0 ? (
+                          <div className="py-1">
+                            {versions.map((version) => (
+                              <Button
+                                key={version.version}
+                                variant="ghost"
+                                size="sm"
+                                className={`w-full justify-between rounded-none h-8 px-2 text-sm ${
+                                  version.version === currentVersion ? 'bg-muted' : ''
+                                }`}
+                                onClick={() => handleSwitchVersion(version.version)}
+                                disabled={installingVersion !== null}
+                              >
+                                <div className="flex items-center">
+                                  <span className="font-medium">v{version.version}</span>
+                                  {version.version === currentVersion && (
+                                    <Badge variant="outline" className="ml-2 h-5 px-1 text-[10px]">
+                                      当前
+                                    </Badge>
+                                  )}
+                                </div>
+                                {installingVersion === version.version ? (
+                                  <span className="text-xs text-muted-foreground">切换中...</span>
+                                ) : (
+                                  <Download className="h-3.5 w-3.5 text-muted-foreground" />
                                 )}
-                              </div>
-                              {!mergedTool.isOwner && installingVersion === version.version ? (
-                                <span className="text-xs text-muted-foreground">切换中...</span>
-                              ) : !mergedTool.isOwner ? (
-                                <Download className="h-3.5 w-3.5 text-muted-foreground" />
-                              ) : null}
-                            </Button>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="p-2 text-center text-sm text-muted-foreground">
-                          无可用版本
-                        </div>
-                      )}
-                    </ScrollArea>
-                  </PopoverContent>
-                </Popover>
+                              </Button>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="p-2 text-center text-sm text-muted-foreground">
+                            无可用版本
+                          </div>
+                        )}
+                      </ScrollArea>
+                    </PopoverContent>
+                  </Popover>
+                )}
               </div>
               
               {formattedDate && (
@@ -447,6 +464,13 @@ export function UserToolDetailDialog({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      {/* 历史版本对话框 */}
+      <ToolHistoryVersionsDialog
+        open={isHistoryDialogOpen}
+        onOpenChange={setIsHistoryDialogOpen}
+        tool={tool}
+      />
       
       {/* 删除确认对话框 */}
       <DeleteToolDialog

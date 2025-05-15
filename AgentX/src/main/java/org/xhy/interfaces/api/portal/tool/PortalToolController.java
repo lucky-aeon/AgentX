@@ -195,4 +195,17 @@ public class PortalToolController {
         return Result.success(toolAppService.getRecommendTools());
     }
 
+    /**
+     * 修改工具版本发布状态
+     * @param toolId 工具 id
+     * @param version 版本
+     * @param publishStatus 发布状态
+     * @return
+     */
+    @PostMapping("/user/{toolId}/{version}/status")
+    public Result updateToolVersionStatus(@PathVariable String toolId, @PathVariable String version,Boolean publishStatus) {
+        String userId = UserContext.getCurrentUserId();
+        toolAppService.updateUserToolVersionStatus(toolId, version, publishStatus, userId);
+        return Result.success().message(publishStatus?"发布成功":"下架成功");
+    }
 }

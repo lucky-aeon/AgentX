@@ -112,4 +112,14 @@ public class ToolVersionDomainService {
         
         return toolVersionRepository.selectList(queryWrapper);
     }
+
+
+    public void updateToolVersionStatus(String toolId, String version, String userId, Boolean publishStatus) {
+       Wrapper<ToolVersionEntity> wrapper = Wrappers.<ToolVersionEntity>lambdaUpdate()
+                .eq(ToolVersionEntity::getToolId, toolId)
+                .eq(ToolVersionEntity::getVersion, version)
+                .eq(ToolVersionEntity::getUserId, userId)
+                .set(ToolVersionEntity::getPublicStatus, publishStatus);
+        toolVersionRepository.checkedUpdate(wrapper);
+    }
 }
