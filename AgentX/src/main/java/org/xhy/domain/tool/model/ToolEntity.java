@@ -109,18 +109,15 @@ public class ToolEntity extends BaseEntity {
     @TableField("is_office")
     private Boolean isOffice;
 
-
     /**
      * 拒绝原因
      */
     @TableField("reject_reason")
     private String rejectReason;
 
-
     @TableField(value = "failed_step_status", typeHandler = ToolStatusConverter.class)
     private ToolStatus failedStepStatus;
 
-    
     public String getId() {
         return id;
     }
@@ -231,12 +228,12 @@ public class ToolEntity extends BaseEntity {
 
     public void setIsOffice(Boolean isOffice) {
         this.isOffice = isOffice;
-        }
+    }
 
     public String getRejectReason() {
         return rejectReason;
     }
-    
+
     public void setRejectReason(String rejectReason) {
         this.rejectReason = rejectReason;
     }

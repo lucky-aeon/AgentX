@@ -170,17 +170,38 @@
         </dependency>
 
         <!-- GitHub OAuth 所需依赖 -->
-        <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpclient</artifactId>
-            <version>${httpclient.version}</version>
-        </dependency>
+        <!-- <dependency> -->
+            <!-- <groupId>org.apache.httpcomponents</groupId> -->
+            <!-- <artifactId>httpclient</artifactId> -->
+            <!-- <version>${httpclient.version}</version> -->
+        <!-- </dependency> -->
 
-        <!-- 需要添加到pom.xml的依赖 -->
+        <!-- GitHub API 客户端 (Kohsuke) -->
         <dependency>
             <groupId>org.kohsuke</groupId>
             <artifactId>github-api</artifactId>
-            <version>1.313</version>
+            <version>1.321</version> <!-- Using the newer version -->
+        </dependency>
+
+        <!-- JGit for Git operations -->
+        <dependency>
+            <groupId>org.eclipse.jgit</groupId>
+            <artifactId>org.eclipse.jgit</artifactId>
+            <version>6.7.0.202309050840-r</version> <!-- 或最新稳定版 -->
+        </dependency>
+
+        <!-- Apache Commons IO for FileUtils -->
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>2.15.0</version> <!-- 或最新稳定版 -->
+        </dependency>
+
+        <!-- Zip4j for unzipping -->
+        <dependency>
+            <groupId>net.lingala.zip4j</groupId>
+            <artifactId>zip4j</artifactId>
+            <version>2.11.5</version> <!-- 或最新稳定版 -->
         </dependency>
     </dependencies>
 

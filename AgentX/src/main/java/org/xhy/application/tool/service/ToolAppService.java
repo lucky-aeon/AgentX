@@ -1,4 +1,4 @@
-package org.xhy.application.tool.service.impl;
+package org.xhy.application.tool.service;
 
 import java.util.*;
 

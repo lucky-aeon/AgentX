@@ -51,7 +51,7 @@ public class ToolDomainService {
         toolRepository.checkInsert(toolEntity);
         
         // 提交到状态流转服务进行处理
-        toolStateService.submitTool(toolEntity.getId());
+        toolStateService.submitToolForProcessing(toolEntity.getId());
         
         return toolEntity;
     }
@@ -104,7 +104,7 @@ public class ToolDomainService {
         
         // 如果需要状态流转，提交到状态流转服务
         if (needStateTransition) {
-            toolStateService.submitTool(toolEntity.getId());
+            toolStateService.submitToolForProcessing(toolEntity.getId());
         }
         
         return toolEntity;
@@ -132,26 +132,5 @@ public class ToolDomainService {
             throw new BusinessException("工具不存在: " + toolId);
         }
         return toolEntity;
-    }
-    
-    /**
-     * 人工审核通过
-     */
-    public ToolEntity approveManualReview(String toolId, String operatorId) {
-        toolStateService.approveManualReview(toolId);
-        return getTool(toolId);
-    }
-    
-    /**
-     * 重新开始状态流转
-     */
-    public ToolEntity restartStateTransition(String toolId, String userId) {
-        // 验证工具属于用户
-        getTool(toolId, userId);
-        
-        // 重新开始状态流转
-        toolStateService.restartProcess(toolId);
-        
-        return getTool(toolId);
     }
 }

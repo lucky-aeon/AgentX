@@ -10,17 +10,17 @@ public class ToolDefinition {
      * 工具名称
      */
     private String name;
-    
+
     /**
      * 工具描述
      */
     private String description;
-    
+
     /**
      * 参数定义
      */
     private Map<String, Object> parameters;
-    
+
     /**
      * 是否启用
      */
@@ -57,4 +57,4 @@ public class ToolDefinition {
     public void setEnabled(Boolean enabled) {
         this.enabled = enabled;
     }
-} 
+}

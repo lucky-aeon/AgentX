@@ -22,6 +22,6 @@ public class ManualReviewProcessor implements ToolStateProcessor {
     @Override
     public ToolStatus getNextStatus() {
         // 人工审核后的下一状态由人工操作决定，自动流程中不会进入下一步
-        return null;
+        return ToolStatus.PUBLISHING;
     }
 } 
