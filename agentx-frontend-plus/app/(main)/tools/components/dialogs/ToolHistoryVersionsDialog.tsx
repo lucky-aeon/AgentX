@@ -443,18 +443,17 @@ export function ToolHistoryVersionsDialog({
                                   </p>
                                   
                                   {tool.parameters && Object.keys(tool.parameters.properties).length > 0 && (
-                                    <div>
-                                      <p className="text-xs font-medium mb-2">参数:</p>
+                                    <div className="px-4 py-3 bg-muted/5">
+                                      <div className="text-xs font-medium mb-2">参数:</div>
                                       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                                         {Object.entries(tool.parameters.properties)
                                           .filter(([key]) => !['required', 'definitions', 'additionalProperties'].includes(key))
                                           .map(([key, value]: [string, any]) => {
-                                            // 移除可能的特殊字符前缀
                                             const cleanKey = key.replace(/^\{/, '');
                                             const isRequired = tool.parameters?.required?.includes(cleanKey);
-                                            
-                                            if (!value.description) return null;
-                                            
+                                            const description = typeof value === 'object' && value && 'description' in value 
+                                              ? value.description 
+                                              : null;
                                             return (
                                               <div key={key} className="border rounded p-2 text-xs">
                                                 <div className="flex items-center gap-1">
@@ -463,12 +462,12 @@ export function ToolHistoryVersionsDialog({
                                                     <Badge variant="outline" className="h-4 px-1 text-[10px]">必填</Badge>
                                                   )}
                                                 </div>
-                                                <p className="mt-1 text-muted-foreground">
-                                                  {value.description}
-                                                </p>
+                                                {description && (
+                                                  <p className="mt-1 text-muted-foreground">{description}</p>
+                                                )}
                                               </div>
                                             );
-                                          }).filter(Boolean)}
+                                          })}
                                       </div>
                                     </div>
                                   )}

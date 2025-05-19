@@ -348,47 +348,31 @@ export default function ToolDetailPage({ params }: { params: { id: string, versi
                           <h4 className="text-sm font-medium">参数:</h4>
                           <div className="space-y-2">
                             {item.parameters && item.parameters.properties ? (
-                              Object.entries(item.parameters.properties)
-                                .filter(([key]) => !['additionalProperties', 'definitions', 'required'].includes(key))
-                                .map(([key, value]) => {
-                                  // 处理特殊键名，移除可能的前缀如 "{"
-                                  const cleanKey = key.replace(/^\{/, '');
-                                  // 确保value是对象并且有description属性
-                                  const description = typeof value === 'object' && value && 'description' in value 
-                                    ? (value as any).description 
-                                    : null;
-                                  
-                                  if (description === null) return null;
-                                  
-                                  return (
-                                    <div key={key} className="bg-secondary/30 p-2 rounded text-sm">
-                                      <span className="font-mono text-primary">{cleanKey}</span>
-                                      <span className="mx-1">-</span>
-                                      <span>{description}</span>
-                                      {item.parameters && item.parameters.required?.includes(cleanKey) && (
-                                        <Badge variant="outline" className="ml-2 text-xs">必填</Badge>
-                                      )}
-                                    </div>
-                                  );
-                                })
-                                .filter(Boolean)
-                            ) : (
-                              // 处理旧的inputSchema数据结构
-                              item.inputSchema && item.inputSchema.properties ? (
-                                Object.entries(item.inputSchema.properties).map(([key, value]) => (
-                                  <div key={key} className="bg-secondary/30 p-2 rounded text-sm">
-                                    <span className="font-mono text-primary">{key}</span>
-                                    <span className="mx-1">-</span>
-                                    <span>{(value as any).description}</span>
-                                    {item.inputSchema && item.inputSchema.required?.includes(key) && (
-                                      <Badge variant="outline" className="ml-2 text-xs">必填</Badge>
-                                    )}
-                                  </div>
-                                ))
-                              ) : (
-                                <div className="text-sm text-muted-foreground">无参数</div>
-                              )
-                            )}
+                              <div className="px-2 py-2">
+                                <div className="text-xs uppercase font-medium text-muted-foreground mb-2">参数</div>
+                                <div className="space-y-2">
+                                  {Object.entries(item.parameters.properties)
+                                    .filter(([key]) => !['additionalProperties', 'definitions', 'required'].includes(key))
+                                    .map(([key, value]) => {
+                                      const cleanKey = key.replace(/^\{/, '');
+                                      const description = typeof value === 'object' && value && 'description' in value 
+                                        ? (value as any).description 
+                                        : null;
+                                      return (
+                                        <div key={key} className="flex items-center gap-2">
+                                          <code className="text-xs text-primary bg-primary/5 px-1.5 py-0.5 rounded">{cleanKey}</code>
+                                          {item.parameters && item.parameters.required?.includes(cleanKey) && (
+                                            <Badge variant="outline" className="text-[10px] h-4 px-1">必填</Badge>
+                                          )}
+                                          {description && (
+                                            <span className="text-xs text-muted-foreground ml-2">{description}</span>
+                                          )}
+                                        </div>
+                                      );
+                                    })}
+                                </div>
+                              </div>
+                            ) : null}
                           </div>
                         </div>
                       </div>
@@ -580,33 +564,31 @@ export default function ToolDetailPage({ params }: { params: { id: string, versi
                           <h4 className="text-sm font-medium">参数:</h4>
                           <div className="space-y-2">
                             {item.parameters && item.parameters.properties ? (
-                              Object.entries(item.parameters.properties)
-                                .filter(([key]) => !['additionalProperties', 'definitions', 'required'].includes(key))
-                                .map(([key, value]) => {
-                                  // 处理特殊键名，移除可能的前缀如 "{"
-                                  const cleanKey = key.replace(/^\{/, '');
-                                  // 确保value是对象并且有description属性
-                                  const description = typeof value === 'object' && value && 'description' in value 
-                                    ? (value as any).description 
-                                    : null;
-                                  
-                                  if (description === null) return null;
-                                  
-                                  return (
-                                    <div key={key} className="bg-secondary/30 p-2 rounded text-sm">
-                                      <span className="font-mono text-primary">{cleanKey}</span>
-                                      <span className="mx-1">-</span>
-                                      <span>{description}</span>
-                                      {item.parameters && item.parameters.required?.includes(cleanKey) && (
-                                        <Badge variant="outline" className="ml-2 text-xs">必填</Badge>
-                                      )}
-                                    </div>
-                                  );
-                                })
-                                .filter(Boolean)
-                            ) : (
-                              <div className="text-sm text-muted-foreground">无参数</div>
-                            )}
+                              <div className="px-2 py-2">
+                                <div className="text-xs uppercase font-medium text-muted-foreground mb-2">参数</div>
+                                <div className="space-y-2">
+                                  {Object.entries(item.parameters.properties)
+                                    .filter(([key]) => !['additionalProperties', 'definitions', 'required'].includes(key))
+                                    .map(([key, value]) => {
+                                      const cleanKey = key.replace(/^\{/, '');
+                                      const description = typeof value === 'object' && value && 'description' in value 
+                                        ? (value as any).description 
+                                        : null;
+                                      return (
+                                        <div key={key} className="flex items-center gap-2">
+                                          <code className="text-xs text-primary bg-primary/5 px-1.5 py-0.5 rounded">{cleanKey}</code>
+                                          {item.parameters && item.parameters.required?.includes(cleanKey) && (
+                                            <Badge variant="outline" className="text-[10px] h-4 px-1">必填</Badge>
+                                          )}
+                                          {description && (
+                                            <span className="text-xs text-muted-foreground ml-2">{description}</span>
+                                          )}
+                                        </div>
+                                      );
+                                    })}
+                                </div>
+                              </div>
+                            ) : null}
                           </div>
                         </div>
                       </div>

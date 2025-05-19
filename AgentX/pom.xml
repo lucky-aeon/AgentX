@@ -175,6 +175,13 @@
             <artifactId>httpclient</artifactId>
             <version>${httpclient.version}</version>
         </dependency>
+
+        <!-- 需要添加到pom.xml的依赖 -->
+        <dependency>
+            <groupId>org.kohsuke</groupId>
+            <artifactId>github-api</artifactId>
+            <version>1.313</version>
+        </dependency>
     </dependencies>
 
     <build>

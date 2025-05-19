@@ -16,6 +16,8 @@ import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.store.memory.chat.InMemoryChatMemoryStore;
 import okhttp3.OkHttpClient;
 import org.xhy.domain.agent.service.AgentStandTest;
+import org.xhy.domain.tool.model.config.ToolDefinition;
+import org.xhy.domain.tool.model.config.ToolSpecificationConverter;
 import org.xhy.infrastructure.utils.JsonUtils;
 
 import java.lang.reflect.Field;
@@ -52,12 +54,12 @@ public class MCPStandTest {
             McpClient client = new DefaultMcpClient.Builder().transport(transport)
                     .logHandler(new AgentMcpLogMessageHandler()).build();
             mcpClients.add(client);
-            
+
             // 获取工具列表
             List<ToolSpecification> toolSpecifications = client.listTools();
-            
+
             // 使用ToolSpecificationConverter转换为DTO对象
-            List<ToolSpecificationConverter.ToolDto> toolDtos = ToolSpecificationConverter.convert(toolSpecifications);
+            List<ToolDefinition> toolDtos = ToolSpecificationConverter.convert(toolSpecifications);
 
             System.out.println(JsonUtils.toJsonString(toolDtos));
         }

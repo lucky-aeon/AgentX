@@ -9,7 +9,7 @@ import { Command, Wrench, Clock, Download, ChevronDown, History } from "lucide-r
 import ReactMarkdown from "react-markdown";
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { getMarketToolVersionDetail, getMarketToolVersions, installToolWithToast } from "@/lib/tool-service";
+import { getMarketToolVersionDetail, getMarketToolVersions, installToolWithToast, getToolDetail } from "@/lib/tool-service";
 import { DeleteToolDialog } from "./DeleteToolDialog";
 import { ToolHistoryVersionsDialog } from "./ToolHistoryVersionsDialog";
 import { formatDate } from '@/lib/utils';
@@ -42,16 +42,37 @@ export function UserToolDetailDialog({
   const [isVersionPopoverOpen, setIsVersionPopoverOpen] = useState(false);
   const [installingVersion, setInstallingVersion] = useState<string | null>(null);
 
-  // 当工具信息改变时，获取详细信息
   useEffect(() => {
     if (!tool || !open) return;
-    
-    // 获取工具详情
-    fetchToolDetail(tool, open);
-    // 获取版本列表
-    fetchToolVersions(tool);
+    if (tool.isOwner) {
+      // 用户自己创建的工具，直接获取工具详情
+      fetchUserToolDetail(tool, open);
+    } else {
+      // 安装的工具，获取市场版本详情和版本列表
+      fetchToolDetail(tool, open);
+      fetchToolVersions(tool);
+    }
   }, [tool, open]);
-  
+
+  // 获取用户自己创建的工具详情
+  async function fetchUserToolDetail(currentTool: UserTool, isOpen: boolean) {
+    if (!currentTool || !isOpen) return;
+    try {
+      setToolDetailLoading(true);
+      const toolId = currentTool.toolId || currentTool.id;
+      const response = await getToolDetail(toolId);
+      if (response.code === 200) {
+        setToolDetailData(response.data);
+      } else {
+        setToolDetailData(null);
+      }
+    } catch (error) {
+      setToolDetailData(null);
+    } finally {
+      setToolDetailLoading(false);
+    }
+  }
+
   // 获取工具详情
   async function fetchToolDetail(currentTool: UserTool, isOpen: boolean) {
     if (!currentTool || !isOpen) return;
@@ -385,50 +406,41 @@ export function UserToolDetailDialog({
                         
                         {/* 参数列表 - 处理parameters */}
                         {item.parameters && Object.keys(item.parameters.properties).length > 0 ? (
-                          <div className="px-4 py-3 bg-muted/5">
+                          <div className="px-2 py-2">
                             <div className="text-xs uppercase font-medium text-muted-foreground mb-2">参数</div>
-                            <div className="grid grid-cols-12 gap-2">
+                            <div className="space-y-2">
                               {Object.entries(item.parameters.properties)
                                 .filter(([key]) => !['additionalProperties', 'definitions', 'required'].includes(key))
                                 .map(([key, value]) => {
-                                  // 处理特殊键名，移除可能的前缀如 "{"
                                   const cleanKey = key.replace(/^\{/, '');
-                                  // 确保value是对象并且有description属性
                                   const description = typeof value === 'object' && value && 'description' in value 
                                     ? (value as any).description 
                                     : null;
-                                  
-                                  if (description === null) return null;
-                                  
                                   return (
-                                    <div key={key} className="col-span-12 sm:col-span-6 xl:col-span-4">
-                                      <div className="flex items-center gap-2">
-                                        <code className="text-xs text-primary bg-primary/5 px-1.5 py-0.5 rounded">{cleanKey}</code>
-                                        {item.parameters && item.parameters.required?.includes(cleanKey) && (
-                                          <Badge variant="outline" className="text-[10px] h-4 px-1">必填</Badge>
-                                        )}
-                                      </div>
-                                      <div className="text-xs text-muted-foreground mt-1">{description}</div>
+                                    <div key={key} className="flex items-center gap-2">
+                                      <code className="text-xs text-primary bg-primary/5 px-1.5 py-0.5 rounded">{cleanKey}</code>
+                                      {item.parameters && item.parameters.required?.includes(cleanKey) && (
+                                        <Badge variant="outline" className="text-[10px] h-4 px-1">必填</Badge>
+                                      )}
+                                      {description && (
+                                        <span className="text-xs text-muted-foreground ml-2">{description}</span>
+                                      )}
                                     </div>
                                   );
-                                })
-                                .filter(Boolean)}
+                                })}
                             </div>
                           </div>
                         ) : item.inputSchema && Object.keys(item.inputSchema.properties).length > 0 ? (
                           // 参数列表 - 处理inputSchema
-                          <div className="px-4 py-3 bg-muted/5">
+                          <div className="px-2 py-2">
                             <div className="text-xs uppercase font-medium text-muted-foreground mb-2">参数</div>
-                            <div className="grid grid-cols-12 gap-2">
+                            <div className="space-y-2">
                               {Object.entries(item.inputSchema.properties).map(([key, value]) => (
-                                <div key={key} className="col-span-12 sm:col-span-6 xl:col-span-4">
-                                  <div className="flex items-center gap-2">
-                                    <code className="text-xs text-primary bg-primary/5 px-1.5 py-0.5 rounded">{key}</code>
-                                    {item.inputSchema && item.inputSchema.required?.includes(key) && (
-                                      <Badge variant="outline" className="text-[10px] h-4 px-1">必填</Badge>
-                                    )}
-                                  </div>
-                                  <div className="text-xs text-muted-foreground mt-1">{(value as any).description}</div>
+                                <div key={key} className="flex items-center gap-2">
+                                  <code className="text-xs text-primary bg-primary/5 px-1.5 py-0.5 rounded">{key}</code>
+                                  {item.inputSchema && item.inputSchema.required?.includes(key) && (
+                                    <Badge variant="outline" className="text-[10px] h-4 px-1">必填</Badge>
+                                  )}
                                 </div>
                               ))}
                             </div>

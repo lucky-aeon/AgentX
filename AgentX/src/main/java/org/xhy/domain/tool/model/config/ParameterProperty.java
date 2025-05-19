@@ -8,6 +8,10 @@ import java.io.Serializable;
 public class ParameterProperty implements Serializable {
     private String description;
 
+    public ParameterProperty(String description) {
+        this.description = description;
+    }
+
     public String getDescription() {
         return description;
     }

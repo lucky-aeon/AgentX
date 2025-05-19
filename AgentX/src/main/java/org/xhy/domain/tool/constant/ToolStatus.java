@@ -7,6 +7,7 @@ import org.xhy.infrastructure.exception.BusinessException;
  */
 public enum ToolStatus {
     WAITING_REVIEW,
+    GITHUB_URL_VALIDATE,
     DEPLOYING,
     FETCHING_TOOLS,
     MANUAL_REVIEW,
