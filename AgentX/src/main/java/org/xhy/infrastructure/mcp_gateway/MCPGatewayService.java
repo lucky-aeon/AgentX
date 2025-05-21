@@ -1,4 +1,4 @@
-package org.xhy.infrastructure.external_services;
+package org.xhy.infrastructure.mcp_gateway;
 
 import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.mcp.client.DefaultMcpClient;
@@ -7,7 +7,6 @@ import dev.langchain4j.mcp.client.transport.http.HttpMcpTransport;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -20,9 +19,10 @@ import org.xhy.domain.tool.model.config.ToolDefinition;
 import org.xhy.domain.tool.model.config.ToolSpecificationConverter;
 import org.xhy.infrastructure.config.MCPGatewayProperties;
 import org.xhy.infrastructure.exception.BusinessException;
-import org.xhy.infrastructure.util.JsonUtils;
 
 import jakarta.annotation.PostConstruct;
+import org.xhy.infrastructure.utils.JsonUtils;
+
 import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
@@ -80,7 +80,7 @@ public class MCPGatewayService {
 
                 if (statusCode >= 200 && statusCode < 300 && responseBody != null) {
                     // 解析响应JSON
-                    Map<String, Object> result = JsonUtils.parseObject(responseBody, Map.class);
+                    Map result = JsonUtils.parseObject(responseBody, Map.class);
                     logger.info("MCP Gateway部署响应: {}", result);
 
                     // 检查状态是否为success

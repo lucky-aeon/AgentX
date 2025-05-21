@@ -6,7 +6,7 @@ import org.xhy.domain.tool.constant.ToolStatus;
 import org.xhy.domain.tool.model.ToolEntity;
 import org.xhy.domain.tool.service.state.ToolStateProcessor;
 import org.xhy.infrastructure.exception.BusinessException;
-import org.xhy.infrastructure.external_services.MCPGatewayService;
+import org.xhy.infrastructure.mcp_gateway.MCPGatewayService;
 import org.xhy.infrastructure.utils.JsonUtils;
 
 import java.util.Map;

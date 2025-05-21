@@ -3,7 +3,6 @@ package org.xhy.domain.tool.service;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.xhy.domain.tool.constant.ToolStatus;
@@ -17,8 +16,8 @@ import org.xhy.domain.tool.service.state.impl.ManualReviewProcessor;
 import org.xhy.domain.tool.service.state.impl.PublishingProcessor;
 import org.xhy.domain.tool.service.state.impl.WaitingReviewProcessor;
 import org.xhy.infrastructure.exception.BusinessException;
-import org.xhy.infrastructure.external_services.GitHubService;
-import org.xhy.infrastructure.external_services.MCPGatewayService;
+import org.xhy.infrastructure.github.GitHubService;
+import org.xhy.infrastructure.mcp_gateway.MCPGatewayService;
 
 import java.util.HashMap;
 import java.util.Map;

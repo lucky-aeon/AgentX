@@ -1,20 +1,14 @@
 package org.xhy.domain.tool.service.state.impl;
 
-import dev.langchain4j.agent.tool.ToolSpecification;
-import dev.langchain4j.mcp.client.DefaultMcpClient;
-import dev.langchain4j.mcp.client.McpClient;
-import dev.langchain4j.mcp.client.transport.http.HttpMcpTransport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xhy.domain.tool.constant.ToolStatus;
 import org.xhy.domain.tool.model.ToolEntity;
 import org.xhy.domain.tool.model.config.ToolDefinition;
-import org.xhy.domain.tool.model.config.ToolSpecificationConverter;
 import org.xhy.domain.tool.service.state.ToolStateProcessor;
 import org.xhy.infrastructure.exception.BusinessException;
-import org.xhy.infrastructure.external_services.MCPGatewayService;
+import org.xhy.infrastructure.mcp_gateway.MCPGatewayService;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 

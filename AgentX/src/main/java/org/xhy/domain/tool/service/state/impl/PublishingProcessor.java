@@ -5,14 +5,13 @@ import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value; // Spring的Value注解，如果不用Spring则需移除或替换
 import org.springframework.stereotype.Service;
 import org.xhy.domain.tool.constant.ToolStatus;
 import org.xhy.domain.tool.model.ToolEntity;
 import org.xhy.domain.tool.model.dto.GitHubRepoInfo;
 import org.xhy.domain.tool.service.state.ToolStateProcessor;
 import org.xhy.infrastructure.exception.BusinessException;
-import org.xhy.infrastructure.external_services.GitHubService;
+import org.xhy.infrastructure.github.GitHubService;
 
 import java.io.IOException;
 import java.nio.file.Files;

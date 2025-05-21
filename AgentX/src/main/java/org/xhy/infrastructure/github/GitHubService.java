@@ -1,10 +1,9 @@
-package org.xhy.infrastructure.external_services;
+package org.xhy.infrastructure.github;
 
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.PushCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
-import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.kohsuke.github.GHRepository;
 import org.kohsuke.github.GitHub;
