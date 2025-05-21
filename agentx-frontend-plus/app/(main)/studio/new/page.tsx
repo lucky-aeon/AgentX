@@ -25,6 +25,14 @@ import { Progress } from "@/components/ui/progress"
 import { createAgent, createAgentWithToast } from "@/lib/agent-service"
 import { API_CONFIG } from "@/lib/api-config"
 
+// 从 edit 页面导入的组件和类型
+import AgentBasicInfoForm from "../edit/[id]/components/AgentBasicInfoForm";
+import AgentPromptForm from "../edit/[id]/components/AgentPromptForm";
+import AgentToolsForm, { knowledgeBaseOptions } from "../edit/[id]/components/AgentToolsForm"; // knowledgeBaseOptions 仍然从这里导入
+import ToolDetailSidebar from "../edit/[id]/components/ToolDetailSidebar";
+import type { Tool } from "@/types/tool";
+import type { AgentTool } from "@/types/agent"; // <-- Import AgentTool
+
 // 应用类型定义
 type AgentType = "chat" | "agent"
 
@@ -58,22 +66,12 @@ const modelOptions = [
   { value: "llama-3-70b", label: "Llama 3 70B" },
 ]
 
-// 工具选项
-const toolOptions = [
-  { id: "web-search", name: "网页搜索", description: "允许搜索互联网获取信息" },
-  { id: "file-reader", name: "文件读取", description: "允许读取和分析上传的文件" },
-  { id: "code-interpreter", name: "代码解释器", description: "允许执行代码并返回结果" },
-  { id: "image-generation", name: "图像生成", description: "允许生成和编辑图像" },
-  { id: "calculator", name: "计算器", description: "允许执行数学计算" },
-]
-
-// 知识库选项
-const knowledgeBaseOptions = [
-  { id: "kb-1", name: "产品文档", description: "包含产品说明、使用指南等" },
-  { id: "kb-2", name: "常见问题", description: "常见问题及解答集合" },
-  { id: "kb-3", name: "技术文档", description: "技术规范和API文档" },
-  { id: "kb-4", name: "营销资料", description: "营销内容和宣传材料" },
-]
+// 临时的接口，只包含工具的基本信息 (与 edit 页面一致) -> This will be removed
+// interface SelectedToolInfo {
+//   id: string;
+//   name: string;
+//   description: string;
+// }
 
 interface AgentFormData {
   name: string
@@ -81,9 +79,10 @@ interface AgentFormData {
   description: string
   systemPrompt: string
   welcomeMessage: string
-  tools: string[]
+  tools: AgentTool[] // <-- Use AgentTool[]
   knowledgeBaseIds: string[]
-  status: number
+  enabled: boolean
+  // agentType is derived from selectedType, not part of formData here
 }
 
 export default function CreateAgentPage() {
@@ -92,6 +91,8 @@ export default function CreateAgentPage() {
   const [activeTab, setActiveTab] = useState("basic")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [selectedToolForSidebar, setSelectedToolForSidebar] = useState<Tool | null>(null);
+  const [isToolSidebarOpen, setIsToolSidebarOpen] = useState(false);
 
   // 表单数据
   const [formData, setFormData] = useState<AgentFormData>({
@@ -102,7 +103,7 @@ export default function CreateAgentPage() {
     welcomeMessage: "你好！我是你的AI助手，有什么可以帮助你的吗？",
     tools: [],
     knowledgeBaseIds: [],
-    status: 0, // 默认为私有
+    enabled: true,
   })
 
   // 更新表单字段
@@ -114,19 +115,30 @@ export default function CreateAgentPage() {
   }
 
   // 切换工具
-  const toggleTool = (toolId: string) => {
+  const toggleTool = (toolToToggle: Tool) => {
+    const isToolCurrentlyEnabled = formData.tools.some(t => t.id === toolToToggle.id);
     setFormData((prev) => {
-      const tools = [...prev.tools]
-      if (tools.includes(toolId)) {
-        return { ...prev, tools: tools.filter((id) => id !== toolId) }
+      let updatedTools: AgentTool[]; // <-- Use AgentTool[]
+      if (isToolCurrentlyEnabled) {
+        updatedTools = prev.tools.filter((t) => t.id !== toolToToggle.id);
       } else {
-        return { ...prev, tools: [...tools, toolId] }
+        // 从 Tool 对象创建 AgentTool 对象
+        const newAgentTool: AgentTool = {
+          id: toolToToggle.id, 
+          name: toolToToggle.name, 
+          description: toolToToggle.description || undefined, // Ensure compatibility with AgentTool
+        };
+        updatedTools = [...prev.tools, newAgentTool];
       }
-    })
+      return { ...prev, tools: updatedTools };
+    });
+    toast({
+      title: `工具已${!isToolCurrentlyEnabled ? "添加" : "移除"}: ${toolToToggle.name}`,
+    });
   }
 
   // 切换知识库
-  const toggleKnowledgeBase = (kbId: string) => {
+  const toggleKnowledgeBase = (kbId: string, kbName?: string) => {
     setFormData((prev) => {
       const knowledgeBaseIds = [...prev.knowledgeBaseIds]
       if (knowledgeBaseIds.includes(kbId)) {
@@ -134,6 +146,10 @@ export default function CreateAgentPage() {
       } else {
         return { ...prev, knowledgeBaseIds: [...knowledgeBaseIds, kbId] }
       }
+    })
+    const nameToDisplay = kbName || knowledgeBaseOptions.find((kb) => kb.id === kbId)?.name;
+    toast({
+      title: `知识库已${!formData.knowledgeBaseIds.includes(kbId) ? "关联" : "取消关联"}: ${nameToDisplay || kbId}`
     })
   }
 
@@ -183,20 +199,28 @@ export default function CreateAgentPage() {
     fileInputRef.current?.click()
   }
 
+  // 新增：处理工具卡片点击，用于显示侧边栏
+  const handleToolClick = (tool: Tool) => {
+    // 确保工具信息中包含toolId和version信息
+    // 这里不需要额外处理，因为从getInstalledTools()得到的tool对象应该已经包含了这些信息
+    console.log("Tool clicked:", tool);
+    setSelectedToolForSidebar(tool);
+    setIsToolSidebarOpen(true);
+  };
+
   // 处理创建助理
   const handleCreateAgent = async () => {
     if (!formData.name.trim()) {
       toast({
         title: "请输入名称",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
-    setIsSubmitting(true)
+    setIsSubmitting(true);
 
     try {
-      // 准备API请求参数
       const agentData = {
         name: formData.name,
         avatar: formData.avatar,
@@ -205,51 +229,44 @@ export default function CreateAgentPage() {
         systemPrompt: selectedType === "chat" ? formData.systemPrompt : "",
         welcomeMessage: selectedType === "chat" ? formData.welcomeMessage : "",
         modelConfig: {
-          modelName: "gpt-4o", // 使用默认模型
+          modelName: "gpt-4o", 
           temperature: 0.7,
           maxTokens: 2000
         },
-        tools: formData.tools.map((toolId) => {
-          const tool = toolOptions.find((t) => t.id === toolId)
-          return {
-            id: toolId,
-            name: tool?.name || toolId,
-            description: tool?.description || "",
-          }
-        }),
+        tools: formData.tools.map(tool => ({ 
+          id: tool.id,
+          name: tool.name,
+          description: tool.description, 
+        })),
         knowledgeBaseIds: selectedType === "chat" ? formData.knowledgeBaseIds : [],
         userId: API_CONFIG.CURRENT_USER_ID,
-      }
+      };
 
-      // 调用API创建助理
-      const response = await createAgentWithToast(agentData)
+      const response = await createAgentWithToast(agentData);
 
       if (response.code === 200) {
         toast({
           title: "创建成功",
           description: `已创建${selectedType === "chat" ? "聊天助理" : "功能性助理"}: ${formData.name}`,
-        })
-
-        // 创建成功后跳转
-        router.push("/studio")
+        });
+        router.push("/studio");
       } else {
-        toast({
-          title: "创建失败",
-          description: response.message,
-          variant: "destructive",
-        })
+        // createAgentWithToast 应该已经处理了错误 toast
       }
     } catch (error) {
-      console.error("创建失败:", error)
-      toast({
-        title: "创建失败",
-        description: "请稍后再试",
-        variant: "destructive",
-      })
+      console.error("创建失败:", error);
+      // createAgentWithToast 通常也会处理 catch 块的 toast，但以防万一
+      if (!(error instanceof Error && error.message.includes("toast already shown"))) {
+          toast({
+            title: "创建失败",
+            description: "请稍后再试",
+            variant: "destructive",
+          });
+      }
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   // 根据选择的类型更新可用的标签页
   const getAvailableTabs = () => {
@@ -283,12 +300,11 @@ export default function CreateAgentPage() {
         {/* 左侧表单 */}
         <div className="w-3/5 p-8 overflow-auto">
           <div className="flex items-center justify-between mb-6">
-            <h1 className="text-2xl font-bold">创建{selectedType === "chat" ? "聊天助理" : "功能性助理"}</h1>
-            <Button variant="ghost" size="icon" asChild>
-              <Link href="/studio">
-                <X className="h-5 w-5" />
-                <span className="sr-only">关闭</span>
-              </Link>
+            <h1 className="text-2xl font-bold">
+              创建新的{selectedType === "chat" ? "聊天助理" : "功能性助理"}
+            </h1>
+            <Button variant="outline" asChild>
+                <Link href="/studio">取消</Link>
             </Button>
           </div>
 
@@ -305,216 +321,42 @@ export default function CreateAgentPage() {
             </TabsList>
 
             <TabsContent value="basic" className="space-y-6">
-              {/* Agent类型选择 */}
-              <div>
-                <h2 className="text-lg font-medium mb-4">选择类型</h2>
-                <div className="grid grid-cols-2 gap-4">
-                  {agentTypes.map((type) => (
-                    <div
-                      key={type.id}
-                      className={`border rounded-lg p-4 cursor-pointer transition-all ${
-                        selectedType === type.id ? "border-blue-500 bg-blue-50" : "hover:border-gray-300"
-                      }`}
-                      onClick={() => handleTypeChange(type.id as AgentType)}
-                    >
-                      <div className={`${type.color} w-10 h-10 rounded-lg flex items-center justify-center mb-3`}>
-                        <type.icon className="h-5 w-5" />
-                      </div>
-                      <h3 className="font-medium mb-1">{type.name}</h3>
-                      <p className="text-sm text-muted-foreground">{type.description}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* 名称和头像 */}
-              <div>
-                <h2 className="text-lg font-medium mb-4">名称 & 头像</h2>
-                <div className="flex gap-4 items-center">
-                  <div className="flex-1">
-                    <Label htmlFor="agent-name" className="mb-2 block">
-                      名称
-                    </Label>
-                    <Input
-                      id="agent-name"
-                      placeholder={`给你的${selectedType === "chat" ? "聊天助理" : "功能性助理"}起个名字`}
-                      value={formData.name}
-                      onChange={(e) => updateFormField("name", e.target.value)}
-                      className="mb-2"
-                    />
-                  </div>
-                  <div>
-                    <Label className="mb-2 block">头像</Label>
-                    <div className="flex items-center gap-2">
-                      <Avatar className="h-12 w-12">
-                        <AvatarImage src={formData.avatar || ""} alt="Avatar" />
-                        <AvatarFallback className="bg-blue-100 text-blue-600">
-                          {formData.name ? formData.name.charAt(0).toUpperCase() : "🤖"}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex flex-col gap-1">
-                        <Button variant="outline" size="sm" onClick={triggerFileInput}>
-                          <Upload className="h-4 w-4 mr-2" />
-                          上传
-                        </Button>
-                        {formData.avatar && (
-                          <Button variant="outline" size="sm" onClick={removeAvatar}>
-                            <Trash className="h-4 w-4 mr-2" />
-                            移除
-                          </Button>
-                        )}
-                      </div>
-                      <input
-                        type="file"
-                        ref={fileInputRef}
-                        className="hidden"
-                        accept="image/*"
-                        onChange={handleAvatarUpload}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* 描述 */}
-              <div>
-                <h2 className="text-lg font-medium mb-2">描述</h2>
-                <Textarea
-                  placeholder={`输入${selectedType === "chat" ? "聊天助理" : "功能性助理"}的描述`}
-                  value={formData.description}
-                  onChange={(e) => updateFormField("description", e.target.value)}
-                  rows={4}
-                />
-              </div>
-
-              {/* 状态设置 */}
-              <div>
-                <h2 className="text-lg font-medium mb-4">可见性设置</h2>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label htmlFor="status-private" className="font-medium">
-                        私有
-                      </Label>
-                      <p className="text-sm text-muted-foreground">仅创建者可见</p>
-                    </div>
-                    <Switch
-                      id="status-private"
-                      checked={formData.status === 0}
-                      onCheckedChange={() => updateFormField("status", 0)}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label htmlFor="status-public" className="font-medium">
-                        公开
-                      </Label>
-                      <p className="text-sm text-muted-foreground">提交审核后公开展示</p>
-                    </div>
-                    <Switch
-                      id="status-public"
-                      checked={formData.status === 1}
-                      onCheckedChange={() => updateFormField("status", 1)}
-                    />
-                  </div>
-                </div>
-              </div>
+              <AgentBasicInfoForm
+                formData={formData}
+                selectedType={selectedType}
+                updateFormField={updateFormField}
+                triggerFileInput={triggerFileInput}
+                handleAvatarUpload={handleAvatarUpload}
+                removeAvatar={removeAvatar}
+                fileInputRef={fileInputRef}
+              />
             </TabsContent>
 
-            {/* 仅聊天助手显示提示词配置 */}
             {selectedType === "chat" && (
               <TabsContent value="prompt" className="space-y-6">
-                {/* 系统提示词 */}
-                <div>
-                  <h2 className="text-lg font-medium mb-2">系统提示词</h2>
-                  <p className="text-sm text-muted-foreground mb-2">定义聊天助手的角色、能力和行为限制</p>
-                  <Textarea
-                    placeholder="输入系统提示词"
-                    value={formData.systemPrompt}
-                    onChange={(e) => updateFormField("systemPrompt", e.target.value)}
-                    rows={8}
-                  />
-                </div>
-
-                {/* 欢迎消息 */}
-                <div>
-                  <h2 className="text-lg font-medium mb-2">欢迎消息</h2>
-                  <p className="text-sm text-muted-foreground mb-2">用户首次与聊天助手交互时显示的消息</p>
-                  <Textarea
-                    placeholder="输入欢迎消息"
-                    value={formData.welcomeMessage}
-                    onChange={(e) => updateFormField("welcomeMessage", e.target.value)}
-                    rows={4}
-                  />
-                </div>
+                <AgentPromptForm
+                  formData={formData}
+                  updateFormField={updateFormField}
+                />
               </TabsContent>
             )}
 
             <TabsContent value="tools" className="space-y-6">
-              {/* 工具选择 */}
-              <div>
-                <h2 className="text-lg font-medium mb-2">可用工具</h2>
-                <p className="text-sm text-muted-foreground mb-2">
-                  选择{selectedType === "chat" ? "聊天助理" : "功能性助理"}可以使用的工具
-                </p>
-                <div className="grid grid-cols-2 gap-4 mt-4">
-                  {toolOptions.map((tool) => (
-                    <div
-                      key={tool.id}
-                      className={`border rounded-lg p-4 cursor-pointer transition-all ${
-                        formData.tools.includes(tool.id) ? "border-blue-500 bg-blue-50" : "hover:border-gray-300"
-                      }`}
-                      onClick={() => toggleTool(tool.id)}
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="font-medium">{tool.name}</h3>
-                        <Switch checked={formData.tools.includes(tool.id)} />
-                      </div>
-                      <p className="text-sm text-muted-foreground">{tool.description}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* 知识库选择 - 仅聊天助手显示 */}
-              {selectedType === "chat" && (
-                <div>
-                  <h2 className="text-lg font-medium mb-2">关联知识库</h2>
-                  <p className="text-sm text-muted-foreground mb-2">选择聊天助手可以访问的知识库</p>
-                  <div className="grid grid-cols-2 gap-4 mt-4">
-                    {knowledgeBaseOptions.map((kb) => (
-                      <div
-                        key={kb.id}
-                        className={`border rounded-lg p-4 cursor-pointer transition-all ${
-                          formData.knowledgeBaseIds.includes(kb.id)
-                            ? "border-blue-500 bg-blue-50"
-                            : "hover:border-gray-300"
-                        }`}
-                        onClick={() => toggleKnowledgeBase(kb.id)}
-                      >
-                        <div className="flex items-center justify-between mb-2">
-                          <h3 className="font-medium">{kb.name}</h3>
-                          <Switch checked={formData.knowledgeBaseIds.includes(kb.id)} />
-                        </div>
-                        <p className="text-sm text-muted-foreground">{kb.description}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+              <AgentToolsForm
+                formData={formData}
+                selectedType={selectedType}
+                toggleTool={toggleTool}
+                toggleKnowledgeBase={toggleKnowledgeBase}
+                onToolClick={handleToolClick}
+              />
             </TabsContent>
           </Tabs>
-
+          
           {/* 底部按钮 */}
           <div className="flex justify-end pt-6 border-t mt-6">
-            <div className="space-x-2">
-              <Button variant="outline" asChild>
-                <Link href="/studio">取消</Link>
-              </Button>
-              <Button onClick={handleCreateAgent} disabled={isSubmitting}>
-                {isSubmitting ? "创建中..." : "创建"}
-              </Button>
-            </div>
+            <Button onClick={handleCreateAgent} disabled={isSubmitting}>
+              {isSubmitting ? "创建中..." : "确认创建"}
+            </Button>
           </div>
         </div>
 
@@ -580,11 +422,11 @@ export default function CreateAgentPage() {
                       <ul className="list-disc pl-5 mt-2 space-y-1">
                         <li>回答问题和提供信息</li>
                         <li>协助写作和内容创作</li>
-                        {formData.tools.includes("web-search") && <li>搜索互联网获取最新信息</li>}
-                        {formData.tools.includes("file-reader") && <li>分析和解读上传的文件</li>}
-                        {formData.tools.includes("code-interpreter") && <li>编写和执行代码</li>}
-                        {formData.tools.includes("image-generation") && <li>生成和编辑图像</li>}
-                        {formData.tools.includes("calculator") && <li>执行数学计算</li>}
+                        {formData.tools.some((t) => t.id === "web-search") && <li>搜索互联网获取最新信息</li>}
+                        {formData.tools.some((t) => t.id === "file-reader") && <li>分析和解读上传的文件</li>}
+                        {formData.tools.some((t) => t.id === "code-interpreter") && <li>编写和执行代码</li>}
+                        {formData.tools.some((t) => t.id === "image-generation") && <li>生成和编辑图像</li>}
+                        {formData.tools.some((t) => t.id === "calculator") && <li>执行数学计算</li>}
                         {formData.knowledgeBaseIds.length > 0 && <li>基于专业知识库提供准确信息</li>}
                       </ul>
                       <p className="mt-2">有什么具体问题我可以帮你解答吗？</p>
@@ -677,19 +519,19 @@ export default function CreateAgentPage() {
                     <div className="bg-white rounded-lg p-4 border">
                       <h3 className="font-medium mb-2">工具使用记录</h3>
                       <div className="space-y-2">
-                        {formData.tools.includes("file-reader") && (
+                        {formData.tools.some((t) => t.id === "file-reader") && (
                           <div className="flex items-center gap-2 text-sm p-2 bg-gray-50 rounded">
                             <FileText className="h-4 w-4 text-blue-500" />
                             <span>已读取文件：数据分析.xlsx</span>
                           </div>
                         )}
-                        {formData.tools.includes("code-interpreter") && (
+                        {formData.tools.some((t) => t.id === "code-interpreter") && (
                           <div className="flex items-center gap-2 text-sm p-2 bg-gray-50 rounded">
                             <Zap className="h-4 w-4 text-purple-500" />
                             <span>执行代码：数据处理脚本</span>
                           </div>
                         )}
-                        {formData.tools.includes("web-search") && (
+                        {formData.tools.some((t) => t.id === "web-search") && (
                           <div className="flex items-center gap-2 text-sm p-2 bg-gray-50 rounded">
                             <Search className="h-4 w-4 text-green-500" />
                             <span>搜索相关信息：市场趋势分析</span>
@@ -736,8 +578,8 @@ export default function CreateAgentPage() {
                 )}
                 <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">状态</span>
-                  <Badge variant={formData.status === 0 ? "outline" : "default"} className="text-xs">
-                    {formData.status === 0 ? "私有" : "待审核"}
+                  <Badge variant={formData.enabled ? "outline" : "default"} className="text-xs">
+                    {formData.enabled ? "公开" : "私有"}
                   </Badge>
                 </div>
               </CardContent>
@@ -745,6 +587,12 @@ export default function CreateAgentPage() {
           </div>
         </div>
       </div>
+
+      <ToolDetailSidebar
+        tool={selectedToolForSidebar}
+        isOpen={isToolSidebarOpen}
+        onClose={() => setIsToolSidebarOpen(false)}
+      />
     </div>
   )
 }
