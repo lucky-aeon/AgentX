@@ -4,7 +4,7 @@ public class Page {
 
     private Integer page = 1;
 
-    private Integer pageSize  = 15;
+    private Integer pageSize = 15;
 
     public Integer getPage() {
         return page;

@@ -47,7 +47,6 @@ public class ToolVersionDTO {
 
     private Long installCount;
 
-
     public String getId() {
         return id;
     }

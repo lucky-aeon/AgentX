@@ -8,9 +8,7 @@ import org.xhy.domain.tool.model.config.ToolDefinition;
 import java.time.LocalDateTime;
 import java.util.List;
 
-/**
- * 工具DTO
- */
+/** 工具DTO */
 public class ToolDTO {
     private String id;
     private String name;
@@ -127,7 +125,6 @@ public class ToolDTO {
         this.uploadUrl = uploadUrl;
     }
 
-
     public List<ToolDefinition> getToolList() {
         return toolList;
     }
@@ -206,7 +203,7 @@ public class ToolDTO {
 
     public void setRejectReason(String rejectReason) {
         this.rejectReason = rejectReason;
-    }   
+    }
 
     public ToolStatus getFailedStepStatus() {
         return failedStepStatus;

@@ -2,9 +2,7 @@ package org.xhy.domain.tool.constant;
 
 import org.xhy.infrastructure.exception.BusinessException;
 
-/**
- * 工具上传方式枚举
- */
+/** 工具上传方式枚举 */
 public enum UploadType {
 
     GITHUB, ZIP;
@@ -17,4 +15,4 @@ public enum UploadType {
         }
         throw new BusinessException("未知的上传类型码: " + code);
     }
-} 
+}

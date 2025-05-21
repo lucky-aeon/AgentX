@@ -11,20 +11,16 @@ import org.xhy.infrastructure.utils.JsonUtils;
 
 import java.util.Map;
 
-/**
- * 工具部署处理器
- */
+/** 工具部署处理器 */
 public class DeployingProcessor implements ToolStateProcessor {
 
     private static final Logger logger = LoggerFactory.getLogger(DeployingProcessor.class);
 
     private final MCPGatewayService mcpGatewayService;
 
-    /**
-     * 构造函数，注入MCPGatewayService
+    /** 构造函数，注入MCPGatewayService
      * 
-     * @param mcpGatewayService MCP网关服务
-     */
+     * @param mcpGatewayService MCP网关服务 */
     public DeployingProcessor(MCPGatewayService mcpGatewayService) {
         this.mcpGatewayService = mcpGatewayService;
     }

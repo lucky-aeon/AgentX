@@ -28,10 +28,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
-/**
- * MCP Gateway服务
- * 处理与MCP网关的所有API交互
- */
+/** MCP Gateway服务 处理与MCP网关的所有API交互 */
 @Service
 public class MCPGatewayService {
 
@@ -39,18 +36,14 @@ public class MCPGatewayService {
 
     private final MCPGatewayProperties properties;
 
-    /**
-     * 通过构造函数注入配置
+    /** 通过构造函数注入配置
      * 
-     * @param properties MCP Gateway配置
-     */
+     * @param properties MCP Gateway配置 */
     public MCPGatewayService(MCPGatewayProperties properties) {
         this.properties = properties;
     }
 
-    /**
-     * 初始化时验证配置有效性
-     */
+    /** 初始化时验证配置有效性 */
     @PostConstruct
     public void init() {
         if (properties.getBaseUrl() == null || properties.getBaseUrl().trim().isEmpty()) {
@@ -64,13 +57,11 @@ public class MCPGatewayService {
         logger.info("MCP Gateway服务已初始化，基础URL: {}", properties.getBaseUrl());
     }
 
-    /**
-     * 部署工具到MCP Gateway
+    /** 部署工具到MCP Gateway
      * 
      * @param installCommand 安装命令
      * @return 部署成功返回true，否则抛出异常
-     * @throws BusinessException 如果API调用失败
-     */
+     * @throws BusinessException 如果API调用失败 */
     public boolean deployTool(String installCommand) {
         String url = properties.getBaseUrl() + "/deploy";
 
@@ -78,7 +69,6 @@ public class MCPGatewayService {
             HttpPost httpPost = new HttpPost(url);
             httpPost.setHeader("Content-Type", "application/json");
             httpPost.setHeader("Authorization", "Bearer " + properties.getApiKey());
-
 
             httpPost.setEntity(new StringEntity(installCommand, "UTF-8"));
 
@@ -107,17 +97,15 @@ public class MCPGatewayService {
         }
     }
 
-    /**
-     * 从MCP Gateway获取工具列表
+    /** 从MCP Gateway获取工具列表
      *
      * @param toolName 可选，特定工具名称
      * @return 工具定义列表
-     * @throws BusinessException 如果API调用失败
-     */
+     * @throws BusinessException 如果API调用失败 */
     public List<ToolDefinition> listTools(String toolName) throws Exception {
         // 需要等待部署完成
         Thread.sleep(10000);
-        String url = properties.getBaseUrl() + "/"+toolName+"/sse/sse?api_key="+properties.getApiKey();
+        String url = properties.getBaseUrl() + "/" + toolName + "/sse/sse?api_key=" + properties.getApiKey();
         HttpMcpTransport transport = new HttpMcpTransport.Builder().sseUrl(url).timeout(Duration.ofSeconds(10))
                 .logRequests(false).logResponses(true).build();
         McpClient client = new DefaultMcpClient.Builder().transport(transport).build();
@@ -127,22 +115,16 @@ public class MCPGatewayService {
         } catch (Exception e) {
             logger.error("调用MCP Gateway API失败", e);
             throw new BusinessException("调用MCP Gateway API失败: " + e.getMessage(), e);
-        }finally {
+        } finally {
             client.close();
         }
     }
 
-    /**
-     * 创建配置了超时的HTTP客户端
-     */
+    /** 创建配置了超时的HTTP客户端 */
     private CloseableHttpClient createHttpClient() {
-        RequestConfig config = RequestConfig.custom()
-                .setConnectTimeout(properties.getConnectTimeout())
-                .setSocketTimeout(properties.getReadTimeout())
-                .build();
+        RequestConfig config = RequestConfig.custom().setConnectTimeout(properties.getConnectTimeout())
+                .setSocketTimeout(properties.getReadTimeout()).build();
 
-        return HttpClients.custom()
-                .setDefaultRequestConfig(config)
-                .build();
+        return HttpClients.custom().setDefaultRequestConfig(config).build();
     }
 }

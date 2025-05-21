@@ -18,20 +18,16 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
-/**
- * 获取工具列表处理器
- */
+/** 获取工具列表处理器 */
 public class FetchingToolsProcessor implements ToolStateProcessor {
 
     private static final Logger logger = LoggerFactory.getLogger(FetchingToolsProcessor.class);
 
     private final MCPGatewayService mcpGatewayService;
 
-    /**
-     * 构造函数，注入MCPGatewayService
+    /** 构造函数，注入MCPGatewayService
      * 
-     * @param mcpGatewayService MCP网关服务
-     */
+     * @param mcpGatewayService MCP网关服务 */
     public FetchingToolsProcessor(MCPGatewayService mcpGatewayService) {
         this.mcpGatewayService = mcpGatewayService;
     }

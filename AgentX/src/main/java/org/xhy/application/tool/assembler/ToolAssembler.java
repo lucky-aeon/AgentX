@@ -18,18 +18,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * 工具实体转换器
- */
+/** 工具实体转换器 */
 public class ToolAssembler {
 
-    /**
-     * 将创建工具请求转换为工具实体
+    /** 将创建工具请求转换为工具实体
      *
      * @param request 创建工具请求
-     * @param userId  用户ID
-     * @return 工具实体
-     */
+     * @param userId 用户ID
+     * @return 工具实体 */
     public static ToolEntity toEntity(CreateToolRequest request, String userId) {
         ToolEntity toolEntity = new ToolEntity();
         BeanUtils.copyProperties(request, toolEntity);
@@ -38,12 +34,10 @@ public class ToolAssembler {
         return toolEntity;
     }
 
-    /**
-     * 将工具实体转换为DTO
+    /** 将工具实体转换为DTO
      *
      * @param entity 工具实体
-     * @return 工具DTO
-     */
+     * @return 工具DTO */
     public static ToolDTO toDTO(ToolEntity entity) {
         ToolDTO toolDTO = new ToolDTO();
         BeanUtils.copyProperties(entity, toolDTO);
@@ -57,13 +51,10 @@ public class ToolAssembler {
         return toolVersionDTO;
     }
 
-
-    /**
-     * 将工具实体列表转换为DTO列表
+    /** 将工具实体列表转换为DTO列表
      *
      * @param entities 工具实体列表
-     * @return 工具DTO列表
-     */
+     * @return 工具DTO列表 */
     public static List<ToolDTO> toDTOs(List<ToolEntity> entities) {
         if (entities == null || entities.isEmpty()) {
             return Collections.emptyList();

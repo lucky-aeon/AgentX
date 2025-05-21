@@ -20,21 +20,16 @@ import java.nio.file.Path;
 import java.util.List; // 确保导入
 import java.util.UUID;
 
-/**
- * "发布中"状态处理器。
- * 负责从源GitHub下载工具内容，并将其发布到目标GitHub仓库。
- */
+/** "发布中"状态处理器。 负责从源GitHub下载工具内容，并将其发布到目标GitHub仓库。 */
 @Service
 public class PublishingProcessor implements ToolStateProcessor {
     private static final Logger logger = LoggerFactory.getLogger(PublishingProcessor.class);
 
     private final GitHubService gitHubService;
 
-    /**
-     * 构造函数。
+    /** 构造函数。
      * 
-     * @param gitHubService GitHub服务实例，用于与GitHub API交互。
-     */
+     * @param gitHubService GitHub服务实例，用于与GitHub API交互。 */
     public PublishingProcessor(GitHubService gitHubService) {
         this.gitHubService = gitHubService;
     }
@@ -90,8 +85,8 @@ public class PublishingProcessor implements ToolStateProcessor {
             if (sourceRepoInfo.getPathInRepo() != null && !sourceRepoInfo.getPathInRepo().isEmpty()) {
                 sourcePathToPublish = actualContentRoot.resolve(sourceRepoInfo.getPathInRepo());
                 if (!Files.exists(sourcePathToPublish) || !Files.isDirectory(sourcePathToPublish)) {
-                    throw new BusinessException("源URL中指定的路径 '" + sourceRepoInfo.getPathInRepo() +
-                            "' 在下载的内容中不存在或不是一个目录。");
+                    throw new BusinessException(
+                            "源URL中指定的路径 '" + sourceRepoInfo.getPathInRepo() + "' 在下载的内容中不存在或不是一个目录。");
                 }
                 logger.info("将从指定子路径发布: {}", sourcePathToPublish);
             }
@@ -100,23 +95,15 @@ public class PublishingProcessor implements ToolStateProcessor {
             // 目标仓库根目录下 -> {工具名}-{源仓库作者名} -> {版本号} -> {工具内容}
             String toolIdentifierInTarget = tool.getName() + "-" + sourceRepoInfo.getOwner();
             String targetPathInInternalRepo = toolIdentifierInTarget + "/" + sanitizedVersion;
-            // logger.info("内容将发布到目标仓库 '{}' 的路径 '{}' 下", this.targetInternalRepoName,
-            // targetPathInInternalRepo); // Log updated
             logger.info("内容将发布到目标仓库的路径 '{}' 下", targetPathInInternalRepo);
 
             // 6. 提交并推送到目标GitHub仓库
-            String commitMessage = String.format("Publish tool: %s, Version: %s (Source: %s@%s)",
-                    tool.getName(), version, sourceRepoInfo.getFullName(), sourceRepoInfo.getRef());
-            // Use the overload that doesn't require targetRepoName, let GitHubService use
-            // its config
+            String commitMessage = String.format("Publish tool: %s, Version: %s (Source: %s@%s)", tool.getName(),
+                    version, sourceRepoInfo.getFullName(), sourceRepoInfo.getRef());
             gitHubService.commitAndPushToTargetRepo(sourcePathToPublish, targetPathInInternalRepo, commitMessage);
 
             // 7. 如果发布成功，ToolStateService会将状态设置为PUBLISHED
-            // logger.info("工具 {} 版本 {} 成功发布到内部仓库 {} 的路径 {} 下",
-            // tool.getName(), version, this.targetInternalRepoName,
-            // targetPathInInternalRepo); // Log updated
-            logger.info("工具 {} 版本 {} 成功发布到目标仓库的路径 {} 下",
-                    tool.getName(), version, targetPathInInternalRepo);
+            logger.info("工具 {} 版本 {} 成功发布到目标仓库的路径 {} 下", tool.getName(), version, targetPathInInternalRepo);
             // 此处理器不直接修改状态，由ToolStateService在调用此process后根据是否抛异常来决定下一个状态
 
         } catch (BusinessException | IOException | GitAPIException e) { // 更具体地捕获已知异常
@@ -131,17 +118,10 @@ public class PublishingProcessor implements ToolStateProcessor {
 
     @Override
     public ToolStatus getNextStatus() {
-        // 这个方法在当前设计中可能不会被 ToolStateService 直接使用来决定下一个状态，
-        // 因为成功/失败是在 process 方法内部通过是否抛出异常来隐式确定的。
-        // ToolStateService 会在调用 process 后，如果无异常，则设置为 PUBLISHED，
-        // 如果捕获到异常，则设置为 PUBLISH_FAILED。
-        // 为符合接口，可以返回一个理论上的成功状态，但实际控制权在ToolStateService。
         return ToolStatus.APPROVED;
     }
 
-    /**
-     * 清理临时下载和解压的文件/目录。
-     */
+    /** 清理临时下载和解压的文件/目录。 */
     private void cleanupTemporaryFiles(Path tempDownloadPath, Path tempUnzipPath) {
         try {
             if (tempDownloadPath != null && Files.exists(tempDownloadPath)) {
@@ -157,15 +137,12 @@ public class PublishingProcessor implements ToolStateProcessor {
         }
     }
 
-    /**
-     * 查找解压后ZIP文件的实际内容根目录。
-     * GitHub下载的ZIP通常会有一个顶层目录，例如 repo-name-commitsha/ 或 repo-name-tag/
+    /** 查找解压后ZIP文件的实际内容根目录。 GitHub下载的ZIP通常会有一个顶层目录，例如 repo-name-commitsha/ 或 repo-name-tag/
      * 
-     * @param unzipDir     解压操作的根目录
+     * @param unzipDir 解压操作的根目录
      * @param repoNameHint 源仓库的名称，用于辅助查找
      * @return 实际内容所在的Path对象，如果无法确定则返回unzipDir本身
-     * @throws IOException 如果列出目录内容时发生IO错误
-     */
+     * @throws IOException 如果列出目录内容时发生IO错误 */
     private Path findActualContentRoot(Path unzipDir, String repoNameHint) throws IOException {
         List<Path> subDirs;
         try (var stream = Files.list(unzipDir)) {
@@ -174,7 +151,7 @@ public class PublishingProcessor implements ToolStateProcessor {
 
         if (subDirs.size() == 1) {
             // 如果解压后只有一个子目录，通常这就是内容根目录
-            logger.debug("找到唯一子目录作为内容根: {}", subDirs.get(0));
+            logger.info("找到唯一子目录作为内容根: {}", subDirs.get(0));
             return subDirs.get(0);
         }
 
@@ -182,7 +159,7 @@ public class PublishingProcessor implements ToolStateProcessor {
         if (repoNameHint != null && !repoNameHint.isEmpty()) {
             for (Path subDir : subDirs) {
                 if (subDir.getFileName().toString().toLowerCase().contains(repoNameHint.toLowerCase())) {
-                    logger.debug("通过仓库名提示找到内容根: {}", subDir);
+                    logger.info("通过仓库名提示找到内容根: {}", subDir);
                     return subDir;
                 }
             }

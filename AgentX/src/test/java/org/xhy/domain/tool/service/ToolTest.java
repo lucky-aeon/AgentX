@@ -1,6 +1,5 @@
 package org.xhy.domain.tool.service;
 
-
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -19,10 +18,12 @@ public class ToolTest {
     private PublishingProcessor publishApprovedTool;
 
     @Test
-    public void testToolState(){
+    public void testToolState() {
 
         ToolEntity tool = toolDomainService.getTool("fcf8589b869aada08e4fe7c29121ddb8");
-        toolStateService.processToolState(tool);
-        while (true){}
+        toolStateService.submitToolForProcessing(tool);
+        while (true){
+
+        }
     }
 }

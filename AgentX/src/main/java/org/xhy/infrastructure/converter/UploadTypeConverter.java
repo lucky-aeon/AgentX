@@ -11,9 +11,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-/**
- * 上传类型转换器
- */
+/** 上传类型转换器 */
 @MappedJdbcTypes(JdbcType.VARCHAR)
 @MappedTypes(UploadType.class)
 public class UploadTypeConverter extends BaseTypeHandler<UploadType> {
@@ -41,4 +39,4 @@ public class UploadTypeConverter extends BaseTypeHandler<UploadType> {
         String value = cs.getString(columnIndex);
         return value == null ? null : UploadType.fromCode(value);
     }
-} 
+}

@@ -72,9 +72,9 @@ oauth:
 
 github:
   target:
-    username:
-    repo-name: 
-    token:
+    username: ${GITHUB_TARGET_USERNAME:}
+    repo-name: ${GITHUB_TARGET_REPO_NAME:}
+    token: ${GITHUB_TARGET_TOKEN:}
 mcp:
   gateway:
     api-key: 123456

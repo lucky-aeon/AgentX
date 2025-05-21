@@ -3,10 +3,7 @@ package org.xhy.infrastructure.config;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
-/**
- * GitHub配置属性类
- * 用于集中管理所有GitHub相关的配置参数
- */
+/** GitHub配置属性类 用于集中管理所有GitHub相关的配置参数 */
 @Configuration
 @ConfigurationProperties(prefix = "github")
 public class GitHubProperties {

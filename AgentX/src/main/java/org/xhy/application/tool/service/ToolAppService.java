@@ -26,39 +26,33 @@ import org.xhy.interfaces.dto.tool.request.MarketToolRequest;
 import org.xhy.interfaces.dto.tool.request.QueryToolRequest;
 import org.xhy.interfaces.dto.tool.request.UpdateToolRequest;
 
-/**
- * 工具应用服务
- */
+/** 工具应用服务 */
 @Service
 public class ToolAppService {
 
     private final ToolDomainService toolDomainService;
 
-    private final UserToolDomainService userToolDomainService;  
+    private final UserToolDomainService userToolDomainService;
 
     private final ToolVersionDomainService toolVersionDomainService;
 
     private final UserDomainService userDomainService;
 
-    public ToolAppService(ToolDomainService toolDomainService, UserToolDomainService userToolDomainService, ToolVersionDomainService toolVersionDomainService, UserDomainService userDomainService) {
+    public ToolAppService(ToolDomainService toolDomainService, UserToolDomainService userToolDomainService,
+            ToolVersionDomainService toolVersionDomainService, UserDomainService userDomainService) {
         this.toolDomainService = toolDomainService;
         this.userToolDomainService = userToolDomainService;
         this.toolVersionDomainService = toolVersionDomainService;
         this.userDomainService = userDomainService;
     }
 
-    /**
-     * 上传工具
+    /** 上传工具
      * 
-     * 业务流程：
-     * 1. 将请求转换为实体
-     * 2. 调用领域服务创建工具
-     * 3. 将实体转换为DTO返回
+     * 业务流程： 1. 将请求转换为实体 2. 调用领域服务创建工具 3. 将实体转换为DTO返回
      *
      * @param request 创建工具请求
-     * @param userId  用户ID
-     * @return 创建的工具DTO
-     */
+     * @param userId 用户ID
+     * @return 创建的工具DTO */
     @Transactional
     public ToolDTO uploadTool(CreateToolRequest request, String userId) {
         // 将请求转换为实体
@@ -104,12 +98,12 @@ public class ToolAppService {
             throw new BusinessException("工具未审核通过，不能上架");
         }
 
-        ToolVersionEntity toolVersionEntity = toolVersionDomainService.findLatestToolVersion(toolId,userId);
-        if (toolVersionEntity!=null){
+        ToolVersionEntity toolVersionEntity = toolVersionDomainService.findLatestToolVersion(toolId, userId);
+        if (toolVersionEntity != null) {
             // 检查版本号是否大于上一个版本
             if (!marketToolRequest.isVersionGreaterThan(toolVersionEntity.getVersion())) {
-                throw new ParamValidationException("versionNumber", "新版本号(" + version
-                        + ")必须大于当前最新版本号(" + toolVersionEntity.getVersion() + ")");
+                throw new ParamValidationException("versionNumber",
+                        "新版本号(" + version + ")必须大于当前最新版本号(" + toolVersionEntity.getVersion() + ")");
             }
         }
 
@@ -127,13 +121,15 @@ public class ToolAppService {
     public Page<ToolVersionDTO> marketTools(QueryToolRequest queryToolRequest) {
         Page<ToolVersionEntity> listToolVersion = toolVersionDomainService.listToolVersion(queryToolRequest);
         List<ToolVersionEntity> records = listToolVersion.getRecords();
-        Map<String, Long> toolsInstallMap = userToolDomainService.getToolsInstall(records.stream().map(ToolVersionEntity::getToolId).toList());
+        Map<String, Long> toolsInstallMap = userToolDomainService
+                .getToolsInstall(records.stream().map(ToolVersionEntity::getToolId).toList());
         List<ToolVersionDTO> list = records.stream().map(toolVersionEntity -> {
             ToolVersionDTO toolVersionDTO = ToolAssembler.toDTO(toolVersionEntity);
             toolVersionDTO.setInstallCount(toolsInstallMap.get(toolVersionEntity.getToolId()));
             return toolVersionDTO;
         }).toList();
-        Page<ToolVersionDTO> tPage = new Page<>(listToolVersion.getCurrent(), listToolVersion.getSize(), listToolVersion.getTotal());
+        Page<ToolVersionDTO> tPage = new Page<>(listToolVersion.getCurrent(), listToolVersion.getSize(),
+                listToolVersion.getTotal());
         tPage.setRecords(list);
         return tPage;
     }
@@ -146,7 +142,7 @@ public class ToolAppService {
         toolVersionDTO.setUserName(userInfo.getNickname());
 
         // 设置历史版本
-        List<ToolVersionEntity> toolVersionEntities = toolVersionDomainService.getToolVersions(toolId,userId);
+        List<ToolVersionEntity> toolVersionEntities = toolVersionDomainService.getToolVersions(toolId, userId);
         toolVersionDTO.setVersions(toolVersionEntities.stream().map(ToolAssembler::toDTO).toList());
 
         Map<String, Long> toolsInstall = userToolDomainService.getToolsInstall(Arrays.asList(toolId));
@@ -179,13 +175,14 @@ public class ToolAppService {
 
         Page<UserToolEntity> userToolEntityPage = userToolDomainService.listByUserId(userId, queryToolRequest);
         List<ToolVersionDTO> list = userToolEntityPage.getRecords().stream().map(ToolAssembler::toDTO).toList();
-        Page<ToolVersionDTO> tPage = new Page<>(userToolEntityPage.getCurrent(), userToolEntityPage.getSize(), userToolEntityPage.getTotal());
+        Page<ToolVersionDTO> tPage = new Page<>(userToolEntityPage.getCurrent(), userToolEntityPage.getSize(),
+                userToolEntityPage.getTotal());
         tPage.setRecords(list);
         return tPage;
     }
 
-    public List<ToolVersionDTO> getToolVersions(String toolId,String userId) {
-        List<ToolVersionEntity> toolVersionEntities = toolVersionDomainService.getToolVersions(toolId,userId);
+    public List<ToolVersionDTO> getToolVersions(String toolId, String userId) {
+        List<ToolVersionEntity> toolVersionEntities = toolVersionDomainService.getToolVersions(toolId, userId);
         return toolVersionEntities.stream().map(ToolAssembler::toDTO).toList();
     }
 
@@ -200,29 +197,26 @@ public class ToolAppService {
         Page<ToolVersionEntity> listToolVersion = toolVersionDomainService.listToolVersion(queryToolRequest);
         List<ToolVersionEntity> records = listToolVersion.getRecords();
 
-        Map<String, Long> toolsInstallMap = userToolDomainService.getToolsInstall(records.stream().map(ToolVersionEntity::getToolId).toList());
+        Map<String, Long> toolsInstallMap = userToolDomainService
+                .getToolsInstall(records.stream().map(ToolVersionEntity::getToolId).toList());
 
-        List<ToolVersionDTO> toolVersionDTOs = records.stream()
-                .map(toolVersionEntity -> {
-                    ToolVersionDTO dto = ToolAssembler.toDTO(toolVersionEntity);
-                    dto.setInstallCount(toolsInstallMap.get(dto.getToolId()));
-                    return dto;
-                })
-                .toList();
+        List<ToolVersionDTO> toolVersionDTOs = records.stream().map(toolVersionEntity -> {
+            ToolVersionDTO dto = ToolAssembler.toDTO(toolVersionEntity);
+            dto.setInstallCount(toolsInstallMap.get(dto.getToolId()));
+            return dto;
+        }).toList();
 
         if (records.size() > 10) {
             // 使用随机数从所有记录中选取10条不重复的记录
             Random random = new Random();
-            toolVersionDTOs = toolVersionDTOs.stream()
-                    .sorted((a, b) -> random.nextInt(2) - 1)
-                    .limit(10)
-                    .toList();
+            toolVersionDTOs = toolVersionDTOs.stream().sorted((a, b) -> random.nextInt(2) - 1).limit(10).toList();
         }
 
         return toolVersionDTOs;
     }
 
     public void updateUserToolVersionStatus(String toolId, String version, Boolean publishStatus, String userId) {
-        toolVersionDomainService.updateToolVersionStatus(toolId, version,userId, publishStatus);
+        toolVersionDomainService.updateToolVersionStatus(toolId, version, userId, publishStatus);
     }
+
 }

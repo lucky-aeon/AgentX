@@ -2,9 +2,7 @@ package org.xhy.domain.tool.model.config;
 
 import java.io.Serializable;
 
-/**
- * 参数属性
- */
+/** 参数属性 */
 public class ParameterProperty implements Serializable {
     private String description;
 
@@ -19,4 +17,4 @@ public class ParameterProperty implements Serializable {
     public void setDescription(String description) {
         this.description = description;
     }
-} 
+}

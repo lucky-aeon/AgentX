@@ -12,9 +12,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-/**
- * 工具状态转换器
- */
+/** 工具状态转换器 */
 @MappedTypes(ToolStatus.class)
 @MappedJdbcTypes(JdbcType.INTEGER)
 public class ToolStatusConverter extends BaseTypeHandler<ToolStatus> {

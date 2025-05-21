@@ -13,83 +13,55 @@ import org.xhy.infrastructure.entity.BaseEntity;
 
 import java.util.List;
 
-/**
- * 用户工具关联实体类
- */
+/** 用户工具关联实体类 */
 @TableName(value = "user_tools", autoResultMap = true)
 public class UserToolEntity extends BaseEntity {
 
-    /**
-     * 唯一ID
-     */
+    /** 唯一ID */
     @TableId(value = "id", type = IdType.ASSIGN_UUID)
     private String id;
 
-    /**
-     * 用户ID
-     */
+    /** 用户ID */
     @TableField("user_id")
     private String userId;
 
-     /**
-     * 工具名称
-     */
+    /** 工具名称 */
     @TableField("name")
     private String name;
 
-    /**
-     * 工具描述
-     */
+    /** 工具描述 */
     @TableField("description")
     private String description;
 
-    /**
-     * 工具图标
-     */
+    /** 工具图标 */
     @TableField("icon")
     private String icon;
 
-        /**
-     * 副标题
-     */
+    /** 副标题 */
     @TableField("subtitle")
     private String subtitle;
 
-
-    /**
-     * 工具版本ID
-     */
+    /** 工具版本ID */
     @TableField("tool_id")
     private String toolId;
 
-    /**
-     * 版本号
-     */
+    /** 版本号 */
     @TableField("version")
     private String version;
 
-
-    /**
-     * 工具列表
-     */
+    /** 工具列表 */
     @TableField(value = "tool_list", typeHandler = ToolDefinitionListConverter.class)
     private List<ToolDefinition> toolList;
 
-    /**
-     * 标签列表
-     */
+    /** 标签列表 */
     @TableField(value = "labels", typeHandler = ListStringConverter.class)
     private List<String> labels;
 
-    /**
-     * 是否官方工具
-     */
+    /** 是否官方工具 */
     @TableField("is_office")
     private Boolean isOffice;
 
-    /**
-     * 公开状态
-     */
+    /** 公开状态 */
     @TableField("public_state")
     private Boolean publicState;
 

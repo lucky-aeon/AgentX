@@ -13,13 +13,13 @@ import java.util.Map;
 @RestController
 @RequestMapping("/oauth")
 public class OAuthController {
-    
+
     private final OAuthAppService oauthAppService;
-    
+
     public OAuthController(OAuthAppService oauthAppService) {
         this.oauthAppService = oauthAppService;
     }
-    
+
     /** 获取GitHub授权URL
      * @return 授权URL */
     @GetMapping("/github/authorize")
@@ -27,7 +27,7 @@ public class OAuthController {
         String authorizeUrl = oauthAppService.getGitHubAuthorizeUrl();
         return Result.success(Map.of("authorizeUrl", authorizeUrl));
     }
-    
+
     /** 处理GitHub回调
      * @param code 授权码
      * @return 登录响应 */
@@ -36,4 +36,4 @@ public class OAuthController {
         Map<String, String> tokenInfo = oauthAppService.handleGitHubCallback(code);
         return Result.success("GitHub登录成功", tokenInfo);
     }
-} 
+}

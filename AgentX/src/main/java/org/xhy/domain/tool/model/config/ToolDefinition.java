@@ -2,28 +2,18 @@ package org.xhy.domain.tool.model.config;
 
 import java.util.Map;
 
-/**
- * 工具定义
- */
+/** 工具定义 */
 public class ToolDefinition {
-    /**
-     * 工具名称
-     */
+    /** 工具名称 */
     private String name;
 
-    /**
-     * 工具描述
-     */
+    /** 工具描述 */
     private String description;
 
-    /**
-     * 参数定义
-     */
+    /** 参数定义 */
     private Map<String, Object> parameters;
 
-    /**
-     * 是否启用
-     */
+    /** 是否启用 */
     private Boolean enabled;
 
     public String getName() {

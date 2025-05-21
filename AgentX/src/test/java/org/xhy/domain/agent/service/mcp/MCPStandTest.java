@@ -28,7 +28,7 @@ public class MCPStandTest {
 
     public static void main(String[] args) throws Exception {
         // 1) 要监听的 SSE 地址列表
-        List<String> sseUrls = List.of( "http://localhost:8005/surge/sse/sse?api_key=123456");
+        List<String> sseUrls = List.of("http://localhost:8005/surge/sse/sse?api_key=123456");
 
         // 用于并行监听的订阅器和 McpClient 列表
         List<RawSseSubscriber> subscribers = new ArrayList<>();

@@ -169,12 +169,6 @@
             <version>2.6.2</version>
         </dependency>
 
-        <!-- GitHub OAuth 所需依赖 -->
-        <!-- <dependency> -->
-            <!-- <groupId>org.apache.httpcomponents</groupId> -->
-            <!-- <artifactId>httpclient</artifactId> -->
-            <!-- <version>${httpclient.version}</version> -->
-        <!-- </dependency> -->
 
         <!-- GitHub API 客户端 (Kohsuke) -->
         <dependency>

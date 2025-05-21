@@ -3,10 +3,7 @@ package org.xhy.infrastructure.config;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
-/**
- * MCP Gateway网关配置属性类
- * 用于集中管理所有与MCP网关相关的配置参数
- */
+/** MCP Gateway网关配置属性类 用于集中管理所有与MCP网关相关的配置参数 */
 @Configuration
 @ConfigurationProperties(prefix = "mcp.gateway")
 public class MCPGatewayProperties {
