@@ -119,7 +119,7 @@ npm run dev
 
 ### Agent 策略
 
-Agent = LLM + 工具 
+Agent = LLM + 工具
 
 在项目中使用了 LLM + MCP 的方式实现 Agent，通过 langchan4j 提供 MCP 实现
 
