@@ -152,6 +152,7 @@ export default function EditAgentPage() {
               id: t.id, 
               name: t.name, 
               description: t.description || undefined,
+              presetParameters: t.presetParameters || {},
             })) || [],
             knowledgeBaseIds: agent.knowledgeBaseIds || [],
             enabled: agent.enabled,
@@ -342,6 +343,7 @@ export default function EditAgentPage() {
           id: tool.id,
           name: tool.name,
           description: tool.description,
+          presetParameters: tool.presetParameters,
         })),
         knowledgeBaseIds: selectedType === "chat" ? formData.knowledgeBaseIds : [],
         enabled: formData.enabled,
@@ -421,6 +423,7 @@ export default function EditAgentPage() {
           id: tool.id,
           name: tool.name,
           description: tool.description,
+          presetParameters: tool.presetParameters,
         })),
         knowledgeBaseIds: formData.knowledgeBaseIds,
       })
@@ -501,6 +504,7 @@ export default function EditAgentPage() {
           id: t.id,
           name: t.name,
           description: t.description || undefined,
+          presetParameters: t.presetParameters || {},
         })) || [],
         knowledgeBaseIds: version.knowledgeBaseIds || [],
         enabled: formData.enabled,
@@ -560,6 +564,7 @@ export default function EditAgentPage() {
     }
   }
 
+  // 处理工具点击事件
   const handleToolClick = (tool: Tool) => {
     // 确保工具信息中包含toolId和version信息
     // 这里不需要额外处理，因为从getInstalledTools()得到的tool对象应该已经包含了这些信息
@@ -567,6 +572,23 @@ export default function EditAgentPage() {
     console.log("Tool clicked:", tool);
     setSelectedToolForSidebar(tool);
     setIsToolSidebarOpen(true);
+  }
+
+  // 更新工具预设参数
+  const updateToolPresetParameters = (toolId: string, presetParams: Record<string, Record<string, string>>) => {
+    setFormData(prev => {
+      const newFormData = {...prev};
+      const toolIndex = newFormData.tools.findIndex(t => t.id === toolId);
+      
+      if (toolIndex !== -1) {
+        newFormData.tools[toolIndex] = {
+          ...newFormData.tools[toolIndex],
+          presetParameters: presetParams
+        };
+      }
+      
+      return newFormData;
+    });
   }
 
   // 如果正在加载，显示加载状态
@@ -667,6 +689,7 @@ export default function EditAgentPage() {
                 toggleTool={toggleTool}
                 toggleKnowledgeBase={toggleKnowledgeBase}
                 onToolClick={handleToolClick}
+                updateToolPresetParameters={updateToolPresetParameters}
               />
             </TabsContent>
           </Tabs>
@@ -1111,6 +1134,8 @@ export default function EditAgentPage() {
         tool={selectedToolForSidebar}
         isOpen={isToolSidebarOpen}
         onClose={() => setIsToolSidebarOpen(false)}
+        presetParameters={selectedToolForSidebar ? formData.tools.find(t => t.id === selectedToolForSidebar.id)?.presetParameters || {} : {}}
+        onSavePresetParameters={updateToolPresetParameters}
       />
     </div>
   )

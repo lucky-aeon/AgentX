@@ -14,6 +14,7 @@ export interface AgentTool {
   type?: string
   permissions?: string
   config?: Record<string, any>
+  presetParameters?: Record<string, Record<string, string>> // 预设参数：{功能名: {参数名: 参数值}}
 }
 
 export interface Agent {

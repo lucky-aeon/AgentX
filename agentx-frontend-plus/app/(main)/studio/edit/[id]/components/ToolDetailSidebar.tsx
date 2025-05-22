@@ -5,8 +5,11 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import type { Tool, ToolVersion } from '@/types/tool';
 import { getToolDetail, getMarketToolVersions, getMarketToolVersionDetail } from '@/lib/tool-service';
-import { X, RefreshCw, Puzzle, Command } from 'lucide-react';
+import { X, RefreshCw, Puzzle, Command, Key, Save, Settings } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { toast } from 'sonner';
+import { Input } from '@/components/ui/input';
+import ToolParametersModal from './ToolParametersModal';
 
 // 缓存已请求过的工具详情
 const toolDetailsCache = new Map<string, any>();
@@ -15,11 +18,20 @@ interface ToolDetailSidebarProps {
   tool: Tool | null;
   isOpen: boolean;
   onClose: () => void;
+  presetParameters?: Record<string, Record<string, string>>;
+  onSavePresetParameters?: (toolId: string, presetParams: Record<string, Record<string, string>>) => void;
 }
 
-const ToolDetailSidebar: React.FC<ToolDetailSidebarProps> = ({ tool: initialTool, isOpen, onClose }) => {
+const ToolDetailSidebar: React.FC<ToolDetailSidebarProps> = ({ 
+  tool: initialTool, 
+  isOpen, 
+  onClose,
+  presetParameters = {},
+  onSavePresetParameters
+}) => {
   const [detailedTool, setDetailedTool] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [showParametersModal, setShowParametersModal] = useState(false);
 
   useEffect(() => {
     if (isOpen && initialTool) {
@@ -78,6 +90,7 @@ const ToolDetailSidebar: React.FC<ToolDetailSidebarProps> = ({ tool: initialTool
       fetchDetails();
     } else if (!isOpen) {
       setDetailedTool(null);
+      setShowParametersModal(false);
     }
   }, [isOpen, initialTool]);
 
@@ -87,6 +100,14 @@ const ToolDetailSidebar: React.FC<ToolDetailSidebarProps> = ({ tool: initialTool
     return null;
   }
   
+  const handleOpenParametersModal = () => {
+    setShowParametersModal(true);
+  };
+
+  const handleCloseParametersModal = () => {
+    setShowParametersModal(false);
+  };
+
   const renderContent = () => {
     if (isLoading && !detailedTool) {
       return (
@@ -212,9 +233,31 @@ const ToolDetailSidebar: React.FC<ToolDetailSidebarProps> = ({ tool: initialTool
           )}
         </div>
 
-        <SheetFooter className="p-6 border-t">
+        <SheetFooter className="p-6 border-t flex justify-between">
           <Button variant="outline" onClick={onClose}>关闭</Button>
+          {toolFunctions.length > 0 && (
+            <Button 
+              variant="secondary" 
+              onClick={handleOpenParametersModal}
+              className="flex items-center gap-1"
+            >
+              <Settings className="w-4 h-4" />
+              配置参数预设
+            </Button>
+          )}
         </SheetFooter>
+
+        {/* 参数预设弹窗 */}
+        {showParametersModal && initialTool && (
+          <ToolParametersModal
+            isOpen={showParametersModal}
+            onClose={handleCloseParametersModal}
+            tool={initialTool}
+            toolFunctions={toolFunctions}
+            presetParameters={presetParameters}
+            onSavePresetParameters={onSavePresetParameters}
+          />
+        )}
       </>
     );
   }
