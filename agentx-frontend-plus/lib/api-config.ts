@@ -52,6 +52,24 @@ export const API_ENDPOINTS = {
   DELETE_MODEL: (id: string) => `/llm/models/${id}`,
   TOGGLE_MODEL_STATUS: (id: string) => `/llm/models/${id}/status`,
   MODEL_TYPES: "/llm/models/types",
+  
+  // 工具市场相关
+  MARKET_TOOLS: "/tools/market",
+  MARKET_TOOL_DETAIL: (id: string) => `/tools/market/${id}`,
+  MARKET_TOOL_VERSION_DETAIL: (id: string, version: string) => `/tools/market/${id}/${version}`,
+  MARKET_TOOL_VERSIONS: (id: string) => `/tools/market/${id}/versions`,
+  MARKET_TOOL_LABELS: "/tools/market/labels",
+  RECOMMEND_TOOLS: "/tools/recommend", // 推荐工具列表
+  INSTALL_TOOL: (toolId: string, version: string) => `/tools/install/${toolId}/${version}`,
+  USER_TOOLS: "/tools/user",
+  INSTALLED_TOOLS: "/tools/installed", // 已安装的工具列表
+  UNINSTALL_TOOL: (toolId: string) => `/tools/uninstall/${toolId}`, // 卸载工具
+  DELETE_USER_TOOL: (id: string) => `/tools/user/${id}`,
+  UPLOAD_TOOL: "/tools",
+  UPDATE_TOOL: (id: string) => `/tools/${id}`,
+  TOOL_DETAIL: (id: string) => `/tools/${id}`,
+  DELETE_TOOL: (id: string) => `/tools/${id}`,
+  UPDATE_TOOL_VERSION_STATUS: (toolId: string, version: string) => `/tools/user/${toolId}/${version}/status`, // 修改工具版本发布状态
 }
 
 // 构建完整的API URL

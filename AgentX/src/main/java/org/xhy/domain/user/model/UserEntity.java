@@ -58,7 +58,7 @@ public class UserEntity extends BaseEntity {
     public void setPassword(String password) {
         this.password = password;
     }
-    
+
     public String getGithubId() {
         return githubId;
     }

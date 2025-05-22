@@ -1,140 +1,168 @@
+"use client"
+
+import { useState, useEffect } from "react"
 import Link from "next/link"
-import { Edit, MoreHorizontal, Plus, Trash, Wrench } from "lucide-react"
-
+import { Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Badge } from "@/components/ui/badge"
 
-// Mock data for tools
-const tools = [
-  {
-    id: "1",
-    name: "网页浏览器",
-    description: "允许代理浏览网页和提取信息",
-    status: "已启用",
-    type: "内置",
-  },
-  {
-    id: "2",
-    name: "文件处理器",
-    description: "允许代理读取和处理各种文件格式",
-    status: "已启用",
-    type: "内置",
-  },
-  {
-    id: "3",
-    name: "数据分析",
-    description: "提供数据分析和可视化功能",
-    status: "已禁用",
-    type: "自定义",
-  },
-  {
-    id: "4",
-    name: "API 连接器",
-    description: "连接到外部 API 和服务",
-    status: "已启用",
-    type: "自定义",
-  },
-]
+// 自定义Hooks
+import { useMarketTools } from "./hooks/useMarketTools"
+import { useUserTools } from "./hooks/useUserTools"
+import { useToolDialogs } from "./hooks/useToolDialogs"
+import { useRecommendTools } from "./hooks/useRecommendTools"
+
+// 页面部分组件
+import { CreatedToolsSection } from "./components/sections/CreatedToolsSection"
+import { InstalledToolsSection } from "./components/sections/InstalledToolsSection"
+import { RecommendedToolsSection } from "./components/sections/RecommendedToolsSection"
+
+// 对话框组件
+import { UserToolDetailDialog } from "./components/dialogs/UserToolDetailDialog"
+import { InstallToolDialog } from "./components/dialogs/InstallToolDialog"
+import { DeleteToolDialog } from "./components/dialogs/DeleteToolDialog"
+import { InstallToolDialog as GlobalInstallToolDialog } from "@/components/tool/install-tool-dialog"
 
 export default function ToolsPage() {
-  return (
-    <div className="container py-6">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">工具</h1>
-          <p className="text-muted-foreground">管理您的 AI 工具</p>
-        </div>
-        <Button asChild>
-          <Link href="/tools/new">
-            <Plus className="mr-2 h-4 w-4" />
-            添加工具
-          </Link>
-        </Button>
-      </div>
+  // 获取推荐工具数据
+  const {
+    tools,
+    loading: marketToolsLoading,
+    error: marketToolsError
+  } = useRecommendTools(10);
+  
+  // 获取用户工具数据
+  const {
+    ownedTools,
+    installedTools,
+    userToolsLoading,
+    isDeletingTool,
+    handleDeleteTool
+  } = useUserTools();
+  
+  // 对话框状态管理
+  const {
+    // 市场工具详情
+    isDetailOpen,
+    selectedTool,
+    openToolDetail,
+    closeToolDetail,
+    
+    // 安装确认
+    isInstallDialogOpen,
+    installingToolId,
+    openInstallDialog,
+    closeInstallDialog,
+    handleInstallTool,
+    
+    // 用户工具详情
+    isUserToolDetailOpen,
+    selectedUserTool,
+    openUserToolDetail,
+    closeUserToolDetail,
+    
+    // 删除确认
+    isDeleteDialogOpen,
+    toolToDelete,
+    openDeleteConfirm,
+    closeDeleteDialog
+  } = useToolDialogs();
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {tools.map((tool) => (
-          <Card key={tool.id}>
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                    <Wrench className="h-4 w-4" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-base">{tool.name}</CardTitle>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Badge variant={tool.status === "已启用" ? "default" : "secondary"} className="text-[10px]">
-                        {tool.status}
-                      </Badge>
-                      <Badge variant="outline" className="text-[10px]">
-                        {tool.type}
-                      </Badge>
-                    </div>
-                  </div>
-                </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon">
-                      <MoreHorizontal className="h-4 w-4" />
-                      <span className="sr-only">打开菜单</span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuLabel>操作</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem>
-                      <Edit className="mr-2 h-4 w-4" />
-                      配置
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      {tool.status === "已启用" ? (
-                        <>
-                          <Trash className="mr-2 h-4 w-4" />
-                          禁用
-                        </>
-                      ) : (
-                        <>
-                          <Wrench className="mr-2 h-4 w-4" />
-                          启用
-                        </>
-                      )}
-                    </DropdownMenuItem>
-                    {tool.type === "自定义" && (
-                      <DropdownMenuItem>
-                        <Trash className="mr-2 h-4 w-4" />
-                        删除
-                      </DropdownMenuItem>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">{tool.description}</p>
-            </CardContent>
-            <CardFooter className="flex justify-between">
-              <Button variant="outline" size="sm" asChild>
-                <Link href={`/tools/configure/${tool.id}`}>
-                  <Edit className="mr-2 h-4 w-4" />
-                  配置
-                </Link>
-              </Button>
-              <Button size="sm" variant={tool.status === "已启用" ? "destructive" : "default"}>
-                {tool.status === "已启用" ? "禁用" : "启用"}
-              </Button>
-            </CardFooter>
-          </Card>
-        ))}
+  // 处理编辑工具
+  const handleEditTool = (tool: any, event?: React.MouseEvent) => {
+    if (event) {
+      event.stopPropagation();
+    }
+    // 直接跳转到编辑工具页面
+    window.location.href = `/tools/edit/${tool.id}`;
+  };
+  
+  // 处理删除工具确认
+  const handleConfirmDelete = async (): Promise<boolean> => {
+    if (!toolToDelete) return false;
+    
+    const success = await handleDeleteTool(toolToDelete);
+    
+    if (success) {
+      closeDeleteDialog();
+    }
+    
+    return success || false;
+  };
+
+  return (
+    <div className="py-6 min-h-screen bg-gray-50">
+      <div className="container max-w-7xl mx-auto px-2">
+        {/* 页面头部 */}
+        <div className="flex items-center justify-between mb-8 bg-white p-6 rounded-lg shadow-sm">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">工具中心</h1>
+            <p className="text-muted-foreground mt-1">探索和管理AI助手的扩展能力</p>
+          </div>
+          
+          <Button asChild className="shadow-sm">
+            <Link href="/tools/upload">
+              <Plus className="mr-2 h-4 w-4" />
+              上传工具
+            </Link>
+          </Button>
+        </div>
+        
+        {/* 用户创建的工具部分 */}
+        <CreatedToolsSection
+          ownedTools={ownedTools}
+          loading={userToolsLoading}
+          onToolClick={openUserToolDetail}
+          onEditClick={handleEditTool}
+          onDeleteClick={openDeleteConfirm}
+        />
+        
+        {/* 用户安装的工具部分 */}
+        <InstalledToolsSection
+          installedTools={installedTools}
+          loading={userToolsLoading}
+          onToolClick={openUserToolDetail}
+          onDeleteClick={openDeleteConfirm}
+        />
+        
+        {/* 工具市场推荐部分 */}
+        <RecommendedToolsSection
+          tools={tools}
+          loading={marketToolsLoading}
+          error={marketToolsError}
+          onInstallClick={openInstallDialog}
+        />
+        
+        {/* 用户工具详情对话框 */}
+        <UserToolDetailDialog
+          open={isUserToolDetailOpen}
+          onOpenChange={closeUserToolDetail}
+          tool={selectedUserTool}
+          onDelete={handleDeleteTool}
+        />
+        
+        {/* 工具安装确认对话框 */}
+        <GlobalInstallToolDialog 
+          open={isInstallDialogOpen}
+          onOpenChange={closeInstallDialog}
+          tool={selectedTool}
+          version={selectedTool?.current_version}
+          onSuccess={() => {
+            // 标记选中工具为已安装
+            if (selectedTool) {
+              // 可能需要实现安装成功后的逻辑
+              console.log(`已安装工具: ${selectedTool.name}`);
+            }
+          }}
+        />
+
+        {/* 删除工具确认对话框 */}
+        <DeleteToolDialog
+          open={isDeleteDialogOpen}
+          onOpenChange={closeDeleteDialog}
+          tool={toolToDelete}
+          isDeleting={isDeletingTool}
+          onConfirm={handleConfirmDelete}
+        />
       </div>
     </div>
   )

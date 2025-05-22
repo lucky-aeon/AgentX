@@ -6,7 +6,7 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "oauth.github")
 @Component
 public class GitHubOAuthProperties {
-    
+
     private String clientId;
     private String clientSecret;
     private String redirectUri;
@@ -18,7 +18,7 @@ public class GitHubOAuthProperties {
     public String getClientId() {
         return clientId;
     }
-    
+
     public void setClientId(String clientId) {
         this.clientId = clientId;
     }
@@ -70,4 +70,4 @@ public class GitHubOAuthProperties {
     public void setUserEmailUrl(String userEmailUrl) {
         this.userEmailUrl = userEmailUrl;
     }
-} 
+}

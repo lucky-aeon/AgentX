@@ -139,6 +139,7 @@ public class Result<T> {
     }
 
     public Result<T> message(String message) {
+        this.message = message;
         return this;
     }
 }

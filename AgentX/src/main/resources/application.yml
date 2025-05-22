@@ -39,7 +39,6 @@ mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
     cache-enabled: false
-    type-handlers-package: org.xhy.infrastructure.converter
   global-config:
     db-config:
       id-type: auto
@@ -70,3 +69,13 @@ oauth:
     client-id: ${GITHUB_CLIENT_ID}
     client-secret: ${GITHUB_CLIENT_SECRET}
     redirect-uri: ${GITHUB_REDIRECT_URI:https://xxx/oauth/github/callback}
+
+github:
+  target:
+    username: ${GITHUB_TARGET_USERNAME:}
+    repo-name: ${GITHUB_TARGET_REPO_NAME:}
+    token: ${GITHUB_TARGET_TOKEN:}
+mcp:
+  gateway:
+    api-key: 123456
+    base-url: http://localhost:8005

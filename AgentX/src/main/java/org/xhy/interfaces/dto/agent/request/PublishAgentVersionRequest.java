@@ -9,6 +9,7 @@ import org.xhy.infrastructure.exception.ParamValidationException;
 public class PublishAgentVersionRequest {
     @NotBlank(message = "版本号不能为空")
     private String versionNumber;
+    @NotBlank(message = "变更日志不能为空")
     private String changeLog;
 
     // 版本号正则表达式，验证x.y.z格式
@@ -27,11 +28,7 @@ public class PublishAgentVersionRequest {
     public void validate() {
         // 验证版本号格式
         if (!VERSION_PATTERN.matcher(versionNumber).matches()) {
-            throw new ParamValidationException("versionNumber", "版本号必须遵循 x.y.z 格式");
-        }
-
-        if (changeLog == null || changeLog.trim().isEmpty()) {
-            throw new ParamValidationException("changeLog", "变更日志不能为空");
+            throw new ParamValidationException("版本号", "版本号必须遵循 x.y.z 格式");
         }
     }
 

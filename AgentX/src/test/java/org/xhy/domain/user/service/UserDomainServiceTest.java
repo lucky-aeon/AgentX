@@ -17,7 +17,7 @@ public class UserDomainServiceTest {
     public void testRegisterWithPhone() {
         // 准备测试数据
         String phone = "";
-        String email = "test@qq.com";
+        String email = "xhyovo@qq.com";
         String password = "123456";
 
         // 执行注册方法
