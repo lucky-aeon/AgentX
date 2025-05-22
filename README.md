@@ -139,5 +139,5 @@ Agent = LLM + 工具
 
 ### MCP Gateway
 
-采用自研的 MCP 网关来统一管理所有的 MCP Server
+采用自研的 MCP 网关来统一管理所有的 MCP Server：https://github.com/lucky-aeon/mcp-gateway
 
