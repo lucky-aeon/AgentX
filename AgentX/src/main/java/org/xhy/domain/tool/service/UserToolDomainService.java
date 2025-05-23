@@ -10,6 +10,7 @@ import org.xhy.domain.tool.repository.UserToolRepository;
 import org.xhy.infrastructure.exception.BusinessException;
 import org.xhy.interfaces.dto.tool.request.QueryToolRequest;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -54,6 +55,9 @@ public class UserToolDomainService {
 
     // 获取工具的安装次数
     public Map<String, Long> getToolsInstall(List<String> toolIds) {
+        if (toolIds == null || toolIds.isEmpty()) {
+            return new HashMap<>();
+        }
         LambdaQueryWrapper<UserToolEntity> wrapper = Wrappers.<UserToolEntity>lambdaQuery()
                 .in(UserToolEntity::getToolId, toolIds);
         List<UserToolEntity> userToolEntities = userToolRepository.selectList(wrapper);

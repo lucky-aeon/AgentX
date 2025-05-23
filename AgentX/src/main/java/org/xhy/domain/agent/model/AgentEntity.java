@@ -42,7 +42,7 @@ public class AgentEntity extends BaseEntity {
     private String welcomeMessage;
 
     /** Agent可使用的工具列表 */
-    @TableField(value = "tools", typeHandler = ListStringConverter.class)
+    @TableField(value = "tools", typeHandler = ListStringConverter.class,exist = false)
     private List<String> toolIds;
 
     /** 关联的知识库ID列表 */

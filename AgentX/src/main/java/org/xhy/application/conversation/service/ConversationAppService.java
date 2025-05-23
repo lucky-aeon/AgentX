@@ -148,8 +148,8 @@ public class ConversationAppService {
             BeanUtils.copyProperties(latestAgentVersion, agent);
         }
 
-        // 校验工具的可用性
-        toolDomainService.validTools(toolIds, userId);
+        // 校验工具的可用性 todo xhy
+
         // 3. 获取工作区和模型配置
         AgentWorkspaceEntity workspace = agentWorkspaceDomainService.getWorkspace(agentId, userId);
         LLMModelConfig llmModelConfig = workspace.getLlmModelConfig();

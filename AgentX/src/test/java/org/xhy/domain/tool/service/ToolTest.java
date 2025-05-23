@@ -10,7 +10,7 @@ import org.xhy.domain.tool.service.state.impl.PublishingProcessor;
 public class ToolTest {
 
     @Autowired
-    private ToolStateService toolStateService;
+    private ToolStateDomainService toolStateService;
 
     @Autowired
     private ToolDomainService toolDomainService;

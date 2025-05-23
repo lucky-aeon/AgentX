@@ -22,11 +22,11 @@ public class ToolDomainService {
 
     private final ToolRepository toolRepository;
     private final ToolVersionRepository toolVersionRepository;
-    private final ToolStateService toolStateService;
+    private final ToolStateDomainService toolStateService;
 
 
     public ToolDomainService(ToolRepository toolRepository, ToolVersionRepository toolVersionRepository,
-            ToolStateService toolStateService) {
+            ToolStateDomainService toolStateService) {
         this.toolRepository = toolRepository;
         this.toolVersionRepository = toolVersionRepository;
         this.toolStateService = toolStateService;
