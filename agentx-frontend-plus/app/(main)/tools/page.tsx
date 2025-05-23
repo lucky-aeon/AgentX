@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { toast } from "@/hooks/use-toast"
 
 // 自定义Hooks
 import { useMarketTools } from "./hooks/useMarketTools"
@@ -40,7 +41,8 @@ export default function ToolsPage() {
     installedTools,
     userToolsLoading,
     isDeletingTool,
-    handleDeleteTool
+    handleDeleteTool,
+    fetchUserTools
   } = useUserTools();
   
   // 对话框状态管理
@@ -130,6 +132,17 @@ export default function ToolsPage() {
     };
   };
 
+  // 处理工具安装成功
+  const handleToolInstallSuccess = () => {
+    // 刷新用户工具列表，确保新安装的工具会显示在"我安装的工具"中
+    fetchUserTools();
+    // 可以添加一个安装成功的提示
+    toast({
+      title: "安装成功",
+      description: "工具已成功安装，您可以在我安装的工具中查看。"
+    });
+  };
+
   return (
     <div className="py-6 min-h-screen bg-gray-50">
       <div className="container max-w-7xl mx-auto px-2">
@@ -188,11 +201,7 @@ export default function ToolsPage() {
           onOpenChange={closeInstallDialog}
           tool={adaptMarketToolToGlobalTool(selectedTool)}
           version={selectedTool?.current_version}
-          onSuccess={() => {
-            if (selectedTool) {
-              console.log(`已安装工具: ${selectedTool.name}`);
-            }
-          }}
+          onSuccess={handleToolInstallSuccess}
         />
 
         {/* 删除工具确认对话框 */}
