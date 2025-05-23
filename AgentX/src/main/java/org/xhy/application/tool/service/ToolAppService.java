@@ -1,5 +1,6 @@
 package org.xhy.application.tool.service;
 
+import java.time.LocalDateTime;
 import java.util.*;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -122,6 +123,7 @@ public class ToolAppService {
         toolVersionEntity.setPublicStatus(true);
         toolVersionEntity.setId(null);
         toolVersionEntity.setMcpServerName(toolEntity.getMcpServerName());
+        toolVersionEntity.setCreatedAt(LocalDateTime.now());
         toolVersionDomainService.addToolVersion(toolVersionEntity);
     }
 
@@ -268,7 +270,7 @@ public class ToolAppService {
             baseVersion.setId(null); //确保是新记录
             baseVersion.setToolId(toolId);
             baseVersion.setUserId(ownerId); // 版本归属创建者
-            baseVersion.setVersion("0.0.0-base"); // 特殊版本号
+            baseVersion.setVersion("0.0.0"); // 特殊版本号
             baseVersion.setChangeLog("Base configuration for owner auto-installation.");
             baseVersion.setPublicStatus(false); // 非公开
             // baseVersion.setInstallCommand(tool.getInstallCommand()); // 如果ToolVersionEntity需要此字段且ToolEntity有，则复制
@@ -285,4 +287,10 @@ public class ToolAppService {
         logger.info("工具ID: {} 版本: {} 已成功为创建者用户ID: {} 自动安装。", toolId, versionToInstall.getVersion(), ownerId);
     }
 
+
+    // 根据 toolId 获取最新版本
+    public ToolVersionDTO getLatestToolVersion(String toolId,String userId) {
+        ToolVersionEntity toolVersionEntity = toolVersionDomainService.findLatestToolVersion(toolId, userId);
+        return ToolAssembler.toDTO(toolVersionEntity);
+    }
 }

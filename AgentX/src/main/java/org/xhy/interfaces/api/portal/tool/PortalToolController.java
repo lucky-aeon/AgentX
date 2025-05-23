@@ -1,6 +1,7 @@
 package org.xhy.interfaces.api.portal.tool;
 
 import java.util.List;
+import java.util.Map;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.validation.annotation.Validated;
@@ -175,5 +176,15 @@ public class PortalToolController {
         String userId = UserContext.getCurrentUserId();
         toolAppService.updateUserToolVersionStatus(toolId, version, publishStatus, userId);
         return Result.success().message(publishStatus ? "发布成功" : "下架成功");
+    }
+
+    /** 获取工具最新版本
+     * @param toolId 工具id
+     * @return */
+    @GetMapping("/{toolId}/latest")
+    public Result<Map<String,String>> getLatestToolVersion(@PathVariable String toolId) {
+        String userId = UserContext.getCurrentUserId();
+        ToolVersionDTO latestToolVersion = toolAppService.getLatestToolVersion(toolId, userId);
+        return Result.success(Map.of("version", latestToolVersion.getVersion()));
     }
 }

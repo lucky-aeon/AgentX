@@ -69,7 +69,7 @@ public class ToolVersionDomainService {
 
         LambdaQueryWrapper<ToolVersionEntity> queryWrapper = Wrappers.<ToolVersionEntity>lambdaQuery()
                 .eq(ToolVersionEntity::getToolId, toolId).orderByDesc(ToolVersionEntity::getCreatedAt)
-                .eq(ToolVersionEntity::getPublicStatus, true).last("LIMIT 1");
+                .last("LIMIT 1");
 
         ToolVersionEntity toolVersionEntity = toolVersionRepository.selectOne(queryWrapper);
         if (toolVersionEntity == null) {

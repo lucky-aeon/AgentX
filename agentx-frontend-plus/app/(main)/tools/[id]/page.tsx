@@ -68,7 +68,7 @@ export default function ToolDetailRedirectPage({ params }: { params: { id: strin
         <Skeleton className="h-4 w-96 mx-auto mb-2" />
         <Skeleton className="h-4 w-80 mx-auto" />
         <p className="mt-8 text-muted-foreground">正在加载工具详情...</p>
-      </div>
+            </div>
     </div>
   )
 } 

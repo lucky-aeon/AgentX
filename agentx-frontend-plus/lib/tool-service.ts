@@ -1,7 +1,7 @@
 import { httpClient } from "@/lib/http-client"
 import { API_ENDPOINTS, API_CONFIG } from "@/lib/api-config"
 import { toast } from "@/hooks/use-toast"
-import { Tool, ToolVersion, ApiResponse, GetMarketToolsParams } from "@/types/tool"
+import { Tool, ToolVersion, ApiResponse, GetMarketToolsParams, PublishToolToMarketParams } from "@/types/tool"
 import { withToast } from "./toast-utils"
 
 // 获取工具市场列表
@@ -259,7 +259,7 @@ export const updateToolWithToast = withToast(
     successTitle: "更新成功",
     showSuccessToast: true
   }
-)
+) 
 
 /**
  * 获取用户已安装的工具列表
@@ -395,4 +395,42 @@ export const updateToolVersionStatusWithToast = withToast(
     errorTitle: "状态修改失败",
     showSuccessToast: true
   }
-); 
+);
+
+// 获取工具最新版本
+export async function getToolLatestVersion(toolId: string): Promise<ApiResponse<{ version: string }>> {
+  try {
+    return await httpClient.get(API_ENDPOINTS.GET_TOOL_LATEST_VERSION(toolId));
+  } catch (error) {
+    console.error("获取工具最新版本失败", error);
+    return {
+      code: 500,
+      message: "获取工具最新版本失败",
+      data: { version: "0.0.0" }, // 返回一个默认值或错误标识
+      timestamp: Date.now(),
+    };
+  }
+}
+
+// 上架工具到市场
+export async function publishToolToMarket(
+  params: PublishToolToMarketParams
+): Promise<ApiResponse<any>> {
+  try {
+    // 与其他接口保持一致，直接返回 httpClient 的响应
+    return await httpClient.post(API_ENDPOINTS.PUBLISH_TOOL_TO_MARKET, params);
+  } catch (error) {
+    console.error("上架工具失败", error);
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : "上架工具失败",
+      data: null,
+      timestamp: Date.now()
+    };
+  }
+}
+
+export const publishToolToMarketWithToast = withToast(publishToolToMarket, {
+  showSuccessToast: true,
+  showErrorToast: true,
+}); 

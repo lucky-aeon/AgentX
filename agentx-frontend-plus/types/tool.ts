@@ -133,4 +133,10 @@ export interface ToolVersionDTO {
 export interface InstallToolParams {
   toolId: string
   version: string
+}
+
+export interface PublishToolToMarketParams {
+  toolId: string;
+  version: string;
+  changeLog: string;
 } 

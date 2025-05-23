@@ -111,7 +111,7 @@ export default function ToolsMarketPage() {
       }
     }
 
-    fetchTools()
+      fetchTools()
   }, [debouncedQuery])
 
   // 清除搜索
@@ -328,7 +328,7 @@ export default function ToolsMarketPage() {
       )}
       
       {/* 安装对话框 */}
-      <InstallToolDialog
+      <InstallToolDialog 
         open={isInstallDialogOpen}
         onOpenChange={setIsInstallDialogOpen}
         tool={selectedTool}
