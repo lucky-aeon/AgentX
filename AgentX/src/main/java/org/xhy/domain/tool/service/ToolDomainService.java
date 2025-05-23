@@ -12,16 +12,9 @@ import org.xhy.domain.tool.model.ToolVersionEntity;
 import org.xhy.domain.tool.repository.ToolRepository;
 import org.xhy.domain.tool.repository.ToolVersionRepository;
 import org.xhy.infrastructure.exception.BusinessException;
-import org.xhy.infrastructure.utils.JsonUtils;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import org.xhy.application.tool.dto.AvailableToolDTO;
 
 /** 工具领域服务 */
 @Service
@@ -31,8 +24,6 @@ public class ToolDomainService {
     private final ToolVersionRepository toolVersionRepository;
     private final ToolStateService toolStateService;
 
-    private static final String CUSTOM_TOOL_PREFIX = "custom:";
-    private static final String INSTALLED_TOOL_PREFIX = "installed:";
 
     public ToolDomainService(ToolRepository toolRepository, ToolVersionRepository toolVersionRepository,
             ToolStateService toolStateService) {
@@ -159,46 +150,6 @@ public class ToolDomainService {
         return toolRepository.selectById(toolId);
     }
 
-    /**
-     * 校验工具列表的可用性
-     *
-     * @param prefixedToolIds 带前缀的工具ID列表
-     * @param userId          用户ID
-     */
-    public void validTools(List<String> prefixedToolIds, String userId) {
-        if (prefixedToolIds == null || prefixedToolIds.isEmpty()) {
-            return; // 没有工具需要校验
-        }
-
-        for (String prefixedId : prefixedToolIds) {
-            if (prefixedId.startsWith(CUSTOM_TOOL_PREFIX)) {
-                String toolId = prefixedId.substring(CUSTOM_TOOL_PREFIX.length());
-                // 校验自定义工具
-                ToolEntity tool = toolRepository.selectOne(
-                        Wrappers.<ToolEntity>lambdaQuery().eq(ToolEntity::getId, toolId).eq(ToolEntity::getUserId,
-                                userId));
-                if (tool == null) {
-                    throw new BusinessException("自定义工具不存在或不属于该用户: " + toolId);
-                }
-                if (tool.getStatus() != ToolStatus.APPROVED) {
-                    throw new BusinessException("自定义工具 '" + tool.getName() + "' 未审核通过，无法使用。");
-                }
-            } else if (prefixedId.startsWith(INSTALLED_TOOL_PREFIX)) {
-                String toolVersionId = prefixedId.substring(INSTALLED_TOOL_PREFIX.length());
-                // 校验已安装的工具（工具版本）
-                ToolVersionEntity toolVersion = toolVersionRepository.selectById(toolVersionId);
-                if (toolVersion == null) {
-                    throw new BusinessException("已安装的工具版本不存在: " + toolVersionId);
-                }
-
-                if (!toolVersion.getPublicStatus()) {
-                    throw new BusinessException("工具版本已私密: " + toolVersion.getName());
-                }
-            } else {
-                throw new BusinessException("无法识别的工具ID前缀: " + prefixedId);
-            }
-        }
-    }
 
     private String getMcpServerName(ToolEntity tool) {
         if (tool == null) {
