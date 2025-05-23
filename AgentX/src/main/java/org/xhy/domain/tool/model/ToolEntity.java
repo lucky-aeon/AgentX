@@ -27,7 +27,7 @@ public class ToolEntity extends BaseEntity {
     @TableId(value = "id", type = IdType.ASSIGN_UUID)
     private String id;
 
-    /** 工具名称 */
+    /** 工具描述名称 */
     @TableField("name")
     private String name;
 
@@ -85,6 +85,9 @@ public class ToolEntity extends BaseEntity {
 
     @TableField(value = "failed_step_status", typeHandler = ToolStatusConverter.class)
     private ToolStatus failedStepStatus;
+
+    @TableField("mcp_server_name")
+    private String mcpServerName;
 
     public String getId() {
         return id;
@@ -212,5 +215,21 @@ public class ToolEntity extends BaseEntity {
 
     public void setFailedStepStatus(ToolStatus failedStepStatus) {
         this.failedStepStatus = failedStepStatus;
+    }
+
+    public Boolean getOffice() {
+        return isOffice;
+    }
+
+    public void setOffice(Boolean office) {
+        isOffice = office;
+    }
+
+    public String getMcpServerName() {
+        return mcpServerName;
+    }
+
+    public void setMcpServerName(String mcpServerName) {
+        this.mcpServerName = mcpServerName;
     }
 }

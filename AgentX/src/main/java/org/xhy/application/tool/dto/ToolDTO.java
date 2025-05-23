@@ -31,6 +31,7 @@ public class ToolDTO {
     private LocalDateTime updatedAt;
     private String rejectReason;
     private ToolStatus failedStepStatus;
+    private String mcpServerName;
 
     // 构造方法
     public ToolDTO() {
@@ -211,5 +212,13 @@ public class ToolDTO {
 
     public void setFailedStepStatus(ToolStatus failedStepStatus) {
         this.failedStepStatus = failedStepStatus;
+    }
+
+    public String getMcpServerName() {
+        return mcpServerName;
+    }
+
+    public void setMcpServerName(String mcpServerName) {
+        this.mcpServerName = mcpServerName;
     }
 }

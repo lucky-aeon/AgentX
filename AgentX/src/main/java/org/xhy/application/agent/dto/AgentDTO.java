@@ -1,6 +1,5 @@
 package org.xhy.application.agent.dto;
 
-import org.xhy.domain.agent.constant.AgentStatus;
 import org.xhy.domain.agent.constant.AgentType;
 import org.xhy.domain.agent.model.*;
 
@@ -30,7 +29,7 @@ public class AgentDTO {
     private String welcomeMessage;
 
     /** Agent可使用的工具列表 */
-    private List<AgentTool> tools;
+    private List<String> toolIds;
 
     /** 关联的知识库ID列表 */
     private List<String> knowledgeBaseIds;
@@ -55,7 +54,7 @@ public class AgentDTO {
 
     /** 无参构造函数 */
     public AgentDTO() {
-        this.tools = new ArrayList<>();
+        this.toolIds = new ArrayList<>();
         this.knowledgeBaseIds = new ArrayList<>();
     }
 
@@ -108,12 +107,12 @@ public class AgentDTO {
         this.welcomeMessage = welcomeMessage;
     }
 
-    public List<AgentTool> getTools() {
-        return tools;
+    public List<String> getToolIds() {
+        return toolIds;
     }
 
-    public void setTools(List<AgentTool> tools) {
-        this.tools = tools;
+    public void setToolIds(List<String> toolIds) {
+        this.toolIds = toolIds;
     }
 
     public List<String> getKnowledgeBaseIds() {
@@ -172,11 +171,6 @@ public class AgentDTO {
         this.updatedAt = updatedAt;
     }
 
-    /** 获取状态文本描述 */
-    public String getStatusText() {
-        return AgentStatus.fromCode(enabled ? 1 : 0).getDescription();
-    }
-
     /** 获取类型文本描述 */
     public String getAgentTypeText() {
         return AgentType.fromCode(agentType).getDescription();
@@ -192,7 +186,7 @@ public class AgentDTO {
         entity.setDescription(this.description);
         entity.setSystemPrompt(this.systemPrompt);
         entity.setWelcomeMessage(this.welcomeMessage);
-        entity.setTools(this.tools);
+        entity.setToolIds(this.toolIds);
         entity.setKnowledgeBaseIds(this.knowledgeBaseIds);
         entity.setPublishedVersion(this.publishedVersion);
         entity.setEnabled(this.enabled);

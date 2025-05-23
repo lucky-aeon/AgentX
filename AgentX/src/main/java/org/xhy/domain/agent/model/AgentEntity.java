@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import org.xhy.domain.agent.constant.AgentType;
+import org.xhy.infrastructure.converter.ListStringConverter;
 import org.xhy.infrastructure.entity.BaseEntity;
 import org.xhy.infrastructure.exception.BusinessException;
 
@@ -41,8 +42,8 @@ public class AgentEntity extends BaseEntity {
     private String welcomeMessage;
 
     /** Agent可使用的工具列表 */
-    @TableField(value = "tools", exist = false)
-    private List<AgentTool> tools;
+    @TableField(value = "tools", typeHandler = ListStringConverter.class)
+    private List<String> toolIds;
 
     /** 关联的知识库ID列表 */
     @TableField(value = "knowledge_base_ids", exist = false)
@@ -66,7 +67,7 @@ public class AgentEntity extends BaseEntity {
 
     /** 无参构造函数 */
     public AgentEntity() {
-        this.tools = new ArrayList<>();
+        this.toolIds = new ArrayList<>();
         this.knowledgeBaseIds = new ArrayList<>();
     }
 
@@ -119,12 +120,12 @@ public class AgentEntity extends BaseEntity {
         this.welcomeMessage = welcomeMessage;
     }
 
-    public List<AgentTool> getTools() {
-        return tools != null ? tools : new ArrayList<>();
+    public List<String> getToolIds() {
+        return toolIds != null ? toolIds : new ArrayList<>();
     }
 
-    public void setTools(List<AgentTool> tools) {
-        this.tools = tools;
+    public void setToolIds(List<String> toolIds) {
+        this.toolIds = toolIds;
     }
 
     public List<String> getKnowledgeBaseIds() {
@@ -190,15 +191,6 @@ public class AgentEntity extends BaseEntity {
         this.updatedAt = LocalDateTime.now();
     }
 
-    /** 更新Agent配置 */
-    public void updateConfig(String systemPrompt, String welcomeMessage, List<AgentTool> tools,
-            List<String> knowledgeBaseIds) {
-        this.systemPrompt = systemPrompt;
-        this.welcomeMessage = welcomeMessage;
-        this.tools = tools;
-        this.knowledgeBaseIds = knowledgeBaseIds;
-        this.updatedAt = LocalDateTime.now();
-    }
 
     /** 启用Agent */
     public void enable() {

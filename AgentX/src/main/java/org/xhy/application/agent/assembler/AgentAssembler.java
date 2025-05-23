@@ -1,6 +1,5 @@
 package org.xhy.application.agent.assembler;
 
-import org.springframework.beans.BeanUtils;
 import org.xhy.domain.agent.model.AgentEntity;
 import org.xhy.domain.agent.constant.AgentType;
 import org.xhy.application.agent.dto.AgentDTO;
@@ -35,7 +34,7 @@ public class AgentAssembler {
         entity.setEnabled(true);
 
         // 设置工具和知识库ID
-        entity.setTools(request.getTools() != null ? request.getTools() : new ArrayList<>());
+        entity.setToolIds(request.getToolIds() != null ? request.getToolIds() : new ArrayList<>());
         entity.setKnowledgeBaseIds(
                 request.getKnowledgeBaseIds() != null ? request.getKnowledgeBaseIds() : new ArrayList<>());
 
@@ -55,7 +54,7 @@ public class AgentAssembler {
         entity.setAvatar(request.getAvatar());
         entity.setSystemPrompt(request.getSystemPrompt());
         entity.setWelcomeMessage(request.getWelcomeMessage());
-        entity.setTools(request.getTools());
+        entity.setToolIds(request.getToolIds());
         entity.setKnowledgeBaseIds(request.getKnowledgeBaseIds());
         entity.setUserId(userId);
         entity.setEnabled(request.getEnabled());
@@ -77,7 +76,7 @@ public class AgentAssembler {
         dto.setDescription(entity.getDescription());
         dto.setSystemPrompt(entity.getSystemPrompt());
         dto.setWelcomeMessage(entity.getWelcomeMessage());
-        dto.setTools(entity.getTools());
+        dto.setToolIds(entity.getToolIds());
         dto.setKnowledgeBaseIds(entity.getKnowledgeBaseIds());
         dto.setPublishedVersion(entity.getPublishedVersion());
         dto.setEnabled(entity.getEnabled());

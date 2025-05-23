@@ -46,13 +46,15 @@ public class ToolAppService {
         this.userDomainService = userDomainService;
     }
 
-    /** 上传工具
+    /**
+     * 上传工具
      * 
      * 业务流程： 1. 将请求转换为实体 2. 调用领域服务创建工具 3. 将实体转换为DTO返回
      *
      * @param request 创建工具请求
-     * @param userId 用户ID
-     * @return 创建的工具DTO */
+     * @param userId  用户ID
+     * @return 创建的工具DTO
+     */
     @Transactional
     public ToolDTO uploadTool(CreateToolRequest request, String userId) {
         // 将请求转换为实体
@@ -115,6 +117,7 @@ public class ToolAppService {
         toolVersionEntity.setToolId(toolId);
         toolVersionEntity.setPublicStatus(true);
         toolVersionEntity.setId(null);
+        toolVersionEntity.setMcpServerName(toolEntity.getMcpServerName());
         toolVersionDomainService.addToolVersion(toolVersionEntity);
     }
 
@@ -164,6 +167,7 @@ public class ToolAppService {
         // 使用工具版本实体更新用户工具实体的信息
         userToolEntity.setVersion(toolVersionEntity.getVersion());
         userToolEntity.setId(userToolId);
+        userToolEntity.setMcpServerName(toolVersionEntity.getMcpServerName());
         if (userToolEntity.getId() == null) {
             userToolDomainService.add(userToolEntity);
         } else {

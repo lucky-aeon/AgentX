@@ -4,11 +4,9 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import org.apache.ibatis.type.JdbcType;
 import org.xhy.domain.agent.constant.PublishStatus;
 import org.xhy.infrastructure.converter.ListConverter;
 import org.xhy.infrastructure.entity.BaseEntity;
-import org.xhy.infrastructure.typehandler.JsonTypeHandler;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -52,7 +50,7 @@ public class AgentVersionEntity extends BaseEntity {
 
     /** Agent可使用的工具列表 */
     @TableField(value = "tools", typeHandler = ListConverter.class)
-    private List<AgentTool> tools;
+    private List<String> toolIds;
 
     /** 关联的知识库ID列表 */
     @TableField(value = "knowledge_base_ids", typeHandler = ListConverter.class)
@@ -88,7 +86,7 @@ public class AgentVersionEntity extends BaseEntity {
 
     /** 无参构造函数 */
     public AgentVersionEntity() {
-        this.tools = new ArrayList<>();
+        this.toolIds = new ArrayList<>();
         this.knowledgeBaseIds = new ArrayList<>();
     }
 
@@ -133,12 +131,12 @@ public class AgentVersionEntity extends BaseEntity {
         this.welcomeMessage = welcomeMessage;
     }
 
-    public List<AgentTool> getTools() {
-        return tools != null ? tools : new ArrayList<>();
+    public List<String> getToolIds() {
+        return toolIds != null ? toolIds : new ArrayList<>();
     }
 
-    public void setTools(List<AgentTool> tools) {
-        this.tools = tools;
+    public void setToolIds(List<String> toolIds) {
+        this.toolIds = toolIds;
     }
 
     public List<String> getKnowledgeBaseIds() {
@@ -256,7 +254,7 @@ public class AgentVersionEntity extends BaseEntity {
         version.setVersionNumber(versionNumber);
         version.setSystemPrompt(agent.getSystemPrompt());
         version.setWelcomeMessage(agent.getWelcomeMessage());
-        version.setTools(agent.getTools());
+        version.setToolIds(agent.getToolIds());
         version.setKnowledgeBaseIds(agent.getKnowledgeBaseIds());
         version.setChangeLog(changeLog);
         version.setAgentType(agent.getAgentType());

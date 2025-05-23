@@ -2,7 +2,6 @@ package org.xhy.interfaces.dto.agent.request;
 
 import jakarta.validation.constraints.NotBlank;
 import org.xhy.domain.agent.model.LLMModelConfig;
-import org.xhy.domain.agent.model.AgentTool;
 
 import java.util.List;
 
@@ -20,7 +19,7 @@ public class UpdateAgentRequest {
     private String systemPrompt;
     private String welcomeMessage;
     private LLMModelConfig modelConfig;
-    private List<AgentTool> tools;
+    private List<String> toolIds;
     private List<String> knowledgeBaseIds;
 
     public String getAgentId() {
@@ -80,12 +79,12 @@ public class UpdateAgentRequest {
         this.welcomeMessage = welcomeMessage;
     }
 
-    public List<AgentTool> getTools() {
-        return tools;
+    public List<String> getToolIds() {
+        return toolIds;
     }
 
-    public void setTools(List<AgentTool> tools) {
-        this.tools = tools;
+    public void setToolIds(List<String> toolIds) {
+        this.toolIds = toolIds;
     }
 
     public List<String> getKnowledgeBaseIds() {

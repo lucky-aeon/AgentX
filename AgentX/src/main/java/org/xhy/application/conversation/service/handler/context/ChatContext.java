@@ -118,48 +118,4 @@ public class ChatContext {
     public void setMessageHistory(List<MessageEntity> messageHistory) {
         this.messageHistory = messageHistory;
     }
-
-    public ChatRequest prepareChatRequest() {
-        // 构建聊天消息列表
-        List<ChatMessage> chatMessages = new ArrayList<>();
-        dev.langchain4j.model.chat.request.ChatRequest.Builder chatRequestBuilder = new dev.langchain4j.model.chat.request.ChatRequest.Builder();
-
-        // 1. 首先添加系统提示(如果有)
-        if (StringUtils.isNotEmpty(this.getAgent().getSystemPrompt())) {
-            chatMessages.add(new SystemMessage(this.getAgent().getSystemPrompt()));
-        }
-
-        // 2. 有条件地添加摘要信息(作为AI消息，但有明确的前缀标识)
-        if (StringUtils.isNotEmpty(this.getContextEntity().getSummary())) {
-            // 添加为AI消息，但明确标识这是摘要
-            chatMessages
-                    .add(new AiMessage(AgentPromptTemplates.getSummaryPrefix() + this.getContextEntity().getSummary()));
-        }
-
-        // 3. 添加对话历史
-        for (MessageEntity messageEntity : this.getMessageHistory()) {
-            Role role = messageEntity.getRole();
-            String content = messageEntity.getContent();
-            if (role == Role.USER) {
-                chatMessages.add(new UserMessage(content));
-            } else if (role == Role.SYSTEM) {
-                // 历史中的SYSTEM角色实际上是AI的回复
-                chatMessages.add(new AiMessage(content));
-            }
-        }
-
-        // 4. 添加当前用户消息
-        chatMessages.add(new UserMessage(this.getUserMessage()));
-
-        // 构建请求参数
-        OpenAiChatRequestParameters.Builder parameters = new OpenAiChatRequestParameters.Builder();
-        parameters.modelName(this.getModel().getModelId());
-        parameters.topP(this.getLlmModelConfig().getTopP()).temperature(this.getLlmModelConfig().getTemperature());
-
-        // 设置消息和参数
-        chatRequestBuilder.messages(chatMessages);
-        chatRequestBuilder.parameters(parameters.build());
-
-        return chatRequestBuilder.build();
-    }
 }
