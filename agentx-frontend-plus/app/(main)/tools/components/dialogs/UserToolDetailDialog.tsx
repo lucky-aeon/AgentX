@@ -5,7 +5,7 @@ import { UserTool, ToolFunction } from "../../utils/types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Command, Wrench, Clock, Download, ChevronDown, History } from "lucide-react";
+import { Command, Wrench, Clock, Download, ChevronDown, History, AlertTriangle } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -276,6 +276,22 @@ export function UserToolDetailDialog({
           </div>
         </DialogHeader>
 
+        {/* 删除状态警告 */}
+        {mergedTool.deleted && (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
+              <div className="text-amber-800">
+                <div className="font-medium mb-1">工具来源已被删除</div>
+                <div className="text-sm">
+                  该工具的原始来源已被作者删除，但您仍可以继续使用已安装的版本。
+                  不过，您将无法获得后续的更新和支持。
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="space-y-4 flex-1 overflow-hidden">
             {/* 作者和版本信息 */}
             <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
@@ -365,7 +381,7 @@ export function UserToolDetailDialog({
                 )}
               </div>
               
-              {formattedDate && (
+            {formattedDate && (
               <div className="flex items-center gap-1">
                 <span>创建于:</span>
                 <span>{formattedDate}</span>
@@ -425,7 +441,7 @@ export function UserToolDetailDialog({
                                       {description && (
                                         <span className="text-xs text-muted-foreground ml-2">{description}</span>
                                       )}
-                                    </div>
+                                  </div>
                                 );
                                 })}
                           </div>

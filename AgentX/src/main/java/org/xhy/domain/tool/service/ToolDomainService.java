@@ -16,6 +16,8 @@ import org.xhy.domain.tool.repository.ToolVersionRepository;
 import org.xhy.domain.tool.repository.UserToolRepository;
 import org.xhy.infrastructure.exception.BusinessException;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -121,24 +123,20 @@ public class ToolDomainService {
 
     @Transactional
     public void deleteTool(String toolId, String userId) {
+
         // 删除工具
         Wrapper<ToolEntity> wrapper = Wrappers.<ToolEntity>lambdaQuery().eq(ToolEntity::getId, toolId)
                 .eq(ToolEntity::getUserId, userId);
 
-        // 删除工具版本
-        Wrapper<ToolVersionEntity> versionWrapper = Wrappers.<ToolVersionEntity>lambdaQuery()
-                .eq(ToolVersionEntity::getToolId, toolId);
-
-        // 删除用户工具
-        Wrapper<UserToolEntity> userToolWrapper = Wrappers.<UserToolEntity>lambdaQuery().eq(UserToolEntity::getToolId,
-                toolId);
+        // 删除当前用户安装的该工具
+        Wrapper<UserToolEntity> userToolWrapper = Wrappers.<UserToolEntity>lambdaQuery()
+                .eq(UserToolEntity::getToolId, toolId)
+                .eq(UserToolEntity::getUserId,userId);
 
         toolRepository.checkedDelete(wrapper);
-        toolVersionRepository.delete(versionWrapper);
         userToolRepository.delete(userToolWrapper);
         // 这里应该删除 mcp community github repo，但是删不干净，索性就不删
         // 用户可以自行修改工具名称，修改后之前的工具名称不记录，因此就算删除，之前的仓库无记录删不了
-
     }
 
     public ToolEntity getTool(String toolId) {
@@ -176,5 +174,13 @@ public class ToolDomainService {
             throw new BusinessException("工具ID: " + tool.getId() + " 无法从安装命令中获取工具名称。");
         }
         return toolName;
+    }
+
+    public List<ToolEntity> getByIds(List<String> toolIds)
+    {
+        if (toolIds == null || toolIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+        return toolRepository.selectByIds(toolIds);
     }
 }

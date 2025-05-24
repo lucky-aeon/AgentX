@@ -2,6 +2,8 @@ package org.xhy.application.tool.service;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 
@@ -163,12 +165,12 @@ public class ToolAppService {
 
         if (userToolEntity == null) {
             userToolEntity = new UserToolEntity();
-            userToolEntity.setUserId(userId);
             userToolEntity.setToolId(toolVersionEntity.getToolId());
         }
         String userToolId = userToolEntity.getId();
         BeanUtils.copyProperties(toolVersionEntity, userToolEntity);
-        // 使用工具版本实体更新用户工具实体的信息
+
+        userToolEntity.setUserId(userId);
         userToolEntity.setVersion(toolVersionEntity.getVersion());
         userToolEntity.setId(userToolId);
         userToolEntity.setMcpServerName(toolVersionEntity.getMcpServerName());
@@ -182,7 +184,22 @@ public class ToolAppService {
     public Page<ToolVersionDTO> getInstalledTools(String userId, QueryToolRequest queryToolRequest) {
 
         Page<UserToolEntity> userToolEntityPage = userToolDomainService.listByUserId(userId, queryToolRequest);
-        List<ToolVersionDTO> list = userToolEntityPage.getRecords().stream().map(ToolAssembler::toDTO).toList();
+
+        // 查询对应的工具是否还存在
+        ArrayList<String> toolIds = new ArrayList<>();
+
+        Map<String, ToolEntity> toolMap = toolDomainService.getByIds(userToolEntityPage.getRecords().stream().map(UserToolEntity::getToolId).toList()).stream().collect(Collectors.toMap(ToolEntity::getId, Function.identity()));
+
+
+        List<ToolVersionDTO> list = userToolEntityPage.getRecords().stream().map(userToolEntity->{
+            ToolVersionDTO dto = ToolAssembler.toDTO(userToolEntity);
+            toolIds.add(userToolEntity.getToolId());
+            if (!toolMap.containsKey(userToolEntity.getToolId())){
+                dto.setDelete(true);
+            }
+            return dto;
+        }).toList();
+
         Page<ToolVersionDTO> tPage = new Page<>(userToolEntityPage.getCurrent(), userToolEntityPage.getSize(),
                 userToolEntityPage.getTotal());
         tPage.setRecords(list);
@@ -228,6 +245,17 @@ public class ToolAppService {
             Random random = new Random();
             toolVersionDTOs = toolVersionDTOs.stream().sorted((a, b) -> random.nextInt(2) - 1).limit(10).toList();
         }
+
+        Map<String, String> userNicknameMap = userDomainService.getByIds(toolVersionDTOs.stream().map(ToolVersionDTO::getUserId).toList())
+                .stream()
+                .collect(Collectors.toMap(UserEntity::getId, UserEntity::getNickname));
+
+        toolVersionDTOs.forEach(toolVersionDTO -> {
+            if (userNicknameMap.containsKey(toolVersionDTO.getUserId())) {
+                toolVersionDTO.setUserName(userNicknameMap.get(toolVersionDTO.getUserId()));
+            }
+        });
+
 
         return toolVersionDTOs;
     }

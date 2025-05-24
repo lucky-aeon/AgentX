@@ -2,7 +2,7 @@ import { UserTool, ToolStatus } from "../../utils/types";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ToolLabels } from "../shared/ToolLabels";
-import { MoreVertical, PencilIcon, Settings, Trash, Wrench, AlertCircle, History, UploadCloud } from "lucide-react";
+import { MoreVertical, PencilIcon, Settings, Trash, Wrench, AlertCircle, History, UploadCloud, AlertTriangle } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -65,27 +65,46 @@ export function UserToolCard({
 
   return (
     <Card 
-      className="relative overflow-hidden hover:shadow-md transition-all duration-300 border border-gray-100 min-h-[180px]"
+      className={`relative overflow-hidden hover:shadow-md transition-all duration-300 border min-h-[180px] ${
+        tool.deleted 
+          ? 'border-red-200 bg-red-50/30 opacity-90' 
+          : 'border-gray-100'
+      }`}
     >
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3 flex-1 min-w-0" onClick={() => onCardClick(tool)} style={{ cursor: 'pointer' }}>
-            <div className="flex h-12 w-12 items-center justify-center rounded-md bg-primary/10 text-primary-foreground overflow-hidden">
+            <div className={`flex h-12 w-12 items-center justify-center rounded-md text-primary-foreground overflow-hidden ${
+              tool.deleted ? 'bg-red-100' : 'bg-primary/10'
+            }`}>
               {tool.icon ? (
-                <img src={tool.icon} alt={tool.name} className="h-full w-full object-cover" />
+                <img src={tool.icon} alt={tool.name} className={`h-full w-full object-cover ${tool.deleted ? 'opacity-70' : ''}`} />
               ) : (
                 <Wrench className="h-6 w-6" />
               )}
             </div>
             <div className="w-[calc(100%-60px)] min-w-0">
               <h3 className="font-semibold line-clamp-1 truncate text-ellipsis overflow-hidden whitespace-nowrap max-w-full">{tool.name}</h3>
-              {showStatus && (
+              
+              {/* 删除状态标签 */}
+              {tool.deleted && (
+                <div className="mt-1">
+                  <Badge variant="outline" className="text-red-600 bg-red-50 border-red-200 text-xs flex items-center gap-1">
+                    <AlertTriangle className="h-3 w-3" />
+                    来源已删除
+                  </Badge>
+                </div>
+              )}
+              
+              {/* 审核状态标签 */}
+              {showStatus && !tool.deleted && (
                 <div className="mt-1">
                   <Badge variant="outline" className={`${statusColor} border-0 text-xs`}>
                     {statusText}
                   </Badge>
                 </div>
               )}
+              
               {authorName && (
                 <p className="text-sm text-muted-foreground mt-1">{authorName}</p>
               )}
@@ -106,14 +125,14 @@ export function UserToolCard({
                   查看审核状态
                 </DropdownMenuItem>
               )}
-              {tool.isOwner && onEditClick && (
+              {tool.isOwner && onEditClick && !tool.deleted && (
                 <DropdownMenuItem onClick={(e) => onEditClick(tool, e as unknown as React.MouseEvent)}>
                   <PencilIcon className="mr-2 h-4 w-4" />
                   编辑工具
                 </DropdownMenuItem>
               )}
               {/* 上架工具选项 (仅对自己创建的工具显示) */}
-              {tool.isOwner && onPublishClick && (
+              {tool.isOwner && onPublishClick && !tool.deleted && (
                 <DropdownMenuItem onClick={(e) => onPublishClick(tool, e as unknown as React.MouseEvent)}>
                   <UploadCloud className="mr-2 h-4 w-4" />
                   上架工具
