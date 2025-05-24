@@ -68,7 +68,7 @@ public class ToolStateDomainService {
     public void init() {
         // 注册基础状态处理器
         registerProcessor(new WaitingReviewProcessor());
-        registerProcessor(new GithubUrlValidateProcessor());
+        registerProcessor(new GithubUrlValidateProcessor(gitHubService));
         // 移除或保留 DeployingProcessor 和 FetchingToolsProcessor 取决于它们是否还在流程中
         registerProcessor(new DeployingProcessor(mcpGatewayService));
         registerProcessor(new FetchingToolsProcessor(mcpGatewayService));
@@ -127,11 +127,6 @@ public class ToolStateDomainService {
             tool.setStatus(ToolStatus.APPROVED); // 审核通过，进入发布状态
             toolRepository.updateById(tool); // 保存APPROVED状态
             logger.info("工具ID: {} 人工审核通过，状态更新为 APPROVED。", toolId);
-            
-            // 审核通过后继续流程，将状态设为PUBLISHING并提交处理
-            tool.setStatus(ToolStatus.PUBLISHING);
-            toolRepository.updateById(tool);
-            logger.info("工具ID: {} 状态更新为 PUBLISHING，继续发布流程。", toolId);
             submitToolForProcessing(tool);
         } else {
             tool.setStatus(ToolStatus.FAILED);
@@ -159,11 +154,6 @@ public class ToolStateDomainService {
         try {
             processor.process(toolEntity);
 
-            if (initialStatus == ToolStatus.PUBLISHING) {
-                logger.info("工具ID: {} 的 PUBLISHING 状态处理器执行完成。", toolEntity.getId());
-                return;
-            }
-
             ToolStatus nextStatusCandidate = processor.getNextStatus();
 
             if (nextStatusCandidate != null && nextStatusCandidate != initialStatus) {
@@ -183,10 +173,7 @@ public class ToolStateDomainService {
         } catch (Exception e) {
             logger.error("处理工具ID: {} 的状态 {} 时发生错误: {}", toolEntity.getId(), initialStatus, e.getMessage(), e);
 
-            ToolStatus failureStatus = (initialStatus == ToolStatus.PUBLISHING)
-                    ? ToolStatus.PUBLISH_FAILED
-                    : ToolStatus.FAILED;
-            toolEntity.setStatus(failureStatus);
+            toolEntity.setStatus(ToolStatus.FAILED);
             toolEntity.setFailedStepStatus(initialStatus);
             toolEntity.setRejectReason("状态处理失败: " + e.getMessage());
 

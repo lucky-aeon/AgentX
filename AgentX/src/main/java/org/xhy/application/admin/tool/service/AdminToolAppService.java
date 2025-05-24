@@ -35,11 +35,6 @@ public class AdminToolAppService {
 
         ToolEntity tool = toolDomainService.getTool(toolId);
 
-        // 如果状态一致
-        if (tool.getStatus().equals(status)) {
-            throw new BusinessException("状态一致,不可修改");
-        }
-
         if (tool.getStatus() == ToolStatus.MANUAL_REVIEW && status == ToolStatus.APPROVED) {
             // 人工审核通过，调用状态服务处理
             String approvedToolId = toolStateService.manualReviewComplete(tool, true);

@@ -133,9 +133,17 @@ public class ToolDomainService {
         // 删除工具版本
         Wrapper<ToolVersionEntity> versionWrapper = Wrappers.<ToolVersionEntity>lambdaQuery()
                 .eq(ToolVersionEntity::getToolId, toolId);
+
+        // 删除用户工具
+        Wrapper<UserToolEntity> userToolWrapper = Wrappers.<UserToolEntity>lambdaQuery()
+                .eq(UserToolEntity::getToolId, toolId);
+
         toolRepository.checkedDelete(wrapper);
         toolVersionRepository.delete(versionWrapper);
-        // todo xhy 删除 mcp_community 仓库
+        userToolRepository.delete(userToolWrapper);
+        // 这里应该删除 mcp community github repo，但是删不干净，索性就不删
+        // 用户可以自行修改工具名称，修改后之前的工具名称不记录，因此就算删除，之前的仓库无记录删不了
+
     }
 
     public ToolEntity getTool(String toolId) {
