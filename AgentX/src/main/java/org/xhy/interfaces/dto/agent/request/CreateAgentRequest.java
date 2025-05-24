@@ -18,7 +18,7 @@ public class CreateAgentRequest {
     private String welcomeMessage;
     private List<String> toolIds;
     private List<String> knowledgeBaseIds;
-    private Map<String,Map<String,String>> toolPresetParams;
+    private Map<String,Map<String,Map<String,String>>> toolPresetParams;
     // 构造方法
     public CreateAgentRequest() {
     }
@@ -87,11 +87,11 @@ public class CreateAgentRequest {
         this.knowledgeBaseIds = knowledgeBaseIds;
     }
 
-    public Map<String,Map<String,String>> getToolPresetParams() {
+    public Map<String,Map<String,Map<String,String>>> getToolPresetParams() {
         return toolPresetParams;
     }
 
-    public void setToolPresetParams(Map<String,Map<String,String>> toolPresetParams) {
+    public void setToolPresetParams(Map<String,Map<String,Map<String,String>>> toolPresetParams) {
         this.toolPresetParams = toolPresetParams;
     }
 }

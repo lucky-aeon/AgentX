@@ -18,7 +18,11 @@ interface ToolDetailSidebarProps {
   tool: Tool | null;
   isOpen: boolean;
   onClose: () => void;
-  presetParameters?: Record<string, Record<string, string>>;
+  presetParameters?: {
+    [functionName: string]: {
+      [paramName: string]: string
+    }
+  };
   onSavePresetParameters?: (toolId: string, presetParams: Record<string, Record<string, string>>) => void;
 }
 

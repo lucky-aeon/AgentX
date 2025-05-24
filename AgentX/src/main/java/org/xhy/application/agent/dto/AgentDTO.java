@@ -46,7 +46,7 @@ public class AgentDTO {
     /** 创建者用户ID */
     private String userId;
 
-    private Map<String, Map<String,String>> toolPresetParams;
+    private Map<String,Map<String,Map<String,String>>> toolPresetParams;
 
     /** 创建时间 */
     private LocalDateTime createdAt;
@@ -179,11 +179,11 @@ public class AgentDTO {
         return AgentType.fromCode(agentType).getDescription();
     }
 
-    public void setToolPresetParams(Map<String, Map<String, String>> toolPresetParams) {
+    public void setToolPresetParams(Map<String,Map<String,Map<String,String>>> toolPresetParams) {
         this.toolPresetParams = toolPresetParams;
     }
 
-    public Map<String, Map<String, String>> getToolPresetParams() {
+    public Map<String,Map<String,Map<String,String>>> getToolPresetParams() {
         return toolPresetParams;
     }
 }

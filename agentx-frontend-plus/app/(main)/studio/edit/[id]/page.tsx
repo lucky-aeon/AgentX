@@ -88,7 +88,13 @@ interface AgentFormData {
   welcomeMessage: string
   tools: AgentTool[]
   knowledgeBaseIds: string[]
-  toolPresetParams: Record<string, Record<string, string>> // 工具预设参数
+  toolPresetParams: {
+    [serverName: string]: {
+      [functionName: string]: {
+        [paramName: string]: string
+      }
+    }
+  } // 工具预设参数
   enabled: boolean
   agentType: number
 }
@@ -412,8 +418,8 @@ export default function EditAgentPage() {
         name: formData.name,
         avatar: formData.avatar,
         description: formData.description || "",
-        systemPrompt: selectedType === "chat" ? formData.systemPrompt : "",
-        welcomeMessage: selectedType === "chat" ? formData.welcomeMessage : "",
+        systemPrompt: formData.systemPrompt,
+        welcomeMessage: formData.welcomeMessage,
         toolIds: toolIds, // 使用工具ID数组
         knowledgeBaseIds: selectedType === "chat" ? formData.knowledgeBaseIds : [],
         toolPresetParams: formData.toolPresetParams,
@@ -605,18 +611,12 @@ export default function EditAgentPage() {
 
   // 根据选择的类型更新可用的标签页
   const getAvailableTabs = () => {
-    if (selectedType === "chat") {
+    // 所有类型都显示所有标签页
       return [
         { id: "basic", label: "基本信息" },
         { id: "prompt", label: "提示词配置" },
-        { id: "tools", label: "工具与知识库" },
+      { id: "tools", label: selectedType === "chat" ? "工具与知识库" : "工具配置" },
       ]
-    } else {
-      return [
-        { id: "basic", label: "基本信息" },
-        { id: "tools", label: "工具配置" },
-      ]
-    }
   }
 
   // 获取发布状态文本
@@ -684,21 +684,15 @@ export default function EditAgentPage() {
         // 获取该功能的所有参数
         const params = presetParams[functionName];
         
-        // 将参数格式化为 "{'param1':'value1','param2':'value2'}" 格式
-        const paramsObj: Record<string, string> = {};
+        // 将参数添加到嵌套结构中
+        if (!newToolPresetParams[mcpServerName][functionName]) {
+          newToolPresetParams[mcpServerName][functionName] = {};
+        }
+        
+        // 添加每个参数
         Object.entries(params).forEach(([paramName, paramValue]) => {
-          // 未设置的参数值设为空字符串
-          paramsObj[paramName] = paramValue || '';
+          newToolPresetParams[mcpServerName][functionName][paramName] = paramValue || '';
         });
-        
-        // 转换为需要的字符串格式
-        // 注意：使用单引号包裹键和值，外层使用双引号
-        const formattedParams = JSON.stringify(paramsObj)
-          .replace(/"/g, "'")  // 将双引号替换为单引号
-          .replace(/'/g, "'"); // 确保所有引号都是单引号
-        
-        // 设置参数
-        newToolPresetParams[mcpServerName][functionName] = formattedParams;
       });
       
       return {
@@ -794,15 +788,13 @@ export default function EditAgentPage() {
               />
             </TabsContent>
 
-            {/* 仅聊天助理显示提示词配置 */}
-            {selectedType === "chat" && (
+            {/* 提示词配置 */}
               <TabsContent value="prompt" className="space-y-6">
-                <AgentPromptForm
-                  formData={formData}
-                  updateFormField={updateFormField}
+              <AgentPromptForm
+                formData={formData}
+                updateFormField={updateFormField}
                   />
               </TabsContent>
-            )}
 
             <TabsContent value="tools" className="space-y-6">
               <AgentToolsForm
@@ -1257,39 +1249,7 @@ export default function EditAgentPage() {
         isOpen={isToolSidebarOpen}
         onClose={() => setIsToolSidebarOpen(false)}
         presetParameters={selectedToolForSidebar && selectedToolForSidebar.mcpServerName && formData.toolPresetParams[selectedToolForSidebar.mcpServerName] ? 
-          Object.entries(formData.toolPresetParams[selectedToolForSidebar.mcpServerName]).reduce((acc, [funcName, paramStr]) => {
-            try {
-              // 将参数字符串如 "{'email':'xxx@qq.com','password':'123'}" 转换为对象
-              const cleanParamStr = paramStr
-                .replace(/^['"]/, '') // 移除开头的引号
-                .replace(/['"]$/, ''); // 移除结尾的引号
-              
-              // 尝试解析JSON字符串，注意替换单引号为双引号
-              const paramObj = JSON.parse(cleanParamStr.replace(/'/g, '"'));
-              acc[funcName] = paramObj;
-            } catch (e) {
-              console.error(`解析工具参数失败: ${funcName}`, e, paramStr);
-              // 尝试使用正则表达式解析
-              try {
-                const params: Record<string, string> = {};
-                // 匹配 'key':'value' 模式
-                const regex = /'([^']+)'\s*:\s*'([^']*)'/g;
-                let match;
-                
-                while ((match = regex.exec(paramStr)) !== null) {
-                  if (match.length >= 3) {
-                    params[match[1]] = match[2];
-                  }
-                }
-                
-                acc[funcName] = params;
-              } catch (regexError) {
-                console.error(`正则解析失败: ${funcName}`, regexError);
-                acc[funcName] = {};
-              }
-            }
-            return acc;
-          }, {} as Record<string, Record<string, string>>) : 
+          formData.toolPresetParams[selectedToolForSidebar.mcpServerName] : 
           {}}
         onSavePresetParameters={updateToolPresetParameters}
       />

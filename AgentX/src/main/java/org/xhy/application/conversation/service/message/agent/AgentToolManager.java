@@ -10,6 +10,7 @@ import dev.langchain4j.service.tool.ToolProvider;
 import org.springframework.stereotype.Component;
 import org.xhy.application.conversation.service.handler.context.ChatContext;
 import org.xhy.infrastructure.mcp_gateway.MCPGatewayService;
+import org.xhy.infrastructure.utils.JsonUtils;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -30,7 +31,7 @@ public class AgentToolManager {
      *
      * @param mcpServerNames 工具URL列表
      * @return 工具提供者实例，如果工具列表为空则返回null */
-    public ToolProvider createToolProvider(List<String> mcpServerNames, Map<String, Map<String,String>> toolPresetParams) {
+    public ToolProvider createToolProvider(List<String> mcpServerNames, Map<String,Map<String,Map<String,String>>> toolPresetParams) {
         if (mcpServerNames == null || mcpServerNames.isEmpty()) {
             return null;
         }
@@ -52,7 +53,7 @@ public class AgentToolManager {
                 List<PresetParameter> presetParameters = new ArrayList<>();
                 for (String key : toolPresetParams.keySet()) {
                     toolPresetParams.get(key).forEach((k, v) -> {
-                        presetParameters.add(new PresetParameter(k, v));
+                        presetParameters.add(new PresetParameter(k, JsonUtils.toJsonString(v)));
                     });
                 }
                 mcpClient.presetParameters(presetParameters);

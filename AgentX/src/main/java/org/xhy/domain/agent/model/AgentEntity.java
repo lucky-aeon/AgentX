@@ -78,7 +78,7 @@ public class AgentEntity extends BaseEntity {
      * }
      */
     @TableField(value = "tool_preset_params", typeHandler = MapConverter.class)
-    private Map<String,Map<String,String>> toolPresetParams;
+    private Map<String,Map<String,Map<String,String>>> toolPresetParams;
 
 
     /** 无参构造函数 */
@@ -243,11 +243,11 @@ public class AgentEntity extends BaseEntity {
     }
 
     /** 获取预先设置的工具参数 */
-    public Map<String,Map<String,String>> getToolPresetParams() {
+    public Map<String,Map<String,Map<String,String>>> getToolPresetParams() {
         return toolPresetParams;
     }
 
-    public void setToolPresetParams(Map<String, Map<String, String>> toolPresetParams) {
+    public void setToolPresetParams(Map<String,Map<String,Map<String,String>>> toolPresetParams) {
         this.toolPresetParams = toolPresetParams;
     }
 }

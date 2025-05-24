@@ -14,7 +14,11 @@ interface ToolParametersModalProps {
   onClose: () => void;
   tool: Tool;
   toolFunctions: any[];
-  presetParameters?: Record<string, Record<string, string>>;
+  presetParameters?: {
+    [functionName: string]: {
+      [paramName: string]: string
+    }
+  };
   onSavePresetParameters?: (toolId: string, presetParams: Record<string, Record<string, string>>) => void;
 }
 
