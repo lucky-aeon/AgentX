@@ -4,6 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import org.xhy.domain.agent.constant.AgentType;
 
 import java.util.List;
+import java.util.Map;
 
 /** 创建Agent的请求对象 */
 public class CreateAgentRequest {
@@ -15,9 +16,9 @@ public class CreateAgentRequest {
     private AgentType agentType = AgentType.CHAT_ASSISTANT;
     private String systemPrompt;
     private String welcomeMessage;
-    private List<String> toolIds;
+    private List<String> toolVersionIds;
     private List<String> knowledgeBaseIds;
-
+    private Map<String,Map<String,String>> toolPresetParams;
     // 构造方法
     public CreateAgentRequest() {
     }
@@ -70,12 +71,12 @@ public class CreateAgentRequest {
         this.welcomeMessage = welcomeMessage;
     }
 
-    public List<String> getToolIds() {
-        return toolIds;
+    public List<String> getToolVersionIds() {
+        return toolVersionIds;
     }
 
-    public void setToolIds(List<String> toolIds) {
-        this.toolIds = toolIds;
+    public void setToolVersionIds(List<String> toolVersionIds) {
+        this.toolVersionIds = toolVersionIds;
     }
 
     public List<String> getKnowledgeBaseIds() {
@@ -84,5 +85,13 @@ public class CreateAgentRequest {
 
     public void setKnowledgeBaseIds(List<String> knowledgeBaseIds) {
         this.knowledgeBaseIds = knowledgeBaseIds;
+    }
+
+    public Map<String,Map<String,String>> getToolPresetParams() {
+        return toolPresetParams;
+    }
+
+    public void setToolPresetParams(Map<String,Map<String,String>> toolPresetParams) {
+        this.toolPresetParams = toolPresetParams;
     }
 }

@@ -4,14 +4,18 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+
+
 import org.xhy.domain.agent.constant.AgentType;
 import org.xhy.infrastructure.converter.ListStringConverter;
+import org.xhy.infrastructure.converter.MapConverter;
 import org.xhy.infrastructure.entity.BaseEntity;
 import org.xhy.infrastructure.exception.BusinessException;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /** Agent实体类，代表一个AI助手 */
 @TableName(value = "agents", autoResultMap = true)
@@ -42,8 +46,8 @@ public class AgentEntity extends BaseEntity {
     private String welcomeMessage;
 
     /** Agent可使用的工具列表 */
-    @TableField(value = "tools", typeHandler = ListStringConverter.class,exist = false)
-    private List<String> toolIds;
+    @TableField(value = "tool_version_ids", typeHandler = ListStringConverter.class)
+    private List<String> toolVersionIds;
 
     /** 关联的知识库ID列表 */
     @TableField(value = "knowledge_base_ids", exist = false)
@@ -65,9 +69,21 @@ public class AgentEntity extends BaseEntity {
     @TableField("user_id")
     private String userId;
 
+    /**
+     * 预先设置工具参数，结构如下：
+     * {
+     * "<mcpServerName>":{
+     *          "toolName":"paranms"
+     * }
+     * }
+     */
+    @TableField(value = "tool_preset_params", typeHandler = MapConverter.class)
+    private Map<String,Map<String,String>> toolPresetParams;
+
+
     /** 无参构造函数 */
     public AgentEntity() {
-        this.toolIds = new ArrayList<>();
+        this.toolVersionIds = new ArrayList<>();
         this.knowledgeBaseIds = new ArrayList<>();
     }
 
@@ -120,12 +136,12 @@ public class AgentEntity extends BaseEntity {
         this.welcomeMessage = welcomeMessage;
     }
 
-    public List<String> getToolIds() {
-        return toolIds != null ? toolIds : new ArrayList<>();
+    public List<String> getToolVersionIds() {
+        return toolVersionIds != null ? toolVersionIds : new ArrayList<>();
     }
 
-    public void setToolIds(List<String> toolIds) {
-        this.toolIds = toolIds;
+    public void setToolVersionIds(List<String> toolVersionIds) {
+        this.toolVersionIds = toolVersionIds;
     }
 
     public List<String> getKnowledgeBaseIds() {
@@ -224,5 +240,14 @@ public class AgentEntity extends BaseEntity {
         if (!this.enabled) {
             throw new BusinessException("助理未激活");
         }
+    }
+
+    /** 获取预先设置的工具参数 */
+    public Map<String,Map<String,String>> getToolPresetParams() {
+        return toolPresetParams;
+    }
+
+    public void setToolPresetParams(Map<String, Map<String, String>> toolPresetParams) {
+        this.toolPresetParams = toolPresetParams;
     }
 }

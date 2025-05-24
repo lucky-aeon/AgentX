@@ -4,13 +4,17 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+
+
 import org.xhy.domain.agent.constant.PublishStatus;
 import org.xhy.infrastructure.converter.ListConverter;
+import org.xhy.infrastructure.converter.MapConverter;
 import org.xhy.infrastructure.entity.BaseEntity;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /** Agent版本实体类，代表一个Agent的发布版本 */
 @TableName(value = "agent_versions", autoResultMap = true)
@@ -49,8 +53,8 @@ public class AgentVersionEntity extends BaseEntity {
     private String welcomeMessage;
 
     /** Agent可使用的工具列表 */
-    @TableField(value = "tools", typeHandler = ListConverter.class)
-    private List<String> toolIds;
+    @TableField(value = "tool_version_ids", typeHandler = ListConverter.class)
+    private List<String> toolVersionIds;
 
     /** 关联的知识库ID列表 */
     @TableField(value = "knowledge_base_ids", typeHandler = ListConverter.class)
@@ -84,9 +88,13 @@ public class AgentVersionEntity extends BaseEntity {
     @TableField("user_id")
     private String userId;
 
+    /** 预先设置的工具参数 */
+    @TableField(value = "tool_preset_params", typeHandler = MapConverter.class)
+    private Map<String,Map<String,String>> toolPresetParams;
+
     /** 无参构造函数 */
     public AgentVersionEntity() {
-        this.toolIds = new ArrayList<>();
+        this.toolVersionIds = new ArrayList<>();
         this.knowledgeBaseIds = new ArrayList<>();
     }
 
@@ -131,12 +139,12 @@ public class AgentVersionEntity extends BaseEntity {
         this.welcomeMessage = welcomeMessage;
     }
 
-    public List<String> getToolIds() {
-        return toolIds != null ? toolIds : new ArrayList<>();
+    public List<String> getToolVersionIds() {
+        return toolVersionIds != null ? toolVersionIds : new ArrayList<>();
     }
 
-    public void setToolIds(List<String> toolIds) {
-        this.toolIds = toolIds;
+    public void setToolVersionIds(List<String> toolVersionIds) {
+        this.toolVersionIds = toolVersionIds;
     }
 
     public List<String> getKnowledgeBaseIds() {
@@ -254,7 +262,7 @@ public class AgentVersionEntity extends BaseEntity {
         version.setVersionNumber(versionNumber);
         version.setSystemPrompt(agent.getSystemPrompt());
         version.setWelcomeMessage(agent.getWelcomeMessage());
-        version.setToolIds(agent.getToolIds());
+        version.setToolVersionIds(agent.getToolVersionIds());
         version.setKnowledgeBaseIds(agent.getKnowledgeBaseIds());
         version.setChangeLog(changeLog);
         version.setAgentType(agent.getAgentType());

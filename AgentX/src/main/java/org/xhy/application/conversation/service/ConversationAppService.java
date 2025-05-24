@@ -137,18 +137,19 @@ public class ConversationAppService {
             throw new BusinessException("agent已被禁用");
         }
 
-        List<String> toolIds = agent.getToolIds();
+        List<String> toolIds = agent.getToolVersionIds();
 
         // 在工作区中的助理会分为用户自己创建的和安装的助理，因此需要区分 agent，如果 agent 的 userId 等于当前用户则使用 agent，反之使用
         // agent_version
         if (!agent.getUserId().equals(userId)) {
             AgentVersionEntity latestAgentVersion = agentDomainService.getLatestAgentVersion(agentId);
             // 直接转换即可
-            toolIds = latestAgentVersion.getToolIds();
+            toolIds = latestAgentVersion.getToolVersionIds();
             BeanUtils.copyProperties(latestAgentVersion, agent);
         }
 
-        // 校验工具的可用性 todo xhy
+        // 校验工具的可用性
+        toolDomainService.checkToolAvailability(toolIds, userId);
 
         // 3. 获取工作区和模型配置
         AgentWorkspaceEntity workspace = agentWorkspaceDomainService.getWorkspace(agentId, userId);

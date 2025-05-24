@@ -4,11 +4,12 @@ import jakarta.validation.constraints.NotBlank;
 import org.xhy.domain.agent.model.LLMModelConfig;
 
 import java.util.List;
+import java.util.Map;
 
 /** 更新Agent信息的请求对象 整合了基本信息和配置信息 */
 public class UpdateAgentRequest {
 
-    private String agentId;
+    private String id;
     @NotBlank(message = "助理名称不可为空")
     private String name;
     private String avatar;
@@ -19,15 +20,16 @@ public class UpdateAgentRequest {
     private String systemPrompt;
     private String welcomeMessage;
     private LLMModelConfig modelConfig;
-    private List<String> toolIds;
+    private List<String> toolVersionIds;
     private List<String> knowledgeBaseIds;
+    private Map<String,Map<String,String>> toolPresetParams;
 
-    public String getAgentId() {
-        return agentId;
+    public String getId() {
+        return id;
     }
 
-    public void setAgentId(String agentId) {
-        this.agentId = agentId;
+    public void setId(String id) {
+        this.id = id;
     }
 
     public Boolean getEnabled() {
@@ -79,12 +81,12 @@ public class UpdateAgentRequest {
         this.welcomeMessage = welcomeMessage;
     }
 
-    public List<String> getToolIds() {
-        return toolIds;
+    public List<String> getToolVersionIds() {
+        return toolVersionIds;
     }
 
-    public void setToolIds(List<String> toolIds) {
-        this.toolIds = toolIds;
+    public void setToolVersionIds(List<String> toolVersionIds) {
+        this.toolVersionIds = toolVersionIds;
     }
 
     public List<String> getKnowledgeBaseIds() {
@@ -93,5 +95,13 @@ public class UpdateAgentRequest {
 
     public void setKnowledgeBaseIds(List<String> knowledgeBaseIds) {
         this.knowledgeBaseIds = knowledgeBaseIds;
+    }
+
+    public Map<String,Map<String,String>> getToolPresetParams() {
+        return toolPresetParams;
+    }
+
+    public void setToolPresetParams(Map<String,Map<String,String>> toolPresetParams) {
+        this.toolPresetParams = toolPresetParams;
     }
 }

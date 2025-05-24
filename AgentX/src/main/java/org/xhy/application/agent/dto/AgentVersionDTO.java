@@ -35,7 +35,7 @@ public class AgentVersionDTO {
     private String welcomeMessage;
 
     /** Agent可使用的工具列表 */
-    private List<String> toolIds;
+    private List<String> toolVersionIds;
 
     /** 关联的知识库ID列表 */
     private List<String> knowledgeBaseIds;
@@ -72,7 +72,7 @@ public class AgentVersionDTO {
 
     /** 无参构造函数 */
     public AgentVersionDTO() {
-        this.toolIds = new ArrayList<>();
+        this.toolVersionIds = new ArrayList<>();
         this.knowledgeBaseIds = new ArrayList<>();
     }
 
@@ -141,12 +141,12 @@ public class AgentVersionDTO {
         this.welcomeMessage = welcomeMessage;
     }
 
-    public List<String> getToolIds() {
-        return toolIds;
+    public List<String> getToolVersionIds() {
+        return toolVersionIds;
     }
 
-    public void setToolIds(List<String> toolIds) {
-        this.toolIds = toolIds;
+    public void setToolVersionIds(List<String> toolVersionIds) {
+        this.toolVersionIds = toolVersionIds;
     }
 
     public List<String> getKnowledgeBaseIds() {
