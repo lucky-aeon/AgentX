@@ -88,6 +88,7 @@ interface AgentFormData {
   welcomeMessage: string
   tools: AgentTool[]
   knowledgeBaseIds: string[]
+  toolPresetParams: Record<string, Record<string, string>> // 工具预设参数
   enabled: boolean
   agentType: number
 }
@@ -118,6 +119,8 @@ export default function EditAgentPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [selectedToolForSidebar, setSelectedToolForSidebar] = useState<Tool | null>(null)
   const [isToolSidebarOpen, setIsToolSidebarOpen] = useState(false)
+  const [installedTools, setInstalledTools] = useState<Tool[]>([])
+  const [isLoadingTools, setIsLoadingTools] = useState(false)
 
   // 表单数据
   const [formData, setFormData] = useState<AgentFormData>({
@@ -128,9 +131,31 @@ export default function EditAgentPage() {
     welcomeMessage: "",
     tools: [],
     knowledgeBaseIds: [],
+    toolPresetParams: {}, // 初始化为空对象
     enabled: true,
     agentType: 1,
   })
+
+  // 加载已安装的工具
+  useEffect(() => {
+    const fetchInstalledTools = async () => {
+      setIsLoadingTools(true)
+      try {
+        const response = await getInstalledTools({ pageSize: 100 });
+        if (response.code === 200 && response.data && Array.isArray(response.data.records)) {
+          setInstalledTools(response.data.records);
+        } else {
+          console.error("获取已安装工具失败:", response.message);
+        }
+      } catch (error) {
+        console.error("获取已安装工具错误:", error);
+      } finally {
+        setIsLoadingTools(false);
+      }
+    };
+
+    fetchInstalledTools();
+  }, []);
 
   // 加载助理详情
   useEffect(() => {
@@ -197,6 +222,7 @@ export default function EditAgentPage() {
             welcomeMessage: agent.welcomeMessage,
             tools: agentTools,
             knowledgeBaseIds: agent.knowledgeBaseIds || [],
+            toolPresetParams: agent.toolPresetParams || {},
             enabled: agent.enabled,
             agentType: agent.agentType,
           })
@@ -390,6 +416,7 @@ export default function EditAgentPage() {
         welcomeMessage: selectedType === "chat" ? formData.welcomeMessage : "",
         toolIds: toolIds, // 使用工具ID数组
         knowledgeBaseIds: selectedType === "chat" ? formData.knowledgeBaseIds : [],
+        toolPresetParams: formData.toolPresetParams,
         enabled: formData.enabled,
         agentType: formData.agentType,
       }
@@ -468,6 +495,7 @@ export default function EditAgentPage() {
         welcomeMessage: formData.welcomeMessage,
         toolIds: toolIds, // 使用工具ID数组
         knowledgeBaseIds: formData.knowledgeBaseIds,
+        toolPresetParams: formData.toolPresetParams,
       })
 
       if (response.code === 200) {
@@ -549,6 +577,7 @@ export default function EditAgentPage() {
           presetParameters: t.presetParameters || {},
         })) || [],
         knowledgeBaseIds: version.knowledgeBaseIds || [],
+        toolPresetParams: version.toolPresetParams || {},
         enabled: formData.enabled,
         agentType: version.agentType,
       })
@@ -618,20 +647,63 @@ export default function EditAgentPage() {
 
   // 更新工具预设参数
   const updateToolPresetParameters = (toolId: string, presetParams: Record<string, Record<string, string>>) => {
+    // 获取当前工具信息
+    const selectedTool = installedTools.find((t: Tool) => t.id === toolId || t.toolId === toolId);
+    
+    if (!selectedTool || !selectedTool.mcpServerName) {
+      console.error("无法找到对应的工具或工具缺少 mcpServerName");
+      toast({
+        title: "无法更新工具参数",
+        description: "工具信息不完整",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const mcpServerName = selectedTool.mcpServerName;
+    
     setFormData(prev => {
-      const newFormData = {...prev};
-      const toolIndex = newFormData.tools.findIndex(t => t.id === toolId);
+      // 创建新的 toolPresetParams 对象
+      const newToolPresetParams = { ...prev.toolPresetParams };
       
-      if (toolIndex !== -1) {
-        newFormData.tools[toolIndex] = {
-          ...newFormData.tools[toolIndex],
-          presetParameters: presetParams
-        };
+      // 确保 mcpServerName 的键存在
+      if (!newToolPresetParams[mcpServerName]) {
+        newToolPresetParams[mcpServerName] = {};
       }
       
-      return newFormData;
+      // 遍历工具的所有功能
+      Object.keys(presetParams).forEach(functionName => {
+        // 获取该功能的所有参数
+        const params = presetParams[functionName];
+        
+        // 将参数格式化为 "{'param1':'value1','param2':'value2'}" 格式
+        const paramsObj: Record<string, string> = {};
+        Object.entries(params).forEach(([paramName, paramValue]) => {
+          // 未设置的参数值设为空字符串
+          paramsObj[paramName] = paramValue || '';
+        });
+        
+        // 转换为需要的字符串格式
+        // 注意：使用单引号包裹键和值，外层使用双引号
+        const formattedParams = JSON.stringify(paramsObj)
+          .replace(/"/g, "'")  // 将双引号替换为单引号
+          .replace(/'/g, "'"); // 确保所有引号都是单引号
+        
+        // 设置参数
+        newToolPresetParams[mcpServerName][functionName] = formattedParams;
+      });
+      
+      return {
+        ...prev,
+        toolPresetParams: newToolPresetParams
+      };
     });
-  }
+    
+    toast({
+      title: "参数预设已更新",
+      description: `已为工具 ${selectedTool.name} 更新参数预设`,
+    });
+  };
 
   // 如果正在加载，显示加载状态
   if (isLoading) {
@@ -1176,7 +1248,41 @@ export default function EditAgentPage() {
         tool={selectedToolForSidebar}
         isOpen={isToolSidebarOpen}
         onClose={() => setIsToolSidebarOpen(false)}
-        presetParameters={selectedToolForSidebar ? formData.tools.find(t => t.id === selectedToolForSidebar.id)?.presetParameters || {} : {}}
+        presetParameters={selectedToolForSidebar && selectedToolForSidebar.mcpServerName && formData.toolPresetParams[selectedToolForSidebar.mcpServerName] ? 
+          Object.entries(formData.toolPresetParams[selectedToolForSidebar.mcpServerName]).reduce((acc, [funcName, paramStr]) => {
+            try {
+              // 将参数字符串如 "{'email':'xxx@qq.com','password':'123'}" 转换为对象
+              const cleanParamStr = paramStr
+                .replace(/^['"]/, '') // 移除开头的引号
+                .replace(/['"]$/, ''); // 移除结尾的引号
+              
+              // 尝试解析JSON字符串，注意替换单引号为双引号
+              const paramObj = JSON.parse(cleanParamStr.replace(/'/g, '"'));
+              acc[funcName] = paramObj;
+            } catch (e) {
+              console.error(`解析工具参数失败: ${funcName}`, e, paramStr);
+              // 尝试使用正则表达式解析
+              try {
+                const params: Record<string, string> = {};
+                // 匹配 'key':'value' 模式
+                const regex = /'([^']+)'\s*:\s*'([^']*)'/g;
+                let match;
+                
+                while ((match = regex.exec(paramStr)) !== null) {
+                  if (match.length >= 3) {
+                    params[match[1]] = match[2];
+                  }
+                }
+                
+                acc[funcName] = params;
+              } catch (regexError) {
+                console.error(`正则解析失败: ${funcName}`, regexError);
+                acc[funcName] = {};
+              }
+            }
+            return acc;
+          }, {} as Record<string, Record<string, string>>) : 
+          {}}
         onSavePresetParameters={updateToolPresetParameters}
       />
     </div>

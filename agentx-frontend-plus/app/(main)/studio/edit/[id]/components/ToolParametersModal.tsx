@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Key, Save, Lock, AlertCircle, Check } from 'lucide-react';
+import { Key, Save, AlertCircle, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Tool } from '@/types/tool';
 
@@ -28,7 +28,6 @@ const ToolParametersModal: React.FC<ToolParametersModalProps> = ({
 }) => {
   const [localPresetParams, setLocalPresetParams] = useState<Record<string, Record<string, string>>>({});
   const [activeTab, setActiveTab] = useState<string>("");
-  const [hasSensitiveParams, setHasSensitiveParams] = useState<Record<string, boolean>>({});
 
   // 判断功能是否有参数
   const hasParameters = (func: any): boolean => {
@@ -43,6 +42,8 @@ const ToolParametersModal: React.FC<ToolParametersModalProps> = ({
   // 初始化预设参数和激活的标签页
   useEffect(() => {
     if (isOpen && tool) {
+      // 确保presetParameters是正确的格式
+      // 后端可能返回的是字符串形式的参数，需要解析为对象
       setLocalPresetParams(presetParameters || {});
       
       // 过滤出有参数的功能
@@ -53,31 +54,10 @@ const ToolParametersModal: React.FC<ToolParametersModalProps> = ({
         setActiveTab(functionsWithParams[0].name);
       }
 
-      // 检查每个功能是否有敏感参数
-      const sensitiveMap: Record<string, boolean> = {};
-      functionsWithParams.forEach(func => {
-        if (func.parameters && func.parameters.properties) {
-          const hasSensitive = Object.entries(func.parameters.properties)
-            .filter(([key]) => !['additionalProperties', 'definitions', 'required'].includes(key))
-            .some(([paramName, paramConfig]: [string, any]) => 
-              isSensitiveParameter(paramName, paramConfig)
-            );
-          sensitiveMap[func.name] = hasSensitive;
-        }
-      });
-      setHasSensitiveParams(sensitiveMap);
+      // 添加调试日志
+      console.log('Modal接收到的工具参数:', presetParameters);
     }
   }, [isOpen, tool, toolFunctions, presetParameters]);
-
-  // 判断参数是否为敏感参数
-  const isSensitiveParameter = (paramName: string, paramConfig: any): boolean => {
-    return paramConfig.sensitive === true || 
-      paramName.toLowerCase().includes('key') || 
-      paramName.toLowerCase().includes('token') ||
-      paramName.toLowerCase().includes('secret') ||
-      paramName.toLowerCase().includes('password') ||
-      paramName.toLowerCase().includes('api');
-  };
 
   // 获取预设参数值
   const getPresetValue = (functionName: string, paramName: string): string => {
@@ -129,7 +109,7 @@ const ToolParametersModal: React.FC<ToolParametersModalProps> = ({
             <span>{tool.name} 参数预设</span>
           </DialogTitle>
           <DialogDescription>
-            预设参数将在调用工具时自动传入，无需用户手动输入。适用于API密钥等敏感信息。
+            预设参数将在调用工具时自动传入，无需用户手动输入。
           </DialogDescription>
         </DialogHeader>
 
@@ -162,9 +142,6 @@ const ToolParametersModal: React.FC<ToolParametersModalProps> = ({
                             className="justify-start w-full relative hover:bg-gray-100 data-[state=active]:bg-blue-50 data-[state=active]:border-l-4 data-[state=active]:border-blue-500 data-[state=active]:font-medium data-[state=active]:pl-3"
                           >
                             <span className="truncate">{cleanedName}</span>
-                            {hasSensitiveParams[func.name] && (
-                              <Lock className="h-3 w-3 ml-1 text-amber-500" />
-                            )}
                             {hasPresets && (
                               <Badge variant="secondary" className="ml-auto text-[10px] absolute right-2">
                                 <Check className="h-2 w-2 mr-1" />
@@ -210,9 +187,6 @@ const ToolParametersModal: React.FC<ToolParametersModalProps> = ({
                             {Object.entries(func.parameters.properties || {})
                               .filter(([key]) => !['additionalProperties', 'definitions', 'required'].includes(key))
                               .map(([paramName, paramConfig]: [string, any]) => {
-                                // 判断是否为敏感参数
-                                const isSensitive = isSensitiveParameter(paramName, paramConfig);
-                                
                                 return (
                                   <div key={paramName} className="space-y-2 bg-gray-50 p-4 rounded-md border border-gray-100">
                                     <div className="flex items-center justify-between">
@@ -224,15 +198,6 @@ const ToolParametersModal: React.FC<ToolParametersModalProps> = ({
                                           {cleanParamName(paramName)}
                                         </label>
                                       </div>
-                                      {isSensitive && (
-                                        <Badge 
-                                          variant="secondary" 
-                                          className="text-[10px] bg-amber-50 text-amber-700 hover:bg-amber-100"
-                                        >
-                                          <Lock className="h-3 w-3 mr-1" />
-                                          敏感参数
-                                        </Badge>
-                                      )}
                                     </div>
                                     
                                     <p className="text-xs text-muted-foreground mb-2">
@@ -242,7 +207,7 @@ const ToolParametersModal: React.FC<ToolParametersModalProps> = ({
                                     <div className="relative">
                                       <Input
                                         id={`preset-${func.name}-${paramName}`}
-                                        type={isSensitive ? "password" : "text"}
+                                        type="text"
                                         className="w-full"
                                         placeholder={`输入${cleanParamName(paramName)}预设值`}
                                         value={getPresetValue(func.name, paramName)}

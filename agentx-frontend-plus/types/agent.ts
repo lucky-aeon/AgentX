@@ -27,6 +27,7 @@ export interface Agent {
   modelConfig: ModelConfig
   tools: AgentTool[]
   toolIds?: string[] // 工具ID列表，与后端返回格式兼容
+  toolPresetParams?: Record<string, Record<string, string>> // 工具预设参数
   knowledgeBaseIds: string[]
   publishedVersion: string | null
   enabled: boolean // 更新为布尔值，表示启用/禁用状态
@@ -71,6 +72,7 @@ export interface CreateAgentRequest {
   modelConfig: ModelConfig
   tools?: AgentTool[]
   toolIds?: string[] // 工具ID列表，用于传递给后端
+  toolPresetParams?: Record<string, Record<string, string>> // 工具预设参数
   knowledgeBaseIds?: string[]
   userId: string
 }
@@ -85,6 +87,7 @@ export interface UpdateAgentRequest {
   modelConfig?: ModelConfig
   tools?: AgentTool[]
   toolIds?: string[] // 工具ID列表，用于传递给后端
+  toolPresetParams?: Record<string, Record<string, string>> // 工具预设参数
   knowledgeBaseIds?: string[]
   agentType?: number
   enabled?: boolean
@@ -99,6 +102,7 @@ export interface PublishAgentVersionRequest {
   modelConfig?: ModelConfig
   tools?: AgentTool[]
   toolIds?: string[] // 工具ID列表，用于传递给后端
+  toolPresetParams?: Record<string, Record<string, string>> // 工具预设参数
   knowledgeBaseIds?: string[]
 }
 
@@ -120,6 +124,7 @@ export interface AgentVersion {
   modelConfig: ModelConfig
   tools: AgentTool[]
   toolIds?: string[] // 工具ID列表
+  toolPresetParams?: Record<string, Record<string, string>> // 工具预设参数
   knowledgeBaseIds: string[]
   changeLog: string
   agentType: number
