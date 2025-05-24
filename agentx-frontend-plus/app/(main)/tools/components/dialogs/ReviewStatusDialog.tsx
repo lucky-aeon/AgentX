@@ -21,6 +21,7 @@ interface ReviewStatusDialogProps {
 // 审核状态顺序
 const REVIEW_STEPS = [
   { status: ToolStatus.WAITING_REVIEW, label: "等待审核", description: "您的工具已提交，正在等待审核" },
+  { status: ToolStatus.GITHUB_URL_VALIDATE, label: "验证GitHub URL", description: "正在验证GitHub仓库地址" },
   { status: ToolStatus.DEPLOYING, label: "部署中", description: "正在进行工具部署" },
   { status: ToolStatus.FETCHING_TOOLS, label: "获取工具列表", description: "正在获取工具功能列表" },
   { status: ToolStatus.MANUAL_REVIEW, label: "人工审核", description: "正在进行人工审核确认" },

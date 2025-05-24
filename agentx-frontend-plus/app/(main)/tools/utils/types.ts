@@ -84,6 +84,7 @@ export interface ToolFunction {
 // 工具状态枚举
 export enum ToolStatus {
   WAITING_REVIEW = 'WAITING_REVIEW', // 等待审核
+  GITHUB_URL_VALIDATE = 'GITHUB_URL_VALIDATE', // GitHub URL验证
   DEPLOYING = 'DEPLOYING',           // 部署中
   FETCHING_TOOLS = 'FETCHING_TOOLS', // 获取工具列表
   MANUAL_REVIEW = 'MANUAL_REVIEW',   // 人工审核
