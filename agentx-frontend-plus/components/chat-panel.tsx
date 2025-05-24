@@ -922,29 +922,40 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
                         className={`${className} rounded p-2 my-2 overflow-x-auto max-w-full text-sm`}
                         style={{...style, wordBreak: 'break-all', overflowWrap: 'break-word'}}
                       >
-                        {tokens.map((line, i) => (
-                          <div key={i} {...getLineProps({ line, key: i })} style={{whiteSpace: 'pre-wrap', wordBreak: 'break-all'}}>
-                            <span className="text-gray-500 mr-2 text-right w-6 inline-block select-none">
-                              {i + 1}
-                            </span>
-                            {line.map((token, tokenIndex) => {
-                              // 获取token props但不包含key
-                              const tokenProps = getTokenProps({ token, key: tokenIndex });
-                              // 删除key属性
-                              const { key, ...restTokenProps } = tokenProps;
-                              // 单独传递key属性，并添加样式确保长字符串能换行
-                              return <span 
-                                key={tokenIndex} 
-                                {...restTokenProps} 
-                                style={{
-                                  ...restTokenProps.style,
-                                  wordBreak: 'break-all',
-                                  overflowWrap: 'break-word'
-                                }}
-                              />;
-                            })}
-                          </div>
-                        ))}
+                        {tokens.map((line, i) => {
+                          // 获取line props但不通过展开操作符传递key
+                          const lineProps = getLineProps({ line, key: i });
+                          return (
+                            <div 
+                              key={i} 
+                              className={lineProps.className}
+                              style={{
+                                ...lineProps.style,
+                                whiteSpace: 'pre-wrap', 
+                                wordBreak: 'break-all'
+                              }}
+                            >
+                              <span className="text-gray-500 mr-2 text-right w-6 inline-block select-none">
+                                {i + 1}
+                              </span>
+                              {line.map((token, tokenIndex) => {
+                                // 获取token props但不包含key
+                                const tokenProps = getTokenProps({ token, key: tokenIndex });
+                                // 删除key属性，使用单独的key属性
+                                return <span 
+                                  key={tokenIndex} 
+                                  className={tokenProps.className}
+                                  style={{
+                                    ...tokenProps.style,
+                                    wordBreak: 'break-all',
+                                    overflowWrap: 'break-word'
+                                  }}
+                                  children={tokenProps.children}
+                                />;
+                              })}
+                            </div>
+                          );
+                        })}
                       </pre>
                     </div>
                   )}

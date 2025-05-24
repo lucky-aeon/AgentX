@@ -56,12 +56,12 @@ export function InstallToolDialog({
       
       // 直接调用API
       const response = await installToolWithToast(actualToolId, versionToUse)
-      
-      if (response.code !== 200) {
-        // 错误处理由withToast处理
-        setInstalling(false)
-        onOpenChange(false)
-        return
+        
+        if (response.code !== 200) {
+          // 错误处理由withToast处理
+          setInstalling(false)
+          onOpenChange(false)
+          return
       }
       
       toast({

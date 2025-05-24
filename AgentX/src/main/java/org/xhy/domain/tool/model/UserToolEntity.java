@@ -65,6 +65,10 @@ public class UserToolEntity extends BaseEntity {
     @TableField("public_state")
     private Boolean publicState;
 
+    /** MCP服务器名称 */
+    @TableField("mcp_server_name")
+    private String mcpServerName;
+
     public String getId() {
         return id;
     }
@@ -167,5 +171,13 @@ public class UserToolEntity extends BaseEntity {
 
     public void setOffice(Boolean office) {
         isOffice = office;
+    }
+
+    public String getMcpServerName() {
+        return mcpServerName;
+    }
+
+    public void setMcpServerName(String mcpServerName) {
+        this.mcpServerName = mcpServerName;
     }
 }

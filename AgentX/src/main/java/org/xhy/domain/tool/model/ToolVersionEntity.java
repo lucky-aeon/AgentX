@@ -77,6 +77,10 @@ public class ToolVersionEntity extends BaseEntity {
     @TableField("change_log")
     private String changeLog;
 
+    /** MCP服务器名称 */
+    @TableField("mcp_server_name")
+    private String mcpServerName;
+
     public String getId() {
         return id;
     }
@@ -197,4 +201,11 @@ public class ToolVersionEntity extends BaseEntity {
         this.changeLog = changeLog;
     }
 
+    public String getMcpServerName() {
+        return mcpServerName;
+    }
+
+    public void setMcpServerName(String mcpServerName) {
+        this.mcpServerName = mcpServerName;
+    }
 }

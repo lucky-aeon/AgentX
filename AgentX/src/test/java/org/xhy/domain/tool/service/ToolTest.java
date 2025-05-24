@@ -10,7 +10,7 @@ import org.xhy.domain.tool.service.state.impl.PublishingProcessor;
 public class ToolTest {
 
     @Autowired
-    private ToolStateService toolStateService;
+    private ToolStateDomainService toolStateService;
 
     @Autowired
     private ToolDomainService toolDomainService;
@@ -22,7 +22,7 @@ public class ToolTest {
 
         ToolEntity tool = toolDomainService.getTool("fcf8589b869aada08e4fe7c29121ddb8");
         toolStateService.submitToolForProcessing(tool);
-        while (true){
+        while (true) {
 
         }
     }

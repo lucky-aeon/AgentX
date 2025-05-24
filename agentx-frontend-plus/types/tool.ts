@@ -17,6 +17,7 @@ export interface Tool {
   is_office: boolean
   installCount: number // 前端展示用
   current_version?: string // 当前版本号
+  mcpServerName?: string // MCP服务器名称，用于预设参数
   createdAt: string
   updatedAt: string
 }
@@ -133,4 +134,10 @@ export interface ToolVersionDTO {
 export interface InstallToolParams {
   toolId: string
   version: string
+}
+
+export interface PublishToolToMarketParams {
+  toolId: string;
+  version: string;
+  changeLog: string;
 } 

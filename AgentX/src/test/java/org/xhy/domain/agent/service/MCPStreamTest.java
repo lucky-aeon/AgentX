@@ -32,7 +32,7 @@ public class MCPStreamTest {
 
         ToolProvider toolProvider = McpToolProvider.builder().mcpClients(List.of(mcpClient)).build();
 
-        AgentStreamTest bot = AiServices.builder(AgentStreamTest.class).streamingChatLanguageModel(model)
+        AgentStreamTest bot = AiServices.builder(AgentStreamTest.class).streamingChatModel(model)
                 .toolProvider(toolProvider).build();
 
         TokenStream tokenStream = bot.chat("获取时区");

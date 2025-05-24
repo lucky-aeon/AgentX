@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { toast } from "@/hooks/use-toast"
 
 // 自定义Hooks
 import { useMarketTools } from "./hooks/useMarketTools"
@@ -21,6 +22,10 @@ import { UserToolDetailDialog } from "./components/dialogs/UserToolDetailDialog"
 import { InstallToolDialog } from "./components/dialogs/InstallToolDialog"
 import { DeleteToolDialog } from "./components/dialogs/DeleteToolDialog"
 import { InstallToolDialog as GlobalInstallToolDialog } from "@/components/tool/install-tool-dialog"
+import { PublishToolDialog } from "./components/dialogs/PublishToolDialog"
+import { UserTool } from "./utils/types"
+import { Tool as GlobalToolType, ToolItem } from "@/types/tool"
+import { MarketTool, ToolFunction } from "./utils/types"
 
 export default function ToolsPage() {
   // 获取推荐工具数据
@@ -36,7 +41,8 @@ export default function ToolsPage() {
     installedTools,
     userToolsLoading,
     isDeletingTool,
-    handleDeleteTool
+    handleDeleteTool,
+    fetchUserTools
   } = useUserTools();
   
   // 对话框状态管理
@@ -67,6 +73,10 @@ export default function ToolsPage() {
     closeDeleteDialog
   } = useToolDialogs();
 
+  // 2. 添加状态 isPublishDialogOpen 和 toolToPublish
+  const [isPublishDialogOpen, setIsPublishDialogOpen] = useState(false);
+  const [toolToPublish, setToolToPublish] = useState<UserTool | null>(null);
+
   // 处理编辑工具
   const handleEditTool = (tool: any, event?: React.MouseEvent) => {
     if (event) {
@@ -87,6 +97,50 @@ export default function ToolsPage() {
     }
     
     return success || false;
+  };
+
+  // 3. 创建 handleOpenPublishDialog 函数
+  const handleOpenPublishDialog = (tool: UserTool, event?: React.MouseEvent) => {
+    if (event) {
+      event.stopPropagation();
+    }
+    setToolToPublish(tool);
+    setIsPublishDialogOpen(true);
+  };
+
+  // Helper function to adapt MarketTool to GlobalToolType
+  const adaptMarketToolToGlobalTool = (marketTool: MarketTool | null): GlobalToolType | null => {
+    if (!marketTool) return null;
+
+    // Assuming ToolFunction and ToolItem are structurally compatible
+    const adaptedToolList: ToolItem[] = (marketTool.tool_list || []).map(tf => tf as ToolItem);
+
+    return {
+      ...marketTool,
+      tool_list: adaptedToolList, // Ensure tool_list is present and correctly typed
+      // Ensure all required fields for GlobalToolType are present
+      // Add default or mapped values for any fields that differ significantly
+      // For example, if GlobalToolType has fields not in MarketTool:
+      // some_required_field_in_GlobalToolType: marketTool.some_equivalent_field || defaultValue,
+      user_id: marketTool.user_id || "", // Ensure user_id is a string
+      tool_type: marketTool.tool_type || "",
+      upload_type: marketTool.upload_type || "",
+      upload_url: marketTool.upload_url || "",
+      status: marketTool.status as any, // Assuming ToolStatus enums are compatible enough or map them
+      is_office: marketTool.is_office || false,
+      install_command: marketTool.install_command || { type: 'sse', url: '' }, // Provide a default if necessary
+    };
+  };
+
+  // 处理工具安装成功
+  const handleToolInstallSuccess = () => {
+    // 刷新用户工具列表，确保新安装的工具会显示在"我安装的工具"中
+    fetchUserTools();
+    // 可以添加一个安装成功的提示
+    toast({
+      title: "安装成功",
+      description: "工具已成功安装，您可以在我安装的工具中查看。"
+    });
   };
 
   return (
@@ -114,6 +168,7 @@ export default function ToolsPage() {
           onToolClick={openUserToolDetail}
           onEditClick={handleEditTool}
           onDeleteClick={openDeleteConfirm}
+          onPublishClick={handleOpenPublishDialog}
         />
         
         {/* 用户安装的工具部分 */}
@@ -144,15 +199,9 @@ export default function ToolsPage() {
         <GlobalInstallToolDialog 
           open={isInstallDialogOpen}
           onOpenChange={closeInstallDialog}
-          tool={selectedTool}
+          tool={adaptMarketToolToGlobalTool(selectedTool)}
           version={selectedTool?.current_version}
-          onSuccess={() => {
-            // 标记选中工具为已安装
-            if (selectedTool) {
-              // 可能需要实现安装成功后的逻辑
-              console.log(`已安装工具: ${selectedTool.name}`);
-            }
-          }}
+          onSuccess={handleToolInstallSuccess}
         />
 
         {/* 删除工具确认对话框 */}
@@ -163,6 +212,20 @@ export default function ToolsPage() {
           isDeleting={isDeletingTool}
           onConfirm={handleConfirmDelete}
         />
+
+        {/* 6. 渲染 PublishToolDialog */}
+        {toolToPublish && (
+          <PublishToolDialog
+            open={isPublishDialogOpen}
+            onOpenChange={setIsPublishDialogOpen}
+            tool={toolToPublish}
+            onPublishSuccess={() => {
+              // 可选：刷新列表或显示提示
+              setIsPublishDialogOpen(false); // 关闭对话框
+              // 刷新用户工具列表等操作可以在这里触发
+            }}
+          />
+        )}
       </div>
     </div>
   )

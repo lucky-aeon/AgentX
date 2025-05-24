@@ -12,6 +12,7 @@ interface CreatedToolsSectionProps {
   onToolClick: (tool: UserTool) => void;
   onEditClick: (tool: UserTool, e: React.MouseEvent) => void;
   onDeleteClick: (tool: UserTool, e: React.MouseEvent) => void;
+  onPublishClick?: (tool: UserTool, e: React.MouseEvent) => void;
 }
 
 export function CreatedToolsSection({
@@ -19,7 +20,8 @@ export function CreatedToolsSection({
   loading,
   onToolClick,
   onEditClick,
-  onDeleteClick
+  onDeleteClick,
+  onPublishClick
 }: CreatedToolsSectionProps) {
   return (
     <div className="mb-8 bg-white p-6 rounded-lg shadow-sm border border-gray-100">
@@ -59,6 +61,7 @@ export function CreatedToolsSection({
               onCardClick={onToolClick}
               onEditClick={onEditClick}
               onDeleteClick={onDeleteClick}
+              onPublishClick={onPublishClick}
             />
           ))}
         </div>

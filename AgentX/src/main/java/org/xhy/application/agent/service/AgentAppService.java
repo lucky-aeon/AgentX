@@ -90,7 +90,6 @@ public class AgentAppService {
         // 使用组装器创建更新实体
         AgentEntity updateEntity = AgentAssembler.toEntity(request, userId);
 
-        updateEntity.setUserId(userId);
         // 调用领域服务更新Agent
         AgentEntity agentEntity = agentServiceDomainService.updateAgent(updateEntity);
         return AgentAssembler.toDTO(agentEntity);

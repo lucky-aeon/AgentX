@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { X, MessageCircle, Bot, Upload, Trash, FileText, Workflow, Zap, Search } from "lucide-react"
@@ -23,7 +23,16 @@ import { Progress } from "@/components/ui/progress"
 
 // 在文件顶部添加导入
 import { createAgent, createAgentWithToast } from "@/lib/agent-service"
+import { getInstalledTools } from "@/lib/tool-service" // 导入获取工具的函数
 import { API_CONFIG } from "@/lib/api-config"
+
+// 从 edit 页面导入的组件和类型
+import AgentBasicInfoForm from "../edit/[id]/components/AgentBasicInfoForm";
+import AgentPromptForm from "../edit/[id]/components/AgentPromptForm";
+import AgentToolsForm, { knowledgeBaseOptions } from "../edit/[id]/components/AgentToolsForm"; // knowledgeBaseOptions 仍然从这里导入
+import ToolDetailSidebar from "../edit/[id]/components/ToolDetailSidebar";
+import type { Tool } from "@/types/tool";
+import type { AgentTool } from "@/types/agent"; // <-- Import AgentTool
 
 // 应用类型定义
 type AgentType = "chat" | "agent"
@@ -58,22 +67,12 @@ const modelOptions = [
   { value: "llama-3-70b", label: "Llama 3 70B" },
 ]
 
-// 工具选项
-const toolOptions = [
-  { id: "web-search", name: "网页搜索", description: "允许搜索互联网获取信息" },
-  { id: "file-reader", name: "文件读取", description: "允许读取和分析上传的文件" },
-  { id: "code-interpreter", name: "代码解释器", description: "允许执行代码并返回结果" },
-  { id: "image-generation", name: "图像生成", description: "允许生成和编辑图像" },
-  { id: "calculator", name: "计算器", description: "允许执行数学计算" },
-]
-
-// 知识库选项
-const knowledgeBaseOptions = [
-  { id: "kb-1", name: "产品文档", description: "包含产品说明、使用指南等" },
-  { id: "kb-2", name: "常见问题", description: "常见问题及解答集合" },
-  { id: "kb-3", name: "技术文档", description: "技术规范和API文档" },
-  { id: "kb-4", name: "营销资料", description: "营销内容和宣传材料" },
-]
+// 临时的接口，只包含工具的基本信息 (与 edit 页面一致) -> This will be removed
+// interface SelectedToolInfo {
+//   id: string;
+//   name: string;
+//   description: string;
+// }
 
 interface AgentFormData {
   name: string
@@ -81,9 +80,11 @@ interface AgentFormData {
   description: string
   systemPrompt: string
   welcomeMessage: string
-  tools: string[]
+  tools: AgentTool[] // <-- Use AgentTool[]
   knowledgeBaseIds: string[]
-  status: number
+  toolPresetParams: Record<string, Record<string, string>> // 工具预设参数
+  enabled: boolean
+  // agentType is derived from selectedType, not part of formData here
 }
 
 export default function CreateAgentPage() {
@@ -92,6 +93,10 @@ export default function CreateAgentPage() {
   const [activeTab, setActiveTab] = useState("basic")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [selectedToolForSidebar, setSelectedToolForSidebar] = useState<Tool | null>(null);
+  const [isToolSidebarOpen, setIsToolSidebarOpen] = useState(false);
+  const [installedTools, setInstalledTools] = useState<Tool[]>([])
+  const [isLoadingTools, setIsLoadingTools] = useState(false)
 
   // 表单数据
   const [formData, setFormData] = useState<AgentFormData>({
@@ -102,8 +107,30 @@ export default function CreateAgentPage() {
     welcomeMessage: "你好！我是你的AI助手，有什么可以帮助你的吗？",
     tools: [],
     knowledgeBaseIds: [],
-    status: 0, // 默认为私有
+    toolPresetParams: {}, // 初始化为空对象
+    enabled: true,
   })
+
+  // 加载已安装的工具
+  useEffect(() => {
+    const fetchInstalledTools = async () => {
+      setIsLoadingTools(true)
+      try {
+        const response = await getInstalledTools({ pageSize: 100 });
+        if (response.code === 200 && response.data && Array.isArray(response.data.records)) {
+          setInstalledTools(response.data.records);
+        } else {
+          console.error("获取已安装工具失败:", response.message);
+        }
+      } catch (error) {
+        console.error("获取已安装工具错误:", error);
+      } finally {
+        setIsLoadingTools(false);
+      }
+    };
+
+    fetchInstalledTools();
+  }, []);
 
   // 更新表单字段
   const updateFormField = (field: string, value: any) => {
@@ -113,20 +140,95 @@ export default function CreateAgentPage() {
     }))
   }
 
-  // 切换工具
-  const toggleTool = (toolId: string) => {
-    setFormData((prev) => {
-      const tools = [...prev.tools]
-      if (tools.includes(toolId)) {
-        return { ...prev, tools: tools.filter((id) => id !== toolId) }
-      } else {
-        return { ...prev, tools: [...tools, toolId] }
+  // 更新工具预设参数
+  const updateToolPresetParameters = (toolId: string, presetParams: Record<string, Record<string, string>>) => {
+    // 获取当前工具信息
+    const selectedTool = installedTools.find((t: Tool) => t.id === toolId || t.toolId === toolId);
+    
+    if (!selectedTool || !selectedTool.mcpServerName) {
+      console.error("无法找到对应的工具或工具缺少 mcpServerName");
+      toast({
+        title: "无法更新工具参数",
+        description: "工具信息不完整",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const mcpServerName = selectedTool.mcpServerName;
+    
+    setFormData(prev => {
+      // 创建新的 toolPresetParams 对象
+      const newToolPresetParams = { ...prev.toolPresetParams };
+      
+      // 确保 mcpServerName 的键存在
+      if (!newToolPresetParams[mcpServerName]) {
+        newToolPresetParams[mcpServerName] = {};
       }
-    })
+      
+      // 遍历工具的所有功能
+      Object.keys(presetParams).forEach(functionName => {
+        // 获取该功能的所有参数
+        const params = presetParams[functionName];
+        
+        // 将参数格式化为 "{'param1':'value1','param2':'value2'}" 格式
+        const paramsObj: Record<string, string> = {};
+        Object.entries(params).forEach(([paramName, paramValue]) => {
+          // 未设置的参数值设为空字符串
+          paramsObj[paramName] = paramValue || '';
+        });
+        
+        // 转换为需要的字符串格式
+        // 注意：使用单引号包裹键和值，外层使用双引号
+        const formattedParams = JSON.stringify(paramsObj)
+          .replace(/"/g, "'")  // 将双引号替换为单引号
+          .replace(/'/g, "'"); // 确保所有引号都是单引号
+        
+        // 设置参数
+        newToolPresetParams[mcpServerName][functionName] = formattedParams;
+      });
+      
+      return {
+        ...prev,
+        toolPresetParams: newToolPresetParams
+      };
+    });
+    
+    toast({
+      title: "参数预设已更新",
+      description: `已为工具 ${selectedTool.name} 更新参数预设`,
+    });
+  };
+
+  // 切换工具
+  const toggleTool = (toolToToggle: Tool) => {
+    // 使用 toolId（如果存在）或 id 作为工具标识符
+    const toolIdentifier = toolToToggle.toolId || toolToToggle.id;
+    const isToolCurrentlyEnabled = formData.tools.some(t => t.id === toolIdentifier);
+    
+    setFormData((prev) => {
+      let updatedTools: AgentTool[]; // <-- Use AgentTool[]
+      if (isToolCurrentlyEnabled) {
+        updatedTools = prev.tools.filter((t) => t.id !== toolIdentifier);
+      } else {
+        // 从 Tool 对象创建 AgentTool 对象
+        const newAgentTool: AgentTool = {
+          id: toolIdentifier, 
+          name: toolToToggle.name, 
+          description: toolToToggle.description || undefined, // Ensure compatibility with AgentTool
+        };
+        updatedTools = [...prev.tools, newAgentTool];
+      }
+      return { ...prev, tools: updatedTools };
+    });
+    
+    toast({
+      title: `工具已${!isToolCurrentlyEnabled ? "添加" : "移除"}: ${toolToToggle.name}`,
+    });
   }
 
   // 切换知识库
-  const toggleKnowledgeBase = (kbId: string) => {
+  const toggleKnowledgeBase = (kbId: string, kbName?: string) => {
     setFormData((prev) => {
       const knowledgeBaseIds = [...prev.knowledgeBaseIds]
       if (knowledgeBaseIds.includes(kbId)) {
@@ -134,6 +236,10 @@ export default function CreateAgentPage() {
       } else {
         return { ...prev, knowledgeBaseIds: [...knowledgeBaseIds, kbId] }
       }
+    })
+    const nameToDisplay = kbName || knowledgeBaseOptions.find((kb) => kb.id === kbId)?.name;
+    toast({
+      title: `知识库已${!formData.knowledgeBaseIds.includes(kbId) ? "关联" : "取消关联"}: ${nameToDisplay || kbId}`
     })
   }
 
@@ -183,20 +289,40 @@ export default function CreateAgentPage() {
     fileInputRef.current?.click()
   }
 
+  // 新增：处理工具卡片点击，用于显示侧边栏
+  const handleToolClick = (tool: Tool) => {
+    // 确保当前工具不是已经选中的工具，避免重复打开侧边栏
+    if (selectedToolForSidebar && selectedToolForSidebar.id === tool.id) {
+      return;
+    }
+    
+    console.log("Tool clicked:", tool);
+    // 先关闭侧边栏，再设置工具，避免同时存在两个侧边栏
+    setIsToolSidebarOpen(false);
+    
+    // 使用setTimeout延迟设置新工具，确保旧侧边栏已经关闭
+    setTimeout(() => {
+      setSelectedToolForSidebar(tool);
+      setIsToolSidebarOpen(true);
+    }, 100);
+  };
+
   // 处理创建助理
   const handleCreateAgent = async () => {
     if (!formData.name.trim()) {
       toast({
         title: "请输入名称",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
-    setIsSubmitting(true)
+    setIsSubmitting(true);
 
     try {
-      // 准备API请求参数
+      // 将工具对象数组转换为工具ID字符串数组
+      const toolIds = formData.tools.map(tool => tool.id);
+      
       const agentData = {
         name: formData.name,
         avatar: formData.avatar,
@@ -205,51 +331,37 @@ export default function CreateAgentPage() {
         systemPrompt: selectedType === "chat" ? formData.systemPrompt : "",
         welcomeMessage: selectedType === "chat" ? formData.welcomeMessage : "",
         modelConfig: {
-          modelName: "gpt-4o", // 使用默认模型
+          modelName: "gpt-4o", 
           temperature: 0.7,
           maxTokens: 2000
         },
-        tools: formData.tools.map((toolId) => {
-          const tool = toolOptions.find((t) => t.id === toolId)
-          return {
-            id: toolId,
-            name: tool?.name || toolId,
-            description: tool?.description || "",
-          }
-        }),
+        toolIds: toolIds, // 使用工具ID数组
         knowledgeBaseIds: selectedType === "chat" ? formData.knowledgeBaseIds : [],
+        toolPresetParams: formData.toolPresetParams,
         userId: API_CONFIG.CURRENT_USER_ID,
-      }
+      };
 
-      // 调用API创建助理
-      const response = await createAgentWithToast(agentData)
+      const response = await createAgentWithToast(agentData);
 
       if (response.code === 200) {
-        toast({
-          title: "创建成功",
-          description: `已创建${selectedType === "chat" ? "聊天助理" : "功能性助理"}: ${formData.name}`,
-        })
-
-        // 创建成功后跳转
-        router.push("/studio")
-      } else {
+        // 创建成功的toast已经由createAgentWithToast处理
+        router.push("/studio");
+      }
+      // 错误也已由createAgentWithToast处理
+    } catch (error) {
+      console.error("创建失败:", error);
+      // createAgentWithToast 通常也会处理 catch 块的 toast，但以防万一
+      if (!(error instanceof Error && error.message.includes("toast already shown"))) {
         toast({
           title: "创建失败",
-          description: response.message,
+          description: "请稍后再试",
           variant: "destructive",
-        })
+        });
       }
-    } catch (error) {
-      console.error("创建失败:", error)
-      toast({
-        title: "创建失败",
-        description: "请稍后再试",
-        variant: "destructive",
-      })
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   // 根据选择的类型更新可用的标签页
   const getAvailableTabs = () => {
@@ -283,12 +395,11 @@ export default function CreateAgentPage() {
         {/* 左侧表单 */}
         <div className="w-3/5 p-8 overflow-auto">
           <div className="flex items-center justify-between mb-6">
-            <h1 className="text-2xl font-bold">创建{selectedType === "chat" ? "聊天助理" : "功能性助理"}</h1>
-            <Button variant="ghost" size="icon" asChild>
-              <Link href="/studio">
-                <X className="h-5 w-5" />
-                <span className="sr-only">关闭</span>
-              </Link>
+            <h1 className="text-2xl font-bold">
+              创建新的{selectedType === "chat" ? "聊天助理" : "功能性助理"}
+            </h1>
+            <Button variant="outline" asChild>
+                <Link href="/studio">取消</Link>
             </Button>
           </div>
 
@@ -305,216 +416,42 @@ export default function CreateAgentPage() {
             </TabsList>
 
             <TabsContent value="basic" className="space-y-6">
-              {/* Agent类型选择 */}
-              <div>
-                <h2 className="text-lg font-medium mb-4">选择类型</h2>
-                <div className="grid grid-cols-2 gap-4">
-                  {agentTypes.map((type) => (
-                    <div
-                      key={type.id}
-                      className={`border rounded-lg p-4 cursor-pointer transition-all ${
-                        selectedType === type.id ? "border-blue-500 bg-blue-50" : "hover:border-gray-300"
-                      }`}
-                      onClick={() => handleTypeChange(type.id as AgentType)}
-                    >
-                      <div className={`${type.color} w-10 h-10 rounded-lg flex items-center justify-center mb-3`}>
-                        <type.icon className="h-5 w-5" />
-                      </div>
-                      <h3 className="font-medium mb-1">{type.name}</h3>
-                      <p className="text-sm text-muted-foreground">{type.description}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* 名称和头像 */}
-              <div>
-                <h2 className="text-lg font-medium mb-4">名称 & 头像</h2>
-                <div className="flex gap-4 items-center">
-                  <div className="flex-1">
-                    <Label htmlFor="agent-name" className="mb-2 block">
-                      名称
-                    </Label>
-                    <Input
-                      id="agent-name"
-                      placeholder={`给你的${selectedType === "chat" ? "聊天助理" : "功能性助理"}起个名字`}
-                      value={formData.name}
-                      onChange={(e) => updateFormField("name", e.target.value)}
-                      className="mb-2"
+              <AgentBasicInfoForm
+                formData={formData}
+                selectedType={selectedType}
+                updateFormField={updateFormField}
+                triggerFileInput={triggerFileInput}
+                handleAvatarUpload={handleAvatarUpload}
+                removeAvatar={removeAvatar}
+                fileInputRef={fileInputRef}
                     />
-                  </div>
-                  <div>
-                    <Label className="mb-2 block">头像</Label>
-                    <div className="flex items-center gap-2">
-                      <Avatar className="h-12 w-12">
-                        <AvatarImage src={formData.avatar || ""} alt="Avatar" />
-                        <AvatarFallback className="bg-blue-100 text-blue-600">
-                          {formData.name ? formData.name.charAt(0).toUpperCase() : "🤖"}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex flex-col gap-1">
-                        <Button variant="outline" size="sm" onClick={triggerFileInput}>
-                          <Upload className="h-4 w-4 mr-2" />
-                          上传
-                        </Button>
-                        {formData.avatar && (
-                          <Button variant="outline" size="sm" onClick={removeAvatar}>
-                            <Trash className="h-4 w-4 mr-2" />
-                            移除
-                          </Button>
-                        )}
-                      </div>
-                      <input
-                        type="file"
-                        ref={fileInputRef}
-                        className="hidden"
-                        accept="image/*"
-                        onChange={handleAvatarUpload}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* 描述 */}
-              <div>
-                <h2 className="text-lg font-medium mb-2">描述</h2>
-                <Textarea
-                  placeholder={`输入${selectedType === "chat" ? "聊天助理" : "功能性助理"}的描述`}
-                  value={formData.description}
-                  onChange={(e) => updateFormField("description", e.target.value)}
-                  rows={4}
-                />
-              </div>
-
-              {/* 状态设置 */}
-              <div>
-                <h2 className="text-lg font-medium mb-4">可见性设置</h2>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label htmlFor="status-private" className="font-medium">
-                        私有
-                      </Label>
-                      <p className="text-sm text-muted-foreground">仅创建者可见</p>
-                    </div>
-                    <Switch
-                      id="status-private"
-                      checked={formData.status === 0}
-                      onCheckedChange={() => updateFormField("status", 0)}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label htmlFor="status-public" className="font-medium">
-                        公开
-                      </Label>
-                      <p className="text-sm text-muted-foreground">提交审核后公开展示</p>
-                    </div>
-                    <Switch
-                      id="status-public"
-                      checked={formData.status === 1}
-                      onCheckedChange={() => updateFormField("status", 1)}
-                    />
-                  </div>
-                </div>
-              </div>
             </TabsContent>
 
-            {/* 仅聊天助手显示提示词配置 */}
             {selectedType === "chat" && (
               <TabsContent value="prompt" className="space-y-6">
-                {/* 系统提示词 */}
-                <div>
-                  <h2 className="text-lg font-medium mb-2">系统提示词</h2>
-                  <p className="text-sm text-muted-foreground mb-2">定义聊天助手的角色、能力和行为限制</p>
-                  <Textarea
-                    placeholder="输入系统提示词"
-                    value={formData.systemPrompt}
-                    onChange={(e) => updateFormField("systemPrompt", e.target.value)}
-                    rows={8}
+                <AgentPromptForm
+                  formData={formData}
+                  updateFormField={updateFormField}
                   />
-                </div>
-
-                {/* 欢迎消息 */}
-                <div>
-                  <h2 className="text-lg font-medium mb-2">欢迎消息</h2>
-                  <p className="text-sm text-muted-foreground mb-2">用户首次与聊天助手交互时显示的消息</p>
-                  <Textarea
-                    placeholder="输入欢迎消息"
-                    value={formData.welcomeMessage}
-                    onChange={(e) => updateFormField("welcomeMessage", e.target.value)}
-                    rows={4}
-                  />
-                </div>
               </TabsContent>
             )}
 
             <TabsContent value="tools" className="space-y-6">
-              {/* 工具选择 */}
-              <div>
-                <h2 className="text-lg font-medium mb-2">可用工具</h2>
-                <p className="text-sm text-muted-foreground mb-2">
-                  选择{selectedType === "chat" ? "聊天助理" : "功能性助理"}可以使用的工具
-                </p>
-                <div className="grid grid-cols-2 gap-4 mt-4">
-                  {toolOptions.map((tool) => (
-                    <div
-                      key={tool.id}
-                      className={`border rounded-lg p-4 cursor-pointer transition-all ${
-                        formData.tools.includes(tool.id) ? "border-blue-500 bg-blue-50" : "hover:border-gray-300"
-                      }`}
-                      onClick={() => toggleTool(tool.id)}
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="font-medium">{tool.name}</h3>
-                        <Switch checked={formData.tools.includes(tool.id)} />
-                      </div>
-                      <p className="text-sm text-muted-foreground">{tool.description}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* 知识库选择 - 仅聊天助手显示 */}
-              {selectedType === "chat" && (
-                <div>
-                  <h2 className="text-lg font-medium mb-2">关联知识库</h2>
-                  <p className="text-sm text-muted-foreground mb-2">选择聊天助手可以访问的知识库</p>
-                  <div className="grid grid-cols-2 gap-4 mt-4">
-                    {knowledgeBaseOptions.map((kb) => (
-                      <div
-                        key={kb.id}
-                        className={`border rounded-lg p-4 cursor-pointer transition-all ${
-                          formData.knowledgeBaseIds.includes(kb.id)
-                            ? "border-blue-500 bg-blue-50"
-                            : "hover:border-gray-300"
-                        }`}
-                        onClick={() => toggleKnowledgeBase(kb.id)}
-                      >
-                        <div className="flex items-center justify-between mb-2">
-                          <h3 className="font-medium">{kb.name}</h3>
-                          <Switch checked={formData.knowledgeBaseIds.includes(kb.id)} />
-                        </div>
-                        <p className="text-sm text-muted-foreground">{kb.description}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+              <AgentToolsForm
+                formData={formData}
+                selectedType={selectedType}
+                toggleTool={toggleTool}
+                toggleKnowledgeBase={toggleKnowledgeBase}
+                onToolClick={handleToolClick}
+              />
             </TabsContent>
           </Tabs>
 
           {/* 底部按钮 */}
           <div className="flex justify-end pt-6 border-t mt-6">
-            <div className="space-x-2">
-              <Button variant="outline" asChild>
-                <Link href="/studio">取消</Link>
-              </Button>
               <Button onClick={handleCreateAgent} disabled={isSubmitting}>
-                {isSubmitting ? "创建中..." : "创建"}
+              {isSubmitting ? "创建中..." : "确认创建"}
               </Button>
-            </div>
           </div>
         </div>
 
@@ -580,11 +517,11 @@ export default function CreateAgentPage() {
                       <ul className="list-disc pl-5 mt-2 space-y-1">
                         <li>回答问题和提供信息</li>
                         <li>协助写作和内容创作</li>
-                        {formData.tools.includes("web-search") && <li>搜索互联网获取最新信息</li>}
-                        {formData.tools.includes("file-reader") && <li>分析和解读上传的文件</li>}
-                        {formData.tools.includes("code-interpreter") && <li>编写和执行代码</li>}
-                        {formData.tools.includes("image-generation") && <li>生成和编辑图像</li>}
-                        {formData.tools.includes("calculator") && <li>执行数学计算</li>}
+                        {formData.tools.some((t) => t.id === "web-search") && <li>搜索互联网获取最新信息</li>}
+                        {formData.tools.some((t) => t.id === "file-reader") && <li>分析和解读上传的文件</li>}
+                        {formData.tools.some((t) => t.id === "code-interpreter") && <li>编写和执行代码</li>}
+                        {formData.tools.some((t) => t.id === "image-generation") && <li>生成和编辑图像</li>}
+                        {formData.tools.some((t) => t.id === "calculator") && <li>执行数学计算</li>}
                         {formData.knowledgeBaseIds.length > 0 && <li>基于专业知识库提供准确信息</li>}
                       </ul>
                       <p className="mt-2">有什么具体问题我可以帮你解答吗？</p>
@@ -677,19 +614,19 @@ export default function CreateAgentPage() {
                     <div className="bg-white rounded-lg p-4 border">
                       <h3 className="font-medium mb-2">工具使用记录</h3>
                       <div className="space-y-2">
-                        {formData.tools.includes("file-reader") && (
+                        {formData.tools.some((t) => t.id === "file-reader") && (
                           <div className="flex items-center gap-2 text-sm p-2 bg-gray-50 rounded">
                             <FileText className="h-4 w-4 text-blue-500" />
                             <span>已读取文件：数据分析.xlsx</span>
                           </div>
                         )}
-                        {formData.tools.includes("code-interpreter") && (
+                        {formData.tools.some((t) => t.id === "code-interpreter") && (
                           <div className="flex items-center gap-2 text-sm p-2 bg-gray-50 rounded">
                             <Zap className="h-4 w-4 text-purple-500" />
                             <span>执行代码：数据处理脚本</span>
                           </div>
                         )}
-                        {formData.tools.includes("web-search") && (
+                        {formData.tools.some((t) => t.id === "web-search") && (
                           <div className="flex items-center gap-2 text-sm p-2 bg-gray-50 rounded">
                             <Search className="h-4 w-4 text-green-500" />
                             <span>搜索相关信息：市场趋势分析</span>
@@ -736,8 +673,8 @@ export default function CreateAgentPage() {
                 )}
                 <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">状态</span>
-                  <Badge variant={formData.status === 0 ? "outline" : "default"} className="text-xs">
-                    {formData.status === 0 ? "私有" : "待审核"}
+                  <Badge variant={formData.enabled ? "outline" : "default"} className="text-xs">
+                    {formData.enabled ? "公开" : "私有"}
                   </Badge>
                 </div>
               </CardContent>
@@ -745,6 +682,48 @@ export default function CreateAgentPage() {
           </div>
         </div>
       </div>
+
+      <ToolDetailSidebar
+        tool={selectedToolForSidebar}
+        isOpen={isToolSidebarOpen}
+        onClose={() => setIsToolSidebarOpen(false)}
+        presetParameters={selectedToolForSidebar && selectedToolForSidebar.mcpServerName && formData.toolPresetParams[selectedToolForSidebar.mcpServerName] ? 
+          Object.entries(formData.toolPresetParams[selectedToolForSidebar.mcpServerName]).reduce((acc, [funcName, paramStr]) => {
+            try {
+              // 将参数字符串如 "{'email':'xxx@qq.com','password':'123'}" 转换为对象
+              const cleanParamStr = paramStr
+                .replace(/^['"]/, '') // 移除开头的引号
+                .replace(/['"]$/, ''); // 移除结尾的引号
+              
+              // 尝试解析JSON字符串，注意替换单引号为双引号
+              const paramObj = JSON.parse(cleanParamStr.replace(/'/g, '"'));
+              acc[funcName] = paramObj;
+            } catch (e) {
+              console.error(`解析工具参数失败: ${funcName}`, e, paramStr);
+              // 尝试使用正则表达式解析
+              try {
+                const params: Record<string, string> = {};
+                // 匹配 'key':'value' 模式
+                const regex = /'([^']+)'\s*:\s*'([^']*)'/g;
+                let match;
+                
+                while ((match = regex.exec(paramStr)) !== null) {
+                  if (match.length >= 3) {
+                    params[match[1]] = match[2];
+                  }
+                }
+                
+                acc[funcName] = params;
+              } catch (regexError) {
+                console.error(`正则解析失败: ${funcName}`, regexError);
+                acc[funcName] = {};
+              }
+            }
+            return acc;
+          }, {} as Record<string, Record<string, string>>) : 
+          {}}
+        onSavePresetParameters={updateToolPresetParameters}
+      />
     </div>
   )
 }

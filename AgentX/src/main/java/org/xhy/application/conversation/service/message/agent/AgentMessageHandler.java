@@ -2,6 +2,7 @@ package org.xhy.application.conversation.service.message.agent;
 
 import dev.langchain4j.service.tool.ToolProvider;
 import org.springframework.stereotype.Component;
+import org.xhy.application.conversation.service.handler.context.ChatContext;
 import org.xhy.application.conversation.service.message.AbstractMessageHandler;
 import org.xhy.domain.conversation.service.MessageDomainService;
 import org.xhy.infrastructure.llm.LLMServiceFactory;
@@ -18,9 +19,9 @@ public class AgentMessageHandler extends AbstractMessageHandler {
         this.agentToolManager = agentToolManager;
     }
 
-    // todo xhy 从 agent 中获取
     @Override
-    protected ToolProvider provideTools() {
-        return agentToolManager.createToolProvider(agentToolManager.getAvailableTools());
+    protected ToolProvider provideTools(ChatContext chatContext) {
+        return agentToolManager.createToolProvider(agentToolManager.getAvailableTools(chatContext),
+                chatContext.getAgent().getToolPresetParams());
     }
 }

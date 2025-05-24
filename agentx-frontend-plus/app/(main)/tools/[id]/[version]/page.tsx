@@ -398,7 +398,7 @@ export default function ToolDetailPage({ params }: { params: { id: string, versi
           });
         }}
       />
-      
+          
       {/* 版本历史对话框 - 始终可用 */}
           <Dialog open={isVersionHistoryOpen} onOpenChange={setIsVersionHistoryOpen}>
         <DialogContent className="max-w-2xl">
@@ -485,8 +485,8 @@ export default function ToolDetailPage({ params }: { params: { id: string, versi
               description: `${tool?.name} (v${selectedVersionToInstall}) 已成功安装`
             });
           }}
-        />
-      )}
+            />
+          )}
       
       {/* 版本详情对话框 */}
       <Dialog open={isVersionDetailOpen} onOpenChange={setIsVersionDetailOpen}>
@@ -587,8 +587,8 @@ export default function ToolDetailPage({ params }: { params: { id: string, versi
                                       );
                                     })}
                                 </div>
-                              </div>
-                            ) : null}
+        </div>
+      ) : null}
                           </div>
                         </div>
                       </div>

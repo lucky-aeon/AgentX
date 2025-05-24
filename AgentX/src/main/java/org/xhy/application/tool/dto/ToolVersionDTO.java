@@ -47,6 +47,8 @@ public class ToolVersionDTO {
 
     private Long installCount;
 
+    private String mcpServerName;
+
     public String getId() {
         return id;
     }
@@ -205,5 +207,13 @@ public class ToolVersionDTO {
 
     public void setInstallCount(Long installCount) {
         this.installCount = installCount;
+    }
+
+    public String getMcpServerName() {
+        return mcpServerName;
+    }
+
+    public void setMcpServerName(String mcpServerName) {
+        this.mcpServerName = mcpServerName;
     }
 }
