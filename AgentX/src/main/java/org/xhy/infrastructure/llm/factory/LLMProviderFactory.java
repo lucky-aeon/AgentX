@@ -2,8 +2,8 @@ package org.xhy.infrastructure.llm.factory;
 
 import dev.langchain4j.model.anthropic.AnthropicChatModel;
 import dev.langchain4j.model.anthropic.AnthropicStreamingChatModel;
-import dev.langchain4j.model.chat.ChatLanguageModel;
-import dev.langchain4j.model.chat.StreamingChatLanguageModel;
+import dev.langchain4j.model.chat.ChatModel;
+import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.model.openai.OpenAiChatModel;
 import dev.langchain4j.model.openai.OpenAiStreamingChatModel;
 import org.xhy.infrastructure.llm.config.ProviderConfig;
@@ -16,8 +16,8 @@ public class LLMProviderFactory {
     /** 获取对应的服务商 不使用工厂模式，因为 OpenAiChatModel 没有无参构造器，并且其他类型的模型不能适配
      * @param protocol 协议
      * @param providerConfig 服务商信息 */
-    public static ChatLanguageModel getLLMProvider(ProviderProtocol protocol, ProviderConfig providerConfig) {
-        ChatLanguageModel model = null;
+    public static ChatModel getLLMProvider(ProviderProtocol protocol, ProviderConfig providerConfig) {
+        ChatModel model = null;
         if (protocol == ProviderProtocol.OpenAI) {
             OpenAiChatModel.OpenAiChatModelBuilder openAiChatModelBuilder = new OpenAiChatModel.OpenAiChatModelBuilder();
             openAiChatModelBuilder.apiKey(providerConfig.getApiKey());
@@ -33,11 +33,11 @@ public class LLMProviderFactory {
         return model;
     }
 
-    public static StreamingChatLanguageModel getLLMProviderByStream(ProviderProtocol protocol,
-            ProviderConfig providerConfig) {
-        StreamingChatLanguageModel model = null;
+    public static StreamingChatModel getLLMProviderByStream(ProviderProtocol protocol,
+                                                            ProviderConfig providerConfig) {
+        StreamingChatModel model = null;
         if (protocol == ProviderProtocol.OpenAI) {
-            model = new OpenAiStreamingChatModel.OpenAiStreamingChatModelBuilder().apiKey(providerConfig.getApiKey())
+             model = new OpenAiStreamingChatModel.OpenAiStreamingChatModelBuilder().apiKey(providerConfig.getApiKey())
                     .baseUrl(providerConfig.getBaseUrl()).customHeaders(providerConfig.getCustomHeaders())
                     .modelName(providerConfig.getModel()).timeout(Duration.ofHours(1)).build();
         } else if (protocol == ProviderProtocol.ANTHROPIC) {

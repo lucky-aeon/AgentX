@@ -1,6 +1,6 @@
 package org.xhy.domain.agent.service;
 
-import dev.langchain4j.model.chat.StreamingChatLanguageModel;
+import dev.langchain4j.model.chat.StreamingChatModel;
 import org.springframework.stereotype.Service;
 import org.xhy.domain.agent.model.AgentWorkspaceEntity;
 import org.xhy.domain.agent.model.LLMModelConfig;
@@ -48,7 +48,7 @@ public class ModelProviderFacade {
                 model.getModelId(), provider.getProtocol());
 
         // 获取流式聊天客户端
-        StreamingChatLanguageModel chatStreamClient = LLMProviderService.getStream(provider.getProtocol(),
+        StreamingChatModel chatStreamClient = LLMProviderService.getStream(provider.getProtocol(),
                 providerConfig);
 
         return new ModelProviderResult(model, provider, llmModelConfig, providerConfig, chatStreamClient);
@@ -60,11 +60,11 @@ public class ModelProviderFacade {
         private final ProviderEntity providerEntity;
         private final LLMModelConfig llmModelConfig;
         private final ProviderConfig providerConfig;
-        private final StreamingChatLanguageModel chatStreamClient;
+        private final StreamingChatModel chatStreamClient;
 
         public ModelProviderResult(ModelEntity modelEntity, ProviderEntity providerEntity,
                 LLMModelConfig llmModelConfig, ProviderConfig providerConfig,
-                StreamingChatLanguageModel chatStreamClient) {
+                                   StreamingChatModel chatStreamClient) {
             this.modelEntity = modelEntity;
             this.providerEntity = providerEntity;
             this.llmModelConfig = llmModelConfig;
@@ -88,7 +88,7 @@ public class ModelProviderFacade {
             return providerConfig;
         }
 
-        public StreamingChatLanguageModel getChatStreamClient() {
+        public StreamingChatModel getChatStreamClient() {
             return chatStreamClient;
         }
     }

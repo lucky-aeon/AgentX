@@ -13,7 +13,7 @@ public class ChatTest {
                 .modelName("Qwen/QwQ-32B").baseUrl("https://api.siliconflow.cn/v1").logRequests(true).logResponses(true)
                 .build();
 
-        AgentStreamTest bot = AiServices.builder(AgentStreamTest.class).streamingChatLanguageModel(model).build();
+        AgentStreamTest bot = AiServices.builder(AgentStreamTest.class).streamingChatModel(model).build();
 
         TokenStream tokenStream = bot.chat("你是谁");
         tokenStream.onPartialResponse((String partialResponse) -> System.out.println("流式：" + partialResponse))

@@ -5,8 +5,7 @@ import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
-import dev.langchain4j.model.chat.StreamingChatLanguageModel;
-import dev.langchain4j.model.openai.OpenAiTokenizer;
+import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.service.AiServices;
 import dev.langchain4j.service.TokenStream;
 import dev.langchain4j.service.tool.ToolProvider;
@@ -49,7 +48,7 @@ public abstract class AbstractMessageHandler {
         T connection = transport.createConnection(CONNECTION_TIMEOUT);
 
         // 2. 获取LLM客户端
-        StreamingChatLanguageModel model = llmServiceFactory.getStreamingClient(chatContext.getProvider(),
+        StreamingChatModel streamingClient = llmServiceFactory.getStreamingClient(chatContext.getProvider(),
                 chatContext.getModel());
 
         // 3. 创建消息实体
@@ -70,7 +69,7 @@ public abstract class AbstractMessageHandler {
         ToolProvider toolProvider = provideTools(chatContext);
 
         // 8. 创建Agent
-        Agent agent = buildAgent(model, memory, toolProvider);
+        Agent agent = buildAgent(streamingClient, memory, toolProvider);
 
         // 9. 处理聊天
         processChat(agent, connection, transport, chatContext, userMessageEntity, llmMessageEntity);
@@ -148,9 +147,9 @@ public abstract class AbstractMessageHandler {
     }
 
     /** 构建Agent */
-    protected Agent buildAgent(StreamingChatLanguageModel model, MessageWindowChatMemory memory,
-            ToolProvider toolProvider) {
-        AiServices<Agent> agentService = AiServices.builder(Agent.class).streamingChatLanguageModel(model)
+    protected Agent buildAgent(StreamingChatModel model, MessageWindowChatMemory memory,
+                               ToolProvider toolProvider) {
+        AiServices<Agent> agentService = AiServices.builder(Agent.class).streamingChatModel(model)
                 .chatMemory(memory);
 
         if (toolProvider != null) {
@@ -198,22 +197,5 @@ public abstract class AbstractMessageHandler {
                 memory.add(new SystemMessage(messageEntity.getContent()));
             }
         }
-    }
-
-    /** 错误处理辅助方法 */
-    protected <T> void handleError(T connection, MessageTransport<T> transport, ChatContext chatContext, String message,
-            MessageEntity llmEntity, Throwable throwable) {
-
-        // 记录token
-        OpenAiTokenizer tokenizer = new OpenAiTokenizer("gpt-4o");
-        int usedToken = tokenizer.estimateTokenCountInMessage(new AiMessage(message));
-        llmEntity.setTokenCount(usedToken);
-        llmEntity.setContent(message);
-
-        messageDomainService.saveMessageAndUpdateContext(Collections.singletonList(llmEntity),
-                chatContext.getContextEntity());
-
-        transport.sendEndMessage(connection,
-                AgentChatResponse.buildEndMessage(throwable.getMessage(), MessageType.TEXT));
     }
 }
