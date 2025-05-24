@@ -67,7 +67,7 @@ public abstract class AbstractMessageHandler {
         buildHistoryMessage(chatContext, memory);
 
         // 7. 根据子类决定是否需要工具
-        ToolProvider toolProvider = provideTools();
+        ToolProvider toolProvider = provideTools(chatContext);
 
         // 8. 创建Agent
         Agent agent = buildAgent(model, memory, toolProvider);
@@ -79,7 +79,7 @@ public abstract class AbstractMessageHandler {
     }
 
     /** 子类可以覆盖这个方法提供工具 */
-    protected ToolProvider provideTools() {
+    protected ToolProvider provideTools(ChatContext chatContext) {
         return null; // 默认不提供工具
     }
 

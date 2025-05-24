@@ -1,7 +1,6 @@
 package org.xhy.application.agent.dto;
 
 import org.xhy.domain.agent.constant.AgentType;
-import org.xhy.domain.agent.model.*;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -30,7 +29,7 @@ public class AgentDTO {
     private String welcomeMessage;
 
     /** Agent可使用的工具列表 */
-    private List<String> toolVersionIds;
+    private List<String> toolIds;
 
     /** 关联的知识库ID列表 */
     private List<String> knowledgeBaseIds;
@@ -57,7 +56,7 @@ public class AgentDTO {
 
     /** 无参构造函数 */
     public AgentDTO() {
-        this.toolVersionIds = new ArrayList<>();
+        this.toolIds = new ArrayList<>();
         this.knowledgeBaseIds = new ArrayList<>();
     }
 
@@ -110,12 +109,12 @@ public class AgentDTO {
         this.welcomeMessage = welcomeMessage;
     }
 
-    public List<String> getToolVersionIds() {
-        return toolVersionIds;
+    public List<String> getToolIds() {
+        return toolIds;
     }
 
-    public void setToolVersionIds(List<String> toolVersionIds) {
-        this.toolVersionIds = toolVersionIds;
+    public void setToolIds(List<String> toolIds) {
+        this.toolIds = toolIds;
     }
 
     public List<String> getKnowledgeBaseIds() {

@@ -47,6 +47,11 @@ public class ChatContext {
     /** 历史消息列表 */
     private List<MessageEntity> messageHistory;
 
+    /**
+     * 使用的 mcp server name
+     */
+    private List<String> mcpServerNames;
+
     public String getSessionId() {
         return sessionId;
     }
@@ -117,5 +122,13 @@ public class ChatContext {
 
     public void setMessageHistory(List<MessageEntity> messageHistory) {
         this.messageHistory = messageHistory;
+    }
+
+    public List<String> getMcpServerNames() {
+        return mcpServerNames;
+    }
+
+    public void setMcpServerNames(List<String> mcpServerNames) {
+        this.mcpServerNames = mcpServerNames;
     }
 }

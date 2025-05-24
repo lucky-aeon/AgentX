@@ -10,9 +10,8 @@ import org.xhy.domain.tool.repository.UserToolRepository;
 import org.xhy.infrastructure.exception.BusinessException;
 import org.xhy.interfaces.dto.tool.request.QueryToolRequest;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /** 用户已安装工具 service */
@@ -69,4 +68,31 @@ public class UserToolDomainService {
         return toolInstallMap;
     }
 
+    /**
+     * 检查工具版本是否已安装
+     *
+     * @param toolIds 工具版本id列表
+     * @param userId 用户id
+     */
+    public List<UserToolEntity> getInstallTool(List<String> toolIds, String userId) {
+        if (toolIds == null || toolIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        List<UserToolEntity> userToolEntities = userToolRepository.selectList(Wrappers.<UserToolEntity>lambdaQuery()
+                .in(UserToolEntity::getToolId, toolIds)
+                .eq(UserToolEntity::getUserId, userId));
+
+        Map<String, UserToolEntity> userToolMap = userToolEntities.stream()
+                .collect(Collectors.toMap(UserToolEntity::getToolId, Function.identity()));
+
+
+        toolIds.forEach(toolId -> {
+            UserToolEntity userToolEntity = userToolMap.get(toolId);
+            if (userToolEntity == null) {
+                throw new BusinessException("使用的工具不存在");
+            }
+        });
+        return userToolEntities;
+    }
 }

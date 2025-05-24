@@ -7,10 +7,12 @@ import dev.langchain4j.mcp.client.transport.McpTransport;
 import dev.langchain4j.mcp.client.transport.http.HttpMcpTransport;
 import dev.langchain4j.service.tool.ToolProvider;
 import org.springframework.stereotype.Component;
+import org.xhy.application.conversation.service.handler.context.ChatContext;
 
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /** Agent工具管理器 负责创建和管理工具提供者 */
 @Component
@@ -19,7 +21,7 @@ public class AgentToolManager {
      * 
      * @param toolUrls 工具URL列表
      * @return 工具提供者实例，如果工具列表为空则返回null */
-    public ToolProvider createToolProvider(List<String> toolUrls) {
+    public ToolProvider createToolProvider(List<String> toolUrls, Map<String, Map<String,String>> toolPresetParams) {
         if (toolUrls == null || toolUrls.isEmpty()) {
             return null;
         }
@@ -32,6 +34,10 @@ public class AgentToolManager {
 
             McpClient mcpClient = new DefaultMcpClient.Builder().transport(transport).build();
 
+            /**
+             * 预先设置参数 todo xhy toolPresetParams
+             */
+
             mcpClients.add(mcpClient);
         }
 
@@ -41,8 +47,7 @@ public class AgentToolManager {
     /** 获取可用的工具列表
      * 
      * @return 工具URL列表 */
-    public List<String> getAvailableTools() {
-        // 这里可以从配置、数据库等获取可用工具
-        return new ArrayList<>();
+    public List<String> getAvailableTools(ChatContext chatContext) {
+        return chatContext.getMcpServerNames();
     }
 }

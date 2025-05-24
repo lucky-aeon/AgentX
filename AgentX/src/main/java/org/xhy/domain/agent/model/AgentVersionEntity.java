@@ -53,8 +53,8 @@ public class AgentVersionEntity extends BaseEntity {
     private String welcomeMessage;
 
     /** Agent可使用的工具列表 */
-    @TableField(value = "tool_version_ids", typeHandler = ListConverter.class)
-    private List<String> toolVersionIds;
+    @TableField(value = "tool_ids", typeHandler = ListConverter.class)
+    private List<String> toolIds;
 
     /** 关联的知识库ID列表 */
     @TableField(value = "knowledge_base_ids", typeHandler = ListConverter.class)
@@ -94,7 +94,7 @@ public class AgentVersionEntity extends BaseEntity {
 
     /** 无参构造函数 */
     public AgentVersionEntity() {
-        this.toolVersionIds = new ArrayList<>();
+        this.toolIds = new ArrayList<>();
         this.knowledgeBaseIds = new ArrayList<>();
     }
 
@@ -139,12 +139,12 @@ public class AgentVersionEntity extends BaseEntity {
         this.welcomeMessage = welcomeMessage;
     }
 
-    public List<String> getToolVersionIds() {
-        return toolVersionIds != null ? toolVersionIds : new ArrayList<>();
+    public List<String> getToolIds() {
+        return toolIds != null ? toolIds : new ArrayList<>();
     }
 
-    public void setToolVersionIds(List<String> toolVersionIds) {
-        this.toolVersionIds = toolVersionIds;
+    public void setToolIds(List<String> toolIds) {
+        this.toolIds = toolIds;
     }
 
     public List<String> getKnowledgeBaseIds() {
@@ -262,7 +262,7 @@ public class AgentVersionEntity extends BaseEntity {
         version.setVersionNumber(versionNumber);
         version.setSystemPrompt(agent.getSystemPrompt());
         version.setWelcomeMessage(agent.getWelcomeMessage());
-        version.setToolVersionIds(agent.getToolVersionIds());
+        version.setToolIds(agent.getToolIds());
         version.setKnowledgeBaseIds(agent.getKnowledgeBaseIds());
         version.setChangeLog(changeLog);
         version.setAgentType(agent.getAgentType());

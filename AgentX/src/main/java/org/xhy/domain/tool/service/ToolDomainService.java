@@ -17,7 +17,6 @@ import org.xhy.domain.tool.repository.ToolVersionRepository;
 import org.xhy.domain.tool.repository.UserToolRepository;
 import org.xhy.infrastructure.exception.BusinessException;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -177,59 +176,5 @@ public class ToolDomainService {
             throw new BusinessException("工具ID: " + tool.getId() + " 无法从安装命令中获取工具名称。");
         }
         return toolName;
-    }
-
-
-    /**
-     * 检查工具版本是否已安装
-     * 
-     * 校验的是 toolversionId，并非是 tooId
-     * 
-     * @param toolVersionIds 工具版本id列表
-     * @param userId 用户id
-     */
-    public void checkToolAvailability(List<String> toolVersionIds, String userId) {
-        if (toolVersionIds == null || toolVersionIds.isEmpty()) {
-            return;
-        }
-        // 检查工具版本是否存在
-        List<ToolVersionEntity> toolVersionEntities = toolVersionRepository.selectList(Wrappers.<ToolVersionEntity>lambdaQuery()
-                        .in(ToolVersionEntity::getId, toolVersionIds)
-                        .eq(ToolVersionEntity::getUserId, userId));
-
-        //  toolVersionEntities 转 map,key为 id，value 为本身
-        Map<String, ToolVersionEntity> toolVersionMap = toolVersionEntities.stream()
-                .collect(Collectors.toMap(ToolVersionEntity::getId,Function.identity()));
-        
-        List<String> toolIds = new ArrayList<>();
-        toolVersionIds.forEach(toolVersionId -> {
-            ToolVersionEntity toolVersionEntity = toolVersionMap.get(toolVersionId);
-            if (toolVersionEntity == null) {
-                throw new BusinessException("工具缺失，请联系作者操作");
-            }
-
-            if (!toolVersionEntity.getUserId().equals(userId) && !toolVersionEntity.getPublicStatus()){
-                throw new BusinessException("工具缺失，请联系作者操作");
-
-            }
-            toolIds.add(toolVersionEntity.getToolId());
-        });
-
-       // 检查这些工具是否是自己已安装的
-        List<UserToolEntity> userToolEntities = userToolRepository.selectList(Wrappers.<UserToolEntity>lambdaQuery()
-                .in(UserToolEntity::getToolId, toolIds)
-                .eq(UserToolEntity::getUserId, userId));
-
-        // 转 map
-        Map<String, UserToolEntity> userToolMap = userToolEntities.stream()
-                .collect(Collectors.toMap(UserToolEntity::getToolId, Function.identity()));
-
-        
-        toolIds.forEach(toolId -> {
-            UserToolEntity userToolEntity = userToolMap.get(toolId);
-            if (userToolEntity == null) {
-                throw new BusinessException("工具缺失，请联系作者操作");
-            }
-        });
     }
 }

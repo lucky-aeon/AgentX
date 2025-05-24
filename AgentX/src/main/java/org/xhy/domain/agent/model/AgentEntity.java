@@ -46,8 +46,8 @@ public class AgentEntity extends BaseEntity {
     private String welcomeMessage;
 
     /** Agent可使用的工具列表 */
-    @TableField(value = "tool_version_ids", typeHandler = ListStringConverter.class)
-    private List<String> toolVersionIds;
+    @TableField(value = "tool_ids", typeHandler = ListStringConverter.class)
+    private List<String> toolIds;
 
     /** 关联的知识库ID列表 */
     @TableField(value = "knowledge_base_ids", exist = false)
@@ -83,7 +83,7 @@ public class AgentEntity extends BaseEntity {
 
     /** 无参构造函数 */
     public AgentEntity() {
-        this.toolVersionIds = new ArrayList<>();
+        this.toolIds = new ArrayList<>();
         this.knowledgeBaseIds = new ArrayList<>();
     }
 
@@ -136,12 +136,12 @@ public class AgentEntity extends BaseEntity {
         this.welcomeMessage = welcomeMessage;
     }
 
-    public List<String> getToolVersionIds() {
-        return toolVersionIds != null ? toolVersionIds : new ArrayList<>();
+    public List<String> getToolIds() {
+        return toolIds != null ? toolIds : new ArrayList<>();
     }
 
-    public void setToolVersionIds(List<String> toolVersionIds) {
-        this.toolVersionIds = toolVersionIds;
+    public void setToolIds(List<String> toolIds) {
+        this.toolIds = toolIds;
     }
 
     public List<String> getKnowledgeBaseIds() {
