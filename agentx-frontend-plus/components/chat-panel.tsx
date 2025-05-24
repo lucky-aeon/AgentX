@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect, useCallback } from "react"
-import { FileText, Send, ClipboardList, Wrench, CheckCircle, ListTodo, Circle, AlertCircle } from 'lucide-react'
+import { FileText, Send, ClipboardList, Wrench, CheckCircle, ListTodo, Circle, AlertCircle, Clock } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -22,11 +22,10 @@ import { nanoid } from 'nanoid'
 
 interface ChatPanelProps {
   conversationId: string
-  onToggleTaskHistory?: () => void
-  showTaskHistory?: boolean
   isFunctionalAgent?: boolean
   agentName?: string
   agentType?: number // 新增：助理类型，2表示功能性Agent
+  onToggleScheduledTaskPanel?: () => void // 新增：切换定时任务面板的回调
 }
 
 interface Message {
@@ -92,7 +91,7 @@ interface TaskDTO {
   endTime?: string    // 可选，任务结束时间
 }
 
-export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory = false, isFunctionalAgent = false, agentName = "AI助手", agentType = 1 }: ChatPanelProps) {
+export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName = "AI助手", agentType = 1, onToggleScheduledTaskPanel }: ChatPanelProps) {
   const [input, setInput] = useState("")
   const [messages, setMessages] = useState<MessageInterface[]>([])
   const [isTyping, setIsTyping] = useState(false)
@@ -1209,9 +1208,9 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
             variant="ghost"
             size="icon"
             className="h-8 w-8"
-            onClick={onToggleTaskHistory}
+            onClick={onToggleScheduledTaskPanel}
           >
-            <ClipboardList className={`h-5 w-5 ${showTaskHistory ? 'text-primary' : 'text-gray-500'}`} />
+            <Clock className={`h-5 w-5 text-gray-500 hover:text-primary`} />
           </Button>
         )}
       </div>
