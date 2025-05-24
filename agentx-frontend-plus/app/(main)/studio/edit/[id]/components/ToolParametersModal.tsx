@@ -61,7 +61,15 @@ const ToolParametersModal: React.FC<ToolParametersModalProps> = ({
 
   // 获取预设参数值
   const getPresetValue = (functionName: string, paramName: string): string => {
-    return localPresetParams[functionName]?.[paramName] || '';
+    try {
+      if (!localPresetParams || !localPresetParams[functionName]) {
+        return '';
+      }
+      return localPresetParams[functionName]?.[paramName] || '';
+    } catch (e) {
+      console.error(`获取参数值出错: ${functionName}.${paramName}`, e);
+      return '';
+    }
   };
 
   // 更新预设参数值

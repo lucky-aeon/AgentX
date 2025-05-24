@@ -4,7 +4,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { getInstalledTools } from "@/lib/tool-service"; // 导入获取工具的函数
 import type { Tool } from "@/types/tool"; // 导入 Tool 类型
 import type { AgentTool } from "@/types/agent"; // <-- Import AgentTool
-import ToolDetailSidebar from "./ToolDetailSidebar"; // 导入工具详情侧边栏
 
 // 用于全局缓存已加载的工具
 let cachedTools: Tool[] | null = null;
@@ -39,7 +38,6 @@ const AgentToolsForm: React.FC<AgentToolsFormProps> = ({
 }) => {
   const [installedTools, setInstalledTools] = useState<Tool[]>(cachedTools || []);
   const [isLoadingTools, setIsLoadingTools] = useState(cachedTools ? false : true);
-  const [selectedTool, setSelectedTool] = useState<Tool | null>(null);
 
   useEffect(() => {
     // 如果已经有缓存数据，直接使用不重新请求
@@ -71,28 +69,6 @@ const AgentToolsForm: React.FC<AgentToolsFormProps> = ({
 
     fetchTools();
   }, []);
-
-  // 处理工具点击事件
-  const handleToolClick = (tool: Tool) => {
-    // 记录点击的工具，用于显示详情侧边栏
-    setSelectedTool(tool);
-    // 调用父组件传入的 onToolClick 回调
-    onToolClick(tool);
-  };
-
-  // 处理保存预设参数
-  const handleSavePresetParameters = (toolId: string, presetParams: Record<string, Record<string, string>>) => {
-    if (updateToolPresetParameters) {
-      updateToolPresetParameters(toolId, presetParams);
-    }
-    setSelectedTool(null);
-  };
-
-  // 获取工具的预设参数
-  const getToolPresetParameters = (toolId: string): Record<string, Record<string, string>> => {
-    const selectedTool = formData.tools.find(tool => tool.id === toolId);
-    return selectedTool?.presetParameters || {};
-  };
 
   // 检查工具是否被选中
   const isToolSelected = (tool: Tool): boolean => {
@@ -126,7 +102,7 @@ const AgentToolsForm: React.FC<AgentToolsFormProps> = ({
                     className={`border rounded-lg p-4 cursor-pointer transition-all ${
                       isSelected ? "border-blue-500 bg-blue-50" : "hover:border-gray-300"
                     }`}
-                    onClick={() => handleToolClick(tool)}
+                    onClick={() => onToolClick(tool)}
                   >
                     <div className="flex items-center justify-between">
                       <h3 className="font-medium">{tool.name}</h3>
@@ -171,17 +147,6 @@ const AgentToolsForm: React.FC<AgentToolsFormProps> = ({
             ))}
           </div>
         </div>
-      )}
-
-      {/* 工具详情侧边栏 */}
-      {selectedTool && (
-        <ToolDetailSidebar
-          tool={selectedTool}
-          isOpen={!!selectedTool}
-          onClose={() => setSelectedTool(null)}
-          presetParameters={getToolPresetParameters(selectedTool.toolId || selectedTool.id)}
-          onSavePresetParameters={handleSavePresetParameters}
-        />
       )}
     </div>
   );

@@ -291,11 +291,20 @@ export default function CreateAgentPage() {
 
   // 新增：处理工具卡片点击，用于显示侧边栏
   const handleToolClick = (tool: Tool) => {
-    // 确保工具信息中包含toolId和version信息
-    // 这里不需要额外处理，因为从getInstalledTools()得到的tool对象应该已经包含了这些信息
+    // 确保当前工具不是已经选中的工具，避免重复打开侧边栏
+    if (selectedToolForSidebar && selectedToolForSidebar.id === tool.id) {
+      return;
+    }
+    
     console.log("Tool clicked:", tool);
-    setSelectedToolForSidebar(tool);
-    setIsToolSidebarOpen(true);
+    // 先关闭侧边栏，再设置工具，避免同时存在两个侧边栏
+    setIsToolSidebarOpen(false);
+    
+    // 使用setTimeout延迟设置新工具，确保旧侧边栏已经关闭
+    setTimeout(() => {
+      setSelectedToolForSidebar(tool);
+      setIsToolSidebarOpen(true);
+    }, 100);
   };
 
   // 处理创建助理
