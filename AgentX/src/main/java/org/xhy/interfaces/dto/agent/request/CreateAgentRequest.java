@@ -16,7 +16,7 @@ public class CreateAgentRequest {
     private AgentType agentType = AgentType.CHAT_ASSISTANT;
     private String systemPrompt;
     private String welcomeMessage;
-    private List<String> toolVersionIds;
+    private List<String> toolIds;
     private List<String> knowledgeBaseIds;
     private Map<String,Map<String,String>> toolPresetParams;
     // 构造方法
@@ -71,12 +71,12 @@ public class CreateAgentRequest {
         this.welcomeMessage = welcomeMessage;
     }
 
-    public List<String> getToolVersionIds() {
-        return toolVersionIds;
+    public List<String> getToolIds() {
+        return toolIds;
     }
 
-    public void setToolVersionIds(List<String> toolVersionIds) {
-        this.toolVersionIds = toolVersionIds;
+    public void setToolIds(List<String> toolIds) {
+        this.toolIds = toolIds;
     }
 
     public List<String> getKnowledgeBaseIds() {

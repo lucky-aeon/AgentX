@@ -59,6 +59,7 @@ import {
   deleteAgentWithToast,
   getAgentLatestVersion,
 } from "@/lib/agent-service"
+import { getInstalledTools } from "@/lib/tool-service"
 import { PublishStatus } from "@/types/agent"
 import type { AgentVersion } from "@/types/agent"
 import type { Tool } from "@/types/tool"
@@ -141,6 +142,52 @@ export default function EditAgentPage() {
         if (response.code === 200 && response.data) {
           const agent = response.data
 
+          // 如果返回的是 toolIds，需要获取完整的工具信息
+          let agentTools: AgentTool[] = []
+          
+          if (agent.tools && agent.tools.length > 0) {
+            // 如果直接返回了 tools 对象数组，直接使用
+            agentTools = agent.tools.map(t => ({ 
+              id: t.id, 
+              name: t.name, 
+              description: t.description || undefined,
+              presetParameters: t.presetParameters || {},
+            }))
+          } else if (agent.toolIds && agent.toolIds.length > 0) {
+            // 如果只返回了 toolIds，需要获取完整的工具信息
+            try {
+              const toolsResponse = await getInstalledTools({ pageSize: 100 })
+              if (toolsResponse.code === 200 && toolsResponse.data && Array.isArray(toolsResponse.data.records)) {
+                const installedTools = toolsResponse.data.records
+                
+                // 根据 toolIds 过滤出已选择的工具
+                agentTools = agent.toolIds.map(toolId => {
+                  // 查找匹配的工具
+                  const matchedTool = installedTools.find((t: Tool) => t.id === toolId || t.toolId === toolId)
+                  
+                  if (matchedTool) {
+                    return {
+                      id: toolId,
+                      name: matchedTool.name,
+                      description: matchedTool.description || undefined,
+                      presetParameters: {},
+                    }
+                  } else {
+                    // 如果找不到匹配的工具，创建一个基本的工具对象
+                    return {
+                      id: toolId,
+                      name: `工具 (ID: ${toolId.substring(0, 8)}...)`,
+                      description: undefined,
+                      presetParameters: {},
+                    }
+                  }
+                })
+              }
+            } catch (error) {
+              console.error("获取已安装工具错误:", error)
+            }
+          }
+
           // 设置表单数据
           setFormData({
             name: agent.name,
@@ -148,12 +195,7 @@ export default function EditAgentPage() {
             description: agent.description,
             systemPrompt: agent.systemPrompt,
             welcomeMessage: agent.welcomeMessage,
-            tools: agent.tools?.map(t => ({ 
-              id: t.id, 
-              name: t.name, 
-              description: t.description || undefined,
-              presetParameters: t.presetParameters || {},
-            })) || [],
+            tools: agentTools,
             knowledgeBaseIds: agent.knowledgeBaseIds || [],
             enabled: agent.enabled,
             agentType: agent.agentType,
@@ -234,14 +276,17 @@ export default function EditAgentPage() {
 
   // 切换工具
   const toggleTool = (toolToToggle: Tool) => {
-    const isToolCurrentlyEnabled = formData.tools.some(t => t.id === toolToToggle.id);
+    // 使用 toolId（如果存在）或 id 作为工具标识符
+    const toolIdentifier = toolToToggle.toolId || toolToToggle.id;
+    const isToolCurrentlyEnabled = formData.tools.some(t => t.id === toolIdentifier);
+    
     setFormData((prev) => {
       let updatedTools: AgentTool[];
       if (isToolCurrentlyEnabled) {
-        updatedTools = prev.tools.filter((t) => t.id !== toolToToggle.id);
+        updatedTools = prev.tools.filter((t) => t.id !== toolIdentifier);
       } else {
         const newAgentTool: AgentTool = {
-          id: toolToToggle.id,
+          id: toolIdentifier,
           name: toolToToggle.name,
           description: toolToToggle.description || undefined,
         };
@@ -249,6 +294,7 @@ export default function EditAgentPage() {
       }
       return { ...prev, tools: updatedTools };
     });
+    
     toast({
       title: `工具已${!isToolCurrentlyEnabled ? "启用" : "禁用"}: ${toolToToggle.name}`,
     });
@@ -331,6 +377,9 @@ export default function EditAgentPage() {
     setIsSubmitting(true)
 
     try {
+      // 将工具对象数组转换为工具ID字符串数组
+      const toolIds = formData.tools.map(tool => tool.id);
+      
       // 准备API请求参数
       const agentData = {
         id: agentId,
@@ -339,12 +388,7 @@ export default function EditAgentPage() {
         description: formData.description || "",
         systemPrompt: selectedType === "chat" ? formData.systemPrompt : "",
         welcomeMessage: selectedType === "chat" ? formData.welcomeMessage : "",
-        tools: formData.tools.map((tool) => ({
-          id: tool.id,
-          name: tool.name,
-          description: tool.description,
-          presetParameters: tool.presetParameters,
-        })),
+        toolIds: toolIds, // 使用工具ID数组
         knowledgeBaseIds: selectedType === "chat" ? formData.knowledgeBaseIds : [],
         enabled: formData.enabled,
         agentType: formData.agentType,
@@ -414,17 +458,15 @@ export default function EditAgentPage() {
     setIsPublishing(true)
 
     try {
+      // 将工具对象数组转换为工具ID字符串数组
+      const toolIds = formData.tools.map(tool => tool.id);
+      
       const response = await publishAgentVersionWithToast(agentId, {
         versionNumber,
         changeLog: changeLog || `发布 ${versionNumber} 版本`,
         systemPrompt: formData.systemPrompt,
         welcomeMessage: formData.welcomeMessage,
-        tools: formData.tools.map((tool) => ({
-          id: tool.id,
-          name: tool.name,
-          description: tool.description,
-          presetParameters: tool.presetParameters,
-        })),
+        toolIds: toolIds, // 使用工具ID数组
         knowledgeBaseIds: formData.knowledgeBaseIds,
       })
 
@@ -678,7 +720,7 @@ export default function EditAgentPage() {
                 <AgentPromptForm
                   formData={formData}
                   updateFormField={updateFormField}
-                />
+                  />
               </TabsContent>
             )}
 

@@ -20,7 +20,7 @@ public class UpdateAgentRequest {
     private String systemPrompt;
     private String welcomeMessage;
     private LLMModelConfig modelConfig;
-    private List<String> toolVersionIds;
+    private List<String> toolIds;
     private List<String> knowledgeBaseIds;
     private Map<String,Map<String,String>> toolPresetParams;
 
@@ -81,12 +81,12 @@ public class UpdateAgentRequest {
         this.welcomeMessage = welcomeMessage;
     }
 
-    public List<String> getToolVersionIds() {
-        return toolVersionIds;
+    public List<String> getToolIds() {
+        return toolIds;
     }
 
-    public void setToolVersionIds(List<String> toolVersionIds) {
-        this.toolVersionIds = toolVersionIds;
+    public void setToolIds(List<String> toolIds) {
+        this.toolIds = toolIds;
     }
 
     public List<String> getKnowledgeBaseIds() {

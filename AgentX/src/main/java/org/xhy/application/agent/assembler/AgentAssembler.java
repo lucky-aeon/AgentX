@@ -35,7 +35,7 @@ public class AgentAssembler {
         entity.setEnabled(true);
 
         // 设置工具和知识库ID
-        entity.setToolIds(request.getToolVersionIds() != null ? request.getToolVersionIds() : new ArrayList<>());
+        entity.setToolIds(request.getToolIds() != null ? request.getToolIds() : new ArrayList<>());
         entity.setKnowledgeBaseIds(
                 request.getKnowledgeBaseIds() != null ? request.getKnowledgeBaseIds() : new ArrayList<>());
 
@@ -43,7 +43,7 @@ public class AgentAssembler {
         LocalDateTime now = LocalDateTime.now();
         entity.setCreatedAt(now);
         entity.setUpdatedAt(now);
-        entity.setToolIds(request.getToolVersionIds());
+        entity.setToolIds(request.getToolIds());
         // 设置预先设置的工具参数
         entity.setToolPresetParams(request.getToolPresetParams());
 

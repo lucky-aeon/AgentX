@@ -74,7 +74,10 @@ const AgentToolsForm: React.FC<AgentToolsFormProps> = ({
 
   // 处理工具点击事件
   const handleToolClick = (tool: Tool) => {
+    // 记录点击的工具，用于显示详情侧边栏
     setSelectedTool(tool);
+    // 调用父组件传入的 onToolClick 回调
+    onToolClick(tool);
   };
 
   // 处理保存预设参数
@@ -89,6 +92,12 @@ const AgentToolsForm: React.FC<AgentToolsFormProps> = ({
   const getToolPresetParameters = (toolId: string): Record<string, Record<string, string>> => {
     const selectedTool = formData.tools.find(tool => tool.id === toolId);
     return selectedTool?.presetParameters || {};
+  };
+
+  // 检查工具是否被选中
+  const isToolSelected = (tool: Tool): boolean => {
+    const toolIdentifier = tool.toolId || tool.id;
+    return formData.tools.some(selectedTool => selectedTool.id === toolIdentifier);
   };
 
   return (
@@ -109,7 +118,8 @@ const AgentToolsForm: React.FC<AgentToolsFormProps> = ({
           ) : installedTools.length > 0 ? (
             <div className="grid grid-cols-2 gap-4 mt-4">
               {installedTools.map((tool) => {
-                const isSelected = formData.tools.some(selectedTool => selectedTool.id === tool.id);
+                const isSelected = isToolSelected(tool);
+                
                 return (
                   <div
                     key={tool.id}
@@ -169,7 +179,7 @@ const AgentToolsForm: React.FC<AgentToolsFormProps> = ({
           tool={selectedTool}
           isOpen={!!selectedTool}
           onClose={() => setSelectedTool(null)}
-          presetParameters={getToolPresetParameters(selectedTool.id)}
+          presetParameters={getToolPresetParameters(selectedTool.toolId || selectedTool.id)}
           onSavePresetParameters={handleSavePresetParameters}
         />
       )}

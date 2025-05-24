@@ -116,15 +116,18 @@ export default function CreateAgentPage() {
 
   // 切换工具
   const toggleTool = (toolToToggle: Tool) => {
-    const isToolCurrentlyEnabled = formData.tools.some(t => t.id === toolToToggle.id);
+    // 使用 toolId（如果存在）或 id 作为工具标识符
+    const toolIdentifier = toolToToggle.toolId || toolToToggle.id;
+    const isToolCurrentlyEnabled = formData.tools.some(t => t.id === toolIdentifier);
+    
     setFormData((prev) => {
       let updatedTools: AgentTool[]; // <-- Use AgentTool[]
       if (isToolCurrentlyEnabled) {
-        updatedTools = prev.tools.filter((t) => t.id !== toolToToggle.id);
+        updatedTools = prev.tools.filter((t) => t.id !== toolIdentifier);
       } else {
         // 从 Tool 对象创建 AgentTool 对象
         const newAgentTool: AgentTool = {
-          id: toolToToggle.id, 
+          id: toolIdentifier, 
           name: toolToToggle.name, 
           description: toolToToggle.description || undefined, // Ensure compatibility with AgentTool
         };
@@ -132,6 +135,7 @@ export default function CreateAgentPage() {
       }
       return { ...prev, tools: updatedTools };
     });
+    
     toast({
       title: `工具已${!isToolCurrentlyEnabled ? "添加" : "移除"}: ${toolToToggle.name}`,
     });
@@ -221,6 +225,9 @@ export default function CreateAgentPage() {
     setIsSubmitting(true);
 
     try {
+      // 将工具对象数组转换为工具ID字符串数组
+      const toolIds = formData.tools.map(tool => tool.id);
+      
       const agentData = {
         name: formData.name,
         avatar: formData.avatar,
@@ -233,11 +240,7 @@ export default function CreateAgentPage() {
           temperature: 0.7,
           maxTokens: 2000
         },
-        tools: formData.tools.map(tool => ({ 
-          id: tool.id,
-          name: tool.name,
-          description: tool.description, 
-        })),
+        toolIds: toolIds, // 使用工具ID数组
         knowledgeBaseIds: selectedType === "chat" ? formData.knowledgeBaseIds : [],
         userId: API_CONFIG.CURRENT_USER_ID,
       };
@@ -245,23 +248,19 @@ export default function CreateAgentPage() {
       const response = await createAgentWithToast(agentData);
 
       if (response.code === 200) {
-        toast({
-          title: "创建成功",
-          description: `已创建${selectedType === "chat" ? "聊天助理" : "功能性助理"}: ${formData.name}`,
-        });
+        // 创建成功的toast已经由createAgentWithToast处理
         router.push("/studio");
-      } else {
-        // createAgentWithToast 应该已经处理了错误 toast
       }
+      // 错误也已由createAgentWithToast处理
     } catch (error) {
       console.error("创建失败:", error);
       // createAgentWithToast 通常也会处理 catch 块的 toast，但以防万一
       if (!(error instanceof Error && error.message.includes("toast already shown"))) {
-          toast({
-            title: "创建失败",
-            description: "请稍后再试",
-            variant: "destructive",
-          });
+        toast({
+          title: "创建失败",
+          description: "请稍后再试",
+          variant: "destructive",
+        });
       }
     } finally {
       setIsSubmitting(false);
@@ -329,7 +328,7 @@ export default function CreateAgentPage() {
                 handleAvatarUpload={handleAvatarUpload}
                 removeAvatar={removeAvatar}
                 fileInputRef={fileInputRef}
-              />
+                    />
             </TabsContent>
 
             {selectedType === "chat" && (
@@ -337,7 +336,7 @@ export default function CreateAgentPage() {
                 <AgentPromptForm
                   formData={formData}
                   updateFormField={updateFormField}
-                />
+                  />
               </TabsContent>
             )}
 
@@ -351,12 +350,12 @@ export default function CreateAgentPage() {
               />
             </TabsContent>
           </Tabs>
-          
+
           {/* 底部按钮 */}
           <div className="flex justify-end pt-6 border-t mt-6">
-            <Button onClick={handleCreateAgent} disabled={isSubmitting}>
+              <Button onClick={handleCreateAgent} disabled={isSubmitting}>
               {isSubmitting ? "创建中..." : "确认创建"}
-            </Button>
+              </Button>
           </div>
         </div>
 
