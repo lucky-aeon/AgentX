@@ -22,6 +22,7 @@ import org.xhy.infrastructure.transport.MessageTransport;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 public abstract class AbstractMessageHandler {
@@ -185,8 +186,16 @@ public abstract class AbstractMessageHandler {
             // 添加为AI消息，但明确标识这是摘要
             memory.add(new AiMessage(AgentPromptTemplates.getSummaryPrefix() + summary));
         }
+
+        String presetToolPrompt = "";
+        // 设置预先工具设置的参数到系统提示词中
+        Map<String, Map<String, Map<String, String>>> toolPresetParams = chatContext.getAgent().getToolPresetParams();
+        if (toolPresetParams != null) {
+            presetToolPrompt = AgentPromptTemplates.generatePresetToolPrompt(toolPresetParams);
+        }
+
         memory.add(new SystemMessage(
-                chatContext.getAgent().getSystemPrompt() + "\n" + AgentPromptTemplates.getIgnoreSensitiveInfoPrompt()));
+                chatContext.getAgent().getSystemPrompt() + "\n" + presetToolPrompt));
         List<MessageEntity> messageHistory = chatContext.getMessageHistory();
         for (MessageEntity messageEntity : messageHistory) {
             if (messageEntity.isUserMessage()) {
