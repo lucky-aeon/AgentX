@@ -9,22 +9,16 @@ public class AgentPromptTemplates {
 
     private static final String SUMMARY_PREFIX = "以下是用户历史消息的摘要，请仅作为参考，用户没有提起则不要回答摘要中的内容：\\n";
 
-
     /** 获取摘要算法的提示词 */
     public static String getSummaryPrefix() {
         return SUMMARY_PREFIX;
     }
 
-
-    /**
-     * 根据预设的工具参数生成系统提示词中关于“可直接调用工具”的部分。
+    /** 根据预设的工具参数生成系统提示词中关于“可直接调用工具”的部分。
      *
-     * @param toolPresetParams 一个 Map 结构，表示预设的工具及其参数。
-     * 外层 key 是 mcpServerName（例如 "surge"），
-     * 内层 key 是工具名称（例如 "surge_login"），
-     * 最内层是工具的参数 Map。
-     * @return 包含预设工具列表的字符串，如果 toolPresetParams 为空或null，则返回空字符串。
-     */
+     * @param toolPresetParams 一个 Map 结构，表示预设的工具及其参数。 外层 key 是 mcpServerName（例如 "surge"）， 内层 key 是工具名称（例如
+     *     "surge_login"）， 最内层是工具的参数 Map。
+     * @return 包含预设工具列表的字符串，如果 toolPresetParams 为空或null，则返回空字符串。 */
     public static String generatePresetToolPrompt(Map<String, Map<String, Map<String, String>>> toolPresetParams) {
         StringBuilder promptBuilder = new StringBuilder();
 
@@ -39,7 +33,7 @@ public class AgentPromptTemplates {
                 // 遍历工具名称层 (例如 "surge_login")
                 for (Map.Entry<String, Map<String, String>> entry2 : innerMap.entrySet()) {
                     String toolName = entry2.getKey(); // 获取工具名称
-                    presetToolNames.add(toolName);      // 添加到集合中
+                    presetToolNames.add(toolName); // 添加到集合中
                 }
             }
 
@@ -57,6 +51,5 @@ public class AgentPromptTemplates {
         }
         return promptBuilder.toString();
     }
-
 
 }

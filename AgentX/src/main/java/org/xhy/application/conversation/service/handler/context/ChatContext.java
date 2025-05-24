@@ -47,9 +47,7 @@ public class ChatContext {
     /** 历史消息列表 */
     private List<MessageEntity> messageHistory;
 
-    /**
-     * 使用的 mcp server name
-     */
+    /** 使用的 mcp server name */
     private List<String> mcpServerNames;
 
     public String getSessionId() {

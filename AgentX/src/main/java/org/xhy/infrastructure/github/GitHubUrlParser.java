@@ -8,11 +8,7 @@ import org.xhy.infrastructure.exception.BusinessException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * GitHub URL 解析工具类。
- * 负责将 GitHub URL 字符串解析成 GitHubRepoInfo 对象，不涉及任何 API 调用。
- * 支持灵活的 URL 格式，包括不带分支/Tag或指向子路径的URL。
- */
+/** GitHub URL 解析工具类。 负责将 GitHub URL 字符串解析成 GitHubRepoInfo 对象，不涉及任何 API 调用。 支持灵活的 URL 格式，包括不带分支/Tag或指向子路径的URL。 */
 public class GitHubUrlParser {
 
     private static final Logger logger = LoggerFactory.getLogger(GitHubUrlParser.class);
@@ -30,16 +26,12 @@ public class GitHubUrlParser {
     private GitHubUrlParser() {
     }
 
-    /**
-     * 解析 GitHub URL 的格式（正则表达式）。
-     * 支持灵活的 URL 格式，允许 URL 不包含分支或 Tag 信息，或指向仓库内的子路径。
-     * 如果解析成功，返回 GitHubRepoInfo 对象。如果失败，抛出 BusinessException。
-     * 此方法不进行 GitHub API 调用，只关注 URL 结构。
+    /** 解析 GitHub URL 的格式（正则表达式）。 支持灵活的 URL 格式，允许 URL 不包含分支或 Tag 信息，或指向仓库内的子路径。 如果解析成功，返回 GitHubRepoInfo 对象。如果失败，抛出
+     * BusinessException。 此方法不进行 GitHub API 调用，只关注 URL 结构。
      *
      * @param githubUrl 待解析的 GitHub URL
      * @return 包含解析信息的 GitHubRepoInfo 对象
-     * @throws BusinessException 如果 URL 为空或基本格式不正确
-     */
+     * @throws BusinessException 如果 URL 为空或基本格式不正确 */
     public static GitHubRepoInfo parseGithubUrl(String githubUrl) {
         if (githubUrl == null || githubUrl.trim().isEmpty()) {
             throw new BusinessException("GitHub URL 不能为空。");

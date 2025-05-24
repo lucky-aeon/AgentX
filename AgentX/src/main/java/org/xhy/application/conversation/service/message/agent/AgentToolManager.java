@@ -31,7 +31,8 @@ public class AgentToolManager {
      *
      * @param mcpServerNames 工具URL列表
      * @return 工具提供者实例，如果工具列表为空则返回null */
-    public ToolProvider createToolProvider(List<String> mcpServerNames, Map<String,Map<String,Map<String,String>>> toolPresetParams) {
+    public ToolProvider createToolProvider(List<String> mcpServerNames,
+            Map<String, Map<String, Map<String, String>>> toolPresetParams) {
         if (mcpServerNames == null || mcpServerNames.isEmpty()) {
             return null;
         }
@@ -46,9 +47,7 @@ public class AgentToolManager {
 
             McpClient mcpClient = new DefaultMcpClient.Builder().transport(transport).build();
 
-            /**
-             * 预先设置参数
-             */
+            /** 预先设置参数 */
             if (toolPresetParams != null && toolPresetParams.containsKey(mcpServerName)) {
                 List<PresetParameter> presetParameters = new ArrayList<>();
                 for (String key : toolPresetParams.keySet()) {

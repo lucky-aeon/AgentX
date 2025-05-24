@@ -57,8 +57,7 @@ public class MCPGatewayService {
         logger.info("MCP Gateway服务已初始化，基础URL: {}", properties.getBaseUrl());
     }
 
-
-    public String getSSEUrl(String mcpServerName){
+    public String getSSEUrl(String mcpServerName) {
         return properties.getBaseUrl() + "/" + mcpServerName + "/sse/sse?api_key=" + properties.getApiKey();
     }
 

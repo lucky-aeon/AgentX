@@ -39,7 +39,7 @@ public class ToolSpecificationConverter {
         dto.setName(spec.name());
         dto.setDescription(spec.description());
         dto.setEnabled(true);
-        
+
         // 处理参数
         Map<String, Object> parametersMap = new HashMap<>();
         if (spec.parameters() != null) {
@@ -47,41 +47,39 @@ public class ToolSpecificationConverter {
             parametersMap.put("properties", toolParameter.getProperties());
             parametersMap.put("required", toolParameter.getRequired());
         }
-        
+
         dto.setParameters(parametersMap);
         return dto;
     }
 
-    /**
-     * 使用反射机制提取参数信息，更加健壮
-     */
+    /** 使用反射机制提取参数信息，更加健壮 */
     private static ToolParameter extractParametersReflectively(ToolSpecification spec) {
         ToolParameter toolParameter = new ToolParameter();
         Map<String, ParameterProperty> properties = new HashMap<>();
         List<String> required = new ArrayList<>();
-        
+
         try {
             // 获取参数对象
             Object parameters = spec.parameters();
-            
+
             // 尝试获取properties字段
             Map<String, Object> propertiesMap = getFieldValueSafely(parameters, "properties", Map.class);
             if (propertiesMap != null) {
                 for (Map.Entry<String, Object> entry : propertiesMap.entrySet()) {
                     String propertyName = entry.getKey();
                     Object propertyValue = entry.getValue();
-                    
+
                     // 获取属性的description
                     String description = null;
                     if (propertyValue != null) {
                         Object descObj = getFieldValueSafely(propertyValue, "description", Object.class);
                         description = descObj != null ? descObj.toString() : null;
                     }
-                    
+
                     properties.put(propertyName, new ParameterProperty(description));
                 }
             }
-            
+
             // 尝试获取required字段
             Object requiredObj = getFieldValueSafely(parameters, "required", Object.class);
             if (requiredObj instanceof Collection) {
@@ -97,25 +95,23 @@ public class ToolSpecificationConverter {
                     }
                 }
             }
-            
+
         } catch (Exception e) {
             log.error("反射提取参数失败", e);
         }
-        
+
         toolParameter.setProperties(properties);
         toolParameter.setRequired(required.toArray(new String[0]));
         return toolParameter;
     }
-    
-    /**
-     * 安全地获取对象字段值，处理可能的异常
-     */
+
+    /** 安全地获取对象字段值，处理可能的异常 */
     @SuppressWarnings("unchecked")
     private static <T> T getFieldValueSafely(Object object, String fieldName, Class<T> expectedType) {
         if (object == null || fieldName == null) {
             return null;
         }
-        
+
         // 1. 首先尝试通过getter方法获取
         try {
             String getterName = "get" + fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
@@ -127,7 +123,7 @@ public class ToolSpecificationConverter {
         } catch (Exception ignored) {
             // 如果getter方法不存在或调用失败，继续尝试其他方法
         }
-        
+
         // 2. 尝试通过直接字段访问获取
         try {
             Field field = findField(object.getClass(), fieldName);
@@ -141,7 +137,7 @@ public class ToolSpecificationConverter {
         } catch (Exception ignored) {
             // 如果字段访问失败，继续尝试其他方法
         }
-        
+
         // 3. 如果对象是Map，尝试从Map中获取
         if (object instanceof Map) {
             Object result = ((Map<?, ?>) object).get(fieldName);
@@ -149,13 +145,11 @@ public class ToolSpecificationConverter {
                 return (T) result;
             }
         }
-        
+
         return null;
     }
-    
-    /**
-     * 在类的层次结构中查找字段，包括父类和接口
-     */
+
+    /** 在类的层次结构中查找字段，包括父类和接口 */
     private static Field findField(Class<?> clazz, String fieldName) {
         Class<?> searchType = clazz;
         while (searchType != null && !Object.class.equals(searchType)) {

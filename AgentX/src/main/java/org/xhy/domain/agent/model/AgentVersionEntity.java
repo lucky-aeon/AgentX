@@ -5,7 +5,6 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 
-
 import org.xhy.domain.agent.constant.PublishStatus;
 import org.xhy.infrastructure.converter.ListConverter;
 import org.xhy.infrastructure.converter.MapConverter;
@@ -90,7 +89,7 @@ public class AgentVersionEntity extends BaseEntity {
 
     /** 预先设置的工具参数 */
     @TableField(value = "tool_preset_params", typeHandler = MapConverter.class)
-    private Map<String,Map<String,String>> toolPresetParams;
+    private Map<String, Map<String, String>> toolPresetParams;
 
     /** 无参构造函数 */
     public AgentVersionEntity() {

@@ -68,24 +68,20 @@ public class UserToolDomainService {
         return toolInstallMap;
     }
 
-    /**
-     * 检查工具版本是否已安装
+    /** 检查工具版本是否已安装
      *
      * @param toolIds 工具版本id列表
-     * @param userId 用户id
-     */
+     * @param userId 用户id */
     public List<UserToolEntity> getInstallTool(List<String> toolIds, String userId) {
         if (toolIds == null || toolIds.isEmpty()) {
             return new ArrayList<>();
         }
 
         List<UserToolEntity> userToolEntities = userToolRepository.selectList(Wrappers.<UserToolEntity>lambdaQuery()
-                .in(UserToolEntity::getToolId, toolIds)
-                .eq(UserToolEntity::getUserId, userId));
+                .in(UserToolEntity::getToolId, toolIds).eq(UserToolEntity::getUserId, userId));
 
         Map<String, UserToolEntity> userToolMap = userToolEntities.stream()
                 .collect(Collectors.toMap(UserToolEntity::getToolId, Function.identity()));
-
 
         toolIds.forEach(toolId -> {
             UserToolEntity userToolEntity = userToolMap.get(toolId);

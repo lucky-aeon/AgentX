@@ -182,7 +182,7 @@ public class PortalToolController {
      * @param toolId 工具id
      * @return */
     @GetMapping("/{toolId}/latest")
-    public Result<Map<String,String>> getLatestToolVersion(@PathVariable String toolId) {
+    public Result<Map<String, String>> getLatestToolVersion(@PathVariable String toolId) {
         String userId = UserContext.getCurrentUserId();
         ToolVersionDTO latestToolVersion = toolAppService.getLatestToolVersion(toolId, userId);
         return Result.success(Map.of("version", latestToolVersion.getVersion()));

@@ -65,7 +65,7 @@ public class AgentAssembler {
             return null;
         }
         AgentDTO dto = new AgentDTO();
-        BeanUtils.copyProperties(entity,dto);
+        BeanUtils.copyProperties(entity, dto);
         return dto;
     }
 

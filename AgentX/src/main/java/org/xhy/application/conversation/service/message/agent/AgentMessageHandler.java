@@ -21,6 +21,7 @@ public class AgentMessageHandler extends AbstractMessageHandler {
 
     @Override
     protected ToolProvider provideTools(ChatContext chatContext) {
-        return agentToolManager.createToolProvider(agentToolManager.getAvailableTools(chatContext),chatContext.getAgent().getToolPresetParams());
+        return agentToolManager.createToolProvider(agentToolManager.getAvailableTools(chatContext),
+                chatContext.getAgent().getToolPresetParams());
     }
 }

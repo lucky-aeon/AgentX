@@ -51,15 +51,13 @@ public class ToolAppService {
         this.userDomainService = userDomainService;
     }
 
-    /**
-     * 上传工具
+    /** 上传工具
      * 
      * 业务流程： 1. 将请求转换为实体 2. 调用领域服务创建工具 3. 将实体转换为DTO返回
      *
      * @param request 创建工具请求
-     * @param userId  用户ID
-     * @return 创建的工具DTO
-     */
+     * @param userId 用户ID
+     * @return 创建的工具DTO */
     @Transactional
     public ToolDTO uploadTool(CreateToolRequest request, String userId) {
         // 将请求转换为实体
@@ -199,12 +197,12 @@ public class ToolAppService {
     public void uninstallTool(String toolId, String userId) {
         // 先检查是否是用户自己创建的工具
         ToolEntity toolEntity = toolDomainService.getTool(toolId);
-        
+
         if (toolEntity != null && toolEntity.getUserId().equals(userId)) {
             // 不允许删除用户自己创建的工具
             throw new BusinessException("不允许卸载自己创建的工具");
         }
-        
+
         // 执行正常的卸载流程
         userToolDomainService.delete(toolId, userId);
     }
@@ -238,10 +236,8 @@ public class ToolAppService {
         toolVersionDomainService.updateToolVersionStatus(toolId, version, userId, publishStatus);
     }
 
-    /**
-     * 为工具创建者自动安装审核通过的工具
-     * @param toolId 工具ID
-     */
+    /** 为工具创建者自动安装审核通过的工具
+     * @param toolId 工具ID */
     public void autoInstallApprovedTool(String toolId) {
         ToolEntity tool = toolDomainService.getTool(toolId);
         // 确保工具存在且已审核通过
@@ -249,25 +245,25 @@ public class ToolAppService {
             logger.warn("工具ID: {} 不存在或状态不是 APPROVED，无法自动安装。", toolId);
             return;
         }
-        
+
         String ownerId = tool.getUserId(); // 获取工具创建者ID
-        
+
         // 检查是否已安装
         UserToolEntity existingInstall = userToolDomainService.findByToolIdAndUserId(toolId, ownerId);
         if (existingInstall != null) {
             logger.info("工具ID: {} 已被用户ID: {} 安装，无需重复自动安装。版本: {}", toolId, ownerId, existingInstall.getVersion());
             return;
         }
-        
+
         // 尝试查找最新已发布的版本
         ToolVersionEntity versionToInstall = toolVersionDomainService.findLatestToolVersion(toolId, ownerId);
-        
+
         if (versionToInstall == null) {
             // 没有已发布的版本，为创建者创建一个代表基础配置的、非公开的内部版本记录
             logger.info("工具ID: {} 未找到任何已发布版本，为其创建者 {} 创建一个内部基础版本用于安装。", toolId, ownerId);
             ToolVersionEntity baseVersion = new ToolVersionEntity();
             BeanUtils.copyProperties(tool, baseVersion); // 从ToolEntity复制基础信息
-            baseVersion.setId(null); //确保是新记录
+            baseVersion.setId(null); // 确保是新记录
             baseVersion.setToolId(toolId);
             baseVersion.setUserId(ownerId); // 版本归属创建者
             baseVersion.setVersion("0.0.0"); // 特殊版本号
@@ -281,15 +277,14 @@ public class ToolAppService {
             versionToInstall = baseVersion;
             logger.info("工具ID: {} 已成功创建内部基础版本: {}", toolId, versionToInstall.getVersion());
         }
-        
+
         logger.info("准备为用户ID: {} 安装工具ID: {} 的版本: {}", ownerId, toolId, versionToInstall.getVersion());
         installTool(toolId, versionToInstall.getVersion(), ownerId);
         logger.info("工具ID: {} 版本: {} 已成功为创建者用户ID: {} 自动安装。", toolId, versionToInstall.getVersion(), ownerId);
     }
 
-
     // 根据 toolId 获取最新版本
-    public ToolVersionDTO getLatestToolVersion(String toolId,String userId) {
+    public ToolVersionDTO getLatestToolVersion(String toolId, String userId) {
         ToolVersionEntity toolVersionEntity = toolVersionDomainService.findLatestToolVersion(toolId, userId);
         return ToolAssembler.toDTO(toolVersionEntity);
     }

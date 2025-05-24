@@ -148,10 +148,8 @@ public abstract class AbstractMessageHandler {
     }
 
     /** 构建Agent */
-    protected Agent buildAgent(StreamingChatModel model, MessageWindowChatMemory memory,
-                               ToolProvider toolProvider) {
-        AiServices<Agent> agentService = AiServices.builder(Agent.class).streamingChatModel(model)
-                .chatMemory(memory);
+    protected Agent buildAgent(StreamingChatModel model, MessageWindowChatMemory memory, ToolProvider toolProvider) {
+        AiServices<Agent> agentService = AiServices.builder(Agent.class).streamingChatModel(model).chatMemory(memory);
 
         if (toolProvider != null) {
             agentService.toolProvider(toolProvider);
@@ -194,8 +192,7 @@ public abstract class AbstractMessageHandler {
             presetToolPrompt = AgentPromptTemplates.generatePresetToolPrompt(toolPresetParams);
         }
 
-        memory.add(new SystemMessage(
-                chatContext.getAgent().getSystemPrompt() + "\n" + presetToolPrompt));
+        memory.add(new SystemMessage(chatContext.getAgent().getSystemPrompt() + "\n" + presetToolPrompt));
         List<MessageEntity> messageHistory = chatContext.getMessageHistory();
         for (MessageEntity messageEntity : messageHistory) {
             if (messageEntity.isUserMessage()) {

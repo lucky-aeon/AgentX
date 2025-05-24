@@ -33,11 +33,10 @@ public class LLMProviderFactory {
         return model;
     }
 
-    public static StreamingChatModel getLLMProviderByStream(ProviderProtocol protocol,
-                                                            ProviderConfig providerConfig) {
+    public static StreamingChatModel getLLMProviderByStream(ProviderProtocol protocol, ProviderConfig providerConfig) {
         StreamingChatModel model = null;
         if (protocol == ProviderProtocol.OpenAI) {
-             model = new OpenAiStreamingChatModel.OpenAiStreamingChatModelBuilder().apiKey(providerConfig.getApiKey())
+            model = new OpenAiStreamingChatModel.OpenAiStreamingChatModelBuilder().apiKey(providerConfig.getApiKey())
                     .baseUrl(providerConfig.getBaseUrl()).customHeaders(providerConfig.getCustomHeaders())
                     .modelName(providerConfig.getModel()).timeout(Duration.ofHours(1)).build();
         } else if (protocol == ProviderProtocol.ANTHROPIC) {

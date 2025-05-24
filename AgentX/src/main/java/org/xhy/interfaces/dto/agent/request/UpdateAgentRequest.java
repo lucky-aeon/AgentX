@@ -22,7 +22,7 @@ public class UpdateAgentRequest {
     private LLMModelConfig modelConfig;
     private List<String> toolIds;
     private List<String> knowledgeBaseIds;
-    private Map<String,Map<String,Map<String,String>>> toolPresetParams;
+    private Map<String, Map<String, Map<String, String>>> toolPresetParams;
 
     public String getId() {
         return id;
@@ -97,11 +97,11 @@ public class UpdateAgentRequest {
         this.knowledgeBaseIds = knowledgeBaseIds;
     }
 
-    public Map<String,Map<String,Map<String,String>>> getToolPresetParams() {
+    public Map<String, Map<String, Map<String, String>>> getToolPresetParams() {
         return toolPresetParams;
     }
 
-    public void setToolPresetParams(Map<String,Map<String,Map<String,String>>> toolPresetParams) {
+    public void setToolPresetParams(Map<String, Map<String, Map<String, String>>> toolPresetParams) {
         this.toolPresetParams = toolPresetParams;
     }
 }

@@ -5,7 +5,6 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 
-
 import org.xhy.domain.agent.constant.AgentType;
 import org.xhy.infrastructure.converter.ListStringConverter;
 import org.xhy.infrastructure.converter.MapConverter;
@@ -69,17 +68,9 @@ public class AgentEntity extends BaseEntity {
     @TableField("user_id")
     private String userId;
 
-    /**
-     * 预先设置工具参数，结构如下：
-     * {
-     * "<mcpServerName>":{
-     *          "toolName":"paranms"
-     * }
-     * }
-     */
+    /** 预先设置工具参数，结构如下： { "<mcpServerName>":{ "toolName":"paranms" } } */
     @TableField(value = "tool_preset_params", typeHandler = MapConverter.class)
-    private Map<String,Map<String,Map<String,String>>> toolPresetParams;
-
+    private Map<String, Map<String, Map<String, String>>> toolPresetParams;
 
     /** 无参构造函数 */
     public AgentEntity() {
@@ -207,7 +198,6 @@ public class AgentEntity extends BaseEntity {
         this.updatedAt = LocalDateTime.now();
     }
 
-
     /** 启用Agent */
     public void enable() {
         this.enabled = true;
@@ -243,11 +233,11 @@ public class AgentEntity extends BaseEntity {
     }
 
     /** 获取预先设置的工具参数 */
-    public Map<String,Map<String,Map<String,String>>> getToolPresetParams() {
+    public Map<String, Map<String, Map<String, String>>> getToolPresetParams() {
         return toolPresetParams;
     }
 
-    public void setToolPresetParams(Map<String,Map<String,Map<String,String>>> toolPresetParams) {
+    public void setToolPresetParams(Map<String, Map<String, Map<String, String>>> toolPresetParams) {
         this.toolPresetParams = toolPresetParams;
     }
 }

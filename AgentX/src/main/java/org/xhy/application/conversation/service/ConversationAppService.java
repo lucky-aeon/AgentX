@@ -79,13 +79,11 @@ public class ConversationAppService {
         this.userToolDomainService = toolDomainService;
     }
 
-    /**
-     * 获取会话中的消息列表
+    /** 获取会话中的消息列表
      *
      * @param sessionId 会话id
-     * @param userId    用户id
-     * @return 消息列表
-     */
+     * @param userId 用户id
+     * @return 消息列表 */
     public List<MessageDTO> getConversationMessages(String sessionId, String userId) {
         // 查询对应会话是否存在
         SessionEntity sessionEntity = sessionDomainService.find(sessionId, userId);
@@ -98,13 +96,11 @@ public class ConversationAppService {
         return MessageAssembler.toDTOs(conversationMessages);
     }
 
-    /**
-     * 对话方法 - 统一入口
+    /** 对话方法 - 统一入口
      *
      * @param chatRequest 聊天请求
-     * @param userId      用户ID
-     * @return SSE发射器
-     */
+     * @param userId 用户ID
+     * @return SSE发射器 */
     public SseEmitter chat(ChatRequest chatRequest, String userId) {
         // 1. 准备对话环境
         ChatContext environment = prepareEnvironment(chatRequest, userId);
@@ -120,13 +116,11 @@ public class ConversationAppService {
         return handler.chat(environment, transport);
     }
 
-    /**
-     * 准备对话环境
+    /** 准备对话环境
      *
      * @param chatRequest 聊天请求
-     * @param userId      用户ID
-     * @return 对话环境
-     */
+     * @param userId 用户ID
+     * @return 对话环境 */
     private ChatContext prepareEnvironment(ChatRequest chatRequest, String userId) {
         // 1. 获取会话
         String sessionId = chatRequest.getSessionId();
@@ -184,11 +178,9 @@ public class ConversationAppService {
         return chatContext;
     }
 
-    /**
-     * 设置上下文和历史消息
+    /** 设置上下文和历史消息
      *
-     * @param environment 对话环境
-     */
+     * @param environment 对话环境 */
     private void setupContextAndHistory(ChatContext environment) {
         String sessionId = environment.getSessionId();
 
@@ -212,13 +204,11 @@ public class ConversationAppService {
         environment.setMessageHistory(messageEntities);
     }
 
-    /**
-     * 应用Token溢出策略
+    /** 应用Token溢出策略
      *
-     * @param environment     对话环境
-     * @param contextEntity   上下文实体
-     * @param messageEntities 消息实体列表
-     */
+     * @param environment 对话环境
+     * @param contextEntity 上下文实体
+     * @param messageEntities 消息实体列表 */
     private void applyTokenOverflowStrategy(ChatContext environment, ContextEntity contextEntity,
             List<MessageEntity> messageEntities) {
 

@@ -26,10 +26,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * 与 GitHub API 交互的服务。
- * 负责从源GitHub仓库下载内容，验证仓库信息，以及将内容推送到目标GitHub仓库。
- */
+/** 与 GitHub API 交互的服务。 负责从源GitHub仓库下载内容，验证仓库信息，以及将内容推送到目标GitHub仓库。 */
 @Service
 public class GitHubService {
     private static final Logger logger = LoggerFactory.getLogger(GitHubService.class);
@@ -44,9 +41,7 @@ public class GitHubService {
         this.github = new GitHubBuilder().build(); // 使用匿名访问，可能受速率限制影响
     }
 
-    /**
-     * 初始化时验证配置
-     */
+    /** 初始化时验证配置 */
     @PostConstruct
     public void init() {
         if (gitHubProperties.getTarget().getUsername() == null
@@ -68,14 +63,11 @@ public class GitHubService {
                 gitHubProperties.getTarget().getRepoName());
     }
 
-    /**
-     * 验证 GitHub 仓库是否存在、是否公开，并验证指定的引用（分支/Tag）和路径是否有效。
-     * 如果 repoInfo 中的 ref 为空，则默认使用仓库的默认分支进行验证。
+    /** 验证 GitHub 仓库是否存在、是否公开，并验证指定的引用（分支/Tag）和路径是否有效。 如果 repoInfo 中的 ref 为空，则默认使用仓库的默认分支进行验证。
      *
      * @param repoInfo 包含仓库所有者、名称、引用（分支/Tag）和仓库内路径的 GitHubRepoInfo 对象。
      * @throws BusinessException 如果仓库不存在、不公开、指定的引用无效或路径不存在。
-     * @throws IOException 如果与 GitHub API 通信时发生错误。
-     */
+     * @throws IOException 如果与 GitHub API 通信时发生错误。 */
     public void validateGitHubRepoRefAndPath(GitHubRepoInfo repoInfo) throws IOException {
         String owner = repoInfo.getOwner();
         String repoName = repoInfo.getRepoName();
@@ -107,7 +99,7 @@ public class GitHubService {
             // 如果 URL 中指定了 ref，则验证它是一个有效的分支或 Tag
             boolean refFound = false;
             String potentialBranchRef = "heads/" + ref; // 分支的引用形式 (如 "heads/main")
-            String potentialTagRef = "tags/" + ref;     // Tag 的引用形式 (如 "tags/v1.0.0")
+            String potentialTagRef = "tags/" + ref; // Tag 的引用形式 (如 "tags/v1.0.0")
 
             // 1. 尝试作为分支验证 (直接使用 ref 名称)
             try {
@@ -146,7 +138,8 @@ public class GitHubService {
             }
 
             if (!refFound) {
-                throw new BusinessException("指定的引用 '" + ref + "' 在 GitHub 仓库 '" + repoInfo.getFullName() + "' 中不是一个有效的分支也不是一个有效的 Tag。");
+                throw new BusinessException(
+                        "指定的引用 '" + ref + "' 在 GitHub 仓库 '" + repoInfo.getFullName() + "' 中不是一个有效的分支也不是一个有效的 Tag。");
             }
         }
 
@@ -197,24 +190,21 @@ public class GitHubService {
             }
 
             if (!pathExists) {
-                throw new BusinessException("指定路径 '" + pathInRepo + "' 在 GitHub 仓库的引用 '" + effectiveRef + "' 中不存在或无法访问。");
+                throw new BusinessException(
+                        "指定路径 '" + pathInRepo + "' 在 GitHub 仓库的引用 '" + effectiveRef + "' 中不存在或无法访问。");
             }
         }
         logger.info("GitHub 仓库、引用和路径验证通过：{}", repoInfo.getFullName());
     }
 
-    /**
-     * 解析源GitHub URL。如果URL中未指定ref (分支/标签/commit)，
-     * 则获取该仓库默认分支的最新commit SHA作为ref。
+    /** 解析源GitHub URL。如果URL中未指定ref (分支/标签/commit)， 则获取该仓库默认分支的最新commit SHA作为ref。
      * <p>
-     * **注意：** 此方法将使用灵活的 URL 解析器 (`GitHubUrlParser.parseGithubUrl`)，
-     * 允许不带 Tag 或分支的 URL。
+     * **注意：** 此方法将使用灵活的 URL 解析器 (`GitHubUrlParser.parseGithubUrl`)， 允许不带 Tag 或分支的 URL。
      *
      * @param sourceGithubUrl 源GitHub仓库的URL
      * @return GitHubRepoInfo 包含解析后的仓库所有者、名称、ref和仓库内路径
      * @throws IOException 如果与GitHub API通信时发生错误
-     * @throws BusinessException 如果URL无效或仓库不可访问
-     */
+     * @throws BusinessException 如果URL无效或仓库不可访问 */
     public GitHubRepoInfo resolveSourceRepoInfoWithLatestCommitIfNoRef(String sourceGithubUrl) throws IOException {
         GitHubRepoInfo basicInfo = GitHubUrlParser.parseGithubUrl(sourceGithubUrl);
 
@@ -224,8 +214,7 @@ public class GitHubService {
             GHRepository repository = github.getRepository(basicInfo.getFullName());
             String defaultBranch = repository.getDefaultBranch();
             if (defaultBranch == null || defaultBranch.trim().isEmpty()) {
-                throw new BusinessException(
-                        "无法获取仓库 " + basicInfo.getFullName() + " 的默认分支。");
+                throw new BusinessException("无法获取仓库 " + basicInfo.getFullName() + " 的默认分支。");
             }
             String latestCommitSha = repository.getRef("heads/" + defaultBranch).getObject().getSha();
             logger.info("仓库 {}/{} 的默认分支 {} 最新commit SHA为: {}", basicInfo.getOwner(), basicInfo.getRepoName(),
@@ -236,13 +225,11 @@ public class GitHubService {
         return basicInfo;
     }
 
-    /**
-     * 下载指定GitHub仓库特定ref的内容为ZIP归档文件。
+    /** 下载指定GitHub仓库特定ref的内容为ZIP归档文件。
      *
      * @param repoInfo 包含仓库所有者、名称和ref的GitHubRepoInfo对象
      * @return 下载的ZIP文件的本地临时路径
-     * @throws IOException 如果下载或文件操作失败
-     */
+     * @throws IOException 如果下载或文件操作失败 */
     public Path downloadRepositoryArchive(GitHubRepoInfo repoInfo) throws IOException {
         logger.info("开始下载仓库归档: {}/{}, ref: {}", repoInfo.getOwner(), repoInfo.getRepoName(), repoInfo.getRef());
 
@@ -258,16 +245,14 @@ public class GitHubService {
         return tempZipFile;
     }
 
-    /**
-     * 将指定目录的内容提交并推送到目标GitHub仓库的指定路径下。
+    /** 将指定目录的内容提交并推送到目标GitHub仓库的指定路径下。
      *
      * @param sourceDirectoryPath 本地源文件目录的Path对象
      * @param targetPathInRepo 内容在目标仓库中的存放路径 (例如: "tools/MyTool-author/v1.0.0")
      * @param commitMessage Git提交信息
      * @throws IOException 如果本地文件操作或网络IO失败
      * @throws GitAPIException 如果Git操作失败
-     * @throws BusinessException 如果目标仓库配置不完整
-     */
+     * @throws BusinessException 如果目标仓库配置不完整 */
     public void commitAndPushToTargetRepo(Path sourceDirectoryPath, String targetPathInRepo, String commitMessage)
             throws IOException, GitAPIException {
 
@@ -337,8 +322,7 @@ public class GitHubService {
         }
     }
 
-    /**
-     * 提供给其他服务使用的重载方法，支持指定目标仓库名
+    /** 提供给其他服务使用的重载方法，支持指定目标仓库名
      *
      * @param sourceDirectoryPath 本地源文件目录的Path对象
      * @param targetRepoName 目标仓库的名称 (不包含所有者/用户名)
@@ -346,10 +330,9 @@ public class GitHubService {
      * @param commitMessage Git提交信息
      * @throws IOException 如果本地文件操作或网络IO失败
      * @throws GitAPIException 如果Git操作失败
-     * @throws BusinessException 如果目标仓库配置不完整
-     */
+     * @throws BusinessException 如果目标仓库配置不完整 */
     public void commitAndPushToTargetRepo(Path sourceDirectoryPath, String targetRepoName, String targetPathInRepo,
-                                          String commitMessage) throws IOException, GitAPIException {
+            String commitMessage) throws IOException, GitAPIException {
 
         if (targetRepoName == null || targetRepoName.trim().isEmpty()) {
             targetRepoName = gitHubProperties.getTarget().getRepoName();

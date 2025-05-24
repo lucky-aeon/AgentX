@@ -5,7 +5,6 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 
-
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.xhy.domain.tool.constant.ToolStatus;
@@ -39,12 +38,10 @@ public class ToolDomainService {
         this.userToolRepository = userToolRepository;
     }
 
-    /**
-     * 创建工具
+    /** 创建工具
      *
      * @param toolEntity 工具实体
-     * @return 创建后的工具实体
-     */
+     * @return 创建后的工具实体 */
     @Transactional
     public ToolEntity createTool(ToolEntity toolEntity) {
         // 设置初始状态
@@ -80,16 +77,14 @@ public class ToolDomainService {
 
     public ToolEntity updateApprovedToolStatus(String toolId, ToolStatus status) {
 
-        LambdaUpdateWrapper<ToolEntity> wrapper = Wrappers.<ToolEntity>lambdaUpdate()
-                .eq(ToolEntity::getId, toolId).set(ToolEntity::getStatus, status);
+        LambdaUpdateWrapper<ToolEntity> wrapper = Wrappers.<ToolEntity>lambdaUpdate().eq(ToolEntity::getId, toolId)
+                .set(ToolEntity::getStatus, status);
         toolRepository.checkedUpdate(wrapper);
         return toolRepository.selectById(toolId);
     }
 
     public ToolEntity updateTool(ToolEntity toolEntity) {
-        /**
-         * 修改 name/description/icon/labels只触发人工审核状态 修改 upload_url/upload_command触发整个状态扭转
-         */
+        /** 修改 name/description/icon/labels只触发人工审核状态 修改 upload_url/upload_command触发整个状态扭转 */
         // 获取原工具信息
         ToolEntity oldTool = toolRepository.selectById(toolEntity.getId());
         if (oldTool == null) {
@@ -135,8 +130,8 @@ public class ToolDomainService {
                 .eq(ToolVersionEntity::getToolId, toolId);
 
         // 删除用户工具
-        Wrapper<UserToolEntity> userToolWrapper = Wrappers.<UserToolEntity>lambdaQuery()
-                .eq(UserToolEntity::getToolId, toolId);
+        Wrapper<UserToolEntity> userToolWrapper = Wrappers.<UserToolEntity>lambdaQuery().eq(UserToolEntity::getToolId,
+                toolId);
 
         toolRepository.checkedDelete(wrapper);
         toolVersionRepository.delete(versionWrapper);
@@ -156,15 +151,12 @@ public class ToolDomainService {
     }
 
     public ToolEntity updateFailedToolStatus(String toolId, ToolStatus failedStepStatus, String rejectReason) {
-        LambdaUpdateWrapper<ToolEntity> wrapper = Wrappers.<ToolEntity>lambdaUpdate()
-                .eq(ToolEntity::getId, toolId)
-                .set(ToolEntity::getFailedStepStatus, failedStepStatus)
-                .set(ToolEntity::getRejectReason, rejectReason)
+        LambdaUpdateWrapper<ToolEntity> wrapper = Wrappers.<ToolEntity>lambdaUpdate().eq(ToolEntity::getId, toolId)
+                .set(ToolEntity::getFailedStepStatus, failedStepStatus).set(ToolEntity::getRejectReason, rejectReason)
                 .set(ToolEntity::getStatus, ToolStatus.FAILED);
         toolRepository.checkedUpdate(wrapper);
         return toolRepository.selectById(toolId);
     }
-
 
     private String getMcpServerName(ToolEntity tool) {
         if (tool == null) {

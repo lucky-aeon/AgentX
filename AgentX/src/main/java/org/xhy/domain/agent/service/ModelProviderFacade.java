@@ -48,8 +48,7 @@ public class ModelProviderFacade {
                 model.getModelId(), provider.getProtocol());
 
         // 获取流式聊天客户端
-        StreamingChatModel chatStreamClient = LLMProviderService.getStream(provider.getProtocol(),
-                providerConfig);
+        StreamingChatModel chatStreamClient = LLMProviderService.getStream(provider.getProtocol(), providerConfig);
 
         return new ModelProviderResult(model, provider, llmModelConfig, providerConfig, chatStreamClient);
     }
@@ -63,8 +62,7 @@ public class ModelProviderFacade {
         private final StreamingChatModel chatStreamClient;
 
         public ModelProviderResult(ModelEntity modelEntity, ProviderEntity providerEntity,
-                LLMModelConfig llmModelConfig, ProviderConfig providerConfig,
-                                   StreamingChatModel chatStreamClient) {
+                LLMModelConfig llmModelConfig, ProviderConfig providerConfig, StreamingChatModel chatStreamClient) {
             this.modelEntity = modelEntity;
             this.providerEntity = providerEntity;
             this.llmModelConfig = llmModelConfig;

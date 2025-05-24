@@ -13,12 +13,7 @@ import org.xhy.infrastructure.github.GitHubUrlParser;
 
 import java.io.IOException;
 
-/**
- * GitHub URL 验证处理器。
- * 负责验证上传的 GitHub URL 是否合法。
- * URL 格式解析已委托给 GitHubUrlParser。
- * API 验证部分已委托给 GitHubService。
- */
+/** GitHub URL 验证处理器。 负责验证上传的 GitHub URL 是否合法。 URL 格式解析已委托给 GitHubUrlParser。 API 验证部分已委托给 GitHubService。 */
 @Component // 或者 @Service，取决于你的 Spring 管理策略
 public class GithubUrlValidateProcessor implements ToolStateProcessor {
 

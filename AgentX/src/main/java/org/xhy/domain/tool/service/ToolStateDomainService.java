@@ -44,7 +44,7 @@ public class ToolStateDomainService {
      * @param toolRepository 工具仓库，用于数据持久化。
      * @param gitHubService GitHub服务，用于与GitHub API交互。 */
     public ToolStateDomainService(ToolRepository toolRepository, GitHubService gitHubService,
-                                  MCPGatewayService mcpGatewayService) {
+            MCPGatewayService mcpGatewayService) {
         this.toolRepository = toolRepository;
         this.gitHubService = gitHubService;
         this.mcpGatewayService = mcpGatewayService;
@@ -110,7 +110,7 @@ public class ToolStateDomainService {
     /** 处理人工审核完成的工具。 由外部调用（如后台管理系统）来驱动人工审核后的状态流转。
      * 
      * @param tool 要处理的工具。
-     * @param approved 审核结果，true表示批准，false表示拒绝。 
+     * @param approved 审核结果，true表示批准，false表示拒绝。
      * @return 返回审核后的工具ID，方便调用方进行后续处理 */
     @Transactional // 确保状态更新和可能的后续操作在事务中
     public String manualReviewComplete(ToolEntity tool, boolean approved) {
@@ -133,7 +133,7 @@ public class ToolStateDomainService {
             toolRepository.updateById(tool);
             logger.info("工具ID: {} 人工审核失败，状态更新为 FAILED。", toolId);
         }
-        
+
         return toolId;
     }
 
