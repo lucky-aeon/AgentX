@@ -81,6 +81,7 @@ export function ScheduledTaskPanel({
           key={refreshKey}
           onTaskUpdate={handleTaskUpdate}
           onEditTask={handleEditTask}
+          agentId={agentId}
         />
       </div>
 

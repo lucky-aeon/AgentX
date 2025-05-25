@@ -34,18 +34,22 @@ import {
   ScheduleTaskStatus,
   RepeatType
 } from "@/lib/scheduled-task-service"
+import { getAgentSessionsWithToast, type SessionDTO } from "@/lib/agent-session-service"
 import { formatDisplayDateTime } from "@/lib/date-utils"
 
 interface ScheduledTaskListProps {
   onTaskUpdate?: () => void
   onEditTask?: (task: ScheduledTaskDTO) => void
+  agentId?: string
 }
 
-export function ScheduledTaskList({ onTaskUpdate, onEditTask }: ScheduledTaskListProps) {
+export function ScheduledTaskList({ onTaskUpdate, onEditTask, agentId }: ScheduledTaskListProps) {
   const [tasks, setTasks] = useState<ScheduledTaskDTO[]>([])
   const [loading, setLoading] = useState(true)
   const [deleteTaskId, setDeleteTaskId] = useState<string | null>(null)
   const [operatingTaskId, setOperatingTaskId] = useState<string | null>(null)
+  const [sessions, setSessions] = useState<SessionDTO[]>([])
+  const [sessionsMap, setSessionsMap] = useState<Map<string, string>>(new Map())
 
   // 获取任务列表
   const fetchTasks = async () => {
@@ -63,9 +67,34 @@ export function ScheduledTaskList({ onTaskUpdate, onEditTask }: ScheduledTaskLis
     }
   }
 
+  // 获取会话列表
+  const fetchSessions = async () => {
+    if (!agentId) return
+    
+    try {
+      const response = await getAgentSessionsWithToast(agentId)
+      
+      if (response.code === 200 && response.data) {
+        setSessions(response.data)
+        // 创建会话ID到名称的映射
+        const map = new Map<string, string>()
+        response.data.forEach(session => {
+          map.set(session.id, session.title)
+        })
+        setSessionsMap(map)
+      }
+    } catch (error) {
+      console.error("获取会话列表失败:", error)
+    }
+  }
+
   useEffect(() => {
     fetchTasks()
   }, [])
+
+  useEffect(() => {
+    fetchSessions()
+  }, [agentId])
 
   // 切换任务状态
   const handleToggleStatus = async (task: ScheduledTaskDTO) => {
@@ -173,6 +202,16 @@ export function ScheduledTaskList({ onTaskUpdate, onEditTask }: ScheduledTaskLis
     }
   }
 
+  // 获取会话名称
+  const getSessionName = (sessionId: string) => {
+    const sessionName = sessionsMap.get(sessionId)
+    if (sessionName) {
+      return sessionName
+    }
+    // 如果找不到会话名称，显示会话ID的前8位
+    return `会话 ${sessionId.substring(0, 8)}`
+  }
+
   if (loading) {
     return (
       <div className="space-y-4">
@@ -254,7 +293,7 @@ export function ScheduledTaskList({ onTaskUpdate, onEditTask }: ScheduledTaskLis
                   
                   <div className="flex justify-between items-center pt-2">
                     <span className="text-xs text-gray-400">
-                      关联会话: {task.sessionId}
+                      关联会话: {getSessionName(task.sessionId)}
                     </span>
                     
                     <div className="flex items-center gap-2">
