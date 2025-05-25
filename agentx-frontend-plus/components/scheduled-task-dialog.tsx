@@ -26,6 +26,19 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { toast } from "@/hooks/use-toast"
 import { getAgentSessionsWithToast, type SessionDTO } from "@/lib/agent-session-service"
 import { DateTimePicker } from "@/components/ui/datetime-picker"
+import { 
+  createScheduledTaskWithToast,
+  mapFrontendRepeatTypeToBackend,
+  mapFrontendTimeUnitToBackend,
+  mapFrontendWeekdaysToBackend,
+  type CreateScheduledTaskRequest,
+  type RepeatConfig
+} from "@/lib/scheduled-task-service"
+import { 
+  toBackendDateTimeString, 
+  toBackendTimeString,
+  saveLocalDateTime
+} from "@/lib/date-utils"
 
 interface ScheduledTaskDialogProps {
   open: boolean
@@ -127,10 +140,76 @@ export function ScheduledTaskDialog({
     })
   }
 
+  // 构建重复配置
+  const buildRepeatConfig = (): RepeatConfig => {
+    const config: RepeatConfig = {}
+
+    switch (taskData.repeatType) {
+      case "none":
+      case "daily":
+      case "weekdays":
+        if (taskData.executeDateTime) {
+          const date = new Date(taskData.executeDateTime)
+          config.executeDateTime = toBackendDateTimeString(date)
+          config.executeTime = toBackendTimeString(date)
+        }
+        break
+
+      case "weekly":
+        if (taskData.executeDateTime) {
+          const date = new Date(taskData.executeDateTime)
+          config.executeDateTime = toBackendDateTimeString(date)
+          config.executeTime = toBackendTimeString(date)
+        }
+        if (taskData.weekdays && taskData.weekdays.length > 0) {
+          config.weekdays = mapFrontendWeekdaysToBackend(taskData.weekdays)
+        }
+        break
+
+      case "monthly":
+        if (taskData.executeDateTime) {
+          const date = new Date(taskData.executeDateTime)
+          config.executeDateTime = toBackendDateTimeString(date)
+          config.executeTime = toBackendTimeString(date)
+        }
+        if (taskData.monthDay) {
+          config.monthDay = taskData.monthDay
+        }
+        break
+
+      case "custom":
+        if (taskData.customRepeat) {
+          const custom = taskData.customRepeat
+          config.interval = custom.interval
+          config.timeUnit = mapFrontendTimeUnitToBackend(custom.unit)
+          if (custom.executeDateTime) {
+            const date = new Date(custom.executeDateTime)
+            config.executeDateTime = toBackendDateTimeString(date)
+            config.executeTime = toBackendTimeString(date)
+          }
+          if (!custom.neverEnd && custom.endDate) {
+            const endDate = new Date(custom.endDate)
+            config.endDateTime = toBackendDateTimeString(endDate)
+          }
+        }
+        break
+    }
+
+    return config
+  }
+
   const handleSubmit = async () => {
     if (!taskData.content.trim()) {
       toast({
         title: "请输入任务内容",
+        variant: "destructive"
+      })
+      return
+    }
+
+    if (!agentId) {
+      toast({
+        title: "Agent ID不能为空",
         variant: "destructive"
       })
       return
@@ -172,31 +251,24 @@ export function ScheduledTaskDialog({
     try {
       setIsSubmitting(true)
       
-      // TODO: 调用API创建定时任务
-      console.log("创建定时任务:", {
-        conversationId,
-        ...taskData
-      })
+      const request: CreateScheduledTaskRequest = {
+        agentId,
+        sessionId: taskData.relatedSession,
+        content: taskData.content,
+        repeatType: mapFrontendRepeatTypeToBackend(taskData.repeatType),
+        repeatConfig: buildRepeatConfig()
+      }
       
-      // 模拟API调用
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      const response = await createScheduledTaskWithToast(request)
       
-      toast({
-        title: "定时任务创建成功",
-        description: `任务将按设定时间执行`
-      })
-      
-      onTaskCreated?.()
-      onOpenChange(false)
-      resetForm()
+      if (response.code === 200) {
+        onTaskCreated?.()
+        onOpenChange(false)
+        resetForm()
+      }
       
     } catch (error) {
       console.error("创建定时任务失败:", error)
-      toast({
-        title: "创建失败",
-        description: "请稍后重试",
-        variant: "destructive"
-      })
     } finally {
       setIsSubmitting(false)
     }
@@ -402,7 +474,7 @@ export function ScheduledTaskDialog({
                   value={taskData.customRepeat?.executeDateTime ? new Date(taskData.customRepeat.executeDateTime) : undefined}
                   onChange={(date: Date | undefined) => {
                     if (date) {
-                      handleCustomRepeatChange('executeDateTime', date.toISOString())
+                      handleCustomRepeatChange('executeDateTime', saveLocalDateTime(date))
                     }
                   }}
                   placeholder="选择执行日期和时间"
@@ -427,7 +499,7 @@ export function ScheduledTaskDialog({
                       value={taskData.customRepeat?.endDate ? new Date(taskData.customRepeat.endDate) : undefined}
                       onChange={(date: Date | undefined) => {
                         if (date) {
-                          handleCustomRepeatChange('endDate', date.toISOString())
+                          handleCustomRepeatChange('endDate', saveLocalDateTime(date))
                         }
                       }}
                       placeholder="选择截止日期和时间"
@@ -449,7 +521,7 @@ export function ScheduledTaskDialog({
                 value={taskData.executeDateTime ? new Date(taskData.executeDateTime) : undefined}
                 onChange={(date: Date | undefined) => {
                   if (date) {
-                    setTaskData(prev => ({ ...prev, executeDateTime: date.toISOString() }))
+                    setTaskData(prev => ({ ...prev, executeDateTime: saveLocalDateTime(date) }))
                   }
                 }}
                 placeholder="选择执行日期和时间"

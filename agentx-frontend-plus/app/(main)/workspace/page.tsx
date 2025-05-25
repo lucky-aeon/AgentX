@@ -300,13 +300,12 @@ export default function WorkspacePage() {
               />
             </div>
             {showScheduledTaskPanel && isFunctionalAgent && (
-              <div className="w-[400px] border-l">
-                <ScheduledTaskPanel 
-                  conversationId={selectedConversationId}
-                  agentId={selectedWorkspaceId || undefined}
-                  onClose={() => setShowScheduledTaskPanel(false)}
-                />
-              </div>
+              <ScheduledTaskPanel 
+                isOpen={showScheduledTaskPanel}
+                onClose={() => setShowScheduledTaskPanel(false)}
+                conversationId={selectedConversationId}
+                agentId={selectedWorkspaceId || undefined}
+              />
             )}
           </div>
         )}

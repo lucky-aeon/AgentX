@@ -1,10 +1,9 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Clock, Edit, Trash2, Play, Pause, MoreHorizontal } from "lucide-react"
+import { Clock, Play, Pause, MoreHorizontal, Edit, Trash2, Calendar } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,244 +20,181 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { toast } from "@/hooks/use-toast"
-
-interface ScheduledTask {
-  id: string
-  content: string
-  relatedSession: string
-  relatedSessionTitle?: string
-  repeatType: string
-  executeDateTime: string
-  weekdays?: number[]
-  monthDay?: number
-  customRepeat?: {
-    interval: number
-    unit: string
-    executeDateTime: string
-    neverEnd: boolean
-    endDate?: string
-  }
-  isActive: boolean
-  nextExecution?: string
-  createdAt: string
-}
+import { Badge } from "@/components/ui/badge"
+import { Skeleton } from "@/components/ui/skeleton"
+import { 
+  getScheduledTasksWithToast,
+  pauseScheduledTaskWithToast,
+  resumeScheduledTaskWithToast,
+  deleteScheduledTaskWithToast,
+  mapBackendRepeatTypeToFrontend,
+  mapBackendTimeUnitToFrontend,
+  mapBackendWeekdaysToFrontend,
+  type ScheduledTaskDTO,
+  ScheduleTaskStatus,
+  RepeatType
+} from "@/lib/scheduled-task-service"
+import { formatDisplayDateTime } from "@/lib/date-utils"
 
 interface ScheduledTaskListProps {
-  conversationId: string
+  onTaskUpdate?: () => void
+  onEditTask?: (task: ScheduledTaskDTO) => void
 }
 
-export function ScheduledTaskList({ conversationId }: ScheduledTaskListProps) {
-  const [tasks, setTasks] = useState<ScheduledTask[]>([])
+export function ScheduledTaskList({ onTaskUpdate, onEditTask }: ScheduledTaskListProps) {
+  const [tasks, setTasks] = useState<ScheduledTaskDTO[]>([])
   const [loading, setLoading] = useState(true)
-  const [taskToDelete, setTaskToDelete] = useState<ScheduledTask | null>(null)
-  const [isDeleting, setIsDeleting] = useState(false)
+  const [deleteTaskId, setDeleteTaskId] = useState<string | null>(null)
+  const [operatingTaskId, setOperatingTaskId] = useState<string | null>(null)
 
-  // 获取定时任务列表
+  // 获取任务列表
   const fetchTasks = async () => {
     try {
       setLoading(true)
+      const response = await getScheduledTasksWithToast()
       
-      // TODO: 调用API获取定时任务列表
-      console.log("获取定时任务列表:", conversationId)
-      
-      // 模拟数据
-      const mockTasks: ScheduledTask[] = [
-        {
-          id: "1",
-          content: "总结每天工作内容",
-          relatedSession: "session-1",
-          relatedSessionTitle: "工作总结会话",
-          repeatType: "daily",
-          executeDateTime: "2024-01-15T18:00:00",
-          isActive: true,
-          nextExecution: "2024-01-15 18:00:00",
-          createdAt: "2024-01-14 10:30:00"
-        },
-        {
-          id: "2", 
-          content: "周报提醒",
-          relatedSession: "session-2",
-          relatedSessionTitle: "周报会话",
-          repeatType: "weekly",
-          executeDateTime: "2024-01-22T09:00:00",
-          weekdays: [1], // 周一
-          isActive: false,
-          nextExecution: "2024-01-22 09:00:00",
-          createdAt: "2024-01-10 15:20:00"
-        },
-        {
-          id: "3",
-          content: "月度汇报",
-          relatedSession: "session-3", 
-          relatedSessionTitle: "月度汇报会话",
-          repeatType: "monthly",
-          executeDateTime: "2024-02-01T10:00:00",
-          monthDay: 1,
-          isActive: true,
-          nextExecution: "2024-02-01 10:00:00",
-          createdAt: "2024-01-01 09:00:00"
-        },
-        {
-          id: "4",
-          content: "自定义提醒",
-          relatedSession: "session-4",
-          relatedSessionTitle: "自定义会话",
-          repeatType: "custom",
-          executeDateTime: "2024-01-20T14:00:00",
-          customRepeat: {
-            interval: 3,
-            unit: "天",
-            executeDateTime: "2024-01-20T14:00:00",
-            neverEnd: false,
-            endDate: "2024-12-31"
-          },
-          isActive: true,
-          nextExecution: "2024-01-20 14:00:00",
-          createdAt: "2024-01-15 11:00:00"
-        }
-      ]
-      
-      await new Promise(resolve => setTimeout(resolve, 500))
-      setTasks(mockTasks)
-      
+      if (response.code === 200 && response.data) {
+        setTasks(response.data)
+      }
     } catch (error) {
-      console.error("获取定时任务失败:", error)
-      toast({
-        title: "获取任务失败",
-        description: "请稍后重试",
-        variant: "destructive"
-      })
+      console.error("获取任务列表失败:", error)
     } finally {
       setLoading(false)
     }
   }
 
   useEffect(() => {
-    if (conversationId) {
-      fetchTasks()
-    }
-  }, [conversationId])
+    fetchTasks()
+  }, [])
 
   // 切换任务状态
-  const toggleTaskStatus = async (taskId: string, isActive: boolean) => {
+  const handleToggleStatus = async (task: ScheduledTaskDTO) => {
     try {
-      // TODO: 调用API切换任务状态
-      console.log("切换任务状态:", taskId, isActive)
+      setOperatingTaskId(task.id)
       
-      setTasks(prev => prev.map(task => 
-        task.id === taskId ? { ...task, isActive } : task
-      ))
+      let response
+      if (task.status === ScheduleTaskStatus.ACTIVE) {
+        response = await pauseScheduledTaskWithToast(task.id)
+      } else {
+        response = await resumeScheduledTaskWithToast(task.id)
+      }
       
-      toast({
-        title: isActive ? "任务已启用" : "任务已暂停",
-        description: isActive ? "任务将按计划执行" : "任务已暂停执行"
-      })
-      
+      if (response.code === 200) {
+        // 更新本地状态
+        setTasks(prev => prev.map(t => 
+          t.id === task.id ? { ...t, status: response.data.status } : t
+        ))
+        onTaskUpdate?.()
+      }
     } catch (error) {
       console.error("切换任务状态失败:", error)
-      toast({
-        title: "操作失败",
-        description: "请稍后重试",
-        variant: "destructive"
-      })
+    } finally {
+      setOperatingTaskId(null)
     }
   }
 
   // 删除任务
-  const deleteTask = async () => {
-    if (!taskToDelete) return
-
+  const handleDeleteTask = async (taskId: string) => {
     try {
-      setIsDeleting(true)
+      setOperatingTaskId(taskId)
+      const response = await deleteScheduledTaskWithToast(taskId)
       
-      // TODO: 调用API删除任务
-      console.log("删除任务:", taskToDelete.id)
-      
-      await new Promise(resolve => setTimeout(resolve, 500))
-      
-      setTasks(prev => prev.filter(task => task.id !== taskToDelete.id))
-      
-      toast({
-        title: "任务已删除",
-        description: "定时任务已成功删除"
-      })
-      
+      if (response.code === 200) {
+        setTasks(prev => prev.filter(t => t.id !== taskId))
+        onTaskUpdate?.()
+      }
     } catch (error) {
       console.error("删除任务失败:", error)
-      toast({
-        title: "删除失败",
-        description: "请稍后重试",
-        variant: "destructive"
-      })
     } finally {
-      setIsDeleting(false)
-      setTaskToDelete(null)
+      setOperatingTaskId(null)
+      setDeleteTaskId(null)
     }
   }
 
-  const getRepeatTypeText = (type: string) => {
-    switch (type) {
-      case "daily": return "每天"
-      case "weekly": return "每周"
-      case "monthly": return "每月"
-      case "weekdays": return "工作日"
-      case "custom": return "自定义"
-      default: return "一次性"
-    }
-  }
-
-  const getWeekdayName = (day: number) => {
-    const names = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"]
-    return names[day]
-  }
-
-  const formatDateTime = (dateTimeStr: string) => {
-    try {
-      const date = new Date(dateTimeStr)
-      return date.toLocaleString('zh-CN', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit'
-      })
-    } catch (e) {
-      return dateTimeStr
-    }
-  }
-
-  const getRepeatDetails = (task: ScheduledTask) => {
-    switch (task.repeatType) {
+  // 格式化重复类型显示
+  const formatRepeatType = (task: ScheduledTaskDTO) => {
+    const frontendType = mapBackendRepeatTypeToFrontend(task.repeatType)
+    
+    switch (frontendType) {
+      case "none":
+        return "不重复"
+      case "daily":
+        return "每天"
       case "weekly":
-        if (task.weekdays && task.weekdays.length > 0) {
-          return `（${task.weekdays.map(d => getWeekdayName(d)).join("、")}）`
+        if (task.repeatConfig.weekdays && task.repeatConfig.weekdays.length > 0) {
+          const frontendWeekdays = mapBackendWeekdaysToFrontend(task.repeatConfig.weekdays)
+          const weekdayNames = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"]
+          const names = frontendWeekdays.map(day => weekdayNames[day]).join("、")
+          return `每周（${names}）`
         }
-        return ""
+        return "每周"
       case "monthly":
-        return task.monthDay ? `（每月${task.monthDay}号）` : ""
-      case "custom":
-        if (task.customRepeat) {
-          return `（每${task.customRepeat.interval}${task.customRepeat.unit}）`
+        if (task.repeatConfig.monthDay) {
+          return `每月${task.repeatConfig.monthDay}号`
         }
-        return ""
+        return "每月"
+      case "weekdays":
+        return "工作日"
+      case "custom":
+        if (task.repeatConfig.interval && task.repeatConfig.timeUnit) {
+          const unit = mapBackendTimeUnitToFrontend(task.repeatConfig.timeUnit)
+          return `每${task.repeatConfig.interval}${unit}`
+        }
+        return "自定义"
       default:
-        return ""
+        return "不重复"
+    }
+  }
+
+  // 格式化执行时间
+  const formatExecuteTime = (task: ScheduledTaskDTO) => {
+    if (task.nextExecuteTime) {
+      return formatDisplayDateTime(new Date(task.nextExecuteTime))
+    }
+    
+    if (task.repeatConfig.executeDateTime) {
+      return formatDisplayDateTime(new Date(task.repeatConfig.executeDateTime))
+    }
+    
+    return "未设置"
+  }
+
+  // 获取状态显示
+  const getStatusDisplay = (status: ScheduleTaskStatus) => {
+    switch (status) {
+      case ScheduleTaskStatus.ACTIVE:
+        return { text: "运行中", variant: "default" as const }
+      case ScheduleTaskStatus.PAUSED:
+        return { text: "已暂停", variant: "secondary" as const }
+      case ScheduleTaskStatus.COMPLETED:
+        return { text: "已完成", variant: "outline" as const }
+      default:
+        return { text: "未知", variant: "destructive" as const }
     }
   }
 
   if (loading) {
     return (
       <div className="space-y-4">
-        {[1, 2, 3].map(i => (
-          <Card key={i} className="animate-pulse">
+        {[1, 2, 3].map((i) => (
+          <Card key={i}>
             <CardHeader className="pb-3">
-              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-6 w-16" />
+              </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-                <div className="h-3 bg-gray-200 rounded w-1/3"></div>
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-3/4" />
+                <div className="flex justify-between items-center pt-2">
+                  <Skeleton className="h-4 w-24" />
+                  <div className="flex gap-2">
+                    <Skeleton className="h-8 w-8" />
+                    <Skeleton className="h-8 w-8" />
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -269,115 +205,127 @@ export function ScheduledTaskList({ conversationId }: ScheduledTaskListProps) {
 
   if (tasks.length === 0) {
     return (
-      <div className="text-center py-8">
+      <div className="text-center py-12">
         <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
         <h3 className="text-lg font-medium text-gray-900 mb-2">暂无定时任务</h3>
-        <p className="text-gray-500">点击右上角的"新建"按钮创建您的第一个定时任务</p>
+        <p className="text-gray-500">点击上方按钮创建您的第一个定时任务</p>
       </div>
     )
   }
 
   return (
-    <div className="space-y-4">
-      {tasks.map((task) => (
-        <Card key={task.id} className={`transition-all ${task.isActive ? 'border-blue-200 bg-blue-50/30' : 'border-gray-200'}`}>
-          <CardHeader className="pb-3">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <CardTitle className="text-base font-medium text-gray-900 mb-2">
-                  {task.content}
-                </CardTitle>
-                <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
-                  <Clock className="h-4 w-4" />
-                  <span>{formatDateTime(task.executeDateTime)}</span>
-                  <Badge variant="outline" className="text-xs">
-                    {getRepeatTypeText(task.repeatType)}{getRepeatDetails(task)}
+    <>
+      <div className="space-y-4">
+        {tasks.map((task) => {
+          const statusDisplay = getStatusDisplay(task.status)
+          const isOperating = operatingTaskId === task.id
+          
+          return (
+            <Card key={task.id} className="hover:shadow-md transition-shadow">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-gray-500" />
+                    <span className="font-medium text-sm text-gray-600">
+                      {formatRepeatType(task)}
+                    </span>
+                  </div>
+                  <Badge variant={statusDisplay.variant}>
+                    {statusDisplay.text}
                   </Badge>
                 </div>
-                <div className="text-xs text-gray-500">
-                  关联会话: {task.relatedSessionTitle || task.relatedSession}
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => toggleTaskStatus(task.id, !task.isActive)}
-                  className={task.isActive ? "text-orange-600 hover:text-orange-700" : "text-green-600 hover:text-green-700"}
-                >
-                  {task.isActive ? (
-                    <>
-                      <Pause className="h-4 w-4 mr-1" />
-                      暂停
-                    </>
-                  ) : (
-                    <>
-                      <Play className="h-4 w-4 mr-1" />
-                      启用
-                    </>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <p className="text-sm text-gray-900 leading-relaxed">
+                    {task.content}
+                  </p>
+                  
+                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                    <Calendar className="h-3 w-3" />
+                    <span>下次执行: {formatExecuteTime(task)}</span>
+                  </div>
+                  
+                  {task.lastExecuteTime && (
+                    <div className="text-xs text-gray-400">
+                      上次执行: {formatDisplayDateTime(new Date(task.lastExecuteTime))}
+                    </div>
                   )}
-                </Button>
-                
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem>
-                      <Edit className="mr-2 h-4 w-4" />
-                      编辑
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => setTaskToDelete(task)}
-                      className="text-red-600 focus:text-red-600"
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      删除
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </div>
-          </CardHeader>
-          
-          <CardContent className="pt-0">
-            <div className="text-xs text-gray-500">
-              {task.isActive && task.nextExecution && (
-                <div>下次执行: {task.nextExecution}</div>
-              )}
-              <div>创建时间: {task.createdAt}</div>
-              {task.customRepeat && !task.customRepeat.neverEnd && task.customRepeat.endDate && (
-                <div>截止日期: {task.customRepeat.endDate}</div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      ))}
+                  
+                  <div className="flex justify-between items-center pt-2">
+                    <span className="text-xs text-gray-400">
+                      关联会话: {task.sessionId}
+                    </span>
+                    
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleToggleStatus(task)}
+                        disabled={isOperating}
+                        className="h-8 w-8 p-0"
+                      >
+                        {task.status === ScheduleTaskStatus.ACTIVE ? (
+                          <Pause className="h-3 w-3" />
+                        ) : (
+                          <Play className="h-3 w-3" />
+                        )}
+                      </Button>
+                      
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="h-8 w-8 p-0"
+                            disabled={isOperating}
+                          >
+                            <MoreHorizontal className="h-3 w-3" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => onEditTask?.(task)}>
+                            <Edit className="h-4 w-4 mr-2" />
+                            编辑
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => setDeleteTaskId(task.id)}
+                            className="text-red-600"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            删除
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )
+        })}
+      </div>
 
       {/* 删除确认对话框 */}
-      <AlertDialog open={!!taskToDelete} onOpenChange={(open) => !open && setTaskToDelete(null)}>
+      <AlertDialog open={!!deleteTaskId} onOpenChange={() => setDeleteTaskId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>确认删除</AlertDialogTitle>
             <AlertDialogDescription>
-              您确定要删除定时任务 "{taskToDelete?.content}" 吗？此操作无法撤销。
+              此操作将永久删除该定时任务，无法撤销。确定要继续吗？
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>取消</AlertDialogCancel>
             <AlertDialogAction
-              onClick={deleteTask}
-              disabled={isDeleting}
+              onClick={() => deleteTaskId && handleDeleteTask(deleteTaskId)}
               className="bg-red-600 hover:bg-red-700"
             >
-              {isDeleting ? "删除中..." : "确认删除"}
+              删除
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </>
   )
 } 
