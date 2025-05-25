@@ -122,6 +122,36 @@ public class ScheduledTaskAppService {
     }
 
     /**
+     * 根据会话ID获取定时任务列表
+     * @param sessionId 会话ID
+     * @param userId 用户ID
+     * @return 任务列表
+     */
+    public List<ScheduledTaskDTO> getTasksBySessionId(String sessionId, String userId) {
+        List<ScheduledTaskEntity> entities = scheduledTaskDomainService.getTasksBySessionId(sessionId);
+        // 过滤出属于当前用户的任务
+        return entities.stream()
+                .filter(entity -> userId.equals(entity.getUserId()))
+                .map(ScheduledTaskAssembler::toDTO)
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    /**
+     * 根据Agent ID获取定时任务列表
+     * @param agentId Agent ID
+     * @param userId 用户ID
+     * @return 任务列表
+     */
+    public List<ScheduledTaskDTO> getTasksByAgentId(String agentId, String userId) {
+        List<ScheduledTaskEntity> entities = scheduledTaskDomainService.getTasksByAgentId(agentId);
+        // 过滤出属于当前用户的任务
+        return entities.stream()
+                .filter(entity -> userId.equals(entity.getUserId()))
+                .map(ScheduledTaskAssembler::toDTO)
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    /**
      * 暂停定时任务
      * @param taskId 任务ID
      * @param userId 用户ID

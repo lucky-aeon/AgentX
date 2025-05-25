@@ -2,41 +2,29 @@
 
 import { DialogTrigger } from "@/components/ui/dialog"
 
-import { useEffect, useState } from "react"
-import { Plus, MoreHorizontal, Edit, Trash2, ChevronLeft, ChevronRight } from "lucide-react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useWorkspace } from "@/contexts/workspace-context"
-import { toast } from "@/hooks/use-toast"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
-import {
-  getAgentSessions,
-  createAgentSession,
-  updateAgentSession,
-  deleteAgentSession,
-  type SessionDTO,
-  getAgentSessionsWithToast,
-  createAgentSessionWithToast,
-  updateAgentSessionWithToast,
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { ChevronLeft, ChevronRight, Edit, MoreHorizontal, Plus, Trash2, Clock } from "lucide-react"
+import { useWorkspace } from "@/contexts/workspace-context"
+import { 
+  getAgentSessionsWithToast, 
+  createAgentSessionWithToast, 
+  updateAgentSessionWithToast, 
   deleteAgentSessionWithToast,
+  type SessionDTO 
 } from "@/lib/agent-session-service"
+import { 
+  getScheduledTasksBySessionIdWithToast,
+  deleteScheduledTaskWithToast,
+  type ScheduledTaskDTO 
+} from "@/lib/scheduled-task-service"
+import { toast } from "@/hooks/use-toast"
 
 interface ConversationListProps {
   workspaceId: string
@@ -55,6 +43,8 @@ export function ConversationList({ workspaceId }: ConversationListProps) {
   const [isDeletingSession, setIsDeletingSession] = useState(false)
   const [searchText, setSearchText] = useState("")
   const [isCollapsed, setIsCollapsed] = useState(false)
+  const [relatedTasks, setRelatedTasks] = useState<ScheduledTaskDTO[]>([])
+  const [isLoadingTasks, setIsLoadingTasks] = useState(false)
 
   // 获取会话列表
   const fetchSessions = async () => {
@@ -119,6 +109,22 @@ export function ConversationList({ workspaceId }: ConversationListProps) {
   const handleDeleteSession = async (sessionId: string) => {
     console.log('准备删除会话:', sessionId)
     setSessionToDelete(sessionId)
+    
+    // 查询关联的定时任务（根据sessionId查询）
+    setIsLoadingTasks(true)
+    try {
+      const response = await getScheduledTasksBySessionIdWithToast(sessionId)
+      if (response.code === 200) {
+        setRelatedTasks(response.data || [])
+      } else {
+        setRelatedTasks([])
+      }
+    } catch (error) {
+      console.error("查询关联定时任务失败:", error)
+      setRelatedTasks([])
+    } finally {
+      setIsLoadingTasks(false)
+    }
   }
 
   // 打开重命名对话框
@@ -162,6 +168,23 @@ export function ConversationList({ workspaceId }: ConversationListProps) {
 
     try {
       setIsDeletingSession(true)
+      
+      // 先删除关联的定时任务
+      if (relatedTasks.length > 0) {
+        console.log(`开始删除 ${relatedTasks.length} 个关联的定时任务`)
+        
+        for (const task of relatedTasks) {
+          try {
+            await deleteScheduledTaskWithToast(task.id)
+            console.log(`定时任务 ${task.id} 删除成功`)
+          } catch (error) {
+            console.error(`删除定时任务 ${task.id} 失败:`, error)
+            // 继续删除其他任务，不中断流程
+          }
+        }
+      }
+      
+      // 然后删除会话
       const response = await deleteAgentSessionWithToast(sessionToDelete)
 
       if (response.code === 200) {
@@ -171,12 +194,20 @@ export function ConversationList({ workspaceId }: ConversationListProps) {
         if (selectedConversationId === sessionToDelete) {
           setSelectedConversationId(null)
         }
+        
+        toast({
+          title: "删除成功",
+          description: relatedTasks.length > 0 
+            ? `会话及其关联的 ${relatedTasks.length} 个定时任务已删除`
+            : "会话已删除"
+        })
       }
     } catch (error) {
       console.error("删除会话错误:", error)
     } finally {
       setIsDeletingSession(false)
       setSessionToDelete(null)
+      setRelatedTasks([])
     }
   }
 
@@ -365,27 +396,59 @@ export function ConversationList({ workspaceId }: ConversationListProps) {
       
       {/* 删除确认对话框 */}
       <Dialog open={!!sessionToDelete} onOpenChange={(open) => !open && setSessionToDelete(null)}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>删除会话</DialogTitle>
             <DialogDescription>
-              确定要删除这个会话吗？此操作无法撤销。
+              {isLoadingTasks ? (
+                "正在检查关联的定时任务..."
+              ) : relatedTasks.length > 0 ? (
+                <>
+                  此会话关联了 <span className="font-semibold text-orange-600">{relatedTasks.length}</span> 个定时任务，删除会话将同时删除这些关联的任务：
+                </>
+              ) : (
+                "确定要删除这个会话吗？此操作无法撤销。"
+              )}
             </DialogDescription>
           </DialogHeader>
+          
+          {/* 显示关联的定时任务列表 */}
+          {!isLoadingTasks && relatedTasks.length > 0 && (
+            <div className="max-h-32 overflow-y-auto border rounded-md p-2 bg-gray-50">
+              {relatedTasks.map((task) => (
+                <div key={task.id} className="flex items-center gap-2 py-1 text-sm">
+                  <Clock className="h-3 w-3 text-orange-500" />
+                  <span className="truncate">{task.content}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          
+          {/* 加载状态 */}
+          {isLoadingTasks && (
+            <div className="flex items-center gap-2 py-2">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900"></div>
+              <span className="text-sm text-gray-600">检查关联任务中...</span>
+            </div>
+          )}
+          
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => setSessionToDelete(null)}
-              disabled={isDeletingSession}
+              onClick={() => {
+                setSessionToDelete(null)
+                setRelatedTasks([])
+              }}
+              disabled={isDeletingSession || isLoadingTasks}
             >
               取消
             </Button>
             <Button
               variant="destructive"
               onClick={confirmDeleteSession}
-              disabled={isDeletingSession}
+              disabled={isDeletingSession || isLoadingTasks}
             >
-              {isDeletingSession ? "删除中..." : "删除"}
+              {isDeletingSession ? "删除中..." : relatedTasks.length > 0 ? "确认删除会话和任务" : "删除"}
             </Button>
           </DialogFooter>
         </DialogContent>

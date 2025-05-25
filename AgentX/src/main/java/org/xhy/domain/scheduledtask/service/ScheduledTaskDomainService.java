@@ -75,6 +75,19 @@ public class ScheduledTaskDomainService {
     }
 
     /**
+     * 根据Agent ID获取定时任务列表
+     * @param agentId Agent ID
+     * @return 定时任务列表
+     */
+    public List<ScheduledTaskEntity> getTasksByAgentId(String agentId) {
+        return scheduledTaskRepository.selectList(
+            Wrappers.<ScheduledTaskEntity>lambdaQuery()
+                .eq(ScheduledTaskEntity::getAgentId, agentId)
+                .orderByDesc(ScheduledTaskEntity::getCreatedAt)
+        );
+    }
+
+    /**
      * 获取需要执行的活跃任务
      * @return 需要执行的任务列表
      */

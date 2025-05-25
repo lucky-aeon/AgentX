@@ -60,9 +60,30 @@ public class PortalScheduledTaskController {
      * 获取用户的定时任务列表
      */
     @GetMapping
-    public Result<List<ScheduledTaskDTO>> getScheduledTasks() {
+    public Result<List<ScheduledTaskDTO>> getScheduledTasks(
+            @RequestParam(required = false) String sessionId,
+            @RequestParam(required = false) String agentId) {
         String userId = UserContext.getCurrentUserId();
-        List<ScheduledTaskDTO> tasks = scheduledTaskAppService.getUserTasks(userId);
+        List<ScheduledTaskDTO> tasks;
+        
+        if (agentId != null && !agentId.trim().isEmpty()) {
+            tasks = scheduledTaskAppService.getTasksByAgentId(agentId, userId);
+        } else if (sessionId != null && !sessionId.trim().isEmpty()) {
+            tasks = scheduledTaskAppService.getTasksBySessionId(sessionId, userId);
+        } else {
+            tasks = scheduledTaskAppService.getUserTasks(userId);
+        }
+        
+        return Result.success(tasks);
+    }
+
+    /**
+     * 根据Agent ID获取定时任务列表
+     */
+    @GetMapping("/agent/{agentId}")
+    public Result<List<ScheduledTaskDTO>> getScheduledTasksByAgent(@PathVariable String agentId) {
+        String userId = UserContext.getCurrentUserId();
+        List<ScheduledTaskDTO> tasks = scheduledTaskAppService.getTasksByAgentId(agentId, userId);
         return Result.success(tasks);
     }
 

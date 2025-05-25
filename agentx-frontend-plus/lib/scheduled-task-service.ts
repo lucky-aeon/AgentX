@@ -4,6 +4,7 @@ import { httpClient } from "@/lib/http-client"
 // 定时任务API端点
 export const SCHEDULED_TASK_ENDPOINTS = {
   SCHEDULED_TASKS: "/scheduled-task",
+  SCHEDULED_TASKS_BY_AGENT: (agentId: string) => `/scheduled-task/agent/${agentId}`,
   SCHEDULED_TASK_DETAIL: (id: string) => `/scheduled-task/${id}`,
   PAUSE_SCHEDULED_TASK: (id: string) => `/scheduled-task/${id}/pause`,
   RESUME_SCHEDULED_TASK: (id: string) => `/scheduled-task/${id}/resume`,
@@ -347,4 +348,68 @@ export function mapBackendWeekdaysToFrontend(backendWeekdays: number[]): number[
     // 前端：0=周日, 1=周一, ..., 6=周六
     return day === 7 ? 0 : day
   })
+}
+
+/**
+ * 根据会话ID获取定时任务列表
+ */
+export const getScheduledTasksBySessionId = async (sessionId: string): Promise<ApiResponse<ScheduledTaskDTO[]>> => {
+  return httpClient.get<ApiResponse<ScheduledTaskDTO[]>>(
+    `${SCHEDULED_TASK_ENDPOINTS.SCHEDULED_TASKS}?sessionId=${sessionId}`
+  )
+}
+
+/**
+ * 根据会话ID获取定时任务列表（带错误提示）
+ */
+export const getScheduledTasksBySessionIdWithToast = async (sessionId: string): Promise<ApiResponse<ScheduledTaskDTO[]>> => {
+  try {
+    const response = await getScheduledTasksBySessionId(sessionId)
+    
+    if (response.code !== 200) {
+      toast({
+        title: "获取会话定时任务失败",
+        description: response.message || "请稍后重试",
+        variant: "destructive"
+      })
+    }
+    
+    return response
+  } catch (error) {
+    toast({
+      title: "获取会话定时任务失败",
+      description: "网络错误，请稍后重试",
+      variant: "destructive"
+    })
+    throw error
+  }
+}
+
+// 根据Agent ID获取定时任务列表
+export async function getScheduledTasksByAgentId(agentId: string): Promise<ApiResponse<ScheduledTaskDTO[]>> {
+  return httpClient.get<ApiResponse<ScheduledTaskDTO[]>>(SCHEDULED_TASK_ENDPOINTS.SCHEDULED_TASKS_BY_AGENT(agentId))
+}
+
+// 根据Agent ID获取定时任务列表（带toast提示）
+export async function getScheduledTasksByAgentIdWithToast(agentId: string): Promise<ApiResponse<ScheduledTaskDTO[]>> {
+  try {
+    const response = await getScheduledTasksByAgentId(agentId)
+    
+    if (response.code !== 200) {
+      toast({
+        title: "获取Agent定时任务失败",
+        description: response.message || "请稍后重试",
+        variant: "destructive"
+      })
+    }
+    
+    return response
+  } catch (error) {
+    toast({
+      title: "获取Agent定时任务失败",
+      description: "网络错误，请稍后重试",
+      variant: "destructive"
+    })
+    throw error
+  }
 } 

@@ -23,7 +23,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { 
-  getScheduledTasksWithToast,
+  getScheduledTasksByAgentIdWithToast,
   pauseScheduledTaskWithToast,
   resumeScheduledTaskWithToast,
   deleteScheduledTaskWithToast,
@@ -53,9 +53,14 @@ export function ScheduledTaskList({ onTaskUpdate, onEditTask, agentId }: Schedul
 
   // 获取任务列表
   const fetchTasks = async () => {
+    if (!agentId) {
+      setLoading(false)
+      return
+    }
+    
     try {
       setLoading(true)
-      const response = await getScheduledTasksWithToast()
+      const response = await getScheduledTasksByAgentIdWithToast(agentId)
       
       if (response.code === 200 && response.data) {
         setTasks(response.data)
@@ -90,7 +95,7 @@ export function ScheduledTaskList({ onTaskUpdate, onEditTask, agentId }: Schedul
 
   useEffect(() => {
     fetchTasks()
-  }, [])
+  }, [agentId])
 
   useEffect(() => {
     fetchSessions()
