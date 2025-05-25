@@ -2,7 +2,7 @@ package org.xhy.domain.task.model;
 
 import com.baomidou.mybatisplus.annotation.*;
 import org.xhy.domain.task.constant.TaskStatus;
-import org.xhy.infrastructure.converter.TaskStatusConverter;
+import org.xhy.infrastructure.converter.ScheduledTaskStatusConverter;
 import org.xhy.infrastructure.entity.BaseEntity;
 
 import java.time.LocalDateTime;
@@ -35,7 +35,7 @@ public class TaskEntity extends BaseEntity {
     private String description;
 
     /** 任务状态，只有子任务有 */
-    @TableField(value = "status", typeHandler = TaskStatusConverter.class)
+    @TableField(value = "status", typeHandler = ScheduledTaskStatusConverter.class)
     private TaskStatus status;
 
     /** 任务进度,存放父任务中 */

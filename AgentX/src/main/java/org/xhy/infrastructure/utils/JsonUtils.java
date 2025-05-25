@@ -2,6 +2,12 @@ package org.xhy.infrastructure.utils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.List;
@@ -9,7 +15,20 @@ import java.util.List;
 /** JSON工具类，用于处理JSON转换 */
 public class JsonUtils {
 
-    private static final ObjectMapper objectMapper = new ObjectMapper();
+    private static final Logger log = LoggerFactory.getLogger(JsonUtils.class);
+    private static final ObjectMapper objectMapper;
+    
+    static {
+        objectMapper = new ObjectMapper();
+        // 注册Java 8时间模块
+        objectMapper.registerModule(new JavaTimeModule());
+        // 禁用将日期写为时间戳
+        objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        // 忽略未知属性
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        // 只包含非空属性
+        objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+    }
 
     /** 将对象转换为JSON字符串
      *
@@ -23,6 +42,7 @@ public class JsonUtils {
         try {
             return objectMapper.writeValueAsString(obj);
         } catch (Exception e) {
+            log.error("JSON序列化失败: {}, 错误: {}", obj.getClass().getSimpleName(), e.getMessage(), e);
             return "{}";
         }
     }
@@ -41,6 +61,7 @@ public class JsonUtils {
         try {
             return objectMapper.readValue(json, clazz);
         } catch (Exception e) {
+            log.error("JSON反序列化失败: {}, 错误: {}", clazz.getSimpleName(), e.getMessage(), e);
             return null;
         }
     }
@@ -60,6 +81,7 @@ public class JsonUtils {
             JavaType type = objectMapper.getTypeFactory().constructCollectionType(List.class, clazz);
             return objectMapper.readValue(json, type);
         } catch (Exception e) {
+            log.error("JSON数组反序列化失败: {}", e.getMessage(), e);
             return Collections.emptyList();
         }
     }
