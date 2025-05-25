@@ -31,7 +31,7 @@ export function saveLocalDateTime(date: Date): string {
 
 /**
  * 将本地时间转换为适合后端的格式
- * 格式: YYYY-MM-DD HH:mm:ss
+ * 格式: YYYY-MM-DDTHH:mm:ss (ISO 8601格式，兼容Java LocalDateTime)
  */
 export function toBackendDateTimeString(date: Date): string {
   const year = date.getFullYear()
@@ -41,7 +41,7 @@ export function toBackendDateTimeString(date: Date): string {
   const minutes = String(date.getMinutes()).padStart(2, '0')
   const seconds = String(date.getSeconds()).padStart(2, '0')
   
-  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`
 }
 
 /**
@@ -58,6 +58,7 @@ export function toBackendTimeString(date: Date): string {
 
 /**
  * 从后端日期时间字符串创建本地Date对象
+ * 支持ISO格式 (YYYY-MM-DDTHH:mm:ss) 和传统格式 (YYYY-MM-DD HH:mm:ss)
  */
 export function fromBackendDateTimeString(dateTimeString: string): Date {
   // 如果字符串包含'T'，说明是ISO格式
@@ -65,7 +66,7 @@ export function fromBackendDateTimeString(dateTimeString: string): Date {
     return new Date(dateTimeString)
   }
   
-  // 否则假设是 'YYYY-MM-DD HH:mm:ss' 格式
+  // 否则假设是 'YYYY-MM-DD HH:mm:ss' 格式，转换为ISO格式
   return new Date(dateTimeString.replace(' ', 'T'))
 }
 

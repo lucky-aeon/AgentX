@@ -28,11 +28,17 @@ import { getAgentSessionsWithToast, type SessionDTO } from "@/lib/agent-session-
 import { DateTimePicker } from "@/components/ui/datetime-picker"
 import { 
   createScheduledTaskWithToast,
+  updateScheduledTaskWithToast,
   mapFrontendRepeatTypeToBackend,
   mapFrontendTimeUnitToBackend,
   mapFrontendWeekdaysToBackend,
+  mapBackendRepeatTypeToFrontend,
+  mapBackendTimeUnitToFrontend,
+  mapBackendWeekdaysToFrontend,
   type CreateScheduledTaskRequest,
-  type RepeatConfig
+  type UpdateScheduledTaskRequest,
+  type RepeatConfig,
+  type ScheduledTaskDTO
 } from "@/lib/scheduled-task-service"
 import { 
   toBackendDateTimeString, 
@@ -46,6 +52,8 @@ interface ScheduledTaskDialogProps {
   conversationId: string
   agentId?: string
   onTaskCreated?: () => void
+  editingTask?: ScheduledTaskDTO | null
+  onTaskUpdated?: () => void
 }
 
 type RepeatType = "none" | "daily" | "weekly" | "monthly" | "weekdays" | "custom"
@@ -73,26 +81,78 @@ export function ScheduledTaskDialog({
   onOpenChange, 
   conversationId,
   agentId,
-  onTaskCreated 
+  onTaskCreated,
+  editingTask,
+  onTaskUpdated
 }: ScheduledTaskDialogProps) {
-  const [taskData, setTaskData] = useState<ScheduledTaskData>({
-    content: "",
-    relatedSession: conversationId,
-    repeatType: "none",
-    executeDateTime: "",
-    weekdays: [],
-    monthDay: 1,
-    customRepeat: {
+  // 初始化编辑数据的辅助函数
+  const initializeTaskData = (): ScheduledTaskData => {
+    if (!editingTask) {
+      return {
+        content: "",
+        relatedSession: conversationId,
+        repeatType: "none",
+        executeDateTime: "",
+        weekdays: [],
+        monthDay: 1,
+        customRepeat: {
+          interval: 1,
+          unit: "天",
+          executeDateTime: "",
+          neverEnd: true,
+          endDate: ""
+        }
+      }
+    }
+
+    // 转换后端类型到前端类型
+    const frontendRepeatType = mapBackendRepeatTypeToFrontend(editingTask.repeatType)
+    
+    // 从repeatConfig中提取数据
+    const config = editingTask.repeatConfig
+    const executeDateTime = config.executeDateTime || ""
+    const weekdays = config.weekdays ? mapBackendWeekdaysToFrontend(config.weekdays) : []
+    const monthDay = config.monthDay || 1
+
+    // 处理自定义重复配置
+    let customRepeat: CustomRepeatConfig = {
       interval: 1,
       unit: "天",
       executeDateTime: "",
       neverEnd: true,
       endDate: ""
     }
-  })
+
+    if (frontendRepeatType === "custom" && config.interval && config.timeUnit) {
+      customRepeat = {
+        interval: config.interval,
+        unit: mapBackendTimeUnitToFrontend(config.timeUnit) as "天" | "周" | "月" | "年",
+        executeDateTime: executeDateTime,
+        neverEnd: !config.endDateTime,
+        endDate: config.endDateTime || ""
+      }
+    }
+
+    return {
+      content: editingTask.content,
+      relatedSession: editingTask.sessionId,
+      repeatType: frontendRepeatType as RepeatType,
+      executeDateTime,
+      weekdays,
+      monthDay,
+      customRepeat
+    }
+  }
+
+  const [taskData, setTaskData] = useState<ScheduledTaskData>(initializeTaskData())
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [sessions, setSessions] = useState<SessionDTO[]>([])
   const [loadingSessions, setLoadingSessions] = useState(false)
+
+  // 当编辑任务变化时，重新初始化表单数据
+  useEffect(() => {
+    setTaskData(initializeTaskData())
+  }, [editingTask])
 
   // 获取会话列表
   useEffect(() => {
@@ -123,21 +183,7 @@ export function ScheduledTaskDialog({
 
   // 重置表单数据
   const resetForm = () => {
-    setTaskData({
-      content: "",
-      relatedSession: conversationId,
-      repeatType: "none",
-      executeDateTime: "",
-      weekdays: [],
-      monthDay: 1,
-      customRepeat: {
-        interval: 1,
-        unit: "天",
-        executeDateTime: "",
-        neverEnd: true,
-        endDate: ""
-      }
-    })
+    setTaskData(initializeTaskData())
   }
 
   // 构建重复配置
@@ -251,24 +297,47 @@ export function ScheduledTaskDialog({
     try {
       setIsSubmitting(true)
       
-      const request: CreateScheduledTaskRequest = {
-        agentId,
-        sessionId: taskData.relatedSession,
-        content: taskData.content,
-        repeatType: mapFrontendRepeatTypeToBackend(taskData.repeatType),
-        repeatConfig: buildRepeatConfig()
-      }
+      const repeatConfig = buildRepeatConfig()
       
-      const response = await createScheduledTaskWithToast(request)
-      
-      if (response.code === 200) {
-        onTaskCreated?.()
-        onOpenChange(false)
-        resetForm()
+      if (editingTask) {
+        // 编辑模式 - 更新任务
+        const updateRequest: UpdateScheduledTaskRequest = {
+          id: editingTask.id,
+          agentId,
+          sessionId: taskData.relatedSession,
+          content: taskData.content,
+          repeatType: mapFrontendRepeatTypeToBackend(taskData.repeatType),
+          repeatConfig
+        }
+        
+        const response = await updateScheduledTaskWithToast(editingTask.id, updateRequest)
+        
+        if (response.code === 200) {
+          onTaskUpdated?.()
+          onOpenChange(false)
+          resetForm()
+        }
+      } else {
+        // 创建模式 - 创建新任务
+        const createRequest: CreateScheduledTaskRequest = {
+          agentId,
+          sessionId: taskData.relatedSession,
+          content: taskData.content,
+          repeatType: mapFrontendRepeatTypeToBackend(taskData.repeatType),
+          repeatConfig
+        }
+        
+        const response = await createScheduledTaskWithToast(createRequest)
+        
+        if (response.code === 200) {
+          onTaskCreated?.()
+          onOpenChange(false)
+          resetForm()
+        }
       }
       
     } catch (error) {
-      console.error("创建定时任务失败:", error)
+      console.error(editingTask ? "更新定时任务失败:" : "创建定时任务失败:", error)
     } finally {
       setIsSubmitting(false)
     }
@@ -316,10 +385,10 @@ export function ScheduledTaskDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Clock className="h-5 w-5" />
-            创建定时任务
+            {editingTask ? "编辑定时任务" : "创建定时任务"}
           </DialogTitle>
           <DialogDescription>
-            设置定时任务，系统将根据时间自动向会话发送消息
+            {editingTask ? "修改定时任务设置" : "设置定时任务，系统将根据时间自动向会话发送消息"}
           </DialogDescription>
         </DialogHeader>
 
@@ -554,7 +623,7 @@ export function ScheduledTaskDialog({
             取消
           </Button>
           <Button onClick={handleSubmit} disabled={isSubmitting}>
-            {isSubmitting ? "创建中..." : "确认"}
+            {isSubmitting ? (editingTask ? "更新中..." : "创建中...") : (editingTask ? "更新" : "确认")}
           </Button>
         </DialogFooter>
       </DialogContent>

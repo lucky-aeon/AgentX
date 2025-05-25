@@ -34,8 +34,14 @@ export function ScheduledTaskPanel({
 
   const handleEditTask = (task: ScheduledTaskDTO) => {
     setEditingTask(task)
-    // TODO: 实现编辑功能，可以复用ScheduledTaskDialog或创建新的编辑对话框
-    console.log("编辑任务:", task)
+    setShowCreateDialog(true)
+  }
+
+  const handleCloseDialog = (open: boolean) => {
+    setShowCreateDialog(open)
+    if (!open) {
+      setEditingTask(null)
+    }
   }
 
   if (!isOpen) return null
@@ -78,13 +84,15 @@ export function ScheduledTaskPanel({
         />
       </div>
 
-      {/* 创建任务对话框 */}
+      {/* 创建/编辑任务对话框 */}
       <ScheduledTaskDialog
         open={showCreateDialog}
-        onOpenChange={setShowCreateDialog}
+        onOpenChange={handleCloseDialog}
         conversationId={conversationId}
         agentId={agentId}
         onTaskCreated={handleTaskCreated}
+        editingTask={editingTask}
+        onTaskUpdated={handleTaskUpdate}
       />
     </div>
   )
