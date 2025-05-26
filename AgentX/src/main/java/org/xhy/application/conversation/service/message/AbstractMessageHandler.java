@@ -90,7 +90,8 @@ public abstract class AbstractMessageHandler {
         TokenStream tokenStream = agent.chat(chatContext.getUserMessage());
 
         tokenStream.onError(throwable -> {
-            transport.sendMessage(connection, AgentChatResponse.buildEndMessage(throwable.getMessage(),MessageType.TEXT));
+            transport.sendMessage(connection,
+                    AgentChatResponse.buildEndMessage(throwable.getMessage(), MessageType.TEXT));
         });
 
         // 部分响应处理

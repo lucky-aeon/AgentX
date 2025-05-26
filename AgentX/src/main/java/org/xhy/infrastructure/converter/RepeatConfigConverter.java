@@ -10,4 +10,4 @@ public class RepeatConfigConverter extends JsonToStringConverter<RepeatConfig> {
     public RepeatConfigConverter() {
         super(RepeatConfig.class);
     }
-} 
+}

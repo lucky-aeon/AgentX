@@ -39,4 +39,4 @@ public class ScheduledTaskStatusConverter extends BaseTypeHandler<ScheduleTaskSt
         String value = cs.getString(columnIndex);
         return value == null ? null : ScheduleTaskStatus.fromCode(value);
     }
-} 
+}

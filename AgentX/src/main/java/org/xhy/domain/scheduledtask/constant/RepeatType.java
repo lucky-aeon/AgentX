@@ -7,19 +7,19 @@ public enum RepeatType {
 
     /** 不重复 */
     NONE,
-    
+
     /** 每天 */
     DAILY,
-    
+
     /** 每周 */
     WEEKLY,
-    
+
     /** 每月 */
     MONTHLY,
-    
+
     /** 工作日 */
     WORKDAYS,
-    
+
     /** 自定义 */
     CUSTOM;
 
@@ -31,4 +31,4 @@ public enum RepeatType {
         }
         throw new BusinessException("未知的重复类型码: " + code);
     }
-} 
+}

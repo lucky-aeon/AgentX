@@ -39,4 +39,4 @@ public class RepeatTypeConverter extends BaseTypeHandler<RepeatType> {
         String value = cs.getString(columnIndex);
         return value == null ? null : RepeatType.fromCode(value);
     }
-} 
+}

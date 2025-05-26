@@ -130,8 +130,7 @@ public class ToolDomainService {
 
         // 删除当前用户安装的该工具
         Wrapper<UserToolEntity> userToolWrapper = Wrappers.<UserToolEntity>lambdaQuery()
-                .eq(UserToolEntity::getToolId, toolId)
-                .eq(UserToolEntity::getUserId,userId);
+                .eq(UserToolEntity::getToolId, toolId).eq(UserToolEntity::getUserId, userId);
 
         toolRepository.checkedDelete(wrapper);
         userToolRepository.delete(userToolWrapper);
@@ -176,8 +175,7 @@ public class ToolDomainService {
         return toolName;
     }
 
-    public List<ToolEntity> getByIds(List<String> toolIds)
-    {
+    public List<ToolEntity> getByIds(List<String> toolIds) {
         if (toolIds == null || toolIds.isEmpty()) {
             return new ArrayList<>();
         }

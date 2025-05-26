@@ -23,7 +23,7 @@ public class UserDomainService {
 
     public UserDomainService(UserRepository userRepository) {
         this.userRepository = userRepository;
-        
+
     }
 
     /** 获取用户信息 */
@@ -86,10 +86,10 @@ public class UserDomainService {
     }
 
     /** 检查账号是否存在，邮箱 or 手机号任意值
-     * @param email 邮箱账号*/
+     * @param email 邮箱账号 */
     public void checkAccountExist(String email) {
-        LambdaQueryWrapper<UserEntity> wrapper = Wrappers.<UserEntity>lambdaQuery().eq(UserEntity::getEmail, email).or()
-            ;
+        LambdaQueryWrapper<UserEntity> wrapper = Wrappers.<UserEntity>lambdaQuery().eq(UserEntity::getEmail, email)
+                .or();
         if (userRepository.exists(wrapper)) {
             throw new BusinessException("账号已存在,不可重复账注册");
         }

@@ -17,7 +17,7 @@ public class JsonUtils {
 
     private static final Logger log = LoggerFactory.getLogger(JsonUtils.class);
     private static final ObjectMapper objectMapper;
-    
+
     static {
         objectMapper = new ObjectMapper();
         // 注册Java 8时间模块

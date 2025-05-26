@@ -50,7 +50,7 @@ public class MyBatisTypeHandlerConfig {
         typeHandlerRegistry.register(ToolStatus.class, new ToolStatusConverter());
         typeHandlerRegistry.register(ToolType.class, new ToolTypeConverter());
         typeHandlerRegistry.register(UploadType.class, new UploadTypeConverter());
-        
+
         // 定时任务相关的TypeHandler
         typeHandlerRegistry.register(RepeatType.class, new RepeatTypeConverter());
         typeHandlerRegistry.register(RepeatConfig.class, new RepeatConfigConverter());

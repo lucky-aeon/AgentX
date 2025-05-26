@@ -5,9 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import org.xhy.domain.scheduledtask.constant.RepeatType;
 import org.xhy.domain.scheduledtask.model.RepeatConfig;
 
-/**
- * 创建定时任务请求
- */
+/** 创建定时任务请求 */
 public class CreateScheduledTaskRequest {
 
     /** Agent ID */
@@ -70,4 +68,4 @@ public class CreateScheduledTaskRequest {
     public void setRepeatConfig(RepeatConfig repeatConfig) {
         this.repeatConfig = repeatConfig;
     }
-} 
+}

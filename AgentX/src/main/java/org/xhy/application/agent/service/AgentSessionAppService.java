@@ -33,7 +33,8 @@ public class AgentSessionAppService {
 
     public AgentSessionAppService(AgentWorkspaceDomainService agentWorkspaceDomainService,
             AgentDomainService agentServiceDomainService, SessionDomainService sessionDomainService,
-            ConversationDomainService conversationDomainService, ScheduledTaskExecutionService scheduledTaskExecutionService) {
+            ConversationDomainService conversationDomainService,
+            ScheduledTaskExecutionService scheduledTaskExecutionService) {
         this.agentWorkspaceDomainService = agentWorkspaceDomainService;
         this.agentServiceDomainService = agentServiceDomainService;
         this.sessionDomainService = sessionDomainService;

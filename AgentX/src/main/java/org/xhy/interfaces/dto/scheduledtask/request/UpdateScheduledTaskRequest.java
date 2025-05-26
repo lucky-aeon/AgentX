@@ -5,9 +5,7 @@ import org.xhy.domain.scheduledtask.constant.RepeatType;
 import org.xhy.domain.scheduledtask.constant.ScheduleTaskStatus;
 import org.xhy.domain.scheduledtask.model.RepeatConfig;
 
-/**
- * 更新定时任务请求
- */
+/** 更新定时任务请求 */
 public class UpdateScheduledTaskRequest {
 
     /** 任务ID */
@@ -66,4 +64,4 @@ public class UpdateScheduledTaskRequest {
     public void setStatus(ScheduleTaskStatus status) {
         this.status = status;
     }
-} 
+}

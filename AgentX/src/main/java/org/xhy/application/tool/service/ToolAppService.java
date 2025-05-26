@@ -188,13 +188,14 @@ public class ToolAppService {
         // 查询对应的工具是否还存在
         ArrayList<String> toolIds = new ArrayList<>();
 
-        Map<String, ToolEntity> toolMap = toolDomainService.getByIds(userToolEntityPage.getRecords().stream().map(UserToolEntity::getToolId).toList()).stream().collect(Collectors.toMap(ToolEntity::getId, Function.identity()));
+        Map<String, ToolEntity> toolMap = toolDomainService
+                .getByIds(userToolEntityPage.getRecords().stream().map(UserToolEntity::getToolId).toList()).stream()
+                .collect(Collectors.toMap(ToolEntity::getId, Function.identity()));
 
-
-        List<ToolVersionDTO> list = userToolEntityPage.getRecords().stream().map(userToolEntity->{
+        List<ToolVersionDTO> list = userToolEntityPage.getRecords().stream().map(userToolEntity -> {
             ToolVersionDTO dto = ToolAssembler.toDTO(userToolEntity);
             toolIds.add(userToolEntity.getToolId());
-            if (!toolMap.containsKey(userToolEntity.getToolId())){
+            if (!toolMap.containsKey(userToolEntity.getToolId())) {
                 dto.setDelete(true);
             }
             return dto;
@@ -246,8 +247,8 @@ public class ToolAppService {
             toolVersionDTOs = toolVersionDTOs.stream().sorted((a, b) -> random.nextInt(2) - 1).limit(10).toList();
         }
 
-        Map<String, String> userNicknameMap = userDomainService.getByIds(toolVersionDTOs.stream().map(ToolVersionDTO::getUserId).toList())
-                .stream()
+        Map<String, String> userNicknameMap = userDomainService
+                .getByIds(toolVersionDTOs.stream().map(ToolVersionDTO::getUserId).toList()).stream()
                 .collect(Collectors.toMap(UserEntity::getId, UserEntity::getNickname));
 
         toolVersionDTOs.forEach(toolVersionDTO -> {
@@ -255,7 +256,6 @@ public class ToolAppService {
                 toolVersionDTO.setUserName(userNicknameMap.get(toolVersionDTO.getUserId()));
             }
         });
-
 
         return toolVersionDTOs;
     }

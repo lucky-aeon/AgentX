@@ -11,10 +11,7 @@ import org.xhy.infrastructure.entity.BaseEntity;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
-/**
- * 定时任务实体类
- * 代表一个用户创建的定时任务
- */
+/** 定时任务实体类 代表一个用户创建的定时任务 */
 @TableName(value = "scheduled_tasks", autoResultMap = true)
 public class ScheduledTaskEntity extends BaseEntity {
 
@@ -144,8 +141,8 @@ public class ScheduledTaskEntity extends BaseEntity {
     }
 
     /** 创建新的定时任务 */
-    public static ScheduledTaskEntity createNew(String userId, String agentId, String sessionId, 
-                                               String content, RepeatType repeatType, RepeatConfig repeatConfig) {
+    public static ScheduledTaskEntity createNew(String userId, String agentId, String sessionId, String content,
+            RepeatType repeatType, RepeatConfig repeatConfig) {
         ScheduledTaskEntity task = new ScheduledTaskEntity();
         task.setUserId(userId);
         task.setAgentId(agentId);
@@ -210,8 +207,10 @@ public class ScheduledTaskEntity extends BaseEntity {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         ScheduledTaskEntity that = (ScheduledTaskEntity) o;
         return Objects.equals(id, that.id);
     }
@@ -223,16 +222,9 @@ public class ScheduledTaskEntity extends BaseEntity {
 
     @Override
     public String toString() {
-        return "ScheduledTaskEntity{" +
-                "id='" + id + '\'' +
-                ", userId='" + userId + '\'' +
-                ", agentId='" + agentId + '\'' +
-                ", sessionId='" + sessionId + '\'' +
-                ", content='" + content + '\'' +
-                ", repeatType=" + repeatType +
-                ", status=" + status +
-                ", lastExecuteTime=" + lastExecuteTime +
-                ", nextExecuteTime=" + nextExecuteTime +
-                '}';
+        return "ScheduledTaskEntity{" + "id='" + id + '\'' + ", userId='" + userId + '\'' + ", agentId='" + agentId
+                + '\'' + ", sessionId='" + sessionId + '\'' + ", content='" + content + '\'' + ", repeatType="
+                + repeatType + ", status=" + status + ", lastExecuteTime=" + lastExecuteTime + ", nextExecuteTime="
+                + nextExecuteTime + '}';
     }
-} 
+}

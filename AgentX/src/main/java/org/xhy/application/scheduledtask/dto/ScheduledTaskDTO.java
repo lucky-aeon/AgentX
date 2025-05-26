@@ -6,9 +6,7 @@ import org.xhy.domain.scheduledtask.model.RepeatConfig;
 
 import java.time.LocalDateTime;
 
-/**
- * 定时任务DTO
- */
+/** 定时任务DTO */
 public class ScheduledTaskDTO {
 
     /** 任务ID */
@@ -143,4 +141,4 @@ public class ScheduledTaskDTO {
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
     }
-} 
+}
