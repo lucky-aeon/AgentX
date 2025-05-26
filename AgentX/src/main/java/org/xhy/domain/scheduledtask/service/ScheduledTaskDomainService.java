@@ -245,4 +245,32 @@ public class ScheduledTaskDomainService {
                 .eq(ScheduledTaskEntity::getStatus, status)
         );
     }
-} 
+
+    /**
+     * 批量删除指定会话的所有定时任务
+     * @param sessionId 会话ID
+     * @param userId 用户ID
+     * @return 删除的任务数量
+     */
+    public int deleteTasksBySessionId(String sessionId, String userId) {
+        return scheduledTaskRepository.delete(
+            Wrappers.<ScheduledTaskEntity>lambdaQuery()
+                .eq(ScheduledTaskEntity::getSessionId, sessionId)
+                .eq(ScheduledTaskEntity::getUserId, userId)
+        );
+    }
+
+    /**
+     * 批量删除指定Agent的所有定时任务
+     * @param agentId Agent ID
+     * @param userId 用户ID
+     * @return 删除的任务数量
+     */
+    public int deleteTasksByAgentId(String agentId, String userId) {
+        return scheduledTaskRepository.delete(
+            Wrappers.<ScheduledTaskEntity>lambdaQuery()
+                .eq(ScheduledTaskEntity::getAgentId, agentId)
+                .eq(ScheduledTaskEntity::getUserId, userId)
+        );
+    }
+}

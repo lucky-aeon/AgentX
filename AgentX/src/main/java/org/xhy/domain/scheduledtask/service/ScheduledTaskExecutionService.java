@@ -73,6 +73,10 @@ public class ScheduledTaskExecutionService {
         queueManager.removeTask(taskId);
         logger.info("任务调度已取消: taskId={}", taskId);
     }
+
+    public void cancelTasks(List<String> taskIds){
+        taskIds.forEach(this::cancelTask);
+    }
     
     /**
      * 重新调度任务（用于任务更新后）
@@ -124,8 +128,50 @@ public class ScheduledTaskExecutionService {
         scheduledTaskDomainService.deleteTask(taskId, userId);
         logger.info("任务已删除: taskId={}, userId={}", taskId, userId);
     }
-    
+
     /**
+     * 批量删除指定会话的所有定时任务
+     * @param sessionId 会话ID
+     * @param userId 用户ID
+     */
+    public void deleteTasksBySessionId(String sessionId, String userId) {
+        // 先获取要删除的任务列表，用于取消队列中的调度
+        List<ScheduledTaskEntity> tasksToDelete = scheduledTaskDomainService.getTasksBySessionId(sessionId)
+                .stream()
+                .filter(task -> userId.equals(task.getUserId()))
+                .toList();
+        
+        // 取消延迟队列中的所有相关任务
+        tasksToDelete.forEach(task -> cancelTask(task.getId()));
+        
+        // 批量删除数据库记录
+        int deletedCount = scheduledTaskDomainService.deleteTasksBySessionId(sessionId, userId);
+        
+        logger.info("已删除会话 {} 的 {} 个定时任务, userId={}", sessionId, deletedCount, userId);
+    }
+
+    /**
+     * 批量删除指定Agent的所有定时任务
+     * @param agentId Agent ID
+     * @param userId 用户ID
+     */
+    public void deleteTasksByAgentId(String agentId, String userId) {
+        // 先获取要删除的任务列表，用于取消队列中的调度
+        List<ScheduledTaskEntity> tasksToDelete = scheduledTaskDomainService.getTasksByAgentId(agentId)
+                .stream()
+                .filter(task -> userId.equals(task.getUserId()))
+                .toList();
+        
+        // 取消延迟队列中的所有相关任务
+        tasksToDelete.forEach(task -> cancelTask(task.getId()));
+        
+        // 批量删除数据库记录
+        int deletedCount = scheduledTaskDomainService.deleteTasksByAgentId(agentId, userId);
+        
+        logger.info("已删除Agent {} 的 {} 个定时任务, userId={}", agentId, deletedCount, userId);
+    }
+    
+    /** 
      * 获取队列状态信息
      * @return 队列大小
      */

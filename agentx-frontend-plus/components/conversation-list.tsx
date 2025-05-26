@@ -19,11 +19,6 @@ import {
   deleteAgentSessionWithToast,
   type SessionDTO 
 } from "@/lib/agent-session-service"
-import { 
-  getScheduledTasksBySessionIdWithToast,
-  deleteScheduledTaskWithToast,
-  type ScheduledTaskDTO 
-} from "@/lib/scheduled-task-service"
 import { toast } from "@/hooks/use-toast"
 
 interface ConversationListProps {
@@ -43,8 +38,6 @@ export function ConversationList({ workspaceId }: ConversationListProps) {
   const [isDeletingSession, setIsDeletingSession] = useState(false)
   const [searchText, setSearchText] = useState("")
   const [isCollapsed, setIsCollapsed] = useState(false)
-  const [relatedTasks, setRelatedTasks] = useState<ScheduledTaskDTO[]>([])
-  const [isLoadingTasks, setIsLoadingTasks] = useState(false)
 
   // 获取会话列表
   const fetchSessions = async () => {
@@ -109,21 +102,36 @@ export function ConversationList({ workspaceId }: ConversationListProps) {
   const handleDeleteSession = async (sessionId: string) => {
     console.log('准备删除会话:', sessionId)
     setSessionToDelete(sessionId)
-    
-    // 查询关联的定时任务（根据sessionId查询）
-    setIsLoadingTasks(true)
+  }
+
+  // 确认删除会话
+  const confirmDeleteSession = async () => {
+    if (!sessionToDelete) return
+
     try {
-      const response = await getScheduledTasksBySessionIdWithToast(sessionId)
+      setIsDeletingSession(true)
+      
+      // 直接删除会话，后端会自动处理级联删除定时任务
+      const response = await deleteAgentSessionWithToast(sessionToDelete)
+
       if (response.code === 200) {
-        setRelatedTasks(response.data || [])
-      } else {
-        setRelatedTasks([])
+        // 重新获取会话列表
+        fetchSessions()
+        // 如果删除的是当前选中的会话，则清除选中状态
+        if (selectedConversationId === sessionToDelete) {
+          setSelectedConversationId(null)
+        }
+        
+        toast({
+          title: "删除成功",
+          description: "会话及其关联的定时任务已删除"
+        })
       }
     } catch (error) {
-      console.error("查询关联定时任务失败:", error)
-      setRelatedTasks([])
+      console.error("删除会话错误:", error)
     } finally {
-      setIsLoadingTasks(false)
+      setIsDeletingSession(false)
+      setSessionToDelete(null)
     }
   }
 
@@ -159,55 +167,6 @@ export function ConversationList({ workspaceId }: ConversationListProps) {
       }
     } catch (error) {
       console.error("重命名会话错误:", error)
-    }
-  }
-
-  // 确认删除会话
-  const confirmDeleteSession = async () => {
-    if (!sessionToDelete) return
-
-    try {
-      setIsDeletingSession(true)
-      
-      // 先删除关联的定时任务
-      if (relatedTasks.length > 0) {
-        console.log(`开始删除 ${relatedTasks.length} 个关联的定时任务`)
-        
-        for (const task of relatedTasks) {
-          try {
-            await deleteScheduledTaskWithToast(task.id)
-            console.log(`定时任务 ${task.id} 删除成功`)
-          } catch (error) {
-            console.error(`删除定时任务 ${task.id} 失败:`, error)
-            // 继续删除其他任务，不中断流程
-          }
-        }
-      }
-      
-      // 然后删除会话
-      const response = await deleteAgentSessionWithToast(sessionToDelete)
-
-      if (response.code === 200) {
-        // 重新获取会话列表
-        fetchSessions()
-        // 如果删除的是当前选中的会话，则清除选中状态
-        if (selectedConversationId === sessionToDelete) {
-          setSelectedConversationId(null)
-        }
-        
-        toast({
-          title: "删除成功",
-          description: relatedTasks.length > 0 
-            ? `会话及其关联的 ${relatedTasks.length} 个定时任务已删除`
-            : "会话已删除"
-        })
-      }
-    } catch (error) {
-      console.error("删除会话错误:", error)
-    } finally {
-      setIsDeletingSession(false)
-      setSessionToDelete(null)
-      setRelatedTasks([])
     }
   }
 
@@ -400,55 +359,26 @@ export function ConversationList({ workspaceId }: ConversationListProps) {
           <DialogHeader>
             <DialogTitle>删除会话</DialogTitle>
             <DialogDescription>
-              {isLoadingTasks ? (
-                "正在检查关联的定时任务..."
-              ) : relatedTasks.length > 0 ? (
-                <>
-                  此会话关联了 <span className="font-semibold text-orange-600">{relatedTasks.length}</span> 个定时任务，删除会话将同时删除这些关联的任务：
-                </>
-              ) : (
-                "确定要删除这个会话吗？此操作无法撤销。"
-              )}
+              "确定要删除这个会话吗？此操作无法撤销。"
             </DialogDescription>
           </DialogHeader>
-          
-          {/* 显示关联的定时任务列表 */}
-          {!isLoadingTasks && relatedTasks.length > 0 && (
-            <div className="max-h-32 overflow-y-auto border rounded-md p-2 bg-gray-50">
-              {relatedTasks.map((task) => (
-                <div key={task.id} className="flex items-center gap-2 py-1 text-sm">
-                  <Clock className="h-3 w-3 text-orange-500" />
-                  <span className="truncate">{task.content}</span>
-                </div>
-              ))}
-            </div>
-          )}
-          
-          {/* 加载状态 */}
-          {isLoadingTasks && (
-            <div className="flex items-center gap-2 py-2">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900"></div>
-              <span className="text-sm text-gray-600">检查关联任务中...</span>
-            </div>
-          )}
           
           <DialogFooter>
             <Button
               variant="outline"
               onClick={() => {
                 setSessionToDelete(null)
-                setRelatedTasks([])
               }}
-              disabled={isDeletingSession || isLoadingTasks}
+              disabled={isDeletingSession}
             >
               取消
             </Button>
             <Button
               variant="destructive"
               onClick={confirmDeleteSession}
-              disabled={isDeletingSession || isLoadingTasks}
+              disabled={isDeletingSession}
             >
-              {isDeletingSession ? "删除中..." : relatedTasks.length > 0 ? "确认删除会话和任务" : "删除"}
+              {isDeletingSession ? "删除中..." : "删除"}
             </Button>
           </DialogFooter>
         </DialogContent>
