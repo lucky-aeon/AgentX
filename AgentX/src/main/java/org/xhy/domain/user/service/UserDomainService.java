@@ -4,11 +4,16 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import dev.langchain4j.service.output.ServiceOutputParser;
 import org.springframework.stereotype.Service;
+import org.xhy.domain.tool.model.ToolEntity;
+import org.xhy.domain.tool.repository.ToolRepository;
 import org.xhy.domain.user.model.UserEntity;
 import org.xhy.domain.user.repository.UserRepository;
 import org.xhy.infrastructure.exception.BusinessException;
 import org.xhy.infrastructure.utils.PasswordUtils;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -18,6 +23,7 @@ public class UserDomainService {
 
     public UserDomainService(UserRepository userRepository) {
         this.userRepository = userRepository;
+
     }
 
     /** 获取用户信息 */
@@ -51,7 +57,7 @@ public class UserDomainService {
         userEntity.setPhone(phone);
         userEntity.setPassword(PasswordUtils.encode(password));
         userEntity.valid();
-        checkAccountExist(userEntity.getEmail(), userEntity.getPhone());
+        checkAccountExist(userEntity.getEmail());
 
         // 生成昵称
         String nickname = generateNickname();
@@ -80,11 +86,10 @@ public class UserDomainService {
     }
 
     /** 检查账号是否存在，邮箱 or 手机号任意值
-     * @param email 邮箱账号
-     * @param phone 手机号账号 */
-    public void checkAccountExist(String email, String phone) {
-        LambdaQueryWrapper<UserEntity> wrapper = Wrappers.<UserEntity>lambdaQuery().eq(UserEntity::getEmail, email).or()
-                .eq(UserEntity::getPhone, phone);
+     * @param email 邮箱账号 */
+    public void checkAccountExist(String email) {
+        LambdaQueryWrapper<UserEntity> wrapper = Wrappers.<UserEntity>lambdaQuery().eq(UserEntity::getEmail, email)
+                .or();
         if (userRepository.exists(wrapper)) {
             throw new BusinessException("账号已存在,不可重复账注册");
         }
@@ -114,5 +119,12 @@ public class UserDomainService {
         user.setPassword(encodedPassword);
 
         userRepository.checkedUpdateById(user);
+    }
+
+    public List<UserEntity> getByIds(List<String> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+        return userRepository.selectByIds(userIds);
     }
 }

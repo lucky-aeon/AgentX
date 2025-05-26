@@ -53,7 +53,7 @@ public class LoginAppService {
     /** 发送注册邮箱验证码 */
     public void sendEmailVerificationCode(String email, String captchaUuid, String captchaCode, String ip) {
         // 检查邮箱是否已存在
-        userDomainService.checkAccountExist(email, null);
+        userDomainService.checkAccountExist(email);
 
         // 生成验证码并发送邮件
         String code = verificationCodeService.generateCode(email, captchaUuid, captchaCode, ip);

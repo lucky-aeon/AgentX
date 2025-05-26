@@ -49,6 +49,20 @@ public class ToolVersionDTO {
 
     private String mcpServerName;
 
+    private Boolean isDelete;
+
+    public void setOffice(Boolean office) {
+        isOffice = office;
+    }
+
+    public Boolean getDelete() {
+        return isDelete;
+    }
+
+    public void setDelete(Boolean delete) {
+        isDelete = delete;
+    }
+
     public String getId() {
         return id;
     }

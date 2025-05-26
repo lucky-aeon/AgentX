@@ -5,7 +5,7 @@ import { UserTool, ToolFunction } from "../../utils/types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Command, Wrench, Clock, Download, ChevronDown, History } from "lucide-react";
+import { Command, Wrench, Clock, Download, ChevronDown, History, AlertTriangle } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -257,7 +257,7 @@ export function UserToolDetailDialog({
   return (
     <>
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] max-h-[80vh] flex flex-col">
+      <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center gap-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-md border">
@@ -276,7 +276,23 @@ export function UserToolDetailDialog({
           </div>
         </DialogHeader>
 
-        <div className="space-y-4 flex-1 overflow-hidden">
+        {/* 删除状态警告 */}
+        {mergedTool.deleted && (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
+              <div className="text-amber-800">
+                <div className="font-medium mb-1">工具来源已被删除</div>
+                <div className="text-sm">
+                  该工具的原始来源已被作者删除，但您仍可以继续使用已安装的版本。
+                  不过，您将无法获得后续的更新和支持。
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="space-y-4">
             {/* 作者和版本信息 */}
             <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
             {authorName && (
@@ -365,7 +381,7 @@ export function UserToolDetailDialog({
                 )}
               </div>
               
-              {formattedDate && (
+            {formattedDate && (
               <div className="flex items-center gap-1">
                 <span>创建于:</span>
                 <span>{formattedDate}</span>
@@ -387,47 +403,46 @@ export function UserToolDetailDialog({
           {toolFunctions.length > 0 && (
             <div className="space-y-2">
               <h3 className="text-sm font-medium">工具功能 ({toolFunctions.length})</h3>
-              <ScrollArea className="h-[200px] pr-4">
-                <div className="space-y-2">
-                    {toolFunctions.map((item: ToolFunction, i: number) => (
-                    <div key={i} className="rounded-md border overflow-hidden">
-                      {/* 工具头部信息 */}
-                      <div className="px-4 py-3 bg-muted/5 flex items-center gap-3">
-                        <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/10">
-                          <Command className="h-3 w-3" />
-                        </div>
-                        <div className="font-medium">{item.name}</div>
+              <div className="space-y-2">
+                {toolFunctions.map((item: ToolFunction, i: number) => (
+                  <div key={i} className="rounded-md border overflow-hidden">
+                    {/* 工具头部信息 */}
+                    <div className="px-4 py-3 bg-muted/5 flex items-center gap-3">
+                      <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/10">
+                        <Command className="h-3 w-3" />
                       </div>
-                      
-                      {/* 工具描述 */}
-                      <div className="px-4 py-2 text-sm text-muted-foreground">
-                        {item.description}
-                      </div>
-                      
-                      {/* 参数列表 - 处理parameters */}
-                      {item.parameters && Object.keys(item.parameters.properties).length > 0 ? (
-                          <div className="px-2 py-2">
-                          <div className="text-xs uppercase font-medium text-muted-foreground mb-2">参数</div>
-                            <div className="space-y-2">
-                            {Object.entries(item.parameters.properties)
-                              .filter(([key]) => !['additionalProperties', 'definitions', 'required'].includes(key))
-                              .map(([key, value]) => {
-                                const cleanKey = key.replace(/^\{/, '');
-                                  const description = typeof value === 'object' && value && 'description' in value 
-                                    ? (value as any).description 
-                                    : null;
-                                return (
-                                    <div key={key} className="flex items-center gap-2">
-                                      <code className="text-xs text-primary bg-primary/5 px-1.5 py-0.5 rounded">{cleanKey}</code>
-                                      {item.parameters && item.parameters.required?.includes(cleanKey) && (
-                                        <Badge variant="outline" className="text-[10px] h-4 px-1">必填</Badge>
-                                      )}
-                                      {description && (
-                                        <span className="text-xs text-muted-foreground ml-2">{description}</span>
-                                      )}
-                                    </div>
-                                );
-                                })}
+                      <div className="font-medium">{item.name}</div>
+                    </div>
+                    
+                    {/* 工具描述 */}
+                    <div className="px-4 py-2 text-sm text-muted-foreground">
+                      {item.description}
+                    </div>
+                    
+                    {/* 参数列表 - 处理parameters */}
+                    {item.parameters && Object.keys(item.parameters.properties).length > 0 ? (
+                        <div className="px-2 py-2">
+                        <div className="text-xs uppercase font-medium text-muted-foreground mb-2">参数</div>
+                          <div className="space-y-2">
+                          {Object.entries(item.parameters.properties)
+                            .filter(([key]) => !['additionalProperties', 'definitions', 'required'].includes(key))
+                            .map(([key, value]) => {
+                              const cleanKey = key.replace(/^\{/, '');
+                                const description = typeof value === 'object' && value && 'description' in value 
+                                  ? (value as any).description 
+                                  : null;
+                              return (
+                                  <div key={key} className="flex items-center gap-2">
+                                    <code className="text-xs text-primary bg-primary/5 px-1.5 py-0.5 rounded">{cleanKey}</code>
+                                    {item.parameters && item.parameters.required?.includes(cleanKey) && (
+                                      <Badge variant="outline" className="text-[10px] h-4 px-1">必填</Badge>
+                                    )}
+                                    {description && (
+                                      <span className="text-xs text-muted-foreground ml-2">{description}</span>
+                                    )}
+                                </div>
+                              );
+                              })}
                           </div>
                         </div>
                       ) : item.inputSchema && Object.keys(item.inputSchema.properties).length > 0 ? (
@@ -446,15 +461,14 @@ export function UserToolDetailDialog({
                           </div>
                         </div>
                       ) : null}
-                    </div>
-                  ))}
-                </div>
-              </ScrollArea>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
 
-        <DialogFooter className="flex justify-between items-center mt-4">
+        <DialogFooter className="flex justify-between items-center">
             {/* 左侧操作按钮 */}
             <div className="flex gap-2">
               {/* 显示删除/卸载按钮 */}

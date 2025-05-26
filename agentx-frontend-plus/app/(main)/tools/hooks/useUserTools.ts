@@ -88,7 +88,7 @@ export function useUserTools() {
           
         // 转换用户安装的工具
         apiInstalledTools = toolsList.map((tool: any) => {
-          return {
+          const processedTool = {
             ...tool,
             id: tool.id,
             toolId: tool.toolId || tool.id,
@@ -104,9 +104,21 @@ export function useUserTools() {
             current_version: tool.version || "0.0.1",
             isOwner: false, // 安装的工具不是用户创建的
             status: tool.status || "active",
+            deleted: tool.delete || tool.deleted || false, // 映射后端的delete字段到前端的deleted字段
             createdAt: tool.createdAt,
             updatedAt: tool.updatedAt
           } as UserTool;
+          
+          // 调试日志：检查deleted字段
+          if (tool.delete || tool.deleted) {
+            console.log(`工具 "${tool.name}" 被标记为已删除:`, {
+              originalDelete: tool.delete,
+              originalDeleted: tool.deleted,
+              processedDeleted: processedTool.deleted
+            });
+          }
+          
+          return processedTool;
         });
         
         // 设置用户安装的工具

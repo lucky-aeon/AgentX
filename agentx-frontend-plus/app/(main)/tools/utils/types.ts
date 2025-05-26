@@ -61,6 +61,7 @@ export interface UserTool {
   };
   usageCount?: number;
   isOwner?: boolean;       // 是否为用户自己创建的工具
+  deleted?: boolean;       // 工具来源是否被删除（新增）
   createdAt: string;
   updatedAt: string;
 }

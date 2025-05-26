@@ -16,6 +16,7 @@ import org.xhy.domain.agent.service.AgentWorkspaceDomainService;
 import org.xhy.infrastructure.exception.ParamValidationException;
 import org.xhy.domain.agent.constant.PublishStatus;
 import org.xhy.interfaces.dto.agent.request.*;
+import org.xhy.domain.scheduledtask.service.ScheduledTaskExecutionService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,11 +29,14 @@ public class AgentAppService {
 
     private final AgentDomainService agentServiceDomainService;
     private final AgentWorkspaceDomainService agentWorkspaceDomainService;
+    private final ScheduledTaskExecutionService scheduledTaskExecutionService;
 
     public AgentAppService(AgentDomainService agentServiceDomainService,
-            AgentWorkspaceDomainService agentWorkspaceDomainService) {
+            AgentWorkspaceDomainService agentWorkspaceDomainService,
+            ScheduledTaskExecutionService scheduledTaskExecutionService) {
         this.agentServiceDomainService = agentServiceDomainService;
         this.agentWorkspaceDomainService = agentWorkspaceDomainService;
+        this.scheduledTaskExecutionService = scheduledTaskExecutionService;
     }
 
     /** 创建新Agent */
@@ -102,7 +106,11 @@ public class AgentAppService {
     }
 
     /** 删除Agent */
+    @Transactional
     public void deleteAgent(String agentId, String userId) {
+        // 先删除Agent关联的定时任务（包括取消延迟队列中的任务）
+        scheduledTaskExecutionService.deleteTasksByAgentId(agentId, userId);
+        // 再删除Agent本身
         agentServiceDomainService.deleteAgent(agentId, userId);
     }
 

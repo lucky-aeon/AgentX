@@ -89,7 +89,7 @@ public class AgentVersionEntity extends BaseEntity {
 
     /** 预先设置的工具参数 */
     @TableField(value = "tool_preset_params", typeHandler = MapConverter.class)
-    private Map<String, Map<String, String>> toolPresetParams;
+    private Map<String, Map<String, Map<String, String>>> toolPresetParams;
 
     /** 无参构造函数 */
     public AgentVersionEntity() {
@@ -276,6 +276,15 @@ public class AgentVersionEntity extends BaseEntity {
         // 设置初始状态为审核中
         version.setPublishStatus(PublishStatus.REVIEWING.getCode());
         version.setReviewTime(now);
+        version.setToolPresetParams(agent.getToolPresetParams());
         return version;
+    }
+
+    public Map<String, Map<String, Map<String, String>>> getToolPresetParams() {
+        return toolPresetParams;
+    }
+
+    public void setToolPresetParams(Map<String, Map<String, Map<String, String>>> toolPresetParams) {
+        this.toolPresetParams = toolPresetParams;
     }
 }

@@ -145,6 +145,23 @@ CREATE TABLE agent_tasks (
     deleted_at TIMESTAMP
 );
 
+-- 定时任务表
+CREATE TABLE scheduled_tasks (
+    id VARCHAR(36) PRIMARY KEY,
+    user_id VARCHAR(36) NOT NULL,
+    agent_id VARCHAR(36) NOT NULL,
+    session_id VARCHAR(36) NOT NULL,
+    content TEXT NOT NULL,
+    repeat_type VARCHAR(20) NOT NULL,
+    repeat_config JSONB,
+    status VARCHAR(20) DEFAULT 'ACTIVE',
+    last_execute_time TIMESTAMP,
+    next_execute_time TIMESTAMP,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP
+);
+
 CREATE TABLE users (
                              id varchar(36) PRIMARY KEY,
                              nickname varchar(255) NOT NULL,
@@ -245,6 +262,10 @@ CREATE INDEX idx_models_provider_id ON models(provider_id);
 CREATE INDEX idx_models_user_id ON models(user_id);
 CREATE INDEX idx_providers_user_id ON providers(user_id);
 CREATE INDEX idx_tools_user_id ON tools(user_id);
+CREATE INDEX idx_scheduled_tasks_user_id ON scheduled_tasks(user_id);
+CREATE INDEX idx_scheduled_tasks_agent_id ON scheduled_tasks(agent_id);
+CREATE INDEX idx_scheduled_tasks_session_id ON scheduled_tasks(session_id);
+CREATE INDEX idx_scheduled_tasks_status ON scheduled_tasks(status);
 
 
 -- 添加表和列的注释
@@ -371,6 +392,20 @@ COMMENT ON COLUMN agent_tasks.task_result IS '任务结果';
 COMMENT ON COLUMN agent_tasks.created_at IS '创建时间';
 COMMENT ON COLUMN agent_tasks.updated_at IS '更新时间';
 COMMENT ON COLUMN agent_tasks.deleted_at IS '逻辑删除时间';
+
+COMMENT ON TABLE scheduled_tasks IS '定时任务实体类';
+COMMENT ON COLUMN scheduled_tasks.id IS '定时任务唯一ID';
+COMMENT ON COLUMN scheduled_tasks.user_id IS '用户ID';
+COMMENT ON COLUMN scheduled_tasks.agent_id IS '关联的Agent ID';
+COMMENT ON COLUMN scheduled_tasks.session_id IS '关联的会话ID';
+COMMENT ON COLUMN scheduled_tasks.content IS '任务内容';
+COMMENT ON COLUMN scheduled_tasks.repeat_type IS '重复类型：NONE-不重复, DAILY-每天, WEEKLY-每周, MONTHLY-每月, WORKDAYS-工作日, CUSTOM-自定义';
+COMMENT ON COLUMN scheduled_tasks.repeat_config IS '重复配置，JSON格式存储具体的重复规则';
+COMMENT ON COLUMN scheduled_tasks.status IS '任务状态：ACTIVE-活跃, PAUSED-暂停, COMPLETED-已完成';
+COMMENT ON COLUMN scheduled_tasks.last_execute_time IS '上次执行时间';
+COMMENT ON COLUMN scheduled_tasks.created_at IS '创建时间';
+COMMENT ON COLUMN scheduled_tasks.updated_at IS '更新时间';
+COMMENT ON COLUMN scheduled_tasks.deleted_at IS '逻辑删除时间';
 
 COMMENT ON COLUMN users.id IS '主键';
 COMMENT ON COLUMN users.nickname IS '昵称';

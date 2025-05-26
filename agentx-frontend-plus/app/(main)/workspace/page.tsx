@@ -6,7 +6,6 @@ import { Sidebar } from "@/components/sidebar"
 import { ChatPanel } from "@/components/chat-panel"
 import { EmptyState } from "@/components/empty-state"
 import { ConversationList } from "@/components/conversation-list"
-import { TaskHistory } from "@/components/task-history"
 import { useWorkspace } from "@/contexts/workspace-context"
 import { getWorkspaceAgents, deleteWorkspaceAgent, deleteWorkspaceAgentWithToast } from "@/lib/agent-service"
 import { getAgentSessions, createAgentSession, type SessionDTO, getAgentSessionsWithToast, createAgentSessionWithToast, updateAgentSessionWithToast } from "@/lib/agent-session-service"
@@ -31,6 +30,7 @@ import {
 
 // 导入模型选择对话框组件
 import { ModelSelectDialog } from "@/components/model-select-dialog"
+import { ScheduledTaskPanel } from "@/components/scheduled-task-panel"
 import { AgentType } from "@/types/agent"
 import { Metadata } from "next"
 import { redirect } from "next/navigation"
@@ -48,8 +48,8 @@ export default function WorkspacePage() {
   const [agentToDelete, setAgentToDelete] = useState<Agent | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
   
-  // 任务历史相关状态
-  const [showTaskHistory, setShowTaskHistory] = useState(false)
+  // 定时任务面板相关状态
+  const [showScheduledTaskPanel, setShowScheduledTaskPanel] = useState(false)
   
   // 模型选择相关状态
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null)
@@ -294,16 +294,18 @@ export default function WorkspacePage() {
             <div className="flex-1 flex flex-col">
               <ChatPanel 
                 conversationId={selectedConversationId}
-                onToggleTaskHistory={() => setShowTaskHistory(!showTaskHistory)}
-                showTaskHistory={showTaskHistory}
                 isFunctionalAgent={isFunctionalAgent}
                 agentName={currentAgent?.name || "AI助手"}
+                onToggleScheduledTaskPanel={() => setShowScheduledTaskPanel(!showScheduledTaskPanel)}
               />
             </div>
-            {showTaskHistory && isFunctionalAgent && (
-              <div className="w-[350px] border-l">
-                <TaskHistory onClose={() => setShowTaskHistory(false)} />
-              </div>
+            {showScheduledTaskPanel && isFunctionalAgent && (
+              <ScheduledTaskPanel 
+                isOpen={showScheduledTaskPanel}
+                onClose={() => setShowScheduledTaskPanel(false)}
+                conversationId={selectedConversationId}
+                agentId={selectedWorkspaceId || undefined}
+              />
             )}
           </div>
         )}

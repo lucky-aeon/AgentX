@@ -1,8 +1,9 @@
 import { UserTool } from "../../utils/types";
-import { Download, Wrench } from "lucide-react";
+import { Download, Wrench, Info } from "lucide-react";
 import { UserToolCard } from "../cards/UserToolCard";
 import { ToolCardSkeleton } from "../shared/ToolCardSkeleton";
 import { EmptyToolsState } from "../shared/EmptyToolsState";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface InstalledToolsSectionProps {
   installedTools: UserTool[];
@@ -17,6 +18,9 @@ export function InstalledToolsSection({
   onToolClick,
   onDeleteClick
 }: InstalledToolsSectionProps) {
+  // 检查是否有被删除的工具
+  const hasDeletedTools = installedTools.some(tool => tool.deleted);
+
   return (
     <div className="mb-8 bg-white p-6 rounded-lg shadow-sm border border-gray-100">
       <div className="flex items-center justify-between mb-5">
@@ -30,6 +34,16 @@ export function InstalledToolsSection({
           <p className="text-sm text-muted-foreground mt-1">管理您从工具市场安装的工具</p>
         </div>
       </div>
+      
+      {/* 删除状态提示 */}
+      {hasDeletedTools && (
+        <Alert className="mb-4 border-amber-200 bg-amber-50">
+          <Info className="h-4 w-4 text-amber-600" />
+          <AlertDescription className="text-amber-800">
+            部分工具显示"来源已删除"，表示该工具的原始来源已被作者删除，但您仍可继续使用已安装的版本。
+          </AlertDescription>
+        </Alert>
+      )}
       
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-4">
