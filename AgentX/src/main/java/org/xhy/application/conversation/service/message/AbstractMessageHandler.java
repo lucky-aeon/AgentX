@@ -11,6 +11,7 @@ import dev.langchain4j.service.TokenStream;
 import dev.langchain4j.service.tool.ToolProvider;
 import dev.langchain4j.store.memory.chat.InMemoryChatMemoryStore;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.xhy.application.conversation.dto.AgentChatResponse;
 import org.xhy.application.conversation.service.handler.context.AgentPromptTemplates;
 import org.xhy.application.conversation.service.handler.context.ChatContext;
@@ -21,7 +22,6 @@ import org.xhy.domain.conversation.service.MessageDomainService;
 import org.xhy.infrastructure.llm.LLMServiceFactory;
 import org.xhy.infrastructure.transport.MessageTransport;
 import org.xhy.infrastructure.exception.StreamInterruptedException;
-import org.xhy.infrastructure.utils.LogUtils;
 
 import java.util.Collections;
 import java.util.List;
@@ -30,7 +30,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public abstract class AbstractMessageHandler {
 
-    private static final Logger log = LogUtils.getLogger(AbstractMessageHandler.class);
+    private static final Logger log = LoggerFactory.getLogger(AbstractMessageHandler.class);
 
     /** 连接超时时间（毫秒） */
     protected static final long CONNECTION_TIMEOUT = 3000000L;
@@ -105,10 +105,11 @@ public abstract class AbstractMessageHandler {
 
     /** 子类实现具体的聊天处理逻辑 */
     protected <T> void processChat(Agent agent, MessageTransport<T> transport, ChatContext chatContext,
-                                   MessageEntity userMessageEntity, MessageEntity llmEntity) {
+            MessageEntity userMessageEntity, MessageEntity llmEntity) {
         String sessionId = chatContext.getSessionId();
         AtomicReference<StreamStateManager.StreamState> stateRef = StreamStateManager.getStateRef(sessionId);
-        if (stateRef == null) return;
+        if (stateRef == null)
+            return;
 
         TokenStream tokenStream = agent.chat(chatContext.getUserMessage());
 
@@ -120,7 +121,7 @@ public abstract class AbstractMessageHandler {
 
             try {
                 state.partialContent.append(reply);
-                transport.sendMessage((T)state.connection, AgentChatResponse.build(reply, MessageType.TEXT));
+                transport.sendMessage((T) state.connection, AgentChatResponse.build(reply, MessageType.TEXT));
             } catch (Exception e) {
                 state.isActive = false;
                 throw new StreamInterruptedException(state.partialContent.toString());
@@ -129,7 +130,8 @@ public abstract class AbstractMessageHandler {
 
         tokenStream.onCompleteResponse(chatResponse -> {
             StreamStateManager.StreamState state = stateRef.get();
-            if (state == null || state.isCompleted) return;
+            if (state == null || state.isCompleted)
+                return;
 
             try {
                 if (state.isActive) {
@@ -139,18 +141,19 @@ public abstract class AbstractMessageHandler {
                     messageDomainService.updateMessage(userMessageEntity);
                     messageDomainService.saveMessageAndUpdateContext(Collections.singletonList(llmEntity),
                             chatContext.getContextEntity());
-                    transport.sendEndMessage((T)state.connection, AgentChatResponse.buildEndMessage(MessageType.TEXT));
+                    transport.sendEndMessage((T) state.connection, AgentChatResponse.buildEndMessage(MessageType.TEXT));
                 }
             } finally {
                 state.isCompleted = true;
-                transport.completeConnection((T)state.connection);
+                transport.completeConnection((T) state.connection);
                 StreamStateManager.removeState(sessionId);
             }
         });
 
         tokenStream.onError(throwable -> {
             StreamStateManager.StreamState state = stateRef.get();
-            if (state == null || state.isCompleted) return;
+            if (state == null || state.isCompleted)
+                return;
 
             try {
                 if (throwable instanceof StreamInterruptedException) {
@@ -165,11 +168,11 @@ public abstract class AbstractMessageHandler {
                         log.debug("已清空保存内容，目前的内容为：{}", state.partialContent);
                     }
                 } else {
-                    transport.handleError((T)state.connection, throwable);
+                    transport.handleError((T) state.connection, throwable);
                 }
             } finally {
                 state.isCompleted = true;
-                transport.completeConnection((T)state.connection);
+                transport.completeConnection((T) state.connection);
                 StreamStateManager.removeState(sessionId);
             }
         });
@@ -181,7 +184,7 @@ public abstract class AbstractMessageHandler {
             }
 
             if (state.partialContent.length() > 0) {
-                transport.sendMessage((T)state.connection, AgentChatResponse.buildEndMessage(MessageType.TEXT));
+                transport.sendMessage((T) state.connection, AgentChatResponse.buildEndMessage(MessageType.TEXT));
                 MessageEntity preToolAiMessage = createLlmMessage(chatContext);
                 preToolAiMessage.setContent(state.partialContent.toString());
                 messageDomainService.saveMessageAndUpdateContext(Collections.singletonList(preToolAiMessage),
@@ -195,7 +198,8 @@ public abstract class AbstractMessageHandler {
             toolMessage.setContent(message);
             messageDomainService.saveMessageAndUpdateContext(Collections.singletonList(toolMessage),
                     chatContext.getContextEntity());
-            transport.sendMessage((T)state.connection, AgentChatResponse.buildEndMessage(message, MessageType.TOOL_CALL));
+            transport.sendMessage((T) state.connection,
+                    AgentChatResponse.buildEndMessage(message, MessageType.TOOL_CALL));
         });
 
         tokenStream.start();
