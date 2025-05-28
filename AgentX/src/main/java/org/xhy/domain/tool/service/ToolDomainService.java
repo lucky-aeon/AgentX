@@ -4,16 +4,22 @@ import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.xhy.domain.tool.constant.ToolStatus;
 import org.xhy.domain.tool.model.ToolEntity;
 import org.xhy.domain.tool.model.ToolVersionEntity;
+import org.xhy.domain.tool.model.UserToolEntity;
 import org.xhy.domain.tool.repository.ToolRepository;
 import org.xhy.domain.tool.repository.ToolVersionRepository;
+import org.xhy.domain.tool.repository.UserToolRepository;
 import org.xhy.infrastructure.exception.BusinessException;
 
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /** 工具领域服务 */
 @Service
@@ -21,13 +27,15 @@ public class ToolDomainService {
 
     private final ToolRepository toolRepository;
     private final ToolVersionRepository toolVersionRepository;
-    private final ToolStateService toolStateService;
+    private final ToolStateDomainService toolStateService;
+    private final UserToolRepository userToolRepository;
 
     public ToolDomainService(ToolRepository toolRepository, ToolVersionRepository toolVersionRepository,
-            ToolStateService toolStateService) {
+            ToolStateDomainService toolStateService, UserToolRepository userToolRepository) {
         this.toolRepository = toolRepository;
         this.toolVersionRepository = toolVersionRepository;
         this.toolStateService = toolStateService;
+        this.userToolRepository = userToolRepository;
     }
 
     /** 创建工具
@@ -39,6 +47,9 @@ public class ToolDomainService {
         // 设置初始状态
         toolEntity.setStatus(ToolStatus.WAITING_REVIEW);
 
+        String mcpServerName = this.getMcpServerName(toolEntity);
+
+        toolEntity.setMcpServerName(mcpServerName);
         // 保存工具
         toolRepository.checkInsert(toolEntity);
 
@@ -66,8 +77,8 @@ public class ToolDomainService {
 
     public ToolEntity updateApprovedToolStatus(String toolId, ToolStatus status) {
 
-        LambdaUpdateWrapper<ToolEntity> wrapper = Wrappers.<ToolEntity>lambdaUpdate()
-                .eq(ToolEntity::getId, toolId).set(ToolEntity::getStatus, status);
+        LambdaUpdateWrapper<ToolEntity> wrapper = Wrappers.<ToolEntity>lambdaUpdate().eq(ToolEntity::getId, toolId)
+                .set(ToolEntity::getStatus, status);
         toolRepository.checkedUpdate(wrapper);
         return toolRepository.selectById(toolId);
     }
@@ -86,6 +97,8 @@ public class ToolDomainService {
                 || (toolEntity.getInstallCommand() != null
                         && !toolEntity.getInstallCommand().equals(oldTool.getInstallCommand()))) {
             needStateTransition = true;
+            String mcpServerName = this.getMcpServerName(toolEntity);
+            toolEntity.setMcpServerName(mcpServerName);
             toolEntity.setStatus(ToolStatus.WAITING_REVIEW);
         } else {
             // 只修改了信息，设置为人工审核状态
@@ -115,8 +128,17 @@ public class ToolDomainService {
         // 删除工具版本
         Wrapper<ToolVersionEntity> versionWrapper = Wrappers.<ToolVersionEntity>lambdaQuery()
                 .eq(ToolVersionEntity::getToolId, toolId);
+
+        // 删除用户工具
+        Wrapper<UserToolEntity> userToolWrapper = Wrappers.<UserToolEntity>lambdaQuery().eq(UserToolEntity::getToolId,
+                toolId);
+
         toolRepository.checkedDelete(wrapper);
         toolVersionRepository.delete(versionWrapper);
+        userToolRepository.delete(userToolWrapper);
+        // 这里应该删除 mcp community github repo，但是删不干净，索性就不删
+        // 用户可以自行修改工具名称，修改后之前的工具名称不记录，因此就算删除，之前的仓库无记录删不了
+
     }
 
     public ToolEntity getTool(String toolId) {
@@ -129,12 +151,30 @@ public class ToolDomainService {
     }
 
     public ToolEntity updateFailedToolStatus(String toolId, ToolStatus failedStepStatus, String rejectReason) {
-        LambdaUpdateWrapper<ToolEntity> wrapper = Wrappers.<ToolEntity>lambdaUpdate()
-                .eq(ToolEntity::getId, toolId)
-                .set(ToolEntity::getFailedStepStatus, failedStepStatus)
-                .set(ToolEntity::getRejectReason, rejectReason)
+        LambdaUpdateWrapper<ToolEntity> wrapper = Wrappers.<ToolEntity>lambdaUpdate().eq(ToolEntity::getId, toolId)
+                .set(ToolEntity::getFailedStepStatus, failedStepStatus).set(ToolEntity::getRejectReason, rejectReason)
                 .set(ToolEntity::getStatus, ToolStatus.FAILED);
         toolRepository.checkedUpdate(wrapper);
         return toolRepository.selectById(toolId);
+    }
+
+    private String getMcpServerName(ToolEntity tool) {
+        if (tool == null) {
+            return null;
+        }
+        Map<String, Object> installCommand = tool.getInstallCommand();
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> mcpServers = (Map<String, Object>) installCommand.get("mcpServers");
+        if (mcpServers == null || mcpServers.isEmpty()) {
+            throw new BusinessException("工具ID: " + tool.getId() + " 安装命令中mcpServers为空。");
+        }
+
+        // 获取第一个key作为工具名称
+        String toolName = mcpServers.keySet().iterator().next();
+        if (toolName == null || toolName.isEmpty()) {
+            throw new BusinessException("工具ID: " + tool.getId() + " 无法从安装命令中获取工具名称。");
+        }
+        return toolName;
     }
 }

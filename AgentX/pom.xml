@@ -28,7 +28,7 @@
         <fastjson.version>2.0.47</fastjson.version>
         <hutool.version>5.8.26</hutool.version>
         <httpclient.version>4.5.14</httpclient.version>
-        <langchain4j.version>1.0.0-beta3</langchain4j.version>
+        <langchain4j.version>1.0.1-beta7-SNAPSHOT</langchain4j.version>
         <spotless.version>2.37.0</spotless.version>
     </properties>
 
@@ -39,6 +39,13 @@
             <url>https://repo.maven.apache.org/maven2</url>
         </pluginRepository>
     </pluginRepositories>
+
+    <repositories>
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
+    </repositories>
 
     <dependencies>
         <!-- Spring Boot 依赖 -->
@@ -130,30 +137,25 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>dev.langchain4j</groupId>
+            <groupId>com.github.lucky-aeon.langchain4j</groupId>
             <artifactId>langchain4j-anthropic</artifactId>
             <version>${langchain4j.version}</version>
         </dependency>
         <dependency>
-            <groupId>dev.langchain4j</groupId>
+            <groupId>com.github.lucky-aeon.langchain4j</groupId>
             <artifactId>langchain4j-open-ai</artifactId>
             <version>${langchain4j.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>dev.langchain4j</groupId>
+            <groupId>com.github.lucky-aeon.langchain4j</groupId>
             <artifactId>langchain4j</artifactId>
             <version>${langchain4j.version}</version>
         </dependency>
 
-        <dependency>
-            <groupId>dev.langchain4j</groupId>
-            <artifactId>langchain4j-embeddings-all-minilm-l6-v2</artifactId>
-            <version>${langchain4j.version}</version>
-        </dependency>
 
         <dependency>
-            <groupId>dev.langchain4j</groupId>
+            <groupId>com.github.lucky-aeon.langchain4j</groupId>
             <artifactId>langchain4j-mcp</artifactId>
             <version>${langchain4j.version}</version>
         </dependency>

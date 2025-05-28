@@ -28,9 +28,9 @@ import java.util.concurrent.TimeUnit;
 
 /** 工具状态流转服务。 管理工具在不同状态间的转换，并执行各状态对应的处理逻辑。 */
 @Service
-public class ToolStateService {
+public class ToolStateDomainService {
 
-    private static final Logger logger = LoggerFactory.getLogger(ToolStateService.class);
+    private static final Logger logger = LoggerFactory.getLogger(ToolStateDomainService.class);
 
     private final ToolRepository toolRepository;
     private final GitHubService gitHubService;
@@ -43,7 +43,7 @@ public class ToolStateService {
      * 
      * @param toolRepository 工具仓库，用于数据持久化。
      * @param gitHubService GitHub服务，用于与GitHub API交互。 */
-    public ToolStateService(ToolRepository toolRepository, GitHubService gitHubService,
+    public ToolStateDomainService(ToolRepository toolRepository, GitHubService gitHubService,
             MCPGatewayService mcpGatewayService) {
         this.toolRepository = toolRepository;
         this.gitHubService = gitHubService;
@@ -68,7 +68,7 @@ public class ToolStateService {
     public void init() {
         // 注册基础状态处理器
         registerProcessor(new WaitingReviewProcessor());
-        registerProcessor(new GithubUrlValidateProcessor());
+        registerProcessor(new GithubUrlValidateProcessor(gitHubService));
         // 移除或保留 DeployingProcessor 和 FetchingToolsProcessor 取决于它们是否还在流程中
         registerProcessor(new DeployingProcessor(mcpGatewayService));
         registerProcessor(new FetchingToolsProcessor(mcpGatewayService));
@@ -110,26 +110,31 @@ public class ToolStateService {
     /** 处理人工审核完成的工具。 由外部调用（如后台管理系统）来驱动人工审核后的状态流转。
      * 
      * @param tool 要处理的工具。
-     * @param approved 审核结果，true表示批准，false表示拒绝。 */
+     * @param approved 审核结果，true表示批准，false表示拒绝。
+     * @return 返回审核后的工具ID，方便调用方进行后续处理 */
     @Transactional // 确保状态更新和可能的后续操作在事务中
-    public void manualReviewComplete(ToolEntity tool, boolean approved) {
+    public String manualReviewComplete(ToolEntity tool, boolean approved) {
         if (tool == null) {
             throw new BusinessException("工具不存在");
         }
         String toolId = tool.getId();
         if (tool.getStatus() != ToolStatus.MANUAL_REVIEW) {
             logger.warn("工具ID: {} 当前状态不是MANUAL_REVIEW ({})，忽略人工审核完成操作。", toolId, tool.getStatus());
-            return;
+            return toolId;
         }
 
         if (approved) {
-            tool.setStatus(ToolStatus.PUBLISHING); // 审核通过，进入发布状态
-            logger.info("工具ID: {} 人工审核通过，状态更新为 PUBLISHING。", toolId);
+            tool.setStatus(ToolStatus.APPROVED); // 审核通过，进入发布状态
+            toolRepository.updateById(tool); // 保存APPROVED状态
+            logger.info("工具ID: {} 人工审核通过，状态更新为 APPROVED。", toolId);
             submitToolForProcessing(tool);
         } else {
             tool.setStatus(ToolStatus.FAILED);
+            toolRepository.updateById(tool);
             logger.info("工具ID: {} 人工审核失败，状态更新为 FAILED。", toolId);
         }
+
+        return toolId;
     }
 
     /** 核心状态处理逻辑。 此方法在executorService的线程中异步执行。
@@ -148,11 +153,6 @@ public class ToolStateService {
 
         try {
             processor.process(toolEntity);
-
-            if (initialStatus == ToolStatus.PUBLISHING) {
-                logger.info("工具ID: {} 的 PUBLISHING 状态处理器执行完成。", toolEntity.getId());
-                return;
-            }
 
             ToolStatus nextStatusCandidate = processor.getNextStatus();
 
@@ -173,10 +173,7 @@ public class ToolStateService {
         } catch (Exception e) {
             logger.error("处理工具ID: {} 的状态 {} 时发生错误: {}", toolEntity.getId(), initialStatus, e.getMessage(), e);
 
-            ToolStatus failureStatus = (initialStatus == ToolStatus.PUBLISHING)
-                    ? ToolStatus.PUBLISH_FAILED
-                    : ToolStatus.FAILED;
-            toolEntity.setStatus(failureStatus);
+            toolEntity.setStatus(ToolStatus.FAILED);
             toolEntity.setFailedStepStatus(initialStatus);
             toolEntity.setRejectReason("状态处理失败: " + e.getMessage());
 

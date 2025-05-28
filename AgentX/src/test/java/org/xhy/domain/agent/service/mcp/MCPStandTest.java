@@ -65,29 +65,37 @@ public class MCPStandTest {
         }
 
         // 3) 构造 OpenAI 聊天模型
-        OpenAiChatModel model = OpenAiChatModel.builder().apiKey(System.getenv("API_KEY")).modelName("gpt-4o-mini")
-                .baseUrl("https://api.ttapi.io/v1").logRequests(true).timeout(Duration.ofHours(1)).logResponses(true)
-                .build();
+        // OpenAiChatModel model =
+        // OpenAiChatModel.builder().apiKey(System.getenv("API_KEY")).modelName("gpt-4o-mini")
+        // .baseUrl("https://api.ttapi.io/v1").logRequests(true).timeout(Duration.ofHours(1)).logResponses(true)
+        // .build();
+        //
+        // // 4) 把多个 McpClient 注入到同一个 ToolProvider
+        McpToolProvider provider = McpToolProvider.builder().mcpClients(mcpClients).build();
 
-        // 4) 把多个 McpClient 注入到同一个 ToolProvider
-        ToolProvider toolProvider = McpToolProvider.builder().mcpClients(mcpClients).build();
-
-        // 5) 构造聊天记忆并初始化 Agent
-        MessageWindowChatMemory memory = MessageWindowChatMemory.builder().maxMessages(1000)
-                .chatMemoryStore(new InMemoryChatMemoryStore()) // 历史消息
-                .build();
-        memory.add(new SystemMessage(
-                "你是一个用于创建网站的助手，你的作用是根据用户的要求生成对应的 html，css，js代码并且写入对应目录下，保证结构目录清晰。创建完对应的文件后执行对应的部署工具进行部署，上下文信息：1.部署账号密码为：xx / xxx.目录为：etc/proxy/code/xhy。"));
-
-        var agent = AiServices.builder(AgentStandTest.class).chatLanguageModel(model).chatMemory(memory)
-                .toolProvider(toolProvider).build();
-
-        // 6) 调用 Agent，一次生成并部署页面
-        AiMessage reply = agent.chat("程序员风格 html 页面，有以下信息：1.社区：code.xhyovo.cn，注册人数 400+。2.b 站：xhyovo");
-        System.out.println("最终回复： " + (reply.hasToolExecutionRequests() ? "有工具调用" : reply.text()));
-
-        // 7) 等待 SSE 输出刷完，再关闭所有订阅
-        Thread.sleep(5_000);
-        subscribers.forEach(RawSseSubscriber::close);
+        //
+        // // 5) 构造聊天记忆并初始化 Agent
+        // MessageWindowChatMemory memory =
+        // MessageWindowChatMemory.builder().maxMessages(1000)
+        // .chatMemoryStore(new InMemoryChatMemoryStore()) // 历史消息
+        // .build();
+        // memory.add(new SystemMessage(
+        // "你是一个用于创建网站的助手，你的作用是根据用户的要求生成对应的
+        // html，css，js代码并且写入对应目录下，保证结构目录清晰。创建完对应的文件后执行对应的部署工具进行部署，上下文信息：1.部署账号密码为：xx /
+        // xxx.目录为：etc/proxy/code/xhy。"));
+        //
+        // var agent =
+        // AiServices.builder(AgentStandTest.class).chatLanguageModel(model).chatMemory(memory)
+        // .toolProvider(toolProvider).build();
+        //
+        // // 6) 调用 Agent，一次生成并部署页面
+        // AiMessage reply = agent.chat("程序员风格 html 页面，有以下信息：1.社区：code.xhyovo.cn，注册人数
+        // 400+。2.b 站：xhyovo");
+        // System.out.println("最终回复： " + (reply.hasToolExecutionRequests() ? "有工具调用" :
+        // reply.text()));
+        //
+        // // 7) 等待 SSE 输出刷完，再关闭所有订阅
+        // Thread.sleep(5_000);
+        // subscribers.forEach(RawSseSubscriber::close);
     }
 }

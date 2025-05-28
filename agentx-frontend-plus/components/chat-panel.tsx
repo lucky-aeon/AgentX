@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { streamChat } from "@/lib/api"
-import { toast } from "@/hooks/use-toast"
+import { toast } from "@/components/ui/use-toast"
 import { getSessionMessages, getSessionMessagesWithToast, type MessageDTO } from "@/lib/session-message-service"
 import { getSessionTasksWithToast } from "@/lib/task-service"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -115,6 +115,9 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
     type: MessageType.TEXT as MessageType,
     taskId: null as string | null
   });
+  
+  // 新增：AbortController引用
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // 在组件顶部添加状态来跟踪已完成的TEXT消息
   const [completedTextMessages, setCompletedTextMessages] = useState<Set<string>>(new Set());
@@ -536,18 +539,59 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
 
     // 添加调试信息
     console.log("当前聊天模式:", agentType === 2 ? "功能性Agent" : "普通对话")
-    
+
+    // 保存当前输入，并清空输入框
     const userMessage = input.trim()
     setInput("")
-    setIsTyping(true)
-    setIsThinking(true) // 设置思考状态
-    setCurrentAssistantMessage(null) // 重置助手消息状态
-    scrollToBottom() // 用户发送新消息时强制滚动到底部
+
+    // 如果当前有正在进行的消息处理，终止它并保留已生成的内容
+    if(isTyping) {
+      console.log("检测到正在输出的消息，终止当前请求");
+      
+      // 终止当前请求
+      if(abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
+      
+      // 完成当前消息（如果有累积的内容）
+      if(messageContentAccumulator.current.content) {
+        // 生成当前消息序列的唯一ID，使用唯一标记避免重复
+        const interruptedMessageTime = Date.now();
+        const currentMessageId = `assistant-interrupted-${interruptedMessageTime}`;
+        const messageContent = messageContentAccumulator.current.content;
+        
+        console.log("保存未完成的消息:", currentMessageId);
+        
+        // 完成当前消息，添加标记表示这是被中断的消息
+        finalizeMessage(currentMessageId, {
+          ...messageContentAccumulator.current,
+          content: messageContent
+        });
+        
+        // 等待一小段时间确保消息已保存
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      
+      // 立即重置状态
+      setIsTyping(false);
+      setIsThinking(false);
+      resetMessageAccumulator();
+      
+      // 等待一小段时间确保状态已重置
+      await new Promise(resolve => setTimeout(resolve, 50));
+    }
     
-    // 重置所有状态
-    setCompletedTextMessages(new Set())
-    resetMessageAccumulator()
-    hasReceivedFirstResponse.current = false
+    // 设置新消息的状态
+    setIsTyping(true);
+    setIsThinking(true); // 设置思考状态
+    setCurrentAssistantMessage(null); // 重置助手消息状态
+    scrollToBottom(); // 用户发送新消息时强制滚动到底部
+    
+    // 重置状态为新的消息
+    setCompletedTextMessages(new Set());
+    resetMessageAccumulator();
+    hasReceivedFirstResponse.current = false;
     messageSequenceNumber.current = 0; // 重置消息序列计数器
 
     // 添加用户消息到消息列表
@@ -564,15 +608,14 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
     ])
 
     try {
+      // 创建新的AbortController
+      abortControllerRef.current = new AbortController();
+      
       // 发送消息到服务器并获取流式响应
-      const response = await streamChat(userMessage, conversationId)
+      const response = await streamChat(userMessage, conversationId, abortControllerRef.current.signal)
 
-      // 检查响应状态，如果不是成功状态，则关闭思考状态并返回
       if (!response.ok) {
-        // 错误已在streamChat中处理并显示toast
-        setIsTyping(false)
-        setIsThinking(false) // 关闭思考状态，修复动画一直显示的问题
-        return // 直接返回，不继续处理
+        throw new Error(`Stream chat failed with status ${response.status}`)
       }
 
       const reader = response.body?.getReader()
@@ -580,8 +623,8 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
         throw new Error("No reader available")
       }
 
-      // 生成基础消息ID，作为所有消息序列的前缀
-      const baseMessageId = Date.now().toString()
+      // 生成基础消息ID，确保唯一性
+      const baseMessageId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       
       // 重置状态
       hasReceivedFirstResponse.current = false;
@@ -629,15 +672,21 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
         }
       }
     } catch (error) {
-      console.error("Error in stream chat:", error)
-      setIsThinking(false) // 错误发生时关闭思考状态
-      toast({
-        title: "发送消息失败",
-        description: error instanceof Error ? error.message : "未知错误",
-        variant: "destructive",
-      })
+      // 检查是否为中止错误
+      if ((error as Error).name === 'AbortError') {
+        console.log("请求被用户主动中断");
+      } else {
+        console.error("Error in stream chat:", error)
+        setIsThinking(false) // 错误发生时关闭思考状态
+        toast({
+          description: error instanceof Error ? error.message : "未知错误",
+          variant: "destructive",
+        })
+      }
     } finally {
       setIsTyping(false)
+      // 清理AbortController
+      abortControllerRef.current = null;
     }
   }
 
@@ -707,9 +756,15 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
     type: MessageType;
     taskId: string | null;
   }) => {
+    // 检查消息ID是否已完成处理
+    if (completedTextMessages.has(messageId)) {
+      console.log(`消息ID ${messageId} 已经完成，跳过UI更新`);
+      return;
+    }
+    
     // 使用函数式更新，在一次原子操作中检查并更新/创建消息
     setMessages(prev => {
-      // 检查消息是否已存在
+      // 检查消息是否已存在（通过ID）
       const messageIndex = prev.findIndex(msg => msg.id === messageId);
       
       if (messageIndex >= 0) {
@@ -722,7 +777,35 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
         };
         return newMessages;
       } else {
-        // 消息不存在，创建新消息
+        // 检查是否存在内容相似的消息（防止重复）
+        const similarMessageIndex = prev.findIndex(msg => 
+          msg.role === 'assistant' && 
+          msg.content && 
+          messageData.content &&
+          (
+            // 完全相同的内容
+            msg.content === messageData.content ||
+            // 一个是另一个的子串（处理流式输出的情况）
+            msg.content.includes(messageData.content) || 
+            messageData.content.includes(msg.content.replace(" [已中断]", ""))
+          )
+        );
+        
+        if (similarMessageIndex >= 0) {
+          console.log(`发现相似内容的消息 ${prev[similarMessageIndex].id}，不创建新消息`);
+          // 如果找到相似消息，可以选择更新它而不是创建新消息
+          const newMessages = [...prev];
+          // 只在新内容更长时更新
+          if (messageData.content.length > prev[similarMessageIndex].content.length) {
+            newMessages[similarMessageIndex] = {
+              ...newMessages[similarMessageIndex],
+              content: messageData.content
+            };
+          }
+          return newMessages;
+        }
+        
+        // 消息不存在且没有相似内容，创建新消息
         console.log(`创建新消息: ${messageId}, 类型: ${messageData.type}`);
         return [
           ...prev,
@@ -756,6 +839,12 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
       return;
     }
     
+    // 检查消息是否已被处理过
+    if (completedTextMessages.has(messageId)) {
+      console.log(`消息ID ${messageId} 已经完成，跳过处理`);
+      return;
+    }
+    
     // 确保UI已更新到最终状态，使用相同的原子操作模式
     setMessages(prev => {
       // 检查消息是否已存在
@@ -771,6 +860,44 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
         };
         return newMessages;
       } else {
+        // 检查是否存在相似内容的消息（避免重复）
+        const similarIndex = prev.findIndex(msg => 
+          msg.role === 'assistant' && 
+          msg.content && 
+          messageData.content &&
+          (
+            // 完全相同的内容
+            msg.content === messageData.content ||
+            // 一个是另一个的子串（处理流式输出的情况）
+            msg.content.includes(messageData.content) || 
+            messageData.content.includes(msg.content.replace(" [已中断]", ""))
+          )
+        );
+        
+        if (similarIndex >= 0) {
+          console.log(`发现相似内容的消息 ${prev[similarIndex].id}，不创建新消息`);
+          // 如果找到相似消息，可以选择更新它而不是创建新消息
+          const newMessages = [...prev];
+          // 只在新内容更长时更新
+          if (messageData.content.length > prev[similarIndex].content.length) {
+            newMessages[similarIndex] = {
+              ...newMessages[similarIndex],
+              content: messageData.content
+            };
+          }
+          
+          // 即使使用已有消息，也要标记当前消息ID为已完成
+          setTimeout(() => {
+            setCompletedTextMessages(prevSet => {
+              const newSet = new Set(prevSet);
+              newSet.add(messageId);
+              return newSet;
+            });
+          }, 0);
+          
+          return newMessages;
+        }
+        
         // 消息不存在，创建新消息
         console.log(`创建并完成新消息: ${messageId}`);
         return [
@@ -903,63 +1030,51 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
   // 渲染消息内容
   const renderMessageContent = (message: MessageInterface) => {
     return (
-      <div className="react-markdown">
-        <ReactMarkdown
-          remarkPlugins={[remarkGfm]}
-          components={{
-            // 代码块渲染
-            code({ inline, className, children, ...props }: any) {
-              const match = /language-(\w+)/.exec(className || "");
-              return !inline && match ? (
-                <Highlight
-                  theme={themes.vsDark}
-                  code={String(children).replace(/\n$/, "")}
-                  language={match[1]}
-                >
-                  {({ className, style, tokens, getLineProps, getTokenProps }) => (
-                    <div className="code-block-container">
-                      <pre
-                        className={`${className} rounded p-2 my-2 overflow-x-auto max-w-full text-sm`}
-                        style={{...style, wordBreak: 'break-all', overflowWrap: 'break-word'}}
-                      >
-                        {tokens.map((line, i) => (
-                          <div key={i} {...getLineProps({ line, key: i })} style={{whiteSpace: 'pre-wrap', wordBreak: 'break-all'}}>
-                            <span className="text-gray-500 mr-2 text-right w-6 inline-block select-none">
-                              {i + 1}
-                            </span>
-                            {line.map((token, tokenIndex) => {
-                              // 获取token props但不包含key
-                              const tokenProps = getTokenProps({ token, key: tokenIndex });
-                              // 删除key属性
-                              const { key, ...restTokenProps } = tokenProps;
-                              // 单独传递key属性，并添加样式确保长字符串能换行
-                              return <span 
-                                key={tokenIndex} 
-                                {...restTokenProps} 
-                                style={{
-                                  ...restTokenProps.style,
-                                  wordBreak: 'break-all',
-                                  overflowWrap: 'break-word'
-                                }}
-                              />;
-                            })}
-                          </div>
-                        ))}
-                      </pre>
-                    </div>
-                  )}
-                </Highlight>
-              ) : (
-                <code className={`${className} bg-gray-100 px-1 py-0.5 rounded break-all`} {...props}>
-                  {children}
-                </code>
-              );
-            },
-          }}
-        >
-          {message.content}
-        </ReactMarkdown>
-      </div>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          // 代码块渲染
+          code({ inline, className, children, ...props }: any) {
+            const match = /language-(\w+)/.exec(className || "");
+            return !inline && match ? (
+              <Highlight
+                theme={themes.vsDark}
+                code={String(children).replace(/\n$/, "")}
+                language={match[1]}
+              >
+                {({ className, style, tokens, getLineProps, getTokenProps }) => (
+                  <pre
+                    className={`${className} rounded p-2 my-2 overflow-auto text-sm`}
+                    style={style}
+                  >
+                    {tokens.map((line, i) => (
+                      <div key={i} {...getLineProps({ line, key: i })}>
+                        <span className="text-gray-500 mr-2 text-right w-6 inline-block select-none">
+                          {i + 1}
+                        </span>
+                        {line.map((token, tokenIndex) => {
+                          // 获取token props但不包含key
+                          const tokenProps = getTokenProps({ token, key: tokenIndex });
+                          // 删除key属性
+                          const { key, ...restTokenProps } = tokenProps;
+                          // 单独传递key属性
+                          return <span key={tokenIndex} {...restTokenProps} />;
+                        })}
+                      </div>
+                    ))}
+                  </pre>
+                )}
+              </Highlight>
+            ) : (
+              <code className={`${className} bg-gray-100 px-1 py-0.5 rounded`} {...props}>
+                {children}
+              </code>
+            );
+          },
+        }}
+      >
+        {message.content}
+      </ReactMarkdown>
     );
   };
 

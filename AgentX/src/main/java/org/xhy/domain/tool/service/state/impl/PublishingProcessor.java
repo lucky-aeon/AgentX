@@ -19,7 +19,7 @@ import java.nio.file.Path;
 import java.util.List; // 确保导入
 import java.util.UUID;
 
-/** "发布中"状态处理器。 负责从源GitHub下载工具内容，并将其发布到目标GitHub仓库。 */
+/** "发布"状态处理器。 负责从源GitHub下载工具内容，并将其发布到目标GitHub仓库。 */
 @Service
 public class PublishingProcessor implements ToolStateProcessor {
     private static final Logger logger = LoggerFactory.getLogger(PublishingProcessor.class);
@@ -35,7 +35,7 @@ public class PublishingProcessor implements ToolStateProcessor {
 
     @Override
     public ToolStatus getStatus() {
-        return ToolStatus.PUBLISHING;
+        return ToolStatus.APPROVED;
     }
 
     @Override

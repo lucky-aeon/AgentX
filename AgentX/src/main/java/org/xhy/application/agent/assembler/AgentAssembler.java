@@ -35,7 +35,7 @@ public class AgentAssembler {
         entity.setEnabled(true);
 
         // 设置工具和知识库ID
-        entity.setTools(request.getTools() != null ? request.getTools() : new ArrayList<>());
+        entity.setToolIds(request.getToolIds() != null ? request.getToolIds() : new ArrayList<>());
         entity.setKnowledgeBaseIds(
                 request.getKnowledgeBaseIds() != null ? request.getKnowledgeBaseIds() : new ArrayList<>());
 
@@ -43,6 +43,9 @@ public class AgentAssembler {
         LocalDateTime now = LocalDateTime.now();
         entity.setCreatedAt(now);
         entity.setUpdatedAt(now);
+        entity.setToolIds(request.getToolIds());
+        // 设置预先设置的工具参数
+        entity.setToolPresetParams(request.getToolPresetParams());
 
         return entity;
     }
@@ -50,17 +53,9 @@ public class AgentAssembler {
     /** 将UpdateAgentRequest转换为AgentEntity */
     public static AgentEntity toEntity(UpdateAgentRequest request, String userId) {
         AgentEntity entity = new AgentEntity();
-        entity.setName(request.getName());
-        entity.setDescription(request.getDescription());
-        entity.setAvatar(request.getAvatar());
-        entity.setSystemPrompt(request.getSystemPrompt());
-        entity.setWelcomeMessage(request.getWelcomeMessage());
-        entity.setTools(request.getTools());
-        entity.setKnowledgeBaseIds(request.getKnowledgeBaseIds());
-        entity.setUserId(userId);
-        entity.setEnabled(request.getEnabled());
-        entity.setId(request.getAgentId());
 
+        BeanUtils.copyProperties(request, entity);
+        entity.setUserId(userId);
         return entity;
     }
 
@@ -69,23 +64,8 @@ public class AgentAssembler {
         if (entity == null) {
             return null;
         }
-
         AgentDTO dto = new AgentDTO();
-        dto.setId(entity.getId());
-        dto.setName(entity.getName());
-        dto.setAvatar(entity.getAvatar());
-        dto.setDescription(entity.getDescription());
-        dto.setSystemPrompt(entity.getSystemPrompt());
-        dto.setWelcomeMessage(entity.getWelcomeMessage());
-        dto.setTools(entity.getTools());
-        dto.setKnowledgeBaseIds(entity.getKnowledgeBaseIds());
-        dto.setPublishedVersion(entity.getPublishedVersion());
-        dto.setEnabled(entity.getEnabled());
-        dto.setAgentType(entity.getAgentType());
-        dto.setUserId(entity.getUserId());
-        dto.setCreatedAt(entity.getCreatedAt());
-        dto.setUpdatedAt(entity.getUpdatedAt());
-
+        BeanUtils.copyProperties(entity, dto);
         return dto;
     }
 

@@ -52,9 +52,9 @@ public class SseMessageTransport implements MessageTransport<SseEmitter> {
     @Override
     public void sendMessage(SseEmitter connection, AgentChatResponse streamChatResponse) {
         try {
-
             connection.send(streamChatResponse);
         } catch (IOException e) {
+            System.out.println("sse发送过程中被错误关闭");
             throw new RuntimeException(e);
         }
     }
@@ -73,6 +73,7 @@ public class SseMessageTransport implements MessageTransport<SseEmitter> {
 
     @Override
     public void completeConnection(SseEmitter connection) {
+        System.out.println("sse连接关闭");
         connection.complete();
     }
 

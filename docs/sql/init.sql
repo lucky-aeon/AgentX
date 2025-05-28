@@ -49,10 +49,12 @@ CREATE TABLE agents (
     description TEXT,
     system_prompt TEXT,
     welcome_message TEXT,
+    tool_ids JSONB,
     published_version VARCHAR(36),
     enabled BOOLEAN DEFAULT TRUE,
     agent_type INTEGER DEFAULT 1,
     user_id VARCHAR(36) NOT NULL,
+    tool_preset_params JSONB,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP
@@ -68,7 +70,7 @@ CREATE TABLE agent_versions (
     version_number VARCHAR(20) NOT NULL,
     system_prompt TEXT,
     welcome_message TEXT,
-    tools JSONB,
+    tool_ids JSONB,
     knowledge_base_ids JSONB,
     change_log TEXT,
     agent_type INTEGER DEFAULT 1,
@@ -77,6 +79,7 @@ CREATE TABLE agent_versions (
     review_time TIMESTAMP,
     published_at TIMESTAMP,
     user_id VARCHAR(36) NOT NULL,
+    tool_preset_params JSONB,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP
@@ -100,7 +103,7 @@ CREATE TABLE providers (
     protocol VARCHAR(50) NOT NULL,
     name VARCHAR(100) NOT NULL,
     description TEXT,
-    config JSONB,
+    config TEXT,
     is_official BOOLEAN DEFAULT FALSE,
     status BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -174,6 +177,7 @@ CREATE TABLE tools (
     tool_list JSONB,
     reject_reason TEXT,
     failed_step_status VARCHAR(20),
+    mcp_server_name VARCHAR(255),
     status VARCHAR(20) NOT NULL,
     is_office BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -196,6 +200,7 @@ CREATE TABLE tool_versions (
     upload_url VARCHAR(255),
     tool_list JSONB,
     labels JSONB,
+    mcp_server_name VARCHAR(255),
     is_office BOOLEAN DEFAULT FALSE,
     public_status BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -217,6 +222,7 @@ CREATE TABLE user_tools (
     labels JSONB,
     is_office BOOLEAN DEFAULT FALSE,
     public_state BOOLEAN DEFAULT FALSE,
+    mcp_server_name VARCHAR(255),
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP
@@ -329,7 +335,7 @@ COMMENT ON COLUMN providers.user_id IS '用户ID';
 COMMENT ON COLUMN providers.protocol IS '协议类型';
 COMMENT ON COLUMN providers.name IS '服务提供商名称';
 COMMENT ON COLUMN providers.description IS '服务提供商描述';
-COMMENT ON COLUMN providers.config IS '服务提供商配置，JSON格式';
+COMMENT ON COLUMN providers.config IS '服务提供商配置,加密后的值';
 COMMENT ON COLUMN providers.is_official IS '是否官方服务提供商';
 COMMENT ON COLUMN providers.status IS '服务提供商状态';
 COMMENT ON COLUMN providers.created_at IS '创建时间';

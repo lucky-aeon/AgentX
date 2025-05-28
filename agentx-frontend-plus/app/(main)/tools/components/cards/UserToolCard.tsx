@@ -2,7 +2,7 @@ import { UserTool, ToolStatus } from "../../utils/types";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ToolLabels } from "../shared/ToolLabels";
-import { MoreVertical, PencilIcon, Settings, Trash, Wrench, AlertCircle, History } from "lucide-react";
+import { MoreVertical, PencilIcon, Settings, Trash, Wrench, AlertCircle, History, UploadCloud } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,13 +18,15 @@ interface UserToolCardProps {
   onCardClick: (tool: UserTool) => void;
   onEditClick?: (tool: UserTool, e: React.MouseEvent) => void;
   onDeleteClick: (tool: UserTool, e: React.MouseEvent) => void;
+  onPublishClick?: (tool: UserTool, e: React.MouseEvent) => void;
 }
 
 export function UserToolCard({ 
   tool, 
   onCardClick, 
   onEditClick,
-  onDeleteClick 
+  onDeleteClick,
+  onPublishClick
 }: UserToolCardProps) {
   const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false);
   
@@ -108,6 +110,13 @@ export function UserToolCard({
                 <DropdownMenuItem onClick={(e) => onEditClick(tool, e as unknown as React.MouseEvent)}>
                   <PencilIcon className="mr-2 h-4 w-4" />
                   编辑工具
+                </DropdownMenuItem>
+              )}
+              {/* 上架工具选项 (仅对自己创建的工具显示) */}
+              {tool.isOwner && onPublishClick && (
+                <DropdownMenuItem onClick={(e) => onPublishClick(tool, e as unknown as React.MouseEvent)}>
+                  <UploadCloud className="mr-2 h-4 w-4" />
+                  上架工具
                 </DropdownMenuItem>
               )}
               <DropdownMenuItem onClick={(e) => onDeleteClick(tool, e as unknown as React.MouseEvent)}>

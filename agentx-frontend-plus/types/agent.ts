@@ -14,6 +14,7 @@ export interface AgentTool {
   type?: string
   permissions?: string
   config?: Record<string, any>
+  presetParameters?: Record<string, Record<string, string>> // 预设参数：{功能名: {参数名: 参数值}}
 }
 
 export interface Agent {
@@ -25,6 +26,14 @@ export interface Agent {
   welcomeMessage: string
   modelConfig: ModelConfig
   tools: AgentTool[]
+  toolIds?: string[] // 工具ID列表，与后端返回格式兼容
+  toolPresetParams?: {
+    [serverName: string]: {
+      [functionName: string]: {
+        [paramName: string]: string
+      }
+    }
+  } // 工具预设参数
   knowledgeBaseIds: string[]
   publishedVersion: string | null
   enabled: boolean // 更新为布尔值，表示启用/禁用状态
@@ -68,6 +77,14 @@ export interface CreateAgentRequest {
   welcomeMessage?: string
   modelConfig: ModelConfig
   tools?: AgentTool[]
+  toolIds?: string[] // 工具ID列表，用于传递给后端
+  toolPresetParams?: {
+    [serverName: string]: {
+      [functionName: string]: {
+        [paramName: string]: string
+      }
+    }
+  } // 工具预设参数
   knowledgeBaseIds?: string[]
   userId: string
 }
@@ -81,6 +98,14 @@ export interface UpdateAgentRequest {
   welcomeMessage?: string
   modelConfig?: ModelConfig
   tools?: AgentTool[]
+  toolIds?: string[] // 工具ID列表，用于传递给后端
+  toolPresetParams?: {
+    [serverName: string]: {
+      [functionName: string]: {
+        [paramName: string]: string
+      }
+    }
+  } // 工具预设参数
   knowledgeBaseIds?: string[]
   agentType?: number
   enabled?: boolean
@@ -94,6 +119,14 @@ export interface PublishAgentVersionRequest {
   welcomeMessage?: string
   modelConfig?: ModelConfig
   tools?: AgentTool[]
+  toolIds?: string[] // 工具ID列表，用于传递给后端
+  toolPresetParams?: {
+    [serverName: string]: {
+      [functionName: string]: {
+        [paramName: string]: string
+      }
+    }
+  } // 工具预设参数
   knowledgeBaseIds?: string[]
 }
 
@@ -114,6 +147,14 @@ export interface AgentVersion {
   welcomeMessage: string
   modelConfig: ModelConfig
   tools: AgentTool[]
+  toolIds?: string[] // 工具ID列表
+  toolPresetParams?: {
+    [serverName: string]: {
+      [functionName: string]: {
+        [paramName: string]: string
+      }
+    }
+  } // 工具预设参数
   knowledgeBaseIds: string[]
   changeLog: string
   agentType: number

@@ -1,7 +1,7 @@
 package org.xhy.infrastructure.llm;
 
-import dev.langchain4j.model.chat.ChatLanguageModel;
-import dev.langchain4j.model.chat.StreamingChatLanguageModel;
+import dev.langchain4j.model.chat.ChatModel;
+import dev.langchain4j.model.chat.StreamingChatModel;
 import org.springframework.stereotype.Component;
 import org.xhy.domain.llm.model.ModelEntity;
 import org.xhy.domain.llm.model.ProviderEntity;
@@ -16,7 +16,7 @@ public class LLMServiceFactory {
      * @param provider 服务商实体
      * @param model 模型实体
      * @return 流式聊天语言模型 */
-    public StreamingChatLanguageModel getStreamingClient(ProviderEntity provider, ModelEntity model) {
+    public StreamingChatModel getStreamingClient(ProviderEntity provider, ModelEntity model) {
         org.xhy.domain.llm.model.config.ProviderConfig config = provider.getConfig();
 
         ProviderConfig providerConfig = new ProviderConfig(config.getApiKey(), config.getBaseUrl(), model.getModelId(),
@@ -30,7 +30,7 @@ public class LLMServiceFactory {
      * @param provider 服务商实体
      * @param model 模型实体
      * @return 流式聊天语言模型 */
-    public ChatLanguageModel getStrandClient(ProviderEntity provider, ModelEntity model) {
+    public ChatModel getStrandClient(ProviderEntity provider, ModelEntity model) {
         org.xhy.domain.llm.model.config.ProviderConfig config = provider.getConfig();
 
         ProviderConfig providerConfig = new ProviderConfig(config.getApiKey(), config.getBaseUrl(), model.getModelId(),

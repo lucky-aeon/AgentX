@@ -41,7 +41,7 @@ public class AgentVersionAssembler {
         dto.setVersionNumber(entity.getVersionNumber());
         dto.setSystemPrompt(entity.getSystemPrompt());
         dto.setWelcomeMessage(entity.getWelcomeMessage());
-        dto.setTools(entity.getTools());
+        dto.setToolIds(entity.getToolIds());
         dto.setKnowledgeBaseIds(entity.getKnowledgeBaseIds());
         dto.setChangeLog(entity.getChangeLog());
         dto.setAgentType(entity.getAgentType());

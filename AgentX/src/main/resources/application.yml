@@ -72,8 +72,8 @@ oauth:
 
 github:
   target:
-    username: ${GITHUB_TARGET_USERNAME:}
-    repo-name: ${GITHUB_TARGET_REPO_NAME:}
+    username: ${GITHUB_TARGET_USERNAME:lucky-aeon}
+    repo-name: ${GITHUB_TARGET_REPO_NAME:agent-mcp-community}
     token: ${GITHUB_TARGET_TOKEN:}
 mcp:
   gateway:

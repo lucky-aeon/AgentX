@@ -9,9 +9,7 @@ public enum ToolStatus {
     DEPLOYING, // （原）部署中 - 根据新流程，此状态可能调整或移除，暂时保留
     FETCHING_TOOLS, // （原）获取工具中 - 根据新流程，此状态可能调整或移除，暂时保留
     MANUAL_REVIEW, // 人工审核
-    PUBLISHING, // 发布中 (正在下载源并推送到目标仓库)
     APPROVED, // 已通过
-    PUBLISH_FAILED, // 发布失败
     FAILED; // 通用失败状态
 
     /** 根据名称获取工具状态枚举。

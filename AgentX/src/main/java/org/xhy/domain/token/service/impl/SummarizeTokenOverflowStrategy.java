@@ -1,7 +1,7 @@
 package org.xhy.domain.token.service.impl;
 
 import dev.langchain4j.data.message.*;
-import dev.langchain4j.model.chat.ChatLanguageModel;
+import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.response.ChatResponse;
 import org.xhy.domain.token.model.TokenMessage;
 import org.xhy.domain.token.model.TokenProcessResult;
@@ -132,8 +132,7 @@ public class SummarizeTokenOverflowStrategy implements TokenOverflowStrategy {
         ProviderConfig providerConfig = tokenOverflowConfig.getProviderConfig();
 
         // 使用当前服务商调用大模型
-        ChatLanguageModel chatLanguageModel = LLMProviderService.getStrand(providerConfig.getProtocol(),
-                providerConfig);
+        ChatModel chatLanguageModel = LLMProviderService.getStrand(providerConfig.getProtocol(), providerConfig);
         SystemMessage systemMessage = new SystemMessage("你是一个专业的对话摘要生成器，请严格按照以下要求工作：\n"
                 + "1. 只基于提供的对话内容生成客观摘要，不得添加任何原对话中没有的信息\n" + "2. 特别关注：用户问题、回答中的关键信息、重要事实\n" + "3. 去除所有寒暄、表情符号和情感表达\n"
                 + "4. 使用简洁的第三人称陈述句\n" + "5. 保持时间顺序和逻辑关系\n" + "6. 示例格式：[用户]问... [AI]回答...\n" + "禁止使用任何表情符号或拟人化表达");
