@@ -245,6 +245,24 @@ CREATE TABLE user_tools (
     deleted_at TIMESTAMP
 );
 
+
+-- 用户设置表
+CREATE TABLE user_settings (
+    id VARCHAR(36) PRIMARY KEY,
+    user_id VARCHAR(36) NOT NULL UNIQUE,
+    setting_config JSON,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP
+);
+
+-- 添加索引
+CREATE INDEX idx_user_settings_user_id ON user_settings(user_id);
+
+
+
+
+
 -- 创建索引
 CREATE INDEX idx_sessions_user_id ON sessions(user_id);
 CREATE INDEX idx_sessions_agent_id ON sessions(agent_id);
@@ -266,7 +284,7 @@ CREATE INDEX idx_scheduled_tasks_user_id ON scheduled_tasks(user_id);
 CREATE INDEX idx_scheduled_tasks_agent_id ON scheduled_tasks(agent_id);
 CREATE INDEX idx_scheduled_tasks_session_id ON scheduled_tasks(session_id);
 CREATE INDEX idx_scheduled_tasks_status ON scheduled_tasks(status);
-
+CREATE INDEX idx_user_settings_user_id ON user_settings(user_id);
 
 -- 添加表和列的注释
 COMMENT ON TABLE sessions IS '会话实体类，代表一个独立的对话会话/主题';
@@ -469,4 +487,11 @@ COMMENT ON COLUMN user_tools.created_at IS '创建时间';
 COMMENT ON COLUMN user_tools.updated_at IS '更新时间';
 COMMENT ON COLUMN user_tools.deleted_at IS '逻辑删除时间';
     
-    
+-- 添加表和列的注释
+COMMENT ON TABLE user_settings IS '用户设置表，存储用户的个性化配置';
+COMMENT ON COLUMN user_settings.id IS '设置记录唯一ID';
+COMMENT ON COLUMN user_settings.user_id IS '用户ID，关联users表';
+COMMENT ON COLUMN user_settings.setting_config IS '设置配置JSON，格式：{"default_model": "模型ID"}';
+COMMENT ON COLUMN user_settings.created_at IS '创建时间';
+COMMENT ON COLUMN user_settings.updated_at IS '更新时间';
+COMMENT ON COLUMN user_settings.deleted_at IS '逻辑删除时间';
