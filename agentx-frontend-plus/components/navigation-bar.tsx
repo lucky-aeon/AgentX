@@ -158,6 +158,12 @@ export function NavigationBar() {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
+                  <Link href="/settings/general">
+                    <Settings className="mr-2 h-4 w-4" />
+                    通用设置
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
                   <Link href="/settings/billing">
                     <Settings className="mr-2 h-4 w-4" />
                     账单与用量

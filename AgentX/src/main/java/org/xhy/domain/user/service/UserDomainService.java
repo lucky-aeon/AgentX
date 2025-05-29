@@ -7,7 +7,9 @@ import org.springframework.stereotype.Service;
 import org.xhy.domain.tool.model.ToolEntity;
 import org.xhy.domain.tool.repository.ToolRepository;
 import org.xhy.domain.user.model.UserEntity;
+import org.xhy.domain.user.model.UserSettingsEntity;
 import org.xhy.domain.user.repository.UserRepository;
+import org.xhy.domain.user.repository.UserSettingsRepository;
 import org.xhy.infrastructure.exception.BusinessException;
 import org.xhy.infrastructure.utils.PasswordUtils;
 
@@ -21,9 +23,12 @@ public class UserDomainService {
 
     private final UserRepository userRepository;
 
-    public UserDomainService(UserRepository userRepository) {
+    private final UserSettingsRepository settingsRepository;
+
+    public UserDomainService(UserRepository userRepository, UserSettingsRepository settingsRepository) {
         this.userRepository = userRepository;
 
+        this.settingsRepository = settingsRepository;
     }
 
     /** 获取用户信息 */
@@ -63,6 +68,9 @@ public class UserDomainService {
         String nickname = generateNickname();
         userEntity.setNickname(nickname);
         userRepository.checkInsert(userEntity);
+        UserSettingsEntity userSettingsEntity = new UserSettingsEntity();
+        userSettingsEntity.setUserId(userEntity.getId());
+        settingsRepository.insert(userSettingsEntity);
         return userEntity;
     }
 
