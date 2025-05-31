@@ -57,8 +57,7 @@ public abstract class AbstractMessageHandler {
         MessageEntity userMessageEntity = createUserMessage(chatContext);
 
         // 4. 保存用户消息和更新上下文
-        messageDomainService.saveMessageAndUpdateContext(Collections.singletonList(userMessageEntity),
-                chatContext.getContextEntity());
+
 
         // 5. 初始化聊天内存
         MessageWindowChatMemory memory = initMemory();
@@ -86,6 +85,11 @@ public abstract class AbstractMessageHandler {
     /** 子类实现具体的聊天处理逻辑 */
     protected <T> void processChat(Agent agent, T connection, MessageTransport<T> transport, ChatContext chatContext,
             MessageEntity userEntity, MessageEntity llmEntity) {
+
+
+        messageDomainService.saveMessageAndUpdateContext(Collections.singletonList(userEntity),
+                chatContext.getContextEntity());
+
         AtomicReference<StringBuilder> messageBuilder = new AtomicReference<>(new StringBuilder());
         TokenStream tokenStream = agent.chat(chatContext.getUserMessage());
 

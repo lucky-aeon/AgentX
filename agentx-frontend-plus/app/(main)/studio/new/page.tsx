@@ -25,6 +25,7 @@ import { Progress } from "@/components/ui/progress"
 import { createAgent, createAgentWithToast } from "@/lib/agent-service"
 import { getInstalledTools } from "@/lib/tool-service" // 导入获取工具的函数
 import { API_CONFIG } from "@/lib/api-config"
+import { getUserDefaultModelIdWithToast } from "@/lib/user-settings-service"
 
 // 从 edit 页面导入的组件和类型
 import AgentBasicInfoForm from "../edit/[id]/components/AgentBasicInfoForm";
@@ -33,6 +34,9 @@ import AgentToolsForm, { knowledgeBaseOptions } from "../edit/[id]/components/Ag
 import ToolDetailSidebar from "../edit/[id]/components/ToolDetailSidebar";
 import type { Tool } from "@/types/tool";
 import type { AgentTool } from "@/types/agent"; // <-- Import AgentTool
+
+// 导入预览组件
+import AgentPreviewChat from "@/components/agent-preview-chat";
 
 // 应用类型定义
 type AgentType = "chat" | "agent"
@@ -82,7 +86,13 @@ interface AgentFormData {
   welcomeMessage: string
   tools: AgentTool[] // <-- Use AgentTool[]
   knowledgeBaseIds: string[]
-  toolPresetParams: Record<string, Record<string, string>> // 工具预设参数
+  toolPresetParams: {
+    [serverName: string]: {
+      [functionName: string]: {
+        [paramName: string]: string
+      }
+    }
+  } // 工具预设参数，与CreateAgentRequest保持一致
   enabled: boolean
   // agentType is derived from selectedType, not part of formData here
 }
@@ -171,21 +181,15 @@ export default function CreateAgentPage() {
         // 获取该功能的所有参数
         const params = presetParams[functionName];
         
-        // 将参数格式化为 "{'param1':'value1','param2':'value2'}" 格式
-        const paramsObj: Record<string, string> = {};
+        // 确保函数名的键存在
+        if (!newToolPresetParams[mcpServerName][functionName]) {
+          newToolPresetParams[mcpServerName][functionName] = {};
+        }
+        
+        // 将参数直接设置为嵌套对象
         Object.entries(params).forEach(([paramName, paramValue]) => {
-          // 未设置的参数值设为空字符串
-          paramsObj[paramName] = paramValue || '';
+          newToolPresetParams[mcpServerName][functionName][paramName] = paramValue || '';
         });
-        
-        // 转换为需要的字符串格式
-        // 注意：使用单引号包裹键和值，外层使用双引号
-        const formattedParams = JSON.stringify(paramsObj)
-          .replace(/"/g, "'")  // 将双引号替换为单引号
-          .replace(/'/g, "'"); // 确保所有引号都是单引号
-        
-        // 设置参数
-        newToolPresetParams[mcpServerName][functionName] = formattedParams;
       });
       
       return {
@@ -466,80 +470,16 @@ export default function CreateAgentPage() {
 
           {/* 聊天助手预览 */}
           {selectedType === "chat" && (
-            <div className="border rounded-lg bg-white shadow-sm overflow-hidden">
-              <div className="border-b p-3 flex items-center justify-between bg-gray-50">
-                <div className="flex items-center gap-2">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={formData.avatar || ""} alt="Avatar" />
-                    <AvatarFallback className="bg-blue-100 text-blue-600">
-                      {formData.name ? formData.name.charAt(0).toUpperCase() : "🤖"}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="font-medium">{formData.name || "新建聊天助理"}</span>
-                </div>
-                <Badge variant="outline">默认模型</Badge>
-              </div>
-
-              <div className="h-[500px] flex flex-col">
-                <div className="flex-1 p-4 overflow-auto space-y-4 bg-gray-50">
-                  {/* 欢迎消息 */}
-                  <div className="flex items-start gap-3">
-                    <Avatar className="h-8 w-8 mt-1">
-                      <AvatarImage src={formData.avatar || ""} alt="Avatar" />
-                      <AvatarFallback className="bg-blue-100 text-blue-600">
-                        {formData.name ? formData.name.charAt(0).toUpperCase() : "🤖"}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="bg-white rounded-lg p-3 shadow-sm max-w-[80%]">
-                      {formData.welcomeMessage || "你好！我是你的AI助手，有什么可以帮助你的吗？"}
-                    </div>
-                  </div>
-
-                  {/* 用户消息示例 */}
-                  <div className="flex items-start gap-3 justify-end">
-                    <div className="bg-blue-100 rounded-lg p-3 shadow-sm max-w-[80%] text-blue-900">你能做什么？</div>
-                    <Avatar className="h-8 w-8 mt-1">
-                      <AvatarImage src="/placeholder.svg?height=32&width=32" alt="User" />
-                      <AvatarFallback className="bg-blue-500 text-white">U</AvatarFallback>
-                    </Avatar>
-                  </div>
-
-                  {/* 助手回复示例 */}
-                  <div className="flex items-start gap-3">
-                    <Avatar className="h-8 w-8 mt-1">
-                      <AvatarImage src={formData.avatar || ""} alt="Avatar" />
-                      <AvatarFallback className="bg-blue-100 text-blue-600">
-                        {formData.name ? formData.name.charAt(0).toUpperCase() : "🤖"}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="bg-white rounded-lg p-3 shadow-sm max-w-[80%]">
-                      <p>我可以帮助你完成以下任务：</p>
-                      <ul className="list-disc pl-5 mt-2 space-y-1">
-                        <li>回答问题和提供信息</li>
-                        <li>协助写作和内容创作</li>
-                        {formData.tools.some((t) => t.id === "web-search") && <li>搜索互联网获取最新信息</li>}
-                        {formData.tools.some((t) => t.id === "file-reader") && <li>分析和解读上传的文件</li>}
-                        {formData.tools.some((t) => t.id === "code-interpreter") && <li>编写和执行代码</li>}
-                        {formData.tools.some((t) => t.id === "image-generation") && <li>生成和编辑图像</li>}
-                        {formData.tools.some((t) => t.id === "calculator") && <li>执行数学计算</li>}
-                        {formData.knowledgeBaseIds.length > 0 && <li>基于专业知识库提供准确信息</li>}
-                      </ul>
-                      <p className="mt-2">有什么具体问题我可以帮你解答吗？</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 输入框 */}
-                <div className="p-4 border-t">
-                  <div className="flex gap-2">
-                    <Input placeholder="输入消息..." className="flex-1" disabled />
-                    <Button size="icon" disabled>
-                      <MessageCircle className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <AgentPreviewChat
+              agentName={formData.name || "新建聊天助理"}
+              agentAvatar={formData.avatar}
+              systemPrompt={formData.systemPrompt}
+              welcomeMessage={formData.welcomeMessage}
+              toolIds={formData.tools.map(t => t.id)}
+              toolPresetParams={formData.toolPresetParams as unknown as Record<string, Record<string, Record<string, string>>>}
+              disabled={!formData.name || !formData.systemPrompt}
+              className="h-[500px]"
+            />
           )}
 
           {/* Agent预览 */}
@@ -688,39 +628,7 @@ export default function CreateAgentPage() {
         isOpen={isToolSidebarOpen}
         onClose={() => setIsToolSidebarOpen(false)}
         presetParameters={selectedToolForSidebar && selectedToolForSidebar.mcpServerName && formData.toolPresetParams[selectedToolForSidebar.mcpServerName] ? 
-          Object.entries(formData.toolPresetParams[selectedToolForSidebar.mcpServerName]).reduce((acc, [funcName, paramStr]) => {
-            try {
-              // 将参数字符串如 "{'email':'xxx@qq.com','password':'123'}" 转换为对象
-              const cleanParamStr = paramStr
-                .replace(/^['"]/, '') // 移除开头的引号
-                .replace(/['"]$/, ''); // 移除结尾的引号
-              
-              // 尝试解析JSON字符串，注意替换单引号为双引号
-              const paramObj = JSON.parse(cleanParamStr.replace(/'/g, '"'));
-              acc[funcName] = paramObj;
-            } catch (e) {
-              console.error(`解析工具参数失败: ${funcName}`, e, paramStr);
-              // 尝试使用正则表达式解析
-              try {
-                const params: Record<string, string> = {};
-                // 匹配 'key':'value' 模式
-                const regex = /'([^']+)'\s*:\s*'([^']*)'/g;
-                let match;
-                
-                while ((match = regex.exec(paramStr)) !== null) {
-                  if (match.length >= 3) {
-                    params[match[1]] = match[2];
-                  }
-                }
-                
-                acc[funcName] = params;
-              } catch (regexError) {
-                console.error(`正则解析失败: ${funcName}`, regexError);
-                acc[funcName] = {};
-              }
-            }
-            return acc;
-          }, {} as Record<string, Record<string, string>>) : 
+          formData.toolPresetParams[selectedToolForSidebar.mcpServerName] : 
           {}}
         onSavePresetParameters={updateToolPresetParameters}
       />

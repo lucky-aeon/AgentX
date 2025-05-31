@@ -1,0 +1,384 @@
+/* 通用样式 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Microsoft YaHei', 'PingFang SC', 'Helvetica Neue', Arial, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    color: white;
+    overflow-x: hidden;
+}
+
+.ppt-container {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 40px 20px;
+    position: relative;
+}
+
+.slide-content {
+    max-width: 1200px;
+    width: 100%;
+    text-align: center;
+    animation: slideIn 0.8s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 标题样式 */
+.slide-title {
+    font-size: 3.5rem;
+    font-weight: bold;
+    margin-bottom: 30px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    color: #FFD700;
+}
+
+.slide-subtitle {
+    font-size: 1.5rem;
+    margin-bottom: 40px;
+    opacity: 0.9;
+    color: #E6E6FA;
+}
+
+/* 内容区域 */
+.content-section {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    padding: 40px;
+    margin: 20px 0;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+}
+
+.feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 25px;
+    margin: 30px 0;
+}
+
+.feature-card {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 15px;
+    padding: 25px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    transition: all 0.3s ease;
+}
+
+.feature-card:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: translateY(-5px);
+}
+
+.feature-icon {
+    font-size: 3rem;
+    margin-bottom: 15px;
+    display: block;
+}
+
+.feature-title {
+    font-size: 1.2rem;
+    margin-bottom: 10px;
+    color: #FFD700;
+    font-weight: bold;
+}
+
+.feature-desc {
+    font-size: 0.9rem;
+    line-height: 1.6;
+    opacity: 0.9;
+}
+
+/* 代码展示 */
+.code-block {
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 10px;
+    padding: 20px;
+    margin: 20px 0;
+    text-align: left;
+    font-family: 'Consolas', 'Monaco', monospace;
+    overflow-x: auto;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.code-block pre {
+    color: #E6E6FA;
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+/* 导航区域 */
+.navigation {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 15px;
+    z-index: 100;
+}
+
+.nav-btn {
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 25px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+.nav-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: translateY(-2px);
+}
+
+.nav-btn.home {
+    background: rgba(255, 215, 0, 0.3);
+    border-color: #FFD700;
+}
+
+.nav-btn.home:hover {
+    background: rgba(255, 215, 0, 0.5);
+}
+
+/* 页码显示 */
+.page-indicator {
+    position: fixed;
+    top: 30px;
+    right: 30px;
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    padding: 10px 20px;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+/* 高亮文本 */
+.highlight {
+    color: #FFD700;
+    font-weight: bold;
+}
+
+.emphasis {
+    color: #FF6B6B;
+    font-weight: bold;
+}
+
+.success {
+    color: #4ECDC4;
+    font-weight: bold;
+}
+
+/* 列表样式 */
+.feature-list {
+    text-align: left;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.feature-list li {
+    font-size: 1.1rem;
+    margin: 15px 0;
+    padding-left: 30px;
+    position: relative;
+    line-height: 1.6;
+}
+
+.feature-list li::before {
+    content: '✨';
+    position: absolute;
+    left: 0;
+    top: 0;
+    font-size: 1.2rem;
+}
+
+/* GitHub卡片样式 */
+.github-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin: 30px 0;
+}
+
+.github-card {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 15px;
+    padding: 25px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.github-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #FFD700, #FF6B6B, #4ECDC4);
+}
+
+.github-card:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+.github-title {
+    font-size: 1.3rem;
+    margin-bottom: 10px;
+    color: #FFD700;
+    font-weight: bold;
+}
+
+.github-desc {
+    font-size: 0.9rem;
+    margin-bottom: 15px;
+    opacity: 0.9;
+    line-height: 1.5;
+    flex-grow: 1;
+}
+
+.github-tech {
+    font-size: 0.8rem;
+    color: #4ECDC4;
+    margin-bottom: 15px;
+}
+
+.github-url {
+    font-size: 0.8rem;
+    color: #E6E6FA;
+    word-break: break-all;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 10px 12px;
+    border-radius: 5px;
+    font-family: monospace;
+    margin-top: auto;
+    text-align: center;
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* 6个模块的优雅布局 */
+.feature-grid-six {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 25px;
+    margin: 30px 0;
+    max-width: 1000px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.feature-grid-six .feature-card {
+    min-height: 180px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+/* 备选布局：上2下4 */
+.feature-grid-top2-bottom4 {
+    display: grid;
+    gap: 25px;
+    margin: 30px 0;
+    max-width: 1000px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.feature-grid-top2-bottom4 .top-row {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 25px;
+    justify-items: center;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.feature-grid-top2-bottom4 .bottom-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+}
+
+@media (max-width: 768px) {
+    .slide-title {
+        font-size: 2.5rem;
+    }
+    
+    .slide-subtitle {
+        font-size: 1.2rem;
+    }
+    
+    .feature-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .github-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .navigation {
+        bottom: 20px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .page-indicator {
+        top: 20px;
+        right: 20px;
+    }
+    
+    .content-section {
+        padding: 25px;
+    }
+    
+    .feature-grid-six {
+        grid-template-columns: 1fr;
+    }
+    
+    .feature-grid-top2-bottom4 .top-row,
+    .feature-grid-top2-bottom4 .bottom-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* 中等屏幕响应式 */
+@media (max-width: 1024px) and (min-width: 769px) {
+    .feature-grid-six {
+        grid-template-columns: repeat(2, 1fr);
+        max-width: 800px;
+    }
+} 

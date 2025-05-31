@@ -21,6 +21,7 @@ import {
   PowerOff,
   History,
   RefreshCw,
+  Play,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -44,8 +45,26 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 import {
   getAgentDetail,
@@ -69,6 +88,7 @@ import AgentPromptForm from "./components/AgentPromptForm"
 import AgentToolsForm, { knowledgeBaseOptions } from "./components/AgentToolsForm"
 import AgentEditHeader from "./components/AgentEditHeader"
 import ToolDetailSidebar from "./components/ToolDetailSidebar"
+import AgentPreviewChat from "@/components/agent-preview-chat"
 
 // 应用类型定义
 type AgentType = "chat" | "agent"
@@ -127,6 +147,11 @@ export default function EditAgentPage() {
   const [isToolSidebarOpen, setIsToolSidebarOpen] = useState(false)
   const [installedTools, setInstalledTools] = useState<Tool[]>([])
   const [isLoadingTools, setIsLoadingTools] = useState(false)
+  const [agentVersions, setAgentVersions] = useState<AgentVersion[]>([])
+  const [selectedVersionForView, setSelectedVersionForView] = useState<AgentVersion | null>(null)
+  
+  // 添加预览状态
+  const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false)
 
   // 表单数据
   const [formData, setFormData] = useState<AgentFormData>({
@@ -824,10 +849,49 @@ export default function EditAgentPage() {
         {/* 右侧预览 - 根据类型显示不同内容 */}
         <div className="w-2/5 bg-gray-50 p-8 overflow-auto border-l">
           <div className="mb-6">
-            <h2 className="text-xl font-semibold">预览</h2>
-            <p className="text-muted-foreground">
-              {selectedType === "chat" ? "查看聊天助理在对话中的表现" : "查看功能性助理处理复杂任务的界面"}
-            </p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-semibold">预览</h2>
+                <p className="text-muted-foreground">
+                  {selectedType === "chat" ? "查看聊天助理在对话中的表现" : "查看功能性助理处理复杂任务的界面"}
+                </p>
+              </div>
+              {selectedType === "chat" && (
+                <Dialog open={isPreviewDialogOpen} onOpenChange={setIsPreviewDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="flex items-center gap-2"
+                      disabled={!formData.name || !formData.systemPrompt}
+                    >
+                      <Play className="h-4 w-4" />
+                      实时预览
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-4xl h-[80vh] p-0">
+                    <DialogHeader className="p-6 pb-0">
+                      <DialogTitle>Agent 实时预览</DialogTitle>
+                      <DialogDescription>
+                        与你的 Agent 进行实时对话，预览实际效果
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="flex-1 p-6 pt-0">
+                      <AgentPreviewChat
+                        agentName={formData.name || "预览助理"}
+                        agentAvatar={formData.avatar}
+                        systemPrompt={formData.systemPrompt}
+                        welcomeMessage={formData.welcomeMessage}
+                        toolIds={formData.tools.map(t => t.id)}
+                        toolPresetParams={formData.toolPresetParams as any}
+                        disabled={!formData.name || !formData.systemPrompt}
+                        className="h-[60vh]"
+                      />
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              )}
+            </div>
           </div>
 
           {/* 聊天助理预览 */}
