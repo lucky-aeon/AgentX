@@ -53,6 +53,7 @@ export default function AgentPreviewChat({
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [inputValue, setInputValue] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [isThinking, setIsThinking] = useState(false)
   const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -77,7 +78,7 @@ export default function AgentPreviewChat({
         scrollElement.scrollTop = scrollElement.scrollHeight
       }
     }
-  }, [messages])
+  }, [messages, isThinking])
 
   // 发送消息
   const sendMessage = async () => {
@@ -94,19 +95,7 @@ export default function AgentPreviewChat({
     setMessages(prev => [...prev, userMessage])
     setInputValue('')
     setIsLoading(true)
-
-    // 创建AI响应消息
-    const aiMessageId = (Date.now() + 1).toString()
-    const aiMessage: ChatMessage = {
-      id: aiMessageId,
-      role: 'ASSISTANT',
-      content: '',
-      timestamp: Date.now(),
-      isStreaming: true
-    }
-
-    setMessages(prev => [...prev, aiMessage])
-    setStreamingMessageId(aiMessageId)
+    setIsThinking(true) // 设置思考状态
 
     try {
       // 构建消息历史
@@ -129,41 +118,86 @@ export default function AgentPreviewChat({
         modelId
       }
 
+      // 创建AI响应消息（在第一次收到内容时才添加）
+      let aiMessageId: string | null = null
+      let hasReceivedFirstResponse = false
+
       // 发送预览请求
       await previewAgent(
         previewRequest,
         // 流式消息处理
         (content: string) => {
           console.log('Received streaming content:', content);
-          setMessages(prev => prev.map(msg => 
-            msg.id === aiMessageId 
-              ? { ...msg, content: msg.content + content }
-              : msg
-          ))
+          
+          // 首次响应处理
+          if (!hasReceivedFirstResponse) {
+            hasReceivedFirstResponse = true
+            setIsThinking(false) // 收到第一个内容时关闭思考状态
+            
+            // 创建AI响应消息
+            aiMessageId = (Date.now() + 1).toString()
+            const aiMessage: ChatMessage = {
+              id: aiMessageId,
+              role: 'ASSISTANT',
+              content: content,
+              timestamp: Date.now(),
+              isStreaming: true
+            }
+            
+            setMessages(prev => [...prev, aiMessage])
+            setStreamingMessageId(aiMessageId)
+          } else if (aiMessageId) {
+            // 更新现有消息内容
+            setMessages(prev => prev.map(msg => 
+              msg.id === aiMessageId 
+                ? { ...msg, content: msg.content + content }
+                : msg
+            ))
+          }
         },
         // 完成处理
         (fullContent: string) => {
           console.log('Preview completed with full content:', fullContent);
-          setMessages(prev => prev.map(msg => 
-            msg.id === aiMessageId 
-              ? { ...msg, content: fullContent, isStreaming: false }
-              : msg
-          ))
+          if (aiMessageId) {
+            setMessages(prev => prev.map(msg => 
+              msg.id === aiMessageId 
+                ? { ...msg, content: fullContent, isStreaming: false }
+                : msg
+            ))
+          }
           setStreamingMessageId(null)
           setIsLoading(false)
+          setIsThinking(false)
         },
         // 错误处理
         (error: Error) => {
           console.error('Preview error:', error)
-          setMessages(prev => prev.map(msg => 
-            msg.id === aiMessageId 
-              ? { 
-                  ...msg, 
-                  content: `预览出错: ${error.message}`, 
-                  isStreaming: false 
-                }
-              : msg
-          ))
+          
+          // 如果还在思考中，先关闭思考状态并添加错误消息
+          if (isThinking) {
+            setIsThinking(false)
+            const errorMessageId = (Date.now() + 1).toString()
+            const errorMessage: ChatMessage = {
+              id: errorMessageId,
+              role: 'ASSISTANT',
+              content: `预览出错: ${error.message}`,
+              timestamp: Date.now(),
+              isStreaming: false
+            }
+            setMessages(prev => [...prev, errorMessage])
+          } else if (aiMessageId) {
+            // 如果已经有消息，更新消息内容
+            setMessages(prev => prev.map(msg => 
+              msg.id === aiMessageId 
+                ? { 
+                    ...msg, 
+                    content: `预览出错: ${error.message}`, 
+                    isStreaming: false 
+                  }
+                : msg
+            ))
+          }
+          
           setStreamingMessageId(null)
           setIsLoading(false)
           
@@ -178,6 +212,7 @@ export default function AgentPreviewChat({
       console.error('Preview request failed:', error)
       setStreamingMessageId(null)
       setIsLoading(false)
+      setIsThinking(false)
       
       toast({
         title: "预览失败", 
@@ -203,6 +238,9 @@ export default function AgentPreviewChat({
       content: welcomeMessage,
       timestamp: Date.now()
     }] : [])
+    setIsThinking(false)
+    setIsLoading(false)
+    setStreamingMessageId(null)
   }
 
   return (
@@ -285,6 +323,30 @@ export default function AgentPreviewChat({
                 )}
               </div>
             ))}
+
+            {/* 思考中提示 - 和对话页面相同的UI */}
+            {isThinking && (
+              <div className="flex items-start">
+                <div className="h-8 w-8 mr-2 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
+                  <div className="text-lg">🤖</div>
+                </div>
+                <div className="max-w-[80%]">
+                  <div className="flex items-center mb-1 text-xs text-gray-500">
+                    <span className="font-medium">{agentName}</span>
+                    <span className="mx-1 text-gray-400">·</span>
+                    <span>刚刚</span>
+                  </div>
+                  <div className="space-y-2 p-3 rounded-lg">
+                    <div className="flex space-x-2 items-center">
+                      <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
+                      <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse delay-75"></div>
+                      <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse delay-150"></div>
+                      <div className="text-sm text-gray-500 animate-pulse">思考中...</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </ScrollArea>
       </CardContent>

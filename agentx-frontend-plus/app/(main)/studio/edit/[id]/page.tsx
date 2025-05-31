@@ -3,172 +3,730 @@
 // 注意: 在未来的 Next.js 版本中，params 将会是一个 Promise 对象
 // 届时需要使用 React.use(params) 解包后再访问其属性
 
-import React, { useEffect } from "react"
-import { useParams } from "next/navigation"
+import React from "react"
+
+import { useEffect, useState, useRef } from "react"
+import { useRouter, useParams } from "next/navigation"
 import Link from "next/link"
+import {
+  MessageCircle,
+  Upload,
+  Trash,
+  FileText,
+  Workflow,
+  Zap,
+  Search,
+  ArrowLeft,
+  Power,
+  PowerOff,
+  History,
+  RefreshCw,
+} from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Badge } from "@/components/ui/badge"
+import { toast } from "@/hooks/use-toast"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Switch } from "@/components/ui/switch"
+import { Label } from "@/components/ui/label"
+import { Slider } from "@/components/ui/slider"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Card, CardContent } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Badge } from "@/components/ui/badge"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
-// 自定义hooks
-import { useAgentEdit } from "@/hooks/use-agent-edit"
-import { useAgentVersion } from "@/hooks/use-agent-version"
-import { useAgentTools } from "@/hooks/use-agent-tools"
-import { useAgentOperations } from "@/hooks/use-agent-operations"
-
-// 组件
+import {
+  getAgentDetail,
+  updateAgent,
+  publishAgentVersion,
+  deleteAgent,
+  toggleAgentStatus,
+  getAgentVersions,
+  updateAgentWithToast,
+  publishAgentVersionWithToast,
+  deleteAgentWithToast,
+  getAgentLatestVersion,
+} from "@/lib/agent-service"
+import { getInstalledTools } from "@/lib/tool-service"
+import { PublishStatus } from "@/types/agent"
+import type { AgentVersion } from "@/types/agent"
+import type { Tool } from "@/types/tool"
+import type { AgentTool } from "@/types/agent"
 import AgentBasicInfoForm from "./components/AgentBasicInfoForm"
 import AgentPromptForm from "./components/AgentPromptForm"
-import AgentToolsForm from "./components/AgentToolsForm"
+import AgentToolsForm, { knowledgeBaseOptions } from "./components/AgentToolsForm"
 import AgentEditHeader from "./components/AgentEditHeader"
 import ToolDetailSidebar from "./components/ToolDetailSidebar"
 import AgentPreviewChat from "@/components/agent-preview-chat"
 
-// Dialog组件
-import AgentDeleteDialog from "./components/AgentDeleteDialog"
-import AgentPublishDialog from "./components/AgentPublishDialog"
-import AgentVersionHistoryDialog from "./components/AgentVersionHistoryDialog"
-import AgentVersionDetailDialog from "./components/AgentVersionDetailDialog"
+// 应用类型定义
+type AgentType = "chat" | "agent"
+
+// 临时的接口，只包含工具的基本信息
+// interface SelectedToolInfo {
+// id: string;
+// name: string;
+// description: string;
+// }
+
+interface AgentFormData {
+  name: string
+  avatar: string | null
+  description: string
+  systemPrompt: string
+  welcomeMessage: string
+  tools: AgentTool[]
+  knowledgeBaseIds: string[]
+  toolPresetParams: {
+    [serverName: string]: {
+      [functionName: string]: {
+        [paramName: string]: string
+      }
+    }
+  } // 工具预设参数
+  enabled: boolean
+  agentType: number
+}
 
 export default function EditAgentPage() {
+  const router = useRouter()
   const params = useParams()
   const agentId = params.id as string
   
-  // 使用自定义hooks
-  const {
-    selectedType,
-    setSelectedType,
-    activeTab,
-    setActiveTab,
-    isSubmitting,
-    setIsSubmitting,
-    isLoading,
-    setIsLoading,
-    isDeleting,
-    setIsDeleting,
-    isPublishing,
-    setIsPublishing,
-    isLoadingVersions,
-    setIsLoadingVersions,
-    isRollingBack,
-    setIsRollingBack,
-    isLoadingLatestVersion,
-    setIsLoadingLatestVersion,
-    fileInputRef,
-    formData,
-    setFormData,
-    updateFormField,
-    getAvailableTabs,
-  } = useAgentEdit()
+  const [selectedType, setSelectedType] = useState<AgentType>("chat")
+  const [activeTab, setActiveTab] = useState("basic")
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [isPublishing, setIsPublishing] = useState(false)
+  const [isTogglingStatus, setIsTogglingStatus] = useState(false)
+  const [isLoadingVersions, setIsLoadingVersions] = useState(false)
+  const [isRollingBack, setIsRollingBack] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [showPublishDialog, setShowPublishDialog] = useState(false)
+  const [showVersionsDialog, setShowVersionsDialog] = useState(false)
+  const [versionNumber, setVersionNumber] = useState("")
+  const [changeLog, setChangeLog] = useState("")
+  const [versions, setVersions] = useState<AgentVersion[]>([])
+  const [selectedVersion, setSelectedVersion] = useState<AgentVersion | null>(null)
+  const [latestVersion, setLatestVersion] = useState<AgentVersion | null>(null)
+  const [isLoadingLatestVersion, setIsLoadingLatestVersion] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [selectedToolForSidebar, setSelectedToolForSidebar] = useState<Tool | null>(null)
+  const [isToolSidebarOpen, setIsToolSidebarOpen] = useState(false)
+  const [installedTools, setInstalledTools] = useState<Tool[]>([])
+  const [isLoadingTools, setIsLoadingTools] = useState(false)
+  const [agentVersions, setAgentVersions] = useState<AgentVersion[]>([])
+  const [selectedVersionForView, setSelectedVersionForView] = useState<AgentVersion | null>(null)
+  
+  // 表单数据
+  const [formData, setFormData] = useState<AgentFormData>({
+    name: "",
+    avatar: null,
+    description: "",
+    systemPrompt: "",
+    welcomeMessage: "",
+    tools: [],
+    knowledgeBaseIds: [],
+    toolPresetParams: {}, // 初始化为空对象
+    enabled: true,
+    agentType: 1,
+  })
 
-  const {
-    showDeleteDialog,
-    setShowDeleteDialog,
-    showPublishDialog,
-    setShowPublishDialog,
-    showVersionsDialog,
-    setShowVersionsDialog,
-    versionNumber,
-    setVersionNumber,
-    changeLog,
-    setChangeLog,
-    versions,
-    selectedVersion,
-    setSelectedVersion,
-    latestVersion,
-    fetchLatestVersion,
-    loadVersions,
-    viewVersionDetail,
-    resetPublishForm,
-  } = useAgentVersion()
+  // 加载已安装的工具
+  useEffect(() => {
+    const fetchInstalledTools = async () => {
+      setIsLoadingTools(true)
+      try {
+        const response = await getInstalledTools({ pageSize: 100 });
+        if (response.code === 200 && response.data && Array.isArray(response.data.records)) {
+          setInstalledTools(response.data.records);
+        } else {
+          console.error("获取已安装工具失败:", response.message);
+        }
+      } catch (error) {
+        console.error("获取已安装工具错误:", error);
+      } finally {
+        setIsLoadingTools(false);
+      }
+    };
 
-  const {
-    selectedToolForSidebar,
-    isToolSidebarOpen,
-    setIsToolSidebarOpen,
-    handleToolClick,
-    updateToolPresetParameters,
-  } = useAgentTools()
-
-  const {
-    loadAgentDetail,
-    handleAvatarUpload,
-    removeAvatar,
-    handleUpdateAgent,
-    handleDeleteAgent,
-    handleToggleStatus,
-    handlePublishVersion,
-    rollbackToVersion,
-  } = useAgentOperations()
+    fetchInstalledTools();
+  }, []);
 
   // 加载助理详情
   useEffect(() => {
-    loadAgentDetail(agentId, setFormData, setSelectedType, setIsLoading)
-  }, [agentId])
+    async function fetchAgentDetail() {
+      try {
+        setIsLoading(true)
+        const response = await getAgentDetail(agentId)
 
-  // 包装的事件处理函数
-  const wrappedHandleAvatarUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    handleAvatarUpload(event, updateFormField)
+        if (response.code === 200 && response.data) {
+          const agent = response.data
+
+          // 如果返回的是 toolIds，需要获取完整的工具信息
+          let agentTools: AgentTool[] = []
+          
+          if (agent.tools && agent.tools.length > 0) {
+            // 如果直接返回了 tools 对象数组，直接使用
+            agentTools = agent.tools.map(t => ({ 
+              id: t.id, 
+              name: t.name, 
+              description: t.description || undefined,
+              presetParameters: t.presetParameters || {},
+            }))
+          } else if (agent.toolIds && agent.toolIds.length > 0) {
+            // 如果只返回了 toolIds，需要获取完整的工具信息
+            try {
+              const toolsResponse = await getInstalledTools({ pageSize: 100 })
+              if (toolsResponse.code === 200 && toolsResponse.data && Array.isArray(toolsResponse.data.records)) {
+                const installedTools = toolsResponse.data.records
+                
+                // 根据 toolIds 过滤出已选择的工具
+                agentTools = agent.toolIds.map(toolId => {
+                  // 查找匹配的工具
+                  const matchedTool = installedTools.find((t: Tool) => t.id === toolId || t.toolId === toolId)
+                  
+                  if (matchedTool) {
+                    return {
+                      id: toolId,
+                      name: matchedTool.name,
+                      description: matchedTool.description || undefined,
+                      presetParameters: {},
+                    }
+                  } else {
+                    // 如果找不到匹配的工具，创建一个基本的工具对象
+                    return {
+                      id: toolId,
+                      name: `工具 (ID: ${toolId.substring(0, 8)}...)`,
+                      description: undefined,
+                      presetParameters: {},
+                    }
+                  }
+                })
+              }
+            } catch (error) {
+              console.error("获取已安装工具错误:", error)
+            }
+          }
+
+          // 设置表单数据
+          setFormData({
+            name: agent.name,
+            avatar: agent.avatar,
+            description: agent.description,
+            systemPrompt: agent.systemPrompt,
+            welcomeMessage: agent.welcomeMessage,
+            tools: agentTools,
+            knowledgeBaseIds: agent.knowledgeBaseIds || [],
+            toolPresetParams: agent.toolPresetParams || {},
+            enabled: agent.enabled,
+            agentType: agent.agentType,
+          })
+
+          // 设置助理类型
+          setSelectedType(agent.agentType === 1 ? "chat" : "agent")
+        } else {
+          toast({
+            title: "获取助理详情失败",
+            description: response.message,
+            variant: "destructive",
+          })
+          router.push("/studio")
+        }
+      } catch (error) {
+        console.error("获取助理详情错误:", error)
+        toast({
+          title: "获取助理详情失败",
+          description: "请稍后再试",
+          variant: "destructive",
+        })
+        router.push("/studio")
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchAgentDetail()
+  }, [agentId, router])
+
+  // 获取助理最新版本
+  const fetchLatestVersion = async () => {
+    setIsLoadingLatestVersion(true)
+    try {
+      const response = await getAgentLatestVersion(agentId)
+      
+      if (response.code === 200) {
+        setLatestVersion(response.data)
+        
+        // 如果有最新版本，预填写下一个版本号
+        if (response.data && response.data.versionNumber) {
+          const versionParts = response.data.versionNumber.split('.')
+          if (versionParts.length >= 3) {
+            // 增加补丁版本号
+            const major = parseInt(versionParts[0])
+            const minor = parseInt(versionParts[1])
+            const patch = parseInt(versionParts[2]) + 1
+            setVersionNumber(`${major}.${minor}.${patch}`)
+          } else {
+            // 无法解析版本号，设置为原版本号 + .1
+            setVersionNumber(`${response.data.versionNumber}.1`)
+          }
+        } else {
+          // 没有版本，设置初始版本号
+          setVersionNumber("1.0.0")
+        }
+      } else {
+        // 没有版本或获取失败，设置初始版本号
+        setVersionNumber("1.0.0")
+      }
+    } catch (error) {
+      console.error("获取最新版本错误:", error)
+      // 出错，设置初始版本号
+      setVersionNumber("1.0.0")
+    } finally {
+      setIsLoadingLatestVersion(false)
+    }
   }
 
-  const wrappedRemoveAvatar = () => {
-    removeAvatar(updateFormField, fileInputRef)
+  // 更新表单字段
+  const updateFormField = (field: string, value: any) => {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: value,
+    }))
   }
 
-  const wrappedTriggerFileInput = () => {
+  // 切换工具
+  const toggleTool = (toolToToggle: Tool) => {
+    // 使用 toolId（如果存在）或 id 作为工具标识符
+    const toolIdentifier = toolToToggle.toolId || toolToToggle.id;
+    const isToolCurrentlyEnabled = formData.tools.some(t => t.id === toolIdentifier);
+    
+    setFormData((prev) => {
+      let updatedTools: AgentTool[];
+      if (isToolCurrentlyEnabled) {
+        updatedTools = prev.tools.filter((t) => t.id !== toolIdentifier);
+      } else {
+        const newAgentTool: AgentTool = {
+          id: toolIdentifier,
+          name: toolToToggle.name,
+          description: toolToToggle.description || undefined,
+        };
+        updatedTools = [...prev.tools, newAgentTool];
+      }
+      return { ...prev, tools: updatedTools };
+    });
+    
+    toast({
+      title: `工具已${!isToolCurrentlyEnabled ? "启用" : "禁用"}: ${toolToToggle.name}`,
+    });
+  };
+
+  // 切换知识库
+  const toggleKnowledgeBase = (kbId: string, kbName?: string) => {
+    const isKnowledgeBaseAssociated = !formData.knowledgeBaseIds.includes(kbId)
+    setFormData((prev) => {
+      const knowledgeBaseIds = [...prev.knowledgeBaseIds]
+      if (knowledgeBaseIds.includes(kbId)) {
+        return { ...prev, knowledgeBaseIds: knowledgeBaseIds.filter((id) => id !== kbId) }
+      } else {
+        return { ...prev, knowledgeBaseIds: [...knowledgeBaseIds, kbId] }
+      }
+    })
+    // 使用传入的 kbName，如果未提供则回退到从 knowledgeBaseOptions 查找
+    const nameToDisplay = kbName || knowledgeBaseOptions.find((kb) => kb.id === kbId)?.name
+    toast({
+      title: `知识库已${isKnowledgeBaseAssociated ? "关联" : "取消关联"}: ${nameToDisplay || kbId}`,
+    })
+  }
+
+  // 处理头像上传
+  const handleAvatarUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    // 检查文件类型
+    if (!file.type.startsWith("image/")) {
+      toast({
+        title: "文件类型错误",
+        description: "请上传图片文件",
+        variant: "destructive",
+      })
+      return
+    }
+
+    // 检查文件大小 (限制为2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      toast({
+        title: "文件过大",
+        description: "头像图片不能超过2MB",
+        variant: "destructive",
+      })
+      return
+    }
+
+    // 创建文件预览URL
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      updateFormField("avatar", e.target?.result as string)
+    }
+    reader.readAsDataURL(file)
+  }
+
+  // 移除头像
+  const removeAvatar = () => {
+    updateFormField("avatar", null)
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""
+    }
+  }
+
+  // 触发文件选择
+  const triggerFileInput = () => {
     fileInputRef.current?.click()
   }
 
-  const wrappedHandleUpdateAgent = () => {
-    handleUpdateAgent(agentId, formData, setIsSubmitting)
+  // 处理更新助理
+  const handleUpdateAgent = async () => {
+    if (!formData.name.trim()) {
+      toast({
+        title: "请输入名称",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsSubmitting(true)
+
+    try {
+      // 将工具对象数组转换为工具ID字符串数组
+      const toolIds = formData.tools.map(tool => tool.id);
+      
+      // 准备API请求参数
+      const agentData = {
+        id: agentId,
+        name: formData.name,
+        avatar: formData.avatar,
+        description: formData.description || "",
+        systemPrompt: formData.systemPrompt,
+        welcomeMessage: formData.welcomeMessage,
+        toolIds: toolIds, // 使用工具ID数组
+        knowledgeBaseIds: selectedType === "chat" ? formData.knowledgeBaseIds : [],
+        toolPresetParams: formData.toolPresetParams,
+        enabled: formData.enabled,
+        agentType: formData.agentType,
+      }
+
+      // 调用API更新助理
+      const response = await updateAgentWithToast(agentId, agentData)
+
+      if (response.code === 200) {
+        // toast已通过withToast处理，此处不需要额外的toast
+      } else {
+        // 错误也已由withToast处理
+      }
+    } catch (error) {
+      console.error("更新失败:", error)
+      // 错误已由withToast处理
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
-  const wrappedHandleDeleteAgent = () => {
-    handleDeleteAgent(agentId, setIsDeleting, setShowDeleteDialog)
+  // 处理删除助理
+  const handleDeleteAgent = async () => {
+    setIsDeleting(true)
+
+    try {
+      const response = await deleteAgentWithToast(agentId)
+
+      if (response.code === 200) {
+        // toast已通过withToast处理
+        router.push("/studio")
+      } else {
+        // 错误已由withToast处理
+      }
+    } catch (error) {
+      console.error("删除失败:", error)
+      // 错误已由withToast处理
+    } finally {
+      setIsDeleting(false)
+      setShowDeleteDialog(false)
+    }
   }
 
-  const wrappedHandleToggleStatus = () => {
-    handleToggleStatus(formData, updateFormField)
+  // 处理切换助理状态
+  const handleToggleStatus = async () => {
+    // 不发送网络请求，只更新本地状态
+    const newEnabledStatus = !formData.enabled;
+    
+    updateFormField("enabled", newEnabledStatus);
+    
+    toast({
+      title: newEnabledStatus ? "已启用" : "已禁用",
+      description: `助理 "${formData.name}" ${newEnabledStatus ? "已启用" : "已禁用"}`,
+    });
   }
 
-  const wrappedHandlePublishVersion = () => {
-    handlePublishVersion(
-      agentId,
-      formData,
-      versionNumber,
-      changeLog,
-      setIsPublishing,
-      setShowPublishDialog,
-      resetPublishForm,
-      () => fetchLatestVersion(agentId)
-    )
+  // 处理发布助理版本
+  const handlePublishVersion = async () => {
+    if (!versionNumber.trim()) {
+      toast({
+        title: "请输入版本号",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsPublishing(true)
+
+    try {
+      // 将工具对象数组转换为工具ID字符串数组
+      const toolIds = formData.tools.map(tool => tool.id);
+      
+      const response = await publishAgentVersionWithToast(agentId, {
+        versionNumber,
+        changeLog: changeLog || `发布 ${versionNumber} 版本`,
+        systemPrompt: formData.systemPrompt,
+        welcomeMessage: formData.welcomeMessage,
+        toolIds: toolIds, // 使用工具ID数组
+        knowledgeBaseIds: formData.knowledgeBaseIds,
+        toolPresetParams: formData.toolPresetParams,
+      })
+
+      if (response.code === 200) {
+        // toast已通过withToast处理
+        setShowPublishDialog(false)
+        setVersionNumber("")
+        setChangeLog("")
+        // 更新最新版本信息
+        fetchLatestVersion()
+      } else {
+        // 错误已由withToast处理
+      }
+    } catch (error) {
+      console.error("发布失败:", error)
+      // 错误已由withToast处理
+    } finally {
+      setIsPublishing(false)
+    }
   }
 
-  const wrappedOpenPublishDialog = async () => {
-    await fetchLatestVersion(agentId)
+  // 打开发布对话框
+  const openPublishDialog = async () => {
+    // 先加载最新版本
+    await fetchLatestVersion()
     setShowPublishDialog(true)
   }
 
-  const wrappedLoadVersions = () => {
-    setShowVersionsDialog(true)
-    loadVersions(agentId)
+  // 加载助理版本列表
+  const loadVersions = async () => {
+    setIsLoadingVersions(true)
+    setVersions([])
+
+    try {
+      const response = await getAgentVersions(agentId)
+
+      if (response.code === 200) {
+        setVersions(response.data)
+      } else {
+        toast({
+          title: "获取版本列表失败",
+          description: response.message,
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("获取版本列表失败:", error)
+      toast({
+        title: "获取版本列表失败",
+        description: "请稍后再试",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoadingVersions(false)
+    }
   }
 
-  const wrappedRollbackToVersion = (version: any) => {
-    rollbackToVersion(
-      version,
-      setFormData,
-      setSelectedType,
-      formData,
-      setIsRollingBack,
-      setSelectedVersion,
-      setShowVersionsDialog
-    )
+  // 查看版本详情
+  const viewVersionDetail = async (version: AgentVersion) => {
+    setSelectedVersion(version)
   }
+
+  // 回滚到特定版本
+  const rollbackToVersion = async (version: AgentVersion) => {
+    if (!version) return
+
+    setIsRollingBack(true)
+
+    try {
+      setFormData({
+        name: version.name,
+        avatar: version.avatar,
+        description: version.description,
+        systemPrompt: version.systemPrompt,
+        welcomeMessage: version.welcomeMessage,
+        tools: version.tools?.map(t => ({
+          id: t.id,
+          name: t.name,
+          description: t.description || undefined,
+          presetParameters: t.presetParameters || {},
+        })) || [],
+        knowledgeBaseIds: version.knowledgeBaseIds || [],
+        toolPresetParams: version.toolPresetParams || {},
+        enabled: formData.enabled,
+        agentType: version.agentType,
+      })
+      setSelectedType(version.agentType === 1 ? "chat" : "agent")
+
+      toast({
+        title: "回滚成功",
+        description: `已回滚到版本 ${version.versionNumber}`,
+      })
+
+      // 关闭对话框
+      setSelectedVersion(null)
+      setShowVersionsDialog(false)
+    } catch (error) {
+      console.error("回滚失败:", error)
+      toast({
+        title: "回滚失败",
+        description: "请稍后再试",
+        variant: "destructive",
+      })
+    } finally {
+      setIsRollingBack(false)
+    }
+  }
+
+  // 根据选择的类型更新可用的标签页
+  const getAvailableTabs = () => {
+    // 所有类型都显示所有标签页
+      return [
+        { id: "basic", label: "基本信息" },
+        { id: "prompt", label: "提示词配置" },
+      { id: "tools", label: selectedType === "chat" ? "工具与知识库" : "工具配置" },
+      ]
+  }
+
+  // 获取发布状态文本
+  const getPublishStatusText = (status: number) => {
+    switch (status) {
+      case PublishStatus.REVIEWING:
+        return "审核中"
+      case PublishStatus.PUBLISHED:
+        return "已发布"
+      case PublishStatus.REJECTED:
+        return "已拒绝"
+      case PublishStatus.REMOVED:
+        return "已下架"
+      default:
+        return "未知状态"
+    }
+  }
+
+  // 处理工具点击事件
+  const handleToolClick = (tool: Tool) => {
+    // 确保当前工具不是已经选中的工具，避免重复打开侧边栏
+    if (selectedToolForSidebar && selectedToolForSidebar.id === tool.id) {
+      return;
+    }
+    
+    console.log("Tool clicked:", tool);
+    // 先关闭侧边栏，再设置工具，避免同时存在两个侧边栏
+    setIsToolSidebarOpen(false);
+    
+    // 使用setTimeout延迟设置新工具，确保旧侧边栏已经关闭
+    setTimeout(() => {
+      setSelectedToolForSidebar(tool);
+      setIsToolSidebarOpen(true);
+    }, 100);
+  }
+
+  // 更新工具预设参数
+  const updateToolPresetParameters = (toolId: string, presetParams: Record<string, Record<string, string>>) => {
+    // 获取当前工具信息
+    const selectedTool = installedTools.find((t: Tool) => t.id === toolId || t.toolId === toolId);
+    
+    if (!selectedTool || !selectedTool.mcpServerName) {
+      console.error("无法找到对应的工具或工具缺少 mcpServerName");
+      toast({
+        title: "无法更新工具参数",
+        description: "工具信息不完整",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const mcpServerName = selectedTool.mcpServerName;
+    
+    setFormData(prev => {
+      // 创建新的 toolPresetParams 对象
+      const newToolPresetParams = { ...prev.toolPresetParams };
+      
+      // 确保 mcpServerName 的键存在
+      if (!newToolPresetParams[mcpServerName]) {
+        newToolPresetParams[mcpServerName] = {};
+      }
+      
+      // 遍历工具的所有功能
+      Object.keys(presetParams).forEach(functionName => {
+        // 获取该功能的所有参数
+        const params = presetParams[functionName];
+        
+        // 将参数添加到嵌套结构中
+        if (!newToolPresetParams[mcpServerName][functionName]) {
+          newToolPresetParams[mcpServerName][functionName] = {};
+        }
+        
+        // 添加每个参数
+        Object.entries(params).forEach(([paramName, paramValue]) => {
+          newToolPresetParams[mcpServerName][functionName][paramName] = paramValue || '';
+        });
+      });
+      
+      return {
+        ...prev,
+        toolPresetParams: newToolPresetParams
+      };
+    });
+    
+    toast({
+      title: "参数预设已更新",
+      description: `已为工具 ${selectedTool.name} 更新参数预设`,
+    });
+  };
 
   // 如果正在加载，显示加载状态
   if (isLoading) {
@@ -218,9 +776,12 @@ export default function EditAgentPage() {
           <AgentEditHeader
             selectedType={selectedType}
             formDataEnabled={formData.enabled}
-            onShowVersionsDialog={wrappedLoadVersions}
-            onOpenPublishDialog={wrappedOpenPublishDialog}
-            onToggleStatus={wrappedHandleToggleStatus}
+            onShowVersionsDialog={() => {
+              setShowVersionsDialog(true);
+              loadVersions();
+            }}
+            onOpenPublishDialog={openPublishDialog}
+            onToggleStatus={handleToggleStatus}
             onShowDeleteDialog={() => setShowDeleteDialog(true)}
           />
 
@@ -241,53 +802,29 @@ export default function EditAgentPage() {
                 formData={formData}
                 selectedType={selectedType}
                 updateFormField={updateFormField}
-                triggerFileInput={wrappedTriggerFileInput}
-                handleAvatarUpload={wrappedHandleAvatarUpload}
-                removeAvatar={wrappedRemoveAvatar}
+                triggerFileInput={triggerFileInput}
+                handleAvatarUpload={handleAvatarUpload}
+                removeAvatar={removeAvatar}
                 fileInputRef={fileInputRef}
               />
             </TabsContent>
 
-            <TabsContent value="prompt" className="space-y-6">
+            {/* 提示词配置 */}
+              <TabsContent value="prompt" className="space-y-6">
               <AgentPromptForm
                 formData={formData}
                 updateFormField={updateFormField}
-              />
-            </TabsContent>
+                  />
+              </TabsContent>
 
             <TabsContent value="tools" className="space-y-6">
               <AgentToolsForm
                 formData={formData}
                 selectedType={selectedType}
-                toggleTool={(tool) => {
-                  // 这里需要从hooks中获取toggleTool方法
-                  // 由于hook的限制，我们需要在这里实现简化的逻辑
-                  const toolIdentifier = tool.toolId || tool.id
-                  const isToolCurrentlyEnabled = formData.tools.some(t => t.id === toolIdentifier)
-                  
-                  if (isToolCurrentlyEnabled) {
-                    updateFormField("tools", formData.tools.filter(t => t.id !== toolIdentifier))
-                  } else {
-                    const newAgentTool = {
-                      id: toolIdentifier,
-                      name: tool.name,
-                      description: tool.description || undefined,
-                    }
-                    updateFormField("tools", [...formData.tools, newAgentTool])
-                  }
-                }}
-                toggleKnowledgeBase={(kbId, kbName) => {
-                  const knowledgeBaseIds = [...formData.knowledgeBaseIds]
-                  if (knowledgeBaseIds.includes(kbId)) {
-                    updateFormField("knowledgeBaseIds", knowledgeBaseIds.filter(id => id !== kbId))
-                  } else {
-                    updateFormField("knowledgeBaseIds", [...knowledgeBaseIds, kbId])
-                  }
-                }}
+                toggleTool={toggleTool}
+                toggleKnowledgeBase={toggleKnowledgeBase}
                 onToolClick={handleToolClick}
-                updateToolPresetParameters={(toolId, presetParams) => {
-                  updateToolPresetParameters(toolId, presetParams, setFormData)
-                }}
+                updateToolPresetParameters={updateToolPresetParameters}
               />
             </TabsContent>
           </Tabs>
@@ -298,14 +835,14 @@ export default function EditAgentPage() {
               <Button variant="outline" asChild>
                 <Link href="/studio">取消</Link>
               </Button>
-              <Button onClick={wrappedHandleUpdateAgent} disabled={isSubmitting}>
+              <Button onClick={handleUpdateAgent} disabled={isSubmitting}>
                 {isSubmitting ? "保存中..." : "保存更改"}
               </Button>
             </div>
           </div>
         </div>
 
-        {/* 右侧预览 */}
+        {/* 右侧预览 - 根据类型显示不同内容 */}
         <div className="w-2/5 bg-gray-50 p-8 overflow-auto border-l">
           <div className="mb-6">
             <div className="flex items-center justify-between">
@@ -359,43 +896,201 @@ export default function EditAgentPage() {
         </div>
       </div>
 
-      {/* 对话框组件 */}
-      <AgentDeleteDialog
-        open={showDeleteDialog}
-        onOpenChange={setShowDeleteDialog}
-        onConfirm={wrappedHandleDeleteAgent}
-        isDeleting={isDeleting}
-      />
+      {/* 删除确认对话框 */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>确认删除</DialogTitle>
+            <DialogDescription>确定要删除这个助理吗？此操作无法撤销。</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
+              取消
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteAgent} disabled={isDeleting}>
+              {isDeleting ? "删除中..." : "确认删除"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-      <AgentPublishDialog
-        open={showPublishDialog}
-        onOpenChange={setShowPublishDialog}
-        onConfirm={wrappedHandlePublishVersion}
-        isPublishing={isPublishing}
-        isLoadingLatestVersion={isLoadingLatestVersion}
-        latestVersion={latestVersion}
-        versionNumber={versionNumber}
-        onVersionNumberChange={setVersionNumber}
-        changeLog={changeLog}
-        onChangeLogChange={setChangeLog}
-      />
+      {/* 发布版本对话框 */}
+      <Dialog open={showPublishDialog} onOpenChange={setShowPublishDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>发布新版本</DialogTitle>
+            <DialogDescription>发布新版本将创建当前配置的快照，用户可以使用此版本。</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {isLoadingLatestVersion ? (
+              <div className="flex items-center justify-center py-2">
+                <RefreshCw className="h-4 w-4 animate-spin text-blue-500 mr-2" />
+                <span className="text-sm">加载版本信息...</span>
+              </div>
+            ) : latestVersion ? (
+              <div className="flex items-center p-2 bg-blue-50 rounded-md border border-blue-100 mb-2">
+                <span className="text-sm text-blue-600">当前最新版本：{latestVersion.versionNumber}</span>
+              </div>
+            ) : (
+              <div className="flex items-center p-2 bg-gray-50 rounded-md border border-gray-200 mb-2">
+                <span className="text-sm text-gray-600">当前还没有发布过版本</span>
+              </div>
+            )}
+            <div className="space-y-2">
+              <Label htmlFor="version-number">版本号</Label>
+              <Input
+                id="version-number"
+                placeholder="例如: 1.0.0"
+                value={versionNumber}
+                onChange={(e) => setVersionNumber(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="change-log">更新日志</Label>
+              <Textarea
+                id="change-log"
+                placeholder="描述此版本的更新内容"
+                rows={4}
+                value={changeLog}
+                onChange={(e) => setChangeLog(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowPublishDialog(false)}>
+              取消
+            </Button>
+            <Button onClick={handlePublishVersion} disabled={isPublishing}>
+              {isPublishing ? "发布中..." : "发布版本"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-      <AgentVersionHistoryDialog
-        open={showVersionsDialog}
-        onOpenChange={setShowVersionsDialog}
-        isLoadingVersions={isLoadingVersions}
-        versions={versions}
-        onViewVersion={viewVersionDetail}
-        onRollbackToVersion={wrappedRollbackToVersion}
-        isRollingBack={isRollingBack}
-      />
+      {/* 版本历史对话框 */}
+      <Dialog open={showVersionsDialog} onOpenChange={setShowVersionsDialog}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle>版本历史</DialogTitle>
+            <DialogDescription>查看和管理助理的历史版本</DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 overflow-auto py-4">
+            {isLoadingVersions ? (
+              <div className="flex items-center justify-center py-8">
+                <RefreshCw className="h-6 w-6 animate-spin text-blue-500" />
+                <span className="ml-2">加载版本历史...</span>
+              </div>
+            ) : versions.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">暂无版本历史</div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>版本号</TableHead>
+                    <TableHead>发布时间</TableHead>
+                    <TableHead>状态</TableHead>
+                    <TableHead>更新日志</TableHead>
+                    <TableHead className="text-right">操作</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {versions.map((version) => (
+                    <TableRow key={version.id}>
+                      <TableCell className="font-medium">{version.versionNumber}</TableCell>
+                      <TableCell>{new Date(version.publishedAt).toLocaleString()}</TableCell>
+                      <TableCell>
+                        <Badge variant={version.publishStatus === PublishStatus.PUBLISHED ? "default" : "outline"}>
+                          {getPublishStatusText(version.publishStatus)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="max-w-[200px] truncate">{version.changeLog}</TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="outline" size="sm" className="mr-2" onClick={() => viewVersionDetail(version)}>
+                          查看
+                        </Button>
+                        <Button size="sm" onClick={() => rollbackToVersion(version)} disabled={isRollingBack}>
+                          {isRollingBack ? "回滚中..." : "回滚"}
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
-      <AgentVersionDetailDialog
-        version={selectedVersion}
-        onClose={() => setSelectedVersion(null)}
-        onRollback={wrappedRollbackToVersion}
-        isRollingBack={isRollingBack}
-      />
+      {/* 版本详情对话框 */}
+      {selectedVersion && (
+        <Dialog open={!!selectedVersion} onOpenChange={(open) => !open && setSelectedVersion(null)}>
+          <DialogContent className="max-w-3xl max-h-[80vh] overflow-auto">
+            <DialogHeader>
+              <DialogTitle>版本详情: {selectedVersion.versionNumber}</DialogTitle>
+              <DialogDescription>发布于 {new Date(selectedVersion.publishedAt).toLocaleString()}</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="flex items-center gap-4">
+                <Avatar className="h-12 w-12">
+                  <AvatarImage src={selectedVersion.avatar || ""} alt="Avatar" />
+                  <AvatarFallback className="bg-blue-100 text-blue-600">
+                    {selectedVersion.name ? selectedVersion.name.charAt(0).toUpperCase() : "🤖"}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <h3 className="font-medium">{selectedVersion.name}</h3>
+                  <p className="text-sm text-muted-foreground">{selectedVersion.description}</p>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <h3 className="font-medium">更新日志</h3>
+                <div className="p-3 bg-gray-50 rounded-md">{selectedVersion.changeLog}</div>
+              </div>
+
+              <div className="space-y-2">
+                <h3 className="font-medium">配置信息</h3>
+                <div className="space-y-1">
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">工具数量</span>
+                    <span className="text-sm">{selectedVersion.tools.length}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">知识库数量</span>
+                    <span className="text-sm">{selectedVersion.knowledgeBaseIds.length}</span>
+                  </div>
+                </div>
+              </div>
+
+              {selectedVersion.agentType === 1 && (
+                <>
+                  <div className="space-y-2">
+                    <h3 className="font-medium">系统提示词</h3>
+                    <div className="p-3 bg-gray-50 rounded-md text-sm">
+                      {selectedVersion.systemPrompt || "无系统提示词"}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <h3 className="font-medium">欢迎消息</h3>
+                    <div className="p-3 bg-gray-50 rounded-md text-sm">
+                      {selectedVersion.welcomeMessage || "无欢迎消息"}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setSelectedVersion(null)}>
+                关闭
+              </Button>
+              <Button onClick={() => rollbackToVersion(selectedVersion)} disabled={isRollingBack}>
+                {isRollingBack ? "回滚中..." : "回滚到此版本"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* 工具详情侧边栏 */}
       <ToolDetailSidebar
@@ -405,9 +1100,7 @@ export default function EditAgentPage() {
         presetParameters={selectedToolForSidebar && selectedToolForSidebar.mcpServerName && formData.toolPresetParams[selectedToolForSidebar.mcpServerName] ? 
           formData.toolPresetParams[selectedToolForSidebar.mcpServerName] : 
           {}}
-        onSavePresetParameters={(toolId, presetParams) => {
-          updateToolPresetParameters(toolId, presetParams, setFormData)
-        }}
+        onSavePresetParameters={updateToolPresetParameters}
       />
     </div>
   )
