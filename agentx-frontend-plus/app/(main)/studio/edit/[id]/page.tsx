@@ -21,7 +21,6 @@ import {
   PowerOff,
   History,
   RefreshCw,
-  Play,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -150,9 +149,6 @@ export default function EditAgentPage() {
   const [agentVersions, setAgentVersions] = useState<AgentVersion[]>([])
   const [selectedVersionForView, setSelectedVersionForView] = useState<AgentVersion | null>(null)
   
-  // 添加预览状态
-  const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false)
-
   // 表单数据
   const [formData, setFormData] = useState<AgentFormData>({
     name: "",
@@ -853,232 +849,23 @@ export default function EditAgentPage() {
               <div>
                 <h2 className="text-xl font-semibold">预览</h2>
                 <p className="text-muted-foreground">
-                  {selectedType === "chat" ? "查看聊天助理在对话中的表现" : "查看功能性助理处理复杂任务的界面"}
+                  与你的Agent进行实时对话，预览实际效果
                 </p>
               </div>
-              {selectedType === "chat" && (
-                <Dialog open={isPreviewDialogOpen} onOpenChange={setIsPreviewDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="flex items-center gap-2"
-                      disabled={!formData.name || !formData.systemPrompt}
-                    >
-                      <Play className="h-4 w-4" />
-                      实时预览
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-4xl h-[80vh] p-0">
-                    <DialogHeader className="p-6 pb-0">
-                      <DialogTitle>Agent 实时预览</DialogTitle>
-                      <DialogDescription>
-                        与你的 Agent 进行实时对话，预览实际效果
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="flex-1 p-6 pt-0">
-                      <AgentPreviewChat
-                        agentName={formData.name || "预览助理"}
-                        agentAvatar={formData.avatar}
-                        systemPrompt={formData.systemPrompt}
-                        welcomeMessage={formData.welcomeMessage}
-                        toolIds={formData.tools.map(t => t.id)}
-                        toolPresetParams={formData.toolPresetParams as any}
-                        disabled={!formData.name || !formData.systemPrompt}
-                        className="h-[60vh]"
-                      />
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              )}
             </div>
           </div>
 
-          {/* 聊天助理预览 */}
-          {selectedType === "chat" && (
-            <div className="border rounded-lg bg-white shadow-sm overflow-hidden">
-              <div className="border-b p-3 flex items-center justify-between bg-gray-50">
-                <div className="flex items-center gap-2">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={formData.avatar || ""} alt="Avatar" />
-                    <AvatarFallback className="bg-blue-100 text-blue-600">
-                      {formData.name ? formData.name.charAt(0).toUpperCase() : "🤖"}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="font-medium">{formData.name || "聊天助理"}</span>
-                </div>
-              </div>
-
-              <div className="h-[500px] flex flex-col">
-                <div className="flex-1 p-4 overflow-auto space-y-4 bg-gray-50">
-                  {/* 欢迎消息 */}
-                  <div className="flex items-start gap-3">
-                    <Avatar className="h-8 w-8 mt-1">
-                      <AvatarImage src={formData.avatar || ""} alt="Avatar" />
-                      <AvatarFallback className="bg-blue-100 text-blue-600">
-                        {formData.name ? formData.name.charAt(0).toUpperCase() : "🤖"}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="bg-white rounded-lg p-3 shadow-sm max-w-[80%]">
-                      {formData.welcomeMessage || "你好！我是你的AI助手，有什么可以帮助你的吗？"}
-                    </div>
-                  </div>
-
-                  {/* 用户消息示例 */}
-                  <div className="flex items-start gap-3 justify-end">
-                    <div className="bg-blue-100 rounded-lg p-3 shadow-sm max-w-[80%] text-blue-900">你能做什么？</div>
-                    <Avatar className="h-8 w-8 mt-1">
-                      <AvatarImage src="/placeholder.svg?height=32&width=32" alt="User" />
-                      <AvatarFallback className="bg-blue-500 text-white">U</AvatarFallback>
-                    </Avatar>
-                  </div>
-
-                  {/* 助手回复示例 */}
-                  <div className="flex items-start gap-3">
-                    <Avatar className="h-8 w-8 mt-1">
-                      <AvatarImage src={formData.avatar || ""} alt="Avatar" />
-                      <AvatarFallback className="bg-blue-100 text-blue-600">
-                        {formData.name ? formData.name.charAt(0).toUpperCase() : "🤖"}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="bg-white rounded-lg p-3 shadow-sm max-w-[80%]">
-                      <p>我可以帮助你完成以下任务：</p>
-                      <ul className="list-disc pl-5 mt-2 space-y-1">
-                        <li>回答问题和提供信息</li>
-                        <li>协助写作和内容创作</li>
-                        {formData.tools.some(t => t.id === "web-search") && <li>搜索互联网获取最新信息</li>}
-                        {formData.tools.some(t => t.id === "file-reader") && <li>分析和解读上传的文件</li>}
-                        {formData.tools.some(t => t.id === "code-interpreter") && <li>编写和执行代码</li>}
-                        {formData.tools.some(t => t.id === "image-generation") && <li>生成和编辑图像</li>}
-                        {formData.tools.some(t => t.id === "calculator") && <li>执行数学计算</li>}
-                        {formData.knowledgeBaseIds.length > 0 && <li>基于专业知识库提供准确信息</li>}
-                      </ul>
-                      <p className="mt-2">有什么具体问题我可以帮你解答吗？</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 输入框 */}
-                <div className="p-4 border-t">
-                  <div className="flex gap-2">
-                    <Input placeholder="输入消息..." className="flex-1" disabled />
-                    <Button size="icon" disabled>
-                      <MessageCircle className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* 功能性助理预览 */}
-          {selectedType === "agent" && (
-            <div className="border rounded-lg bg-white shadow-sm overflow-hidden">
-              <div className="border-b p-3 flex items-center justify-between bg-gray-50">
-                <div className="flex items-center gap-2">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={formData.avatar || ""} alt="Avatar" />
-                    <AvatarFallback className="bg-purple-100 text-purple-600">
-                      {formData.name ? formData.name.charAt(0).toUpperCase() : "🤖"}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="font-medium">{formData.name || "功能性助理"}</span>
-                </div>
-              </div>
-
-              <div className="h-[500px] flex flex-col">
-                <div className="flex-1 p-4 overflow-auto space-y-4">
-                  {/* 助理任务界面 */}
-                  <div className="bg-gray-50 rounded-lg p-4 border">
-                    <h3 className="font-medium mb-2">任务描述</h3>
-                    <p className="text-sm text-muted-foreground mb-4">请助理帮我分析以下数据并生成报告。</p>
-                    <div className="flex items-center gap-2 mb-4">
-                      <Button variant="outline" size="sm" disabled>
-                        <FileText className="h-4 w-4 mr-2" />
-                        上传文件
-                      </Button>
-                      <Button variant="outline" size="sm" disabled>
-                        <Workflow className="h-4 w-4 mr-2" />
-                        选择工作流
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* 任务执行状态 */}
-                  <div className="space-y-4">
-                    <div className="bg-white rounded-lg p-4 border">
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="font-medium">任务执行中</h3>
-                        <Badge variant="outline" className="bg-blue-50">
-                          进行中
-                        </Badge>
-                      </div>
-                      <div className="space-y-3">
-                        <div>
-                          <div className="flex justify-between text-sm mb-1">
-                            <span>分析数据</span>
-                            <span>完成</span>
-                          </div>
-                          <Progress value={100} className="h-2" />
-                        </div>
-                        <div>
-                          <div className="flex justify-between text-sm mb-1">
-                            <span>生成报告</span>
-                            <span>60%</span>
-                          </div>
-                          <Progress value={60} className="h-2" />
-                        </div>
-                        <div>
-                          <div className="flex justify-between text-sm mb-1">
-                            <span>格式化输出</span>
-                            <span>等待中</span>
-                          </div>
-                          <Progress value={0} className="h-2" />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* 工具使用记录 */}
-                    <div className="bg-white rounded-lg p-4 border">
-                      <h3 className="font-medium mb-2">工具使用记录</h3>
-                      <div className="space-y-2">
-                        {formData.tools.some(t => t.id === "file-reader") && (
-                          <div className="flex items-center gap-2 text-sm p-2 bg-gray-50 rounded">
-                            <FileText className="h-4 w-4 text-blue-500" />
-                            <span>已读取文件：数据分析.xlsx</span>
-                          </div>
-                        )}
-                        {formData.tools.some(t => t.id === "code-interpreter") && (
-                          <div className="flex items-center gap-2 text-sm p-2 bg-gray-50 rounded">
-                            <Zap className="h-4 w-4 text-purple-500" />
-                            <span>执行代码：数据处理脚本</span>
-                          </div>
-                        )}
-                        {formData.tools.some(t => t.id === "web-search") && (
-                          <div className="flex items-center gap-2 text-sm p-2 bg-gray-50 rounded">
-                            <Search className="h-4 w-4 text-green-500" />
-                            <span>搜索相关信息：市场趋势分析</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 底部操作栏 */}
-                <div className="p-4 border-t">
-                  <div className="flex gap-2">
-                    <Button variant="outline" className="flex-1" disabled>
-                      取消任务
-                    </Button>
-                    <Button className="flex-1" disabled>
-                      查看结果
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+          {/* Agent预览 */}
+          <AgentPreviewChat
+            agentName={formData.name || "预览助理"}
+            agentAvatar={formData.avatar}
+            systemPrompt={formData.systemPrompt}
+            welcomeMessage={formData.welcomeMessage}
+            toolIds={formData.tools.map(t => t.id)}
+            toolPresetParams={formData.toolPresetParams as unknown as Record<string, Record<string, Record<string, string>>>}
+            disabled={!formData.name || !formData.systemPrompt}
+            className="h-[500px]"
+          />
 
           {/* 配置摘要 */}
           <div className="mt-6">
@@ -1093,16 +880,14 @@ export default function EditAgentPage() {
                   <span className="text-sm text-muted-foreground">工具数量</span>
                   <span className="text-sm font-medium">{formData.tools.length}</span>
                 </div>
-                {selectedType === "chat" && (
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">知识库数量</span>
-                    <span className="text-sm font-medium">{formData.knowledgeBaseIds.length}</span>
-                  </div>
-                )}
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">知识库数量</span>
+                  <span className="text-sm font-medium">{formData.knowledgeBaseIds.length}</span>
+                </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">状态</span>
-                  <Badge variant={formData.enabled ? "default" : "outline"} className="text-xs">
-                    {formData.enabled ? "已启用" : "已禁用"}
+                  <Badge variant={formData.enabled ? "outline" : "default"} className="text-xs">
+                    {formData.enabled ? "启用" : "禁用"}
                   </Badge>
                 </div>
               </CardContent>
@@ -1116,7 +901,7 @@ export default function EditAgentPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>确认删除</DialogTitle>
-            <DialogDescription>您确定要删除这个助理吗？此操作无法撤销。</DialogDescription>
+            <DialogDescription>确定要删除这个助理吗？此操作无法撤销。</DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
