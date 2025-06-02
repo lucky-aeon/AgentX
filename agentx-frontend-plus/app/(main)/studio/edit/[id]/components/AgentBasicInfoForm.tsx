@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Upload, Trash, FileImage, MessageSquare } from "lucide-react";
+import FileUpload from "@/components/ui/file-upload";
 
 interface AgentFormData {
   name: string;
@@ -20,27 +21,19 @@ interface AgentBasicInfoFormProps {
   formData: AgentFormData;
   selectedType: "chat" | "agent";
   updateFormField: (field: string, value: any) => void;
-  triggerFileInput: () => void;
-  handleAvatarUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  removeAvatar: () => void;
-  fileInputRef: React.RefObject<HTMLInputElement | null>;
 }
 
 const AgentBasicInfoForm: React.FC<AgentBasicInfoFormProps> = ({
   formData,
   selectedType,
   updateFormField,
-  triggerFileInput,
-  handleAvatarUpload,
-  removeAvatar,
-  fileInputRef,
 }) => {
   return (
     <div className="space-y-6">
       {/* 名称和头像 */}
       <div>
         <h2 className="text-lg font-medium mb-4">名称 & 头像</h2>
-        <div className="flex gap-4 items-center">
+        <div className="flex gap-4 items-start">
           <div className="flex-1">
             <Label htmlFor="agent-name" className="mb-2 block">
               名称
@@ -55,33 +48,21 @@ const AgentBasicInfoForm: React.FC<AgentBasicInfoFormProps> = ({
           </div>
           <div>
             <Label className="mb-2 block">头像</Label>
-            <div className="flex items-center gap-2">
-              <Avatar className="h-12 w-12">
-                <AvatarImage src={formData.avatar || ""} alt="Avatar" />
-                <AvatarFallback className="bg-blue-100 text-blue-600">
+            <FileUpload
+              variant="avatar"
+              size="lg"
+              value={formData.avatar}
+              onChange={(url) => updateFormField("avatar", url)}
+              placeholder={
+                <div className="text-blue-600">
                   {formData.name ? formData.name.charAt(0).toUpperCase() : "🤖"}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex flex-col gap-1">
-                <Button variant="outline" size="sm" onClick={triggerFileInput}>
-                  <Upload className="h-4 w-4 mr-2" />
-                  上传
-                </Button>
-                {formData.avatar && (
-                  <Button variant="outline" size="sm" onClick={removeAvatar}>
-                    <Trash className="h-4 w-4 mr-2" />
-                    移除
-                  </Button>
-                )}
-              </div>
-              <input
-                type="file"
-                ref={fileInputRef}
-                className="hidden"
-                accept="image/*"
-                onChange={handleAvatarUpload}
-              />
-            </div>
+                </div>
+              }
+              uploadText="上传头像"
+              changeText="更换头像"
+              removeText="移除头像"
+              maxSize={2 * 1024 * 1024} // 2MB
+            />
           </div>
         </div>
       </div>

@@ -48,8 +48,6 @@ export function useAgentForm({ initialData, isEditMode = false }: UseAgentFormPr
   const [isToolSidebarOpen, setIsToolSidebarOpen] = useState(false)
   const [installedTools, setInstalledTools] = useState<Tool[]>([])
   
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  
   // 表单数据 - 去掉类型选择，统一使用agent类型
   const [formData, setFormData] = useState<AgentFormData>({
     name: "",
@@ -149,121 +147,44 @@ export function useAgentForm({ initialData, isEditMode = false }: UseAgentFormPr
     })
   }
 
-  // 处理头像上传
-  const handleAvatarUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
-
-    // 检查文件类型
-    if (!file.type.startsWith("image/")) {
-      toast({
-        title: "文件类型错误",
-        description: "请上传图片文件",
-        variant: "destructive",
-      })
-      return
-    }
-
-    // 检查文件大小 (限制为2MB)
-    if (file.size > 2 * 1024 * 1024) {
-      toast({
-        title: "文件过大",
-        description: "头像图片不能超过2MB",
-        variant: "destructive",
-      })
-      return
-    }
-
-    // 创建文件预览URL
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      updateFormField("avatar", e.target?.result as string)
-    }
-    reader.readAsDataURL(file)
-  }
-
-  // 移除头像
-  const removeAvatar = () => {
-    updateFormField("avatar", null)
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ""
-    }
-  }
-
-  // 触发文件选择
-  const triggerFileInput = () => {
-    fileInputRef.current?.click()
-  }
-
   // 处理工具点击事件
   const handleToolClick = (tool: Tool) => {
     if (selectedToolForSidebar && selectedToolForSidebar.id === tool.id) {
-      return;
+      // 如果再次点击同一个工具，关闭侧边栏
+      setIsToolSidebarOpen(false)
+      setSelectedToolForSidebar(null)
+    } else {
+      // 否则显示该工具的详情
+      setSelectedToolForSidebar(tool)
+      setIsToolSidebarOpen(true)
     }
-    
-    console.log("Tool clicked:", tool);
-    setIsToolSidebarOpen(false);
-    
-    setTimeout(() => {
-      setSelectedToolForSidebar(tool);
-      setIsToolSidebarOpen(true);
-    }, 100);
-  };
+  }
 
   // 更新工具预设参数
-  const updateToolPresetParameters = (toolId: string, presetParams: Record<string, Record<string, string>>) => {
-    const selectedTool = installedTools.find((t: Tool) => t.id === toolId || t.toolId === toolId);
-    
-    if (!selectedTool || !selectedTool.mcpServerName) {
-      console.error("无法找到对应的工具或工具缺少 mcpServerName");
-      toast({
-        title: "无法更新工具参数",
-        description: "工具信息不完整",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const mcpServerName = selectedTool.mcpServerName;
-    
-    setFormData(prev => {
-      const newToolPresetParams = { ...prev.toolPresetParams };
-      
-      if (!newToolPresetParams[mcpServerName]) {
-        newToolPresetParams[mcpServerName] = {};
+  const updateToolPresetParameters = (toolId: string, presetParams: any) => {
+    setFormData(prev => ({
+      ...prev,
+      toolPresetParams: {
+        ...prev.toolPresetParams,
+        ...presetParams
       }
-      
-      Object.keys(presetParams).forEach(functionName => {
-        const params = presetParams[functionName];
-        
-        if (!newToolPresetParams[mcpServerName][functionName]) {
-          newToolPresetParams[mcpServerName][functionName] = {};
-        }
-        
-        Object.entries(params).forEach(([paramName, paramValue]) => {
-          newToolPresetParams[mcpServerName][functionName][paramName] = paramValue || '';
-        });
-      });
-      
-      return {
-        ...prev,
-        toolPresetParams: newToolPresetParams
-      };
-    });
+    }))
     
     toast({
-      title: "参数预设已更新",
-      description: `已为工具 ${selectedTool.name} 更新参数预设`,
-    });
-  };
+      title: "预设参数已更新",
+      description: `已为工具 ${toolId} 更新预设参数`,
+    })
+  }
 
-  // 获取可用的标签页 - 统一显示所有标签页
+  // 获取可用的标签页
   const getAvailableTabs = () => {
-    return [
-      { id: "basic", label: "基本信息" },
-      { id: "prompt", label: "提示词配置" },
-      { id: "tools", label: "工具与知识库" },
+    const baseTabs = [
+      { id: "basic", label: "基础信息" },
+      { id: "prompt", label: "提示词" },
+      { id: "tools", label: "工具 & 知识库" },
     ]
+
+    return baseTabs
   }
 
   return {
@@ -275,9 +196,8 @@ export function useAgentForm({ initialData, isEditMode = false }: UseAgentFormPr
     isLoading,
     setIsLoading,
     isLoadingTools,
-    setIsLoadingTools,
     
-    // 编辑模式状态
+    // 编辑模式特有状态
     isDeleting,
     setIsDeleting,
     isPublishing,
@@ -293,25 +213,17 @@ export function useAgentForm({ initialData, isEditMode = false }: UseAgentFormPr
     
     // 工具相关状态
     selectedToolForSidebar,
-    setSelectedToolForSidebar,
     isToolSidebarOpen,
     setIsToolSidebarOpen,
     installedTools,
     
-    // refs
-    fileInputRef,
-    
     // 表单数据
     formData,
-    setFormData,
     updateFormField,
     
     // 表单操作函数
     toggleTool,
     toggleKnowledgeBase,
-    handleAvatarUpload,
-    removeAvatar,
-    triggerFileInput,
     handleToolClick,
     updateToolPresetParameters,
     

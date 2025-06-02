@@ -130,9 +130,9 @@ function WorkspaceItem({ id, name, icon, avatar, onClick }: WorkspaceItemProps) 
         )}
         onClick={onClick}
       >
-        {avatar ? (
+        {avatar && avatar.trim() !== '' ? (
           <div className="w-5 h-5 rounded-full overflow-hidden mr-2 flex-shrink-0">
-            <img src={avatar || "/placeholder.svg"} alt={name} className="w-full h-full object-cover" />
+            <img src={avatar} alt={name} className="w-full h-full object-cover" />
           </div>
         ) : icon ? (
           <span className="mr-2">{icon}</span>

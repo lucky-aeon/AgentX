@@ -24,10 +24,11 @@ import { useForm } from "react-hook-form"
 import Link from "next/link"
 import { uploadToolWithToast } from "@/lib/tool-service"
 import ReactMarkdown from "react-markdown"
+import FileUpload from "@/components/ui/file-upload"
 
 const mcpServerCommandTemp = '例如：{"mcpServers": {"file-system": {"args": ["-y", "@modelcontextprotocol/server-filesystem", "/etc/proxy"], "command": "npx"}}}';
 
-// 表单验证模式
+// 表单验证模式 - 更新icon字段为字符串URL类型
 const formSchema = z.object({
   name: z.string().min(2, "工具名称至少需要2个字符").max(50, "工具名称最多50个字符"),
   subtitle: z.string().min(2, "副标题至少需要2个字符").max(100, "副标题最多100个字符"),
@@ -35,7 +36,7 @@ const formSchema = z.object({
   uploadUrl: z.string().url("请输入有效的URL"),
   labels: z.array(z.string()).min(1, "请输入至少一个标签").max(5, "最多5个标签"),
   installCommand: z.string().min(1, "请输入安装命令"),
-  icon: z.instanceof(File).optional()
+  icon: z.string().optional() // 改为字符串URL类型
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -44,10 +45,12 @@ export default function UploadToolPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
   const [newLabel, setNewLabel] = useState("");
-  const [iconPreview, setIconPreview] = useState<string | null>(null);
+  // 移除iconPreview状态，因为FileUpload组件会自己管理
+  // const [iconPreview, setIconPreview] = useState<string | null>(null);
   const labelInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  // 移除fileInputRef，因为FileUpload组件会自己管理
+  // const fileInputRef = useRef<HTMLInputElement>(null);
   
   // 初始化表单
   const form = useForm<FormValues>({
@@ -107,50 +110,9 @@ export default function UploadToolPage() {
     );
   };
 
-  // 处理图标上传
-  const handleIconUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    
-    // 验证文件类型
-    if (!file.type.startsWith("image/")) {
-      toast({
-        variant: "destructive",
-        title: "无效的文件类型",
-        description: "请上传图片文件"
-      });
-      return;
-    }
-    
-    // 验证文件大小（限制为2MB）
-    if (file.size > 2 * 1024 * 1024) {
-      toast({
-        variant: "destructive",
-        title: "文件过大",
-        description: "图标大小不能超过2MB"
-      });
-      return;
-    }
-    
-    // 设置预览
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setIconPreview(e.target?.result as string);
-    };
-    reader.readAsDataURL(file);
-    
-    // 更新表单值
-    form.setValue("icon", file);
-  };
-  
-  // 清除图标
-  const clearIcon = () => {
-    setIconPreview(null);
-    form.setValue("icon", undefined);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-  };
+  // 移除图标上传相关函数，现在由FileUpload组件处理
+  // const handleIconUpload = ...
+  // const clearIcon = ...
 
   // 提交表单
   const onSubmit = async (values: FormValues) => {
@@ -177,12 +139,12 @@ export default function UploadToolPage() {
         uploadUrl: values.uploadUrl,
         labels: values.labels,
         installCommand: installCommandObj,
-        icon: iconPreview,
+        icon: values.icon, // 现在直接使用表单中的icon URL
       };
       const response = await uploadToolWithToast(payload);
       if (response.code === 200) {
         form.reset();
-        setIconPreview(null);
+        // 移除setIconPreview(null);
         window.location.href = "/tools";
       }
     } catch (error) {
@@ -448,50 +410,32 @@ export default function UploadToolPage() {
                     />
 
                     {/* 工具图标上传 */}
-                    <div className="space-y-2">
-                      <div className="font-medium">
-                        工具图标
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <div className="flex-shrink-0 h-20 w-20 rounded-md border-2 border-dashed border-muted-foreground/25 flex items-center justify-center overflow-hidden relative">
-                          {iconPreview ? (
-                            <>
-                              <img src={iconPreview} alt="Icon preview" className="h-full w-full object-cover" />
-                              <Button 
-                                type="button" 
-                                variant="destructive" 
-                                size="icon" 
-                                className="absolute top-1 right-1 h-5 w-5 rounded-full"
-                                onClick={clearIcon}
-                              >
-                                <X className="h-3 w-3" />
-                              </Button>
-                            </>
-                          ) : (
-                            <Upload className="h-6 w-6 text-muted-foreground/50" />
-                          )}
-                        </div>
-                        <div className="flex-1">
-                          <input
-                            type="file"
-                            ref={fileInputRef}
-                            accept="image/*"
-                            className="hidden"
-                            onChange={handleIconUpload}
-                          />
-                          <Button 
-                            type="button" 
-                            variant="outline" 
-                            onClick={() => fileInputRef.current?.click()}
-                          >
-                            上传图标
-                          </Button>
-                          <p className="text-sm text-muted-foreground mt-2">
+                    <FormField
+                      control={form.control}
+                      name="icon"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>工具图标</FormLabel>
+                          <FormControl>
+                            <FileUpload
+                              variant="square"
+                              size="xl"
+                              value={field.value}
+                              onChange={(url) => field.onChange(url)}
+                              placeholder={<Upload className="h-6 w-6 text-muted-foreground/50" />}
+                              uploadText="上传图标"
+                              changeText="更换图标"
+                              removeText="清除图标"
+                              maxSize={2 * 1024 * 1024} // 2MB
+                            />
+                          </FormControl>
+                          <FormDescription>
                             推荐尺寸 512x512px，大小不超过2MB
-                          </p>
-                        </div>
-                      </div>
-                    </div>
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   </div>
                 </CardContent>
               </Card>

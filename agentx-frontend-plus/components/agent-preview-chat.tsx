@@ -421,7 +421,7 @@ export default function AgentPreviewChat({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Avatar className="h-10 w-10">
-              <AvatarImage src={agentAvatar || ""} alt="Agent Avatar" />
+              <AvatarImage src={agentAvatar || undefined} alt="Agent Avatar" />
               <AvatarFallback className="bg-blue-100 text-blue-600">
                 {agentName ? agentName.charAt(0).toUpperCase() : <Bot className="h-5 w-5" />}
               </AvatarFallback>
@@ -455,7 +455,7 @@ export default function AgentPreviewChat({
               >
                 {message.role === 'ASSISTANT' && (
                   <Avatar className="h-8 w-8 mt-1">
-                    <AvatarImage src={agentAvatar || ""} alt="Agent" />
+                    <AvatarImage src={agentAvatar || undefined} alt="Agent" />
                     <AvatarFallback className="bg-blue-100 text-blue-600">
                       <Bot className="h-4 w-4" />
                     </AvatarFallback>
@@ -483,7 +483,7 @@ export default function AgentPreviewChat({
                               : 'bg-white border-gray-200'
                           }`}
                         >
-                          {file.type.startsWith('image/') && (
+                          {file.type.startsWith('image/') && file.url && file.url.trim() !== '' && (
                             <img
                               src={file.url}
                               alt={file.name}
@@ -572,7 +572,7 @@ export default function AgentPreviewChat({
                 key={file.id}
                 className="flex items-center gap-2 bg-gray-100 rounded-lg p-2 border relative"
               >
-                {file.type.startsWith('image/') && file.url && (
+                {file.type.startsWith('image/') && file.url && file.url.trim() !== '' && (
                   <img
                     src={file.url}
                     alt={file.name}

@@ -36,7 +36,7 @@ const AgentVersionDetailDialog: React.FC<AgentVersionDetailDialogProps> = ({
         <div className="space-y-4 py-4">
           <div className="flex items-center gap-4">
             <Avatar className="h-12 w-12">
-              <AvatarImage src={version.avatar || ""} alt="Avatar" />
+              <AvatarImage src={version.avatar || undefined} alt="Avatar" />
               <AvatarFallback className="bg-blue-100 text-blue-600">
                 {version.name ? version.name.charAt(0).toUpperCase() : "🤖"}
               </AvatarFallback>

@@ -72,9 +72,6 @@ export default function AgentFormModal({
     isToolSidebarOpen,
     setIsToolSidebarOpen,
     
-    // refs
-    fileInputRef,
-    
     // 表单数据
     formData,
     updateFormField,
@@ -82,9 +79,6 @@ export default function AgentFormModal({
     // 表单操作函数
     toggleTool,
     toggleKnowledgeBase,
-    handleAvatarUpload,
-    removeAvatar,
-    triggerFileInput,
     handleToolClick,
     updateToolPresetParameters,
     
@@ -215,10 +209,6 @@ export default function AgentFormModal({
                 formData={formData}
                 selectedType="agent"
                 updateFormField={updateFormField}
-                triggerFileInput={triggerFileInput}
-                handleAvatarUpload={handleAvatarUpload}
-                removeAvatar={removeAvatar}
-                fileInputRef={fileInputRef}
               />
             </TabsContent>
 
