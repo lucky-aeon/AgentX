@@ -72,6 +72,10 @@ public class AgentEntity extends BaseEntity {
     @TableField(value = "tool_preset_params", typeHandler = MapConverter.class)
     private Map<String, Map<String, Map<String, String>>> toolPresetParams;
 
+    /** 是否支持多模态 */
+    @TableField("multi_modal")
+    private Boolean multiModal;
+
     /** 无参构造函数 */
     public AgentEntity() {
         this.toolIds = new ArrayList<>();
@@ -239,5 +243,13 @@ public class AgentEntity extends BaseEntity {
 
     public void setToolPresetParams(Map<String, Map<String, Map<String, String>>> toolPresetParams) {
         this.toolPresetParams = toolPresetParams;
+    }
+
+    public Boolean getMultiModal() {
+        return multiModal;
+    }
+
+    public void setMultiModal(Boolean multiModal) {
+        this.multiModal = multiModal;
     }
 }

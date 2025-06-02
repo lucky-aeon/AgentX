@@ -13,6 +13,7 @@ export interface SessionDTO {
   updatedAt: string
   isArchived: boolean
   agentId: string
+  multiModal?: boolean
 }
 
 // 获取助理会话列表

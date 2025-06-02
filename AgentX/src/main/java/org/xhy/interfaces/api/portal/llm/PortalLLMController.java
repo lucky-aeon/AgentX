@@ -146,4 +146,15 @@ public class PortalLLMController {
         ModelType type = modelType != null ? ModelType.fromCode(modelType) : null;
         return Result.success(llmAppService.getActiveModelsByType(ProviderType.ALL, userId, type));
     }
+
+    /** 获取用户默认的模型详情
+     *
+     * @return */
+    @GetMapping("/models/default")
+    public Result<ModelDTO> getDefaultModel() {
+        String userId = UserContext.getCurrentUserId();
+        ModelDTO modelDTO = llmAppService.getDefaultModel(userId);
+        return Result.success(modelDTO);
+    }
+
 }

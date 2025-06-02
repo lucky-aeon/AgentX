@@ -46,7 +46,7 @@ public class AgentAssembler {
         entity.setToolIds(request.getToolIds());
         // 设置预先设置的工具参数
         entity.setToolPresetParams(request.getToolPresetParams());
-
+        entity.setMultiModal(request.getMultiModal());
         return entity;
     }
 

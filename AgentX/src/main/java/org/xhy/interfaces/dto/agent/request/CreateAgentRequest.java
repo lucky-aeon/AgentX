@@ -19,6 +19,7 @@ public class CreateAgentRequest {
     private List<String> toolIds;
     private List<String> knowledgeBaseIds;
     private Map<String, Map<String, Map<String, String>>> toolPresetParams;
+    private Boolean multiModal;
     // 构造方法
     public CreateAgentRequest() {
     }
@@ -93,5 +94,13 @@ public class CreateAgentRequest {
 
     public void setToolPresetParams(Map<String, Map<String, Map<String, String>>> toolPresetParams) {
         this.toolPresetParams = toolPresetParams;
+    }
+
+    public Boolean getMultiModal() {
+        return multiModal;
+    }
+
+    public void setMultiModal(Boolean multiModal) {
+        this.multiModal = multiModal;
     }
 }

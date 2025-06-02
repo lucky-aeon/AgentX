@@ -4,9 +4,13 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import org.xhy.application.conversation.assembler.MessageAssembler;
+import org.xhy.application.conversation.dto.AgentPreviewRequest;
 import org.xhy.application.conversation.dto.ChatRequest;
 import org.xhy.application.conversation.dto.MessageDTO;
 import org.xhy.application.conversation.service.message.AbstractMessageHandler;
+import org.xhy.application.conversation.service.message.preview.PreviewMessageHandler;
+import org.xhy.application.user.service.UserSettingsAppService;
+import org.xhy.domain.agent.constant.AgentType;
 import org.xhy.domain.agent.model.AgentEntity;
 import org.xhy.domain.agent.model.AgentVersionEntity;
 import org.xhy.domain.agent.model.AgentWorkspaceEntity;
@@ -15,6 +19,7 @@ import org.xhy.domain.agent.service.AgentDomainService;
 import org.xhy.domain.agent.service.AgentWorkspaceDomainService;
 import org.xhy.application.conversation.service.handler.context.ChatContext;
 import org.xhy.application.conversation.service.handler.MessageHandlerFactory;
+import org.xhy.domain.conversation.constant.Role;
 import org.xhy.domain.conversation.model.ContextEntity;
 import org.xhy.domain.conversation.model.MessageEntity;
 import org.xhy.domain.conversation.model.SessionEntity;
@@ -38,6 +43,7 @@ import org.xhy.infrastructure.llm.config.ProviderConfig;
 import org.xhy.infrastructure.transport.MessageTransport;
 import org.xhy.infrastructure.transport.MessageTransportFactory;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -59,13 +65,16 @@ public class ConversationAppService {
     private final MessageTransportFactory transportFactory;
 
     private final UserToolDomainService userToolDomainService;
+    private final UserSettingsAppService userSettingsAppService;
+    private final PreviewMessageHandler previewMessageHandler;
 
     public ConversationAppService(ConversationDomainService conversationDomainService,
             SessionDomainService sessionDomainService, AgentDomainService agentDomainService,
             AgentWorkspaceDomainService agentWorkspaceDomainService, LLMDomainService llmDomainService,
             ContextDomainService contextDomainService, TokenDomainService tokenDomainService,
             MessageDomainService messageDomainService, MessageHandlerFactory messageHandlerFactory,
-            MessageTransportFactory transportFactory, UserToolDomainService toolDomainService) {
+            MessageTransportFactory transportFactory, UserToolDomainService toolDomainService,
+            UserSettingsAppService userSettingsAppService, PreviewMessageHandler previewMessageHandler) {
         this.conversationDomainService = conversationDomainService;
         this.sessionDomainService = sessionDomainService;
         this.agentDomainService = agentDomainService;
@@ -77,6 +86,8 @@ public class ConversationAppService {
         this.messageHandlerFactory = messageHandlerFactory;
         this.transportFactory = transportFactory;
         this.userToolDomainService = toolDomainService;
+        this.userSettingsAppService = userSettingsAppService;
+        this.previewMessageHandler = previewMessageHandler;
     }
 
     /** 获取会话中的消息列表
@@ -171,9 +182,9 @@ public class ConversationAppService {
         chatContext.setProvider(provider);
         chatContext.setLlmModelConfig(llmModelConfig);
         chatContext.setMcpServerNames(mcpServerNames);
-
+        chatContext.setFileUrls(chatRequest.getFileUrls());
         // 6. 设置上下文信息和消息历史
-        setupContextAndHistory(chatContext);
+        setupContextAndHistory(chatContext, chatRequest);
 
         return chatContext;
     }
@@ -181,7 +192,7 @@ public class ConversationAppService {
     /** 设置上下文和历史消息
      *
      * @param environment 对话环境 */
-    private void setupContextAndHistory(ChatContext environment) {
+    private void setupContextAndHistory(ChatContext environment, ChatRequest chatRequest) {
         String sessionId = environment.getSessionId();
 
         // 获取上下文
@@ -198,6 +209,15 @@ public class ConversationAppService {
         } else {
             contextEntity = new ContextEntity();
             contextEntity.setSessionId(sessionId);
+        }
+
+        // 特殊处理当前对话的文件，因为在后续的对话中无法发送文件
+        List<String> fileUrls = chatRequest.getFileUrls();
+        if (!fileUrls.isEmpty()) {
+            MessageEntity messageEntity = new MessageEntity();
+            messageEntity.setRole(Role.USER);
+            messageEntity.setFileUrls(fileUrls);
+            messageEntities.add(messageEntity);
         }
 
         environment.setContextEntity(contextEntity);
@@ -262,5 +282,142 @@ public class ConversationAppService {
             tokenMessage.setCreatedAt(message.getCreatedAt());
             return tokenMessage;
         }).collect(Collectors.toList());
+    }
+
+    /** Agent预览功能 - 无需保存会话的对话体验
+     *
+     * @param previewRequest 预览请求
+     * @param userId 用户ID
+     * @return SSE发射器 */
+    public SseEmitter previewAgent(AgentPreviewRequest previewRequest, String userId) {
+        // 1. 准备预览环境
+        ChatContext environment = preparePreviewEnvironment(previewRequest, userId);
+
+        // 2. 获取传输方式
+        MessageTransport<SseEmitter> transport = transportFactory
+                .getTransport(MessageTransportFactory.TRANSPORT_TYPE_SSE);
+
+        // 3. 使用预览专用的消息处理器
+        return previewMessageHandler.chat(environment, transport);
+    }
+
+    /** 准备预览对话环境
+     *
+     * @param previewRequest 预览请求
+     * @param userId 用户ID
+     * @return 预览对话环境 */
+    private ChatContext preparePreviewEnvironment(AgentPreviewRequest previewRequest, String userId) {
+        // 1. 创建虚拟Agent实体
+        AgentEntity virtualAgent = createVirtualAgent(previewRequest, userId);
+
+        // 2. 获取模型信息
+        String modelId = previewRequest.getModelId();
+        if (modelId == null || modelId.trim().isEmpty()) {
+            // 使用用户默认模型
+            modelId = userSettingsAppService.getUserDefaultModelId(userId);
+            if (modelId == null) {
+                throw new BusinessException("用户未设置默认模型，且预览请求中未指定模型");
+            }
+        }
+
+        ModelEntity model = llmDomainService.getModelById(modelId);
+        model.isActive();
+
+        // 3. 获取服务商信息
+        ProviderEntity provider = llmDomainService.getProvider(model.getProviderId(), userId);
+        provider.isActive();
+
+        // 4. 处理工具配置
+        List<String> toolIds = previewRequest.getToolIds();
+        List<String> mcpServerNames = new ArrayList<>();
+        if (toolIds != null && !toolIds.isEmpty()) {
+            List<UserToolEntity> installTool = userToolDomainService.getInstallTool(toolIds, userId);
+            mcpServerNames = installTool.stream().map(UserToolEntity::getMcpServerName).toList();
+        }
+
+        // 5. 创建默认的LLM模型配置
+        LLMModelConfig llmModelConfig = createDefaultLLMModelConfig(modelId);
+
+        // 6. 创建环境对象
+        ChatContext chatContext = new ChatContext();
+        chatContext.setSessionId("preview-session"); // 虚拟会话ID
+        chatContext.setUserId(userId);
+        chatContext.setUserMessage(previewRequest.getUserMessage());
+        chatContext.setAgent(virtualAgent);
+        chatContext.setModel(model);
+        chatContext.setProvider(provider);
+        chatContext.setLlmModelConfig(llmModelConfig);
+        chatContext.setMcpServerNames(mcpServerNames);
+        chatContext.setFileUrls(previewRequest.getFileUrls());
+
+        // 7. 设置预览上下文和历史消息
+        setupPreviewContextAndHistory(chatContext, previewRequest);
+
+        return chatContext;
+    }
+
+    /** 创建虚拟Agent实体 */
+    private AgentEntity createVirtualAgent(AgentPreviewRequest previewRequest, String userId) {
+        AgentEntity virtualAgent = new AgentEntity();
+        virtualAgent.setId("preview-agent");
+        virtualAgent.setUserId(userId);
+        virtualAgent.setName("预览助理");
+        virtualAgent.setSystemPrompt(previewRequest.getSystemPrompt());
+        virtualAgent.setToolIds(previewRequest.getToolIds());
+        virtualAgent.setToolPresetParams(previewRequest.getToolPresetParams());
+        virtualAgent.setAgentType(AgentType.CHAT_ASSISTANT.getCode());
+        virtualAgent.setEnabled(true);
+        virtualAgent.setCreatedAt(LocalDateTime.now());
+        virtualAgent.setUpdatedAt(LocalDateTime.now());
+        return virtualAgent;
+    }
+
+    /** 创建默认的LLM模型配置 */
+    private LLMModelConfig createDefaultLLMModelConfig(String modelId) {
+        LLMModelConfig llmModelConfig = new LLMModelConfig();
+        llmModelConfig.setModelId(modelId);
+        llmModelConfig.setTemperature(0.7);
+        llmModelConfig.setTopP(0.9);
+        llmModelConfig.setMaxTokens(4000);
+        llmModelConfig.setStrategyType(TokenOverflowStrategyEnum.NONE);
+        llmModelConfig.setSummaryThreshold(2000);
+        return llmModelConfig;
+    }
+
+    /** 设置预览上下文和历史消息 */
+    private void setupPreviewContextAndHistory(ChatContext environment, AgentPreviewRequest previewRequest) {
+        // 创建虚拟上下文实体
+        ContextEntity contextEntity = new ContextEntity();
+        contextEntity.setSessionId("preview-session");
+        contextEntity.setActiveMessages(new ArrayList<>());
+
+        // 转换前端传入的历史消息为实体
+        List<MessageEntity> messageEntities = new ArrayList<>();
+        List<MessageDTO> messageHistory = previewRequest.getMessageHistory();
+        if (messageHistory != null && !messageHistory.isEmpty()) {
+            for (MessageDTO messageDTO : messageHistory) {
+                MessageEntity messageEntity = new MessageEntity();
+                messageEntity.setId(messageDTO.getId());
+                messageEntity.setRole(messageDTO.getRole());
+                messageEntity.setContent(messageDTO.getContent());
+                messageEntity.setSessionId("preview-session");
+                messageEntity.setCreatedAt(messageDTO.getCreatedAt());
+                messageEntity.setFileUrls(messageDTO.getFileUrls());
+                messageEntity.setTokenCount(messageDTO.getRole() == Role.USER ? 50 : 100); // 预估token数
+                messageEntities.add(messageEntity);
+            }
+        }
+        // 特殊处理当前对话的文件，因为在后续的对话中无法发送文件
+        List<String> fileUrls = previewRequest.getFileUrls();
+        if (!fileUrls.isEmpty()) {
+            MessageEntity messageEntity = new MessageEntity();
+            messageEntity.setRole(Role.USER);
+            messageEntity.setSessionId("preview-session");
+            messageEntity.setFileUrls(fileUrls);
+            messageEntities.add(messageEntity);
+        }
+
+        environment.setContextEntity(contextEntity);
+        environment.setMessageHistory(messageEntities);
     }
 }
