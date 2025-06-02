@@ -357,14 +357,13 @@ export async function getModels(type?: string): Promise<ApiResponse<any[]>> {
   try {
     console.log(`Fetching models, type: ${type || 'all'}`)
     
-    // type参数值: all-所有(默认)，official-官方，custom-用户自定义
-    // 注意: 不支持通过此参数过滤模型类型如"CHAT"，需要在前端过滤
-    const params = type ? { type } : undefined;
-    const response = await httpClient.get<ApiResponse<any[]>>('/llm/models', { params });
+    const params = type ? { modelType: type } : undefined;
+    const response = await httpClient.get<ApiResponse<any[]>>(API_ENDPOINTS.MODELS, { params });
     
     return response;
   } catch (error) {
     console.error("获取模型列表错误:", error)
+    // 返回格式化的错误响应
     return {
       code: 500,
       message: error instanceof Error ? error.message : "未知错误",
@@ -374,10 +373,36 @@ export async function getModels(type?: string): Promise<ApiResponse<any[]>> {
   }
 }
 
+// 获取默认模型
+export async function getDefaultModel(): Promise<ApiResponse<any>> {
+  try {
+    console.log('Fetching default model')
+    
+    const response = await httpClient.get<ApiResponse<any>>(API_ENDPOINTS.DEFAULT_MODEL);
+    
+    return response;
+  } catch (error) {
+    console.error("获取默认模型错误:", error)
+    // 返回格式化的错误响应
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : "未知错误",
+      data: null,
+      timestamp: Date.now(),
+    }
+  }
+}
+
 export const getModelsWithToast = withToast(getModels, {
   showSuccessToast: false,
   showErrorToast: true,
   errorTitle: "获取模型列表失败"
+})
+
+export const getDefaultModelWithToast = withToast(getDefaultModel, {
+  showSuccessToast: false,
+  showErrorToast: true,
+  errorTitle: "获取默认模型失败"
 })
 
 // 模型配置接口

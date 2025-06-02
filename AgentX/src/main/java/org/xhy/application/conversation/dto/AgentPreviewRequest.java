@@ -1,5 +1,6 @@
 package org.xhy.application.conversation.dto;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -30,7 +31,7 @@ public class AgentPreviewRequest {
     /**
      * 文件列表
      */
-    private List<String> fileUrls;
+    private List<String> fileUrls = new ArrayList<>();
 
     public List<String> getFileUrls() {
         return fileUrls;
