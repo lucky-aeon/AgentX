@@ -4,10 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Agent预览请求DTO
- * 用于预览尚未创建的Agent的对话效果
- */
+/** Agent预览请求DTO 用于预览尚未创建的Agent的对话效果 */
 public class AgentPreviewRequest {
 
     /** 用户当前输入的消息 */
@@ -28,9 +25,7 @@ public class AgentPreviewRequest {
     /** 使用的模型ID，如果为空则使用用户默认模型 */
     private String modelId;
 
-    /**
-     * 文件列表
-     */
+    /** 文件列表 */
     private List<String> fileUrls = new ArrayList<>();
 
     public List<String> getFileUrls() {
@@ -88,4 +83,4 @@ public class AgentPreviewRequest {
     public void setModelId(String modelId) {
         this.modelId = modelId;
     }
-} 
+}

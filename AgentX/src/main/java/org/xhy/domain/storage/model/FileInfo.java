@@ -2,68 +2,45 @@ package org.xhy.domain.storage.model;
 
 import java.time.LocalDateTime;
 
-/**
- * 文件信息领域模型
- */
+/** 文件信息领域模型 */
 public class FileInfo {
 
-    /**
-     * 文件唯一标识
-     */
+    /** 文件唯一标识 */
     private String fileId;
 
-    /**
-     * 原始文件名
-     */
+    /** 原始文件名 */
     private String originalName;
 
-    /**
-     * 存储文件名
-     */
+    /** 存储文件名 */
     private String storageName;
 
-    /**
-     * 文件大小（字节）
-     */
+    /** 文件大小（字节） */
     private Long fileSize;
 
-    /**
-     * 文件类型
-     */
+    /** 文件类型 */
     private String contentType;
 
-    /**
-     * 存储桶名称
-     */
+    /** 存储桶名称 */
     private String bucketName;
 
-    /**
-     * 文件路径
-     */
+    /** 文件路径 */
     private String filePath;
 
-    /**
-     * 文件访问URL
-     */
+    /** 文件访问URL */
     private String accessUrl;
 
-    /**
-     * 创建时间
-     */
+    /** 创建时间 */
     private LocalDateTime createdAt;
 
-    /**
-     * 文件MD5值
-     */
+    /** 文件MD5值 */
     private String md5Hash;
 
     // 构造函数
     public FileInfo() {
     }
 
-    public FileInfo(String fileId, String originalName, String storageName, 
-                   Long fileSize, String contentType, String bucketName, 
-                   String filePath, String accessUrl, String md5Hash) {
+    public FileInfo(String fileId, String originalName, String storageName, Long fileSize, String contentType,
+            String bucketName, String filePath, String accessUrl, String md5Hash) {
         this.fileId = fileId;
         this.originalName = originalName;
         this.storageName = storageName;
@@ -156,4 +133,4 @@ public class FileInfo {
     public void setMd5Hash(String md5Hash) {
         this.md5Hash = md5Hash;
     }
-} 
+}

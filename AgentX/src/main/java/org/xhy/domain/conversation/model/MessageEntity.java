@@ -56,7 +56,7 @@ public class MessageEntity extends BaseEntity {
     @TableField("metadata")
     private String metadata;
 
-    @TableField(value = "file_urls",typeHandler = ListConverter.class)
+    @TableField(value = "file_urls", typeHandler = ListConverter.class)
     private List<String> fileUrls = new ArrayList<>();
 
     /** 无参构造函数 */

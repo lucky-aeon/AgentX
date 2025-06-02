@@ -20,7 +20,6 @@ public class PortalUserController {
 
     private final UserSettingsAppService userSettingsAppService;
 
-
     public PortalUserController(UserAppService userAppService, UserSettingsAppService userSettingsAppService) {
         this.userAppService = userAppService;
         this.userSettingsAppService = userSettingsAppService;

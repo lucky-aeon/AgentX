@@ -79,12 +79,9 @@ public class PortalAgentSessionController {
         return conversationAppService.chat(chatRequest, UserContext.getCurrentUserId());
     }
 
-    /**
-     * Agent预览功能
-     * 用于在创建/编辑Agent时预览对话效果，无需保存会话
+    /** Agent预览功能 用于在创建/编辑Agent时预览对话效果，无需保存会话
      * @param previewRequest 预览请求对象
-     * @return SSE流
-     */
+     * @return SSE流 */
     @PostMapping("/preview")
     public SseEmitter preview(@RequestBody AgentPreviewRequest previewRequest) {
         String userId = UserContext.getCurrentUserId();

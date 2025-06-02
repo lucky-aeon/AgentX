@@ -84,7 +84,6 @@ public abstract class AbstractMessageHandler {
     protected <T> void processChat(Agent agent, T connection, MessageTransport<T> transport, ChatContext chatContext,
             MessageEntity userEntity, MessageEntity llmEntity) {
 
-
         messageDomainService.saveMessageAndUpdateContext(Collections.singletonList(userEntity),
                 chatContext.getContextEntity());
 
@@ -199,14 +198,13 @@ public abstract class AbstractMessageHandler {
             presetToolPrompt = AgentPromptTemplates.generatePresetToolPrompt(toolPresetParams);
         }
 
-
         memory.add(new SystemMessage(chatContext.getAgent().getSystemPrompt() + "\n" + presetToolPrompt));
         List<MessageEntity> messageHistory = chatContext.getMessageHistory();
         for (MessageEntity messageEntity : messageHistory) {
             if (messageEntity.isUserMessage()) {
                 List<String> fileUrls = messageEntity.getFileUrls();
                 for (String fileUrl : fileUrls) {
-                    memory.add( UserMessage.from(ImageContent.from(fileUrl)));
+                    memory.add(UserMessage.from(ImageContent.from(fileUrl)));
                 }
                 if (!StringUtils.isEmpty(messageEntity.getContent())) {
                     memory.add(new UserMessage(messageEntity.getContent()));

@@ -50,9 +50,7 @@ public class ChatContext {
     /** 使用的 mcp server name */
     private List<String> mcpServerNames;
 
-    /**
-     * 多模态的文件
-     */
+    /** 多模态的文件 */
     private List<String> fileUrls;
 
     public String getSessionId() {

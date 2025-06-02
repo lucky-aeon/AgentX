@@ -30,10 +30,7 @@ import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 
-/**
- * S3对象存储服务
- * 支持阿里云OSS通过S3协议访问
- */
+/** S3对象存储服务 支持阿里云OSS通过S3协议访问 */
 @Service
 public class S3StorageService {
 
@@ -47,88 +44,63 @@ public class S3StorageService {
         this.s3Client = createS3Client();
     }
 
-    /**
-     * 创建S3客户端
-     */
+    /** 创建S3客户端 */
     private S3Client createS3Client() {
         try {
-            AwsBasicCredentials awsCredentials = AwsBasicCredentials.create(
-                    s3Properties.getAccessKey(),
+            AwsBasicCredentials awsCredentials = AwsBasicCredentials.create(s3Properties.getAccessKey(),
                     s3Properties.getSecretKey());
 
             S3Configuration s3Config = S3Configuration.builder()
-                    .pathStyleAccessEnabled(s3Properties.isPathStyleAccess())
-                    .build();
+                    .pathStyleAccessEnabled(s3Properties.isPathStyleAccess()).build();
 
-            return S3Client.builder()
-                    .endpointOverride(URI.create(s3Properties.getEndpoint()))
+            return S3Client.builder().endpointOverride(URI.create(s3Properties.getEndpoint()))
                     .region(Region.of(s3Properties.getRegion()))
                     .credentialsProvider(StaticCredentialsProvider.create(awsCredentials))
-                    .serviceConfiguration(s3Config)
-                    .httpClient(UrlConnectionHttpClient.builder().build())
-                    .build();
+                    .serviceConfiguration(s3Config).httpClient(UrlConnectionHttpClient.builder().build()).build();
         } catch (Exception e) {
             logger.error("创建S3客户端失败", e);
             throw new RuntimeException("创建S3客户端失败", e);
         }
     }
 
-    /**
-     * 上传文件
+    /** 上传文件
      * 
      * @param file 本地文件
      * @param objectKey 对象存储中的文件路径
-     * @return 上传结果信息
-     */
+     * @return 上传结果信息 */
     public UploadResult uploadFile(File file, String objectKey) {
         return uploadFile(file, objectKey, s3Properties.getBucketName());
     }
 
-    /**
-     * 上传文件到指定桶
+    /** 上传文件到指定桶
      * 
      * @param file 本地文件
      * @param objectKey 对象存储中的文件路径
      * @param bucketName 存储桶名称
-     * @return 上传结果信息
-     */
+     * @return 上传结果信息 */
     public UploadResult uploadFile(File file, String objectKey, String bucketName) {
         try (FileInputStream fileInputStream = new FileInputStream(file)) {
-            
+
             // 计算文件MD5 (十六进制，用于记录)
             String md5Hash = calculateMD5Hex(file);
-            
+
             // 构建上传请求 (不设置contentMD5，让SDK自动计算)
-            PutObjectRequest putObjectRequest = PutObjectRequest.builder()
-                    .bucket(bucketName)
-                    .key(objectKey)
-                    .contentLength(file.length())
-                    .contentType(getContentType(file.getName()))
-                    .build();
+            PutObjectRequest putObjectRequest = PutObjectRequest.builder().bucket(bucketName).key(objectKey)
+                    .contentLength(file.length()).contentType(getContentType(file.getName())).build();
 
             // 执行上传
-            PutObjectResponse putObjectResponse = s3Client.putObject(
-                    putObjectRequest,
+            PutObjectResponse putObjectResponse = s3Client.putObject(putObjectRequest,
                     RequestBody.fromInputStream(fileInputStream, file.length()));
 
             // 构建访问URL
             String accessUrl = buildAccessUrl(bucketName, objectKey);
-            
-            logger.info("文件上传成功: bucket={}, key={}, size={}, etag={}", 
-                       bucketName, objectKey, file.length(), putObjectResponse.eTag());
 
-            return new UploadResult(
-                    UUID.randomUUID().toString(),
-                    file.getName(),
-                    objectKey,
-                    file.length(),
-                    getContentType(file.getName()),
-                    bucketName,
-                    objectKey,
-                    accessUrl,
-                    md5Hash,
-                    putObjectResponse.eTag()
-            );
+            logger.info("文件上传成功: bucket={}, key={}, size={}, etag={}", bucketName, objectKey, file.length(),
+                    putObjectResponse.eTag());
+
+            return new UploadResult(UUID.randomUUID().toString(), file.getName(), objectKey, file.length(),
+                    getContentType(file.getName()), bucketName, objectKey, accessUrl, md5Hash,
+                    putObjectResponse.eTag());
 
         } catch (Exception e) {
             logger.error("文件上传失败: bucket={}, key={}", bucketName, objectKey, e);
@@ -136,59 +108,41 @@ public class S3StorageService {
         }
     }
 
-    /**
-     * 上传输入流
+    /** 上传输入流
      * 
      * @param inputStream 输入流
      * @param objectKey 对象存储中的文件路径
      * @param contentLength 内容长度
-     * @return 上传结果信息
-     */
+     * @return 上传结果信息 */
     public UploadResult uploadStream(InputStream inputStream, String objectKey, long contentLength) {
         return uploadStream(inputStream, objectKey, contentLength, s3Properties.getBucketName());
     }
 
-    /**
-     * 上传输入流到指定桶
+    /** 上传输入流到指定桶
      * 
      * @param inputStream 输入流
      * @param objectKey 对象存储中的文件路径
      * @param contentLength 内容长度
      * @param bucketName 存储桶名称
-     * @return 上传结果信息
-     */
+     * @return 上传结果信息 */
     public UploadResult uploadStream(InputStream inputStream, String objectKey, long contentLength, String bucketName) {
         try {
             // 构建上传请求
-            PutObjectRequest putObjectRequest = PutObjectRequest.builder()
-                    .bucket(bucketName)
-                    .key(objectKey)
-                    .contentLength(contentLength)
-                    .build();
+            PutObjectRequest putObjectRequest = PutObjectRequest.builder().bucket(bucketName).key(objectKey)
+                    .contentLength(contentLength).build();
 
             // 执行上传
-            PutObjectResponse putObjectResponse = s3Client.putObject(
-                    putObjectRequest,
+            PutObjectResponse putObjectResponse = s3Client.putObject(putObjectRequest,
                     RequestBody.fromInputStream(inputStream, contentLength));
 
             // 构建访问URL
             String accessUrl = buildAccessUrl(bucketName, objectKey);
-            
-            logger.info("输入流上传成功: bucket={}, key={}, size={}, etag={}", 
-                       bucketName, objectKey, contentLength, putObjectResponse.eTag());
 
-            return new UploadResult(
-                    UUID.randomUUID().toString(),
-                    extractFileName(objectKey),
-                    objectKey,
-                    contentLength,
-                    getContentType(objectKey),
-                    bucketName,
-                    objectKey,
-                    accessUrl,
-                    null,
-                    putObjectResponse.eTag()
-            );
+            logger.info("输入流上传成功: bucket={}, key={}, size={}, etag={}", bucketName, objectKey, contentLength,
+                    putObjectResponse.eTag());
+
+            return new UploadResult(UUID.randomUUID().toString(), extractFileName(objectKey), objectKey, contentLength,
+                    getContentType(objectKey), bucketName, objectKey, accessUrl, null, putObjectResponse.eTag());
 
         } catch (Exception e) {
             logger.error("输入流上传失败: bucket={}, key={}", bucketName, objectKey, e);
@@ -196,32 +150,26 @@ public class S3StorageService {
         }
     }
 
-    /**
-     * 删除文件
+    /** 删除文件
      * 
      * @param objectKey 对象存储中的文件路径
-     * @return 是否删除成功
-     */
+     * @return 是否删除成功 */
     public boolean deleteFile(String objectKey) {
         return deleteFile(objectKey, s3Properties.getBucketName());
     }
 
-    /**
-     * 删除指定桶中的文件
+    /** 删除指定桶中的文件
      * 
      * @param objectKey 对象存储中的文件路径
      * @param bucketName 存储桶名称
-     * @return 是否删除成功
-     */
+     * @return 是否删除成功 */
     public boolean deleteFile(String objectKey, String bucketName) {
         try {
-            DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder()
-                    .bucket(bucketName)
-                    .key(objectKey)
+            DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder().bucket(bucketName).key(objectKey)
                     .build();
 
             s3Client.deleteObject(deleteObjectRequest);
-            
+
             logger.info("文件删除成功: bucket={}, key={}", bucketName, objectKey);
             return true;
 
@@ -231,29 +179,22 @@ public class S3StorageService {
         }
     }
 
-    /**
-     * 检查文件是否存在
+    /** 检查文件是否存在
      * 
      * @param objectKey 对象存储中的文件路径
-     * @return 是否存在
-     */
+     * @return 是否存在 */
     public boolean fileExists(String objectKey) {
         return fileExists(objectKey, s3Properties.getBucketName());
     }
 
-    /**
-     * 检查指定桶中的文件是否存在
+    /** 检查指定桶中的文件是否存在
      * 
      * @param objectKey 对象存储中的文件路径
      * @param bucketName 存储桶名称
-     * @return 是否存在
-     */
+     * @return 是否存在 */
     public boolean fileExists(String objectKey, String bucketName) {
         try {
-            HeadObjectRequest headObjectRequest = HeadObjectRequest.builder()
-                    .bucket(bucketName)
-                    .key(objectKey)
-                    .build();
+            HeadObjectRequest headObjectRequest = HeadObjectRequest.builder().bucket(bucketName).key(objectKey).build();
 
             HeadObjectResponse headObjectResponse = s3Client.headObject(headObjectRequest);
             return headObjectResponse != null;
@@ -264,17 +205,15 @@ public class S3StorageService {
         }
     }
 
-    /**
-     * 生成唯一的对象键
+    /** 生成唯一的对象键
      * 
      * @param originalFileName 原始文件名
      * @param folder 文件夹路径（可选）
-     * @return 唯一的对象键
-     */
+     * @return 唯一的对象键 */
     public String generateObjectKey(String originalFileName, String folder) {
         String datePath = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd"));
         String fileName = UUID.randomUUID().toString() + getFileExtension(originalFileName);
-        
+
         if (folder != null && !folder.isEmpty()) {
             return folder + "/" + datePath + "/" + fileName;
         } else {
@@ -282,9 +221,7 @@ public class S3StorageService {
         }
     }
 
-    /**
-     * 构建访问URL
-     */
+    /** 构建访问URL */
     private String buildAccessUrl(String bucketName, String objectKey) {
         if (s3Properties.getCustomDomain() != null && !s3Properties.getCustomDomain().isEmpty()) {
             return s3Properties.getCustomDomain() + "/" + objectKey;
@@ -303,9 +240,7 @@ public class S3StorageService {
         }
     }
 
-    /**
-     * 计算文件MD5（十六进制）
-     */
+    /** 计算文件MD5（十六进制） */
     private String calculateMD5Hex(File file) throws NoSuchAlgorithmException, IOException {
         MessageDigest md = MessageDigest.getInstance("MD5");
         try (FileInputStream fis = new FileInputStream(file)) {
@@ -315,7 +250,7 @@ public class S3StorageService {
                 md.update(buffer, 0, length);
             }
         }
-        
+
         byte[] digest = md.digest();
         StringBuilder sb = new StringBuilder();
         for (byte b : digest) {
@@ -324,9 +259,7 @@ public class S3StorageService {
         return sb.toString();
     }
 
-    /**
-     * 获取文件扩展名
-     */
+    /** 获取文件扩展名 */
     private String getFileExtension(String fileName) {
         if (fileName == null || fileName.lastIndexOf('.') == -1) {
             return "";
@@ -334,9 +267,7 @@ public class S3StorageService {
         return fileName.substring(fileName.lastIndexOf('.'));
     }
 
-    /**
-     * 从对象键中提取文件名
-     */
+    /** 从对象键中提取文件名 */
     private String extractFileName(String objectKey) {
         if (objectKey == null) {
             return "unknown";
@@ -345,39 +276,35 @@ public class S3StorageService {
         return lastSlashIndex >= 0 ? objectKey.substring(lastSlashIndex + 1) : objectKey;
     }
 
-    /**
-     * 根据文件名获取内容类型
-     */
+    /** 根据文件名获取内容类型 */
     private String getContentType(String fileName) {
         if (fileName == null) {
             return "application/octet-stream";
         }
-        
+
         String extension = getFileExtension(fileName).toLowerCase();
         switch (extension) {
-            case ".jpg":
-            case ".jpeg":
+            case ".jpg" :
+            case ".jpeg" :
                 return "image/jpeg";
-            case ".png":
+            case ".png" :
                 return "image/png";
-            case ".gif":
+            case ".gif" :
                 return "image/gif";
-            case ".pdf":
+            case ".pdf" :
                 return "application/pdf";
-            case ".txt":
+            case ".txt" :
                 return "text/plain";
-            case ".json":
+            case ".json" :
                 return "application/json";
-            case ".xml":
+            case ".xml" :
                 return "application/xml";
-            default:
+            default :
                 return "application/octet-stream";
         }
     }
 
-    /**
-     * 上传结果类
-     */
+    /** 上传结果类 */
     public static class UploadResult {
         private final String fileId;
         private final String originalName;
@@ -391,9 +318,8 @@ public class S3StorageService {
         private final String etag;
         private final LocalDateTime createdAt;
 
-        public UploadResult(String fileId, String originalName, String storageName, 
-                           Long fileSize, String contentType, String bucketName, 
-                           String filePath, String accessUrl, String md5Hash, String etag) {
+        public UploadResult(String fileId, String originalName, String storageName, Long fileSize, String contentType,
+                String bucketName, String filePath, String accessUrl, String md5Hash, String etag) {
             this.fileId = fileId;
             this.originalName = originalName;
             this.storageName = storageName;
@@ -408,33 +334,47 @@ public class S3StorageService {
         }
 
         // Getters
-        public String getFileId() { return fileId; }
-        public String getOriginalName() { return originalName; }
-        public String getStorageName() { return storageName; }
-        public Long getFileSize() { return fileSize; }
-        public String getContentType() { return contentType; }
-        public String getBucketName() { return bucketName; }
-        public String getFilePath() { return filePath; }
-        public String getAccessUrl() { return accessUrl; }
-        public String getMd5Hash() { return md5Hash; }
-        public String getEtag() { return etag; }
-        public LocalDateTime getCreatedAt() { return createdAt; }
+        public String getFileId() {
+            return fileId;
+        }
+        public String getOriginalName() {
+            return originalName;
+        }
+        public String getStorageName() {
+            return storageName;
+        }
+        public Long getFileSize() {
+            return fileSize;
+        }
+        public String getContentType() {
+            return contentType;
+        }
+        public String getBucketName() {
+            return bucketName;
+        }
+        public String getFilePath() {
+            return filePath;
+        }
+        public String getAccessUrl() {
+            return accessUrl;
+        }
+        public String getMd5Hash() {
+            return md5Hash;
+        }
+        public String getEtag() {
+            return etag;
+        }
+        public LocalDateTime getCreatedAt() {
+            return createdAt;
+        }
 
         @Override
         public String toString() {
-            return "UploadResult{" +
-                    "fileId='" + fileId + '\'' +
-                    ", originalName='" + originalName + '\'' +
-                    ", storageName='" + storageName + '\'' +
-                    ", fileSize=" + fileSize +
-                    ", contentType='" + contentType + '\'' +
-                    ", bucketName='" + bucketName + '\'' +
-                    ", filePath='" + filePath + '\'' +
-                    ", accessUrl='" + accessUrl + '\'' +
-                    ", md5Hash='" + md5Hash + '\'' +
-                    ", etag='" + etag + '\'' +
-                    ", createdAt=" + createdAt +
-                    '}';
+            return "UploadResult{" + "fileId='" + fileId + '\'' + ", originalName='" + originalName + '\''
+                    + ", storageName='" + storageName + '\'' + ", fileSize=" + fileSize + ", contentType='"
+                    + contentType + '\'' + ", bucketName='" + bucketName + '\'' + ", filePath='" + filePath + '\''
+                    + ", accessUrl='" + accessUrl + '\'' + ", md5Hash='" + md5Hash + '\'' + ", etag='" + etag + '\''
+                    + ", createdAt=" + createdAt + '}';
         }
     }
-} 
+}

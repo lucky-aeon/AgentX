@@ -32,7 +32,7 @@ public class UserSettingsAppService {
     public UserSettingsDTO updateUserSettings(UserSettingsUpdateRequest request, String userId) {
         UserSettingsEntity entity = UserSettingsAssembler.toEntity(request, userId);
         userSettingsDomainService.update(entity);
-        
+
         return UserSettingsAssembler.toDTO(entity);
     }
 
@@ -42,4 +42,4 @@ public class UserSettingsAppService {
     public String getUserDefaultModelId(String userId) {
         return userSettingsDomainService.getUserDefaultModelId(userId);
     }
-} 
+}

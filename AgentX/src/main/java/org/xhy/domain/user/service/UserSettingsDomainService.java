@@ -30,8 +30,8 @@ public class UserSettingsDomainService {
      * @param userSettings 用户设置实体 */
     public void update(UserSettingsEntity userSettings) {
         Wrapper<UserSettingsEntity> wrapper = Wrappers.<UserSettingsEntity>lambdaQuery()
-                        .eq(UserSettingsEntity::getUserId, userSettings.getUserId());
-        userSettingsRepository.checkedUpdate(userSettings,wrapper);
+                .eq(UserSettingsEntity::getUserId, userSettings.getUserId());
+        userSettingsRepository.checkedUpdate(userSettings, wrapper);
     }
 
     /** 获取用户默认模型ID

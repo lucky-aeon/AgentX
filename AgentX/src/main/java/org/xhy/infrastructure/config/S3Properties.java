@@ -3,51 +3,33 @@ package org.xhy.infrastructure.config;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
-/**
- * S3对象存储配置属性
- */
+/** S3对象存储配置属性 */
 @Component
 @ConfigurationProperties(prefix = "s3")
 public class S3Properties {
-    
-    /**
-     * S3服务端点
-     */
+
+    /** S3服务端点 */
     private String endpoint;
-    
-    /**
-     * 自定义域名(可选)
-     */
+
+    /** 自定义域名(可选) */
     private String customDomain;
-    
-    /**
-     * 访问密钥
-     */
+
+    /** 访问密钥 */
     private String accessKey;
-    
-    /**
-     * 密钥
-     */
+
+    /** 密钥 */
     private String secretKey;
-    
-    /**
-     * 默认存储桶名称
-     */
+
+    /** 默认存储桶名称 */
     private String bucketName;
-    
-    /**
-     * 区域
-     */
+
+    /** 区域 */
     private String region;
-    
-    /**
-     * 是否启用路径样式访问
-     */
+
+    /** 是否启用路径样式访问 */
     private boolean pathStyleAccess = true;
-    
-    /**
-     * 文件访问URL前缀
-     */
+
+    /** 文件访问URL前缀 */
     private String urlPrefix;
 
     // Getters and Setters
@@ -114,4 +96,4 @@ public class S3Properties {
     public void setUrlPrefix(String urlPrefix) {
         this.urlPrefix = urlPrefix;
     }
-} 
+}

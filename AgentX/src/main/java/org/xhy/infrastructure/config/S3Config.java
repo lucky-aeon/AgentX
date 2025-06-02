@@ -12,9 +12,7 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3Configuration;
 
-/**
- * S3客户端配置
- */
+/** S3客户端配置 */
 @Configuration
 public class S3Config {
 
@@ -24,27 +22,20 @@ public class S3Config {
         this.s3Properties = s3Properties;
     }
 
-    /**
-     * 创建S3客户端Bean
+    /** 创建S3客户端Bean
      * 
-     * @return S3客户端实例
-     */
+     * @return S3客户端实例 */
     @Bean
     public S3Client s3Client() {
-        AwsBasicCredentials awsCredentials = AwsBasicCredentials.create(
-                s3Properties.getAccessKey(),
+        AwsBasicCredentials awsCredentials = AwsBasicCredentials.create(s3Properties.getAccessKey(),
                 s3Properties.getSecretKey());
 
-        S3Configuration s3Config = S3Configuration.builder()
-                .pathStyleAccessEnabled(s3Properties.isPathStyleAccess())
+        S3Configuration s3Config = S3Configuration.builder().pathStyleAccessEnabled(s3Properties.isPathStyleAccess())
                 .build();
 
-        return S3Client.builder()
-                .endpointOverride(URI.create(s3Properties.getEndpoint()))
+        return S3Client.builder().endpointOverride(URI.create(s3Properties.getEndpoint()))
                 .region(Region.of(s3Properties.getRegion()))
-                .credentialsProvider(StaticCredentialsProvider.create(awsCredentials))
-                .serviceConfiguration(s3Config)
-                .httpClient(UrlConnectionHttpClient.builder().build())
-                .build();
+                .credentialsProvider(StaticCredentialsProvider.create(awsCredentials)).serviceConfiguration(s3Config)
+                .httpClient(UrlConnectionHttpClient.builder().build()).build();
     }
-} 
+}

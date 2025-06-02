@@ -19,9 +19,7 @@ public class SessionDTO {
     /** 代理ID */
     private String agentId;
 
-    /**
-     * 支持多模态
-     */
+    /** 支持多模态 */
     private Boolean multiModal;
 
     /** 无参构造函数 */
