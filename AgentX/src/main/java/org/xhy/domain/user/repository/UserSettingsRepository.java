@@ -8,4 +8,4 @@ import org.xhy.infrastructure.repository.MyBatisPlusExtRepository;
 @Mapper
 public interface UserSettingsRepository extends MyBatisPlusExtRepository<UserSettingsEntity> {
 
-} 
+}

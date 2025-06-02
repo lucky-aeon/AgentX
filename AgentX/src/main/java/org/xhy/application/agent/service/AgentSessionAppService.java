@@ -2,10 +2,12 @@ package org.xhy.application.agent.service;
 
 import java.util.List;
 
+import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.xhy.application.conversation.assembler.SessionAssembler;
 import org.xhy.domain.agent.model.AgentEntity;
+import org.xhy.domain.agent.model.AgentVersionEntity;
 import org.xhy.domain.agent.service.AgentDomainService;
 import org.xhy.domain.agent.service.AgentWorkspaceDomainService;
 import org.xhy.application.conversation.dto.SessionDTO;
@@ -64,7 +66,19 @@ public class AgentSessionAppService {
             SessionEntity session = sessionDomainService.createSession(agentId, userId);
             sessions.add(session);
         }
-        return SessionAssembler.toDTOs(sessions);
+
+        AgentEntity agent = agentServiceDomainService.getAgentById(agentId);
+        Boolean multiModal = agent.getMultiModal();
+        if (!agent.getUserId().equals(userId)) {
+            AgentVersionEntity latestAgentVersion = agentServiceDomainService.getLatestAgentVersion(agentId);
+            multiModal = latestAgentVersion.getMultiModal();
+        }
+
+        List<SessionDTO> dtOs = SessionAssembler.toDTOs(sessions);
+        for (SessionDTO dtO : dtOs) {
+            dtO.setMultiModal(multiModal);
+        }
+        return dtOs;
 
     }
 

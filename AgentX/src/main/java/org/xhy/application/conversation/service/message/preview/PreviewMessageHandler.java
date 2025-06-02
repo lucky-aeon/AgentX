@@ -17,17 +17,14 @@ import org.xhy.infrastructure.transport.MessageTransport;
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicReference;
 
-/**
- * 预览消息处理器
- * 专门用于Agent预览功能，不会保存消息到数据库
- */
+/** 预览消息处理器 专门用于Agent预览功能，不会保存消息到数据库 */
 @Component(value = "previewMessageHandler")
 public class PreviewMessageHandler extends AbstractMessageHandler {
 
     private final AgentToolManager agentToolManager;
 
-
-    public PreviewMessageHandler(LLMServiceFactory llmServiceFactory, MessageDomainService messageDomainService, AgentToolManager agentToolManager) {
+    public PreviewMessageHandler(LLMServiceFactory llmServiceFactory, MessageDomainService messageDomainService,
+            AgentToolManager agentToolManager) {
         super(llmServiceFactory, messageDomainService);
         this.agentToolManager = agentToolManager;
     }
@@ -38,14 +35,11 @@ public class PreviewMessageHandler extends AbstractMessageHandler {
                 chatContext.getAgent().getToolPresetParams());
     }
 
-    /**
-     * 预览专用的聊天处理逻辑
-     * 与正常流程的区别是不保存消息到数据库
-     */
+    /** 预览专用的聊天处理逻辑 与正常流程的区别是不保存消息到数据库 */
     @Override
-    protected <T> void processChat(Agent agent, T connection, MessageTransport<T> transport, 
-            ChatContext chatContext, MessageEntity userEntity, MessageEntity llmEntity) {
-        
+    protected <T> void processChat(Agent agent, T connection, MessageTransport<T> transport, ChatContext chatContext,
+            MessageEntity userEntity, MessageEntity llmEntity) {
+
         AtomicReference<StringBuilder> messageBuilder = new AtomicReference<>(new StringBuilder());
 
         TokenStream tokenStream = agent.chat(chatContext.getUserMessage());
@@ -85,4 +79,4 @@ public class PreviewMessageHandler extends AbstractMessageHandler {
         // 启动流处理
         tokenStream.start();
     }
-} 
+}

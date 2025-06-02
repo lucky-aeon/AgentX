@@ -14,10 +14,9 @@ public class UserSettingsAssembler {
             return null;
         }
         UserSettingsDTO dto = new UserSettingsDTO();
-        BeanUtils.copyProperties(entity,dto);
+        BeanUtils.copyProperties(entity, dto);
         return dto;
     }
-
 
     /** 请求转实体 */
     public static UserSettingsEntity toEntity(UserSettingsUpdateRequest request, String userId) {
@@ -29,4 +28,4 @@ public class UserSettingsAssembler {
         entity.setUserId(userId);
         return entity;
     }
-} 
+}

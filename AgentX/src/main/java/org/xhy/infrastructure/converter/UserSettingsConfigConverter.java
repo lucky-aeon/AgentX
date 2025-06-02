@@ -52,4 +52,4 @@ public class UserSettingsConfigConverter extends BaseTypeHandler<UserSettingsCon
         UserSettingsConfig config = JsonUtils.parseObject(json, UserSettingsConfig.class);
         return config != null ? config : new UserSettingsConfig();
     }
-} 
+}

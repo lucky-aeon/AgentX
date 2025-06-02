@@ -77,10 +77,10 @@ export default function EditAgentPage() {
             }))
           } else if (agent.toolIds && agent.toolIds.length > 0) {
             agentTools = agent.toolIds.map(toolId => ({
-              id: toolId,
-              name: `工具 (ID: ${toolId.substring(0, 8)}...)`,
-              description: undefined,
-              presetParameters: {},
+                      id: toolId,
+                      name: `工具 (ID: ${toolId.substring(0, 8)}...)`,
+                      description: undefined,
+                      presetParameters: {},
             }))
           }
 
@@ -96,6 +96,7 @@ export default function EditAgentPage() {
             toolPresetParams: agent.toolPresetParams || {},
             enabled: agent.enabled,
             agentType: agent.agentType,
+            multiModal: agent.multiModal || false,
           }
 
           setInitialData(formData)
@@ -181,6 +182,7 @@ export default function EditAgentPage() {
         toolPresetParams: formData.toolPresetParams,
         enabled: formData.enabled,
         agentType: formData.agentType,
+        multiModal: formData.multiModal,
       }
 
       const response = await updateAgentWithToast(agentId, agentData)
@@ -216,7 +218,7 @@ export default function EditAgentPage() {
     }
   }
 
-  // 处理切换助理状态  
+  // 处理切换助理状态
   const handleToggleStatus = () => {
     // 这个功能需要在AgentFormModal内部实现
     // 因为它需要访问formData状态
@@ -249,6 +251,7 @@ export default function EditAgentPage() {
         toolIds: toolIds,
         knowledgeBaseIds: initialData.knowledgeBaseIds || [],
         toolPresetParams: initialData.toolPresetParams || {},
+        multiModal: initialData.multiModal || false,
       })
 
       if (response.code === 200) {
@@ -327,6 +330,7 @@ export default function EditAgentPage() {
         toolPresetParams: version.toolPresetParams || {},
         enabled: initialData?.enabled || true,
         agentType: version.agentType,
+        multiModal: version.multiModal || false,
       }
       
       setInitialData(formData)
@@ -371,7 +375,7 @@ export default function EditAgentPage() {
     router.push("/studio")
   }
 
-  return (
+    return (
     <>
       <AgentFormModal
         mode="edit"
@@ -384,189 +388,189 @@ export default function EditAgentPage() {
         onPublish={openPublishDialog}
         onToggleStatus={handleToggleStatus}
         onShowVersions={() => {
-          setShowVersionsDialog(true);
-          loadVersions();
-        }}
+              setShowVersionsDialog(true);
+              loadVersions();
+            }}
         isSubmitting={isSubmitting}
       >
-        {/* 删除确认对话框 */}
-        <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>确认删除</DialogTitle>
+      {/* 删除确认对话框 */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>确认删除</DialogTitle>
               <DialogDescription>确定要删除这个助理吗？此操作无法撤销。</DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
-                取消
-              </Button>
-              <Button variant="destructive" onClick={handleDeleteAgent} disabled={isDeleting}>
-                {isDeleting ? "删除中..." : "确认删除"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
+              取消
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteAgent} disabled={isDeleting}>
+              {isDeleting ? "删除中..." : "确认删除"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-        {/* 发布版本对话框 */}
-        <Dialog open={showPublishDialog} onOpenChange={setShowPublishDialog}>
-          <DialogContent>
+      {/* 发布版本对话框 */}
+      <Dialog open={showPublishDialog} onOpenChange={setShowPublishDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>发布新版本</DialogTitle>
+            <DialogDescription>发布新版本将创建当前配置的快照，用户可以使用此版本。</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {isLoadingLatestVersion ? (
+              <div className="flex items-center justify-center py-2">
+                <RefreshCw className="h-4 w-4 animate-spin text-blue-500 mr-2" />
+                <span className="text-sm">加载版本信息...</span>
+              </div>
+            ) : latestVersion ? (
+              <div className="flex items-center p-2 bg-blue-50 rounded-md border border-blue-100 mb-2">
+                <span className="text-sm text-blue-600">当前最新版本：{latestVersion.versionNumber}</span>
+              </div>
+            ) : (
+              <div className="flex items-center p-2 bg-gray-50 rounded-md border border-gray-200 mb-2">
+                <span className="text-sm text-gray-600">当前还没有发布过版本</span>
+              </div>
+            )}
+            <div className="space-y-2">
+              <Label htmlFor="version-number">版本号</Label>
+              <Input
+                id="version-number"
+                placeholder="例如: 1.0.0"
+                value={versionNumber}
+                onChange={(e) => setVersionNumber(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="change-log">更新日志</Label>
+              <Textarea
+                id="change-log"
+                placeholder="描述此版本的更新内容"
+                rows={4}
+                value={changeLog}
+                onChange={(e) => setChangeLog(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowPublishDialog(false)}>
+              取消
+            </Button>
+            <Button onClick={handlePublishVersion} disabled={isPublishing}>
+              {isPublishing ? "发布中..." : "发布版本"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 版本历史对话框 */}
+      <Dialog open={showVersionsDialog} onOpenChange={setShowVersionsDialog}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle>版本历史</DialogTitle>
+            <DialogDescription>查看和管理助理的历史版本</DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 overflow-auto py-4">
+            {isLoadingVersions ? (
+              <div className="flex items-center justify-center py-8">
+                <RefreshCw className="h-6 w-6 animate-spin text-blue-500" />
+                <span className="ml-2">加载版本历史...</span>
+              </div>
+            ) : versions.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">暂无版本历史</div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>版本号</TableHead>
+                    <TableHead>发布时间</TableHead>
+                    <TableHead>状态</TableHead>
+                    <TableHead>更新日志</TableHead>
+                    <TableHead className="text-right">操作</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {versions.map((version) => (
+                    <TableRow key={version.id}>
+                      <TableCell className="font-medium">{version.versionNumber}</TableCell>
+                      <TableCell>{new Date(version.publishedAt).toLocaleString()}</TableCell>
+                      <TableCell>
+                        <Badge variant={version.publishStatus === PublishStatus.PUBLISHED ? "default" : "outline"}>
+                          {getPublishStatusText(version.publishStatus)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="max-w-[200px] truncate">{version.changeLog}</TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="outline" size="sm" className="mr-2" onClick={() => viewVersionDetail(version)}>
+                          查看
+                        </Button>
+                        <Button size="sm" onClick={() => rollbackToVersion(version)} disabled={isRollingBack}>
+                          {isRollingBack ? "回滚中..." : "回滚"}
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* 版本详情对话框 */}
+      {selectedVersion && (
+        <Dialog open={!!selectedVersion} onOpenChange={(open) => !open && setSelectedVersion(null)}>
+          <DialogContent className="max-w-3xl max-h-[80vh] overflow-auto">
             <DialogHeader>
-              <DialogTitle>发布新版本</DialogTitle>
-              <DialogDescription>发布新版本将创建当前配置的快照，用户可以使用此版本。</DialogDescription>
+              <DialogTitle>版本详情: {selectedVersion.versionNumber}</DialogTitle>
+              <DialogDescription>发布于 {new Date(selectedVersion.publishedAt).toLocaleString()}</DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
-              {isLoadingLatestVersion ? (
-                <div className="flex items-center justify-center py-2">
-                  <RefreshCw className="h-4 w-4 animate-spin text-blue-500 mr-2" />
-                  <span className="text-sm">加载版本信息...</span>
-                </div>
-              ) : latestVersion ? (
-                <div className="flex items-center p-2 bg-blue-50 rounded-md border border-blue-100 mb-2">
-                  <span className="text-sm text-blue-600">当前最新版本：{latestVersion.versionNumber}</span>
-                </div>
-              ) : (
-                <div className="flex items-center p-2 bg-gray-50 rounded-md border border-gray-200 mb-2">
-                  <span className="text-sm text-gray-600">当前还没有发布过版本</span>
-                </div>
-              )}
               <div className="space-y-2">
-                <Label htmlFor="version-number">版本号</Label>
-                <Input
-                  id="version-number"
-                  placeholder="例如: 1.0.0"
-                  value={versionNumber}
-                  onChange={(e) => setVersionNumber(e.target.value)}
-                />
+                <h3 className="font-medium">更新日志</h3>
+                <div className="p-3 bg-gray-50 rounded-md">{selectedVersion.changeLog}</div>
               </div>
+
               <div className="space-y-2">
-                <Label htmlFor="change-log">更新日志</Label>
-                <Textarea
-                  id="change-log"
-                  placeholder="描述此版本的更新内容"
-                  rows={4}
-                  value={changeLog}
-                  onChange={(e) => setChangeLog(e.target.value)}
-                />
+                <h3 className="font-medium">配置信息</h3>
+                <div className="space-y-1">
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">工具数量</span>
+                    <span className="text-sm">{selectedVersion.tools.length}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">知识库数量</span>
+                    <span className="text-sm">{selectedVersion.knowledgeBaseIds.length}</span>
+                  </div>
+                </div>
               </div>
+
+                  <div className="space-y-2">
+                    <h3 className="font-medium">系统提示词</h3>
+                    <div className="p-3 bg-gray-50 rounded-md text-sm">
+                      {selectedVersion.systemPrompt || "无系统提示词"}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <h3 className="font-medium">欢迎消息</h3>
+                    <div className="p-3 bg-gray-50 rounded-md text-sm">
+                      {selectedVersion.welcomeMessage || "无欢迎消息"}
+                    </div>
+                  </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setShowPublishDialog(false)}>
-                取消
+              <Button variant="outline" onClick={() => setSelectedVersion(null)}>
+                关闭
               </Button>
-              <Button onClick={handlePublishVersion} disabled={isPublishing}>
-                {isPublishing ? "发布中..." : "发布版本"}
+              <Button onClick={() => rollbackToVersion(selectedVersion)} disabled={isRollingBack}>
+                {isRollingBack ? "回滚中..." : "回滚到此版本"}
               </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
-
-        {/* 版本历史对话框 */}
-        <Dialog open={showVersionsDialog} onOpenChange={setShowVersionsDialog}>
-          <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
-            <DialogHeader>
-              <DialogTitle>版本历史</DialogTitle>
-              <DialogDescription>查看和管理助理的历史版本</DialogDescription>
-            </DialogHeader>
-            <div className="flex-1 overflow-auto py-4">
-              {isLoadingVersions ? (
-                <div className="flex items-center justify-center py-8">
-                  <RefreshCw className="h-6 w-6 animate-spin text-blue-500" />
-                  <span className="ml-2">加载版本历史...</span>
-                </div>
-              ) : versions.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">暂无版本历史</div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>版本号</TableHead>
-                      <TableHead>发布时间</TableHead>
-                      <TableHead>状态</TableHead>
-                      <TableHead>更新日志</TableHead>
-                      <TableHead className="text-right">操作</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {versions.map((version) => (
-                      <TableRow key={version.id}>
-                        <TableCell className="font-medium">{version.versionNumber}</TableCell>
-                        <TableCell>{new Date(version.publishedAt).toLocaleString()}</TableCell>
-                        <TableCell>
-                          <Badge variant={version.publishStatus === PublishStatus.PUBLISHED ? "default" : "outline"}>
-                            {getPublishStatusText(version.publishStatus)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="max-w-[200px] truncate">{version.changeLog}</TableCell>
-                        <TableCell className="text-right">
-                          <Button variant="outline" size="sm" className="mr-2" onClick={() => viewVersionDetail(version)}>
-                            查看
-                          </Button>
-                          <Button size="sm" onClick={() => rollbackToVersion(version)} disabled={isRollingBack}>
-                            {isRollingBack ? "回滚中..." : "回滚"}
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* 版本详情对话框 */}
-        {selectedVersion && (
-          <Dialog open={!!selectedVersion} onOpenChange={(open) => !open && setSelectedVersion(null)}>
-            <DialogContent className="max-w-3xl max-h-[80vh] overflow-auto">
-              <DialogHeader>
-                <DialogTitle>版本详情: {selectedVersion.versionNumber}</DialogTitle>
-                <DialogDescription>发布于 {new Date(selectedVersion.publishedAt).toLocaleString()}</DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <h3 className="font-medium">更新日志</h3>
-                  <div className="p-3 bg-gray-50 rounded-md">{selectedVersion.changeLog}</div>
-                </div>
-
-                <div className="space-y-2">
-                  <h3 className="font-medium">配置信息</h3>
-                  <div className="space-y-1">
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">工具数量</span>
-                      <span className="text-sm">{selectedVersion.tools.length}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">知识库数量</span>
-                      <span className="text-sm">{selectedVersion.knowledgeBaseIds.length}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <h3 className="font-medium">系统提示词</h3>
-                  <div className="p-3 bg-gray-50 rounded-md text-sm">
-                    {selectedVersion.systemPrompt || "无系统提示词"}
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <h3 className="font-medium">欢迎消息</h3>
-                  <div className="p-3 bg-gray-50 rounded-md text-sm">
-                    {selectedVersion.welcomeMessage || "无欢迎消息"}
-                  </div>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setSelectedVersion(null)}>
-                  关闭
-                </Button>
-                <Button onClick={() => rollbackToVersion(selectedVersion)} disabled={isRollingBack}>
-                  {isRollingBack ? "回滚中..." : "回滚到此版本"}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        )}
+      )}
       </AgentFormModal>
     </>
   )

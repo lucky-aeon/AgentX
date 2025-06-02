@@ -19,6 +19,9 @@ public class SessionDTO {
     /** 代理ID */
     private String agentId;
 
+    /** 支持多模态 */
+    private Boolean multiModal;
+
     /** 无参构造函数 */
     public SessionDTO() {
     }
@@ -92,4 +95,11 @@ public class SessionDTO {
         this.agentId = agentVersionId;
     }
 
+    public Boolean getMultiModal() {
+        return multiModal;
+    }
+
+    public void setMultiModal(Boolean multiModal) {
+        this.multiModal = multiModal;
+    }
 }

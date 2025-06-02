@@ -3,11 +3,14 @@ package org.xhy.domain.conversation.model;
 import com.baomidou.mybatisplus.annotation.*;
 import org.xhy.domain.conversation.constant.MessageType;
 import org.xhy.domain.conversation.constant.Role;
+import org.xhy.infrastructure.converter.ListConverter;
 import org.xhy.infrastructure.converter.MessageTypeConverter;
 import org.xhy.infrastructure.converter.RoleConverter;
 import org.xhy.infrastructure.entity.BaseEntity;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 /** 消息实体类，代表对话中的一条消息 */
 @TableName("messages")
@@ -52,6 +55,9 @@ public class MessageEntity extends BaseEntity {
     /** 消息元数据 */
     @TableField("metadata")
     private String metadata;
+
+    @TableField(value = "file_urls", typeHandler = ListConverter.class)
+    private List<String> fileUrls = new ArrayList<>();
 
     /** 无参构造函数 */
     public MessageEntity() {
@@ -148,5 +154,13 @@ public class MessageEntity extends BaseEntity {
 
     public boolean isSystemMessage() {
         return this.role == Role.SYSTEM;
+    }
+
+    public List<String> getFileUrls() {
+        return fileUrls;
+    }
+
+    public void setFileUrls(List<String> fileUrls) {
+        this.fileUrls = fileUrls;
     }
 }

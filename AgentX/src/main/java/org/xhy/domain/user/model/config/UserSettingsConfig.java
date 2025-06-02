@@ -15,4 +15,4 @@ public class UserSettingsConfig implements Serializable {
     public void setDefaultModel(String defaultModel) {
         this.defaultModel = defaultModel;
     }
-} 
+}

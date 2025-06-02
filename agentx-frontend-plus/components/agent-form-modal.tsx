@@ -9,6 +9,8 @@ import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 
 import { useAgentForm, type AgentFormData } from "@/hooks/use-agent-form"
+import { useToast } from "@/hooks/use-toast"
+import ModelSelector from "@/components/model-selector"
 import AgentBasicInfoForm from "@/app/(main)/studio/edit/[id]/components/AgentBasicInfoForm"
 import AgentPromptForm from "@/app/(main)/studio/edit/[id]/components/AgentPromptForm"
 import AgentToolsForm from "@/app/(main)/studio/edit/[id]/components/AgentToolsForm"
@@ -70,9 +72,6 @@ export default function AgentFormModal({
     isToolSidebarOpen,
     setIsToolSidebarOpen,
     
-    // refs
-    fileInputRef,
-    
     // 表单数据
     formData,
     updateFormField,
@@ -80,9 +79,6 @@ export default function AgentFormModal({
     // 表单操作函数
     toggleTool,
     toggleKnowledgeBase,
-    handleAvatarUpload,
-    removeAvatar,
-    triggerFileInput,
     handleToolClick,
     updateToolPresetParameters,
     
@@ -92,6 +88,8 @@ export default function AgentFormModal({
     initialData, 
     isEditMode: mode === "edit" 
   })
+
+  const { toast } = useToast()
 
   const isSubmitting = externalIsSubmitting || internalIsSubmitting
   
@@ -211,10 +209,6 @@ export default function AgentFormModal({
                 formData={formData}
                 selectedType="agent"
                 updateFormField={updateFormField}
-                triggerFileInput={triggerFileInput}
-                handleAvatarUpload={handleAvatarUpload}
-                removeAvatar={removeAvatar}
-                fileInputRef={fileInputRef}
               />
             </TabsContent>
 
@@ -264,17 +258,21 @@ export default function AgentFormModal({
                 </p>
               </div>
             </div>
+            
+            {/* 默认模型选择 */}
+            <ModelSelector mode="preview" className="mt-4" />
           </div>
 
           {/* Agent预览 */}
           <AgentPreviewChat
             agentName={formData.name || (mode === "create" ? "新建助理" : "预览助理")}
             agentAvatar={formData.avatar}
-            systemPrompt={formData.systemPrompt}
+            systemPrompt={formData.systemPrompt || "你是一个智能助手，可以帮助用户解答问题和完成任务。"}
             welcomeMessage={formData.welcomeMessage}
             toolIds={formData.tools.map(t => t.id)}
             toolPresetParams={formData.toolPresetParams as unknown as Record<string, Record<string, Record<string, string>>>}
-            disabled={!formData.name || !formData.systemPrompt}
+            multiModal={formData.multiModal}
+            disabled={false}
             className="h-[500px]"
           />
 

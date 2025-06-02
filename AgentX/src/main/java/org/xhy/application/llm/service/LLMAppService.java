@@ -9,6 +9,8 @@ import org.xhy.domain.llm.model.ModelEntity;
 import org.xhy.domain.llm.model.ProviderAggregate;
 import org.xhy.domain.llm.model.ProviderEntity;
 import org.xhy.domain.llm.model.enums.ModelType;
+import org.xhy.domain.user.service.UserDomainService;
+import org.xhy.domain.user.service.UserSettingsDomainService;
 import org.xhy.infrastructure.entity.Operator;
 import org.xhy.infrastructure.llm.protocol.enums.ProviderProtocol;
 import org.xhy.domain.llm.model.enums.ProviderType;
@@ -26,8 +28,11 @@ public class LLMAppService {
 
     private final LLMDomainService llmDomainService;
 
-    public LLMAppService(LLMDomainService llmDomainService) {
+    private final UserSettingsDomainService userSettingsDomainService;
+
+    public LLMAppService(LLMDomainService llmDomainService, UserSettingsDomainService userSettingsDomainService) {
         this.llmDomainService = llmDomainService;
+        this.userSettingsDomainService = userSettingsDomainService;
     }
 
     /** 获取服务商聚合根
@@ -188,5 +193,11 @@ public class LLMAppService {
                 .flatMap(provider -> provider.getModels().stream())
                 .filter(model -> modelType == null || model.getType() == modelType).map(ModelAssembler::toDTO)
                 .collect(Collectors.toList());
+    }
+
+    public ModelDTO getDefaultModel(String userId) {
+        String userDefaultModelId = userSettingsDomainService.getUserDefaultModelId(userId);
+        ModelEntity modelEntity = llmDomainService.getModelById(userDefaultModelId);
+        return ModelAssembler.toDTO(modelEntity);
     }
 }

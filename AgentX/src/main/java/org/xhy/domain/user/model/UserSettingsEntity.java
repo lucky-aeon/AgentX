@@ -59,4 +59,4 @@ public class UserSettingsEntity extends BaseEntity {
         }
         settingConfig.setDefaultModel(modelId);
     }
-} 
+}

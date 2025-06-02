@@ -1,9 +1,7 @@
 package org.xhy.application.conversation.service.message;
 
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
-import dev.langchain4j.data.message.AiMessage;
-import dev.langchain4j.data.message.SystemMessage;
-import dev.langchain4j.data.message.UserMessage;
+import dev.langchain4j.data.message.*;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.service.AiServices;
@@ -20,6 +18,7 @@ import org.xhy.domain.conversation.service.MessageDomainService;
 import org.xhy.infrastructure.llm.LLMServiceFactory;
 import org.xhy.infrastructure.transport.MessageTransport;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -58,7 +57,6 @@ public abstract class AbstractMessageHandler {
 
         // 4. 保存用户消息和更新上下文
 
-
         // 5. 初始化聊天内存
         MessageWindowChatMemory memory = initMemory();
 
@@ -85,7 +83,6 @@ public abstract class AbstractMessageHandler {
     /** 子类实现具体的聊天处理逻辑 */
     protected <T> void processChat(Agent agent, T connection, MessageTransport<T> transport, ChatContext chatContext,
             MessageEntity userEntity, MessageEntity llmEntity) {
-
 
         messageDomainService.saveMessageAndUpdateContext(Collections.singletonList(userEntity),
                 chatContext.getContextEntity());
@@ -172,6 +169,7 @@ public abstract class AbstractMessageHandler {
         messageEntity.setRole(Role.USER);
         messageEntity.setContent(environment.getUserMessage());
         messageEntity.setSessionId(environment.getSessionId());
+        messageEntity.setFileUrls(environment.getFileUrls());
         return messageEntity;
     }
 
@@ -204,7 +202,13 @@ public abstract class AbstractMessageHandler {
         List<MessageEntity> messageHistory = chatContext.getMessageHistory();
         for (MessageEntity messageEntity : messageHistory) {
             if (messageEntity.isUserMessage()) {
-                memory.add(new UserMessage(messageEntity.getContent()));
+                List<String> fileUrls = messageEntity.getFileUrls();
+                for (String fileUrl : fileUrls) {
+                    memory.add(UserMessage.from(ImageContent.from(fileUrl)));
+                }
+                if (!StringUtils.isEmpty(messageEntity.getContent())) {
+                    memory.add(new UserMessage(messageEntity.getContent()));
+                }
             } else if (messageEntity.isAIMessage()) {
                 memory.add(new AiMessage(messageEntity.getContent()));
             } else if (messageEntity.isSystemMessage()) {
