@@ -139,6 +139,17 @@ public class ToolAppService {
         }).toList();
         Page<ToolVersionDTO> tPage = new Page<>(listToolVersion.getCurrent(), listToolVersion.getSize(),
                 listToolVersion.getTotal());
+
+        Map<String, String> userNicknameMap = userDomainService
+                .getByIds(list.stream().map(ToolVersionDTO::getUserId).toList()).stream()
+                .collect(Collectors.toMap(UserEntity::getId, UserEntity::getNickname));
+
+        list.forEach(toolVersionDTO -> {
+            if (userNicknameMap.containsKey(toolVersionDTO.getUserId())) {
+                toolVersionDTO.setUserName(userNicknameMap.get(toolVersionDTO.getUserId()));
+            }
+        });
+
         tPage.setRecords(list);
         return tPage;
     }
