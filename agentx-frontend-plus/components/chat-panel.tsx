@@ -19,6 +19,8 @@ import { MessageType, type Message as MessageInterface } from "@/types/conversat
 import { formatDistanceToNow } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
 import { nanoid } from 'nanoid'
+import MultiModalUpload, { type ChatFile } from "@/components/multi-modal-upload"
+import MessageFileDisplay from "@/components/message-file-display"
 
 interface ChatPanelProps {
   conversationId: string
@@ -26,6 +28,7 @@ interface ChatPanelProps {
   agentName?: string
   agentType?: number // 新增：助理类型，2表示功能性Agent
   onToggleScheduledTaskPanel?: () => void // 新增：切换定时任务面板的回调
+  multiModal?: boolean // 新增：是否启用多模态功能
 }
 
 interface Message {
@@ -38,6 +41,7 @@ interface Message {
   type?: MessageType // 消息类型枚举
   createdAt?: string
   updatedAt?: string
+  fileUrls?: string[] // 修改：文件URL列表
 }
 
 interface AssistantMessage {
@@ -55,6 +59,7 @@ interface StreamData {
   messageType?: string // 消息类型
   taskId?: string // 任务ID
   tasks?: TaskDTO[] // 任务数据
+  files?: string[] // 新增：文件URL列表
 }
 
 interface TaskAggregate {
@@ -91,7 +96,7 @@ interface TaskDTO {
   endTime?: string    // 可选，任务结束时间
 }
 
-export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName = "AI助手", agentType = 1, onToggleScheduledTaskPanel }: ChatPanelProps) {
+export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName = "AI助手", agentType = 1, onToggleScheduledTaskPanel, multiModal = false }: ChatPanelProps) {
   const [input, setInput] = useState("")
   const [messages, setMessages] = useState<MessageInterface[]>([])
   const [isTyping, setIsTyping] = useState(false)
@@ -102,6 +107,7 @@ export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName
   const [currentAssistantMessage, setCurrentAssistantMessage] = useState<AssistantMessage | null>(null)
   const [tasks, setTasks] = useState<Map<string, TaskDTO>>(new Map()) // 任务映射
   const [tasksMessageId, setTasksMessageId] = useState<string | null>(null) // 存储任务列表消息的ID
+  const [uploadedFiles, setUploadedFiles] = useState<ChatFile[]>([]) // 新增：已上传的文件列表
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const chatContainerRef = useRef<HTMLDivElement>(null)
   const [taskFetchingInProgress, setTaskFetchingInProgress] = useState(false);
@@ -140,6 +146,7 @@ export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName
     type?: MessageType;
     taskId?: string;
     createdAt?: string | Date;
+    fileUrls?: string[]; // 修改：使用fileUrls
   }) => {
     const messageObj: MessageInterface = {
       id: message.id,
@@ -149,7 +156,8 @@ export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName
       taskId: message.taskId,
       createdAt: message.createdAt instanceof Date 
         ? message.createdAt.toISOString() 
-        : message.createdAt || new Date().toISOString()
+        : message.createdAt || new Date().toISOString(),
+      fileUrls: message.fileUrls || [] // 修改：使用fileUrls
     };
     
     setMessages(prev => [...prev, messageObj]);
@@ -193,7 +201,8 @@ export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName
               content: msg.content,
               type: messageType,
               createdAt: msg.createdAt,
-              updatedAt: msg.updatedAt
+              updatedAt: msg.updatedAt,
+              fileUrls: msg.fileUrls || [] // 添加文件URL列表
             }
           })
           
@@ -531,13 +540,18 @@ export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName
 
   // 处理发送消息
   const handleSendMessage = async () => {
-    if (!input.trim() || !conversationId) return
+    if (!input.trim() && uploadedFiles.length === 0) return
 
     // 添加调试信息
     console.log("当前聊天模式:", agentType === 2 ? "功能性Agent" : "普通对话")
     
+    // 获取已完成上传的文件URL
+    const completedFiles = uploadedFiles.filter(file => file.url && file.uploadProgress === 100)
+    const fileUrls = completedFiles.map(file => file.url)
+
     const userMessage = input.trim()
     setInput("")
+    setUploadedFiles([]) // 清空已上传的文件
     setIsTyping(true)
     setIsThinking(true) // 设置思考状态
     setCurrentAssistantMessage(null) // 重置助手消息状态
@@ -549,6 +563,11 @@ export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName
     hasReceivedFirstResponse.current = false
     messageSequenceNumber.current = 0; // 重置消息序列计数器
 
+    // 输出文件URL到控制台
+    if (fileUrls.length > 0) {
+      console.log('发送消息包含的文件URL:', fileUrls)
+    }
+
     // 添加用户消息到消息列表
     const userMessageId = `user-${Date.now()}`
     setMessages((prev) => [
@@ -558,13 +577,14 @@ export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName
         role: "USER",
         content: userMessage,
         type: MessageType.TEXT,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        fileUrls: fileUrls.length > 0 ? fileUrls : undefined // 修改：使用fileUrls
       },
     ])
 
     try {
-      // 发送消息到服务器并获取流式响应
-      const response = await streamChat(userMessage, conversationId)
+      // 发送消息到服务器并获取流式响应，包含文件URL
+      const response = await streamChat(userMessage, conversationId, fileUrls.length > 0 ? fileUrls : undefined)
 
       // 检查响应状态，如果不是成功状态，则关闭思考状态并返回
       if (!response.ok) {
@@ -1251,9 +1271,20 @@ export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName
                     {message.role === "USER" ? (
                       <div className="flex justify-end">
                         <div className="max-w-[80%]">
-                          <div className="bg-blue-50 text-gray-800 p-3 rounded-lg shadow-sm">
-                            {message.content}
-                          </div>
+                          {/* 文件显示 - 在消息内容之前 */}
+                          {message.fileUrls && message.fileUrls.length > 0 && (
+                            <div className="mb-3">
+                              <MessageFileDisplay fileUrls={message.fileUrls} />
+                            </div>
+                          )}
+                          
+                          {/* 消息内容 */}
+                          {message.content && (
+                            <div className="bg-blue-50 text-gray-800 p-3 rounded-lg shadow-sm">
+                              {message.content}
+                            </div>
+                          )}
+                          
                           <div className="text-xs text-gray-500 mt-1 text-right">
                             {formatMessageTime(message.createdAt)}
                           </div>
@@ -1278,10 +1309,19 @@ export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName
                             <span>{formatMessageTime(message.createdAt)}</span>
                           </div>
                           
+                          {/* 文件显示 - 在消息内容之前 */}
+                          {message.fileUrls && message.fileUrls.length > 0 && (
+                            <div className="mb-3">
+                              <MessageFileDisplay fileUrls={message.fileUrls} />
+                            </div>
+                          )}
+                          
                           {/* 消息内容 */}
-                          <div className="p-3 rounded-lg">
-                            {renderMessageContent(message)}
-                          </div>
+                          {message.content && (
+                            <div className="p-3 rounded-lg">
+                              {renderMessageContent(message)}
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}
@@ -1344,7 +1384,16 @@ export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName
 
       {/* 输入框 */}
       <div className="border-t p-2 bg-white">
-        <div className="flex items-end gap-2 max-w-5xl mx-auto">
+        <div className="flex items-end gap-2">
+          {/* 多模态文件上传组件 */}
+          <MultiModalUpload
+            multiModal={multiModal}
+            uploadedFiles={uploadedFiles}
+            setUploadedFiles={setUploadedFiles}
+            disabled={isTyping}
+            className="flex-shrink-0"
+          />
+          
           <Textarea
             placeholder="输入消息...(Shift+Enter换行, Enter发送)"
             value={input}
@@ -1355,8 +1404,8 @@ export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName
           />
           <Button 
             onClick={handleSendMessage} 
-            disabled={!input.trim()} 
-            className="h-10 w-10 rounded-xl bg-blue-500 hover:bg-blue-600 shadow-sm"
+            disabled={(!input.trim() && uploadedFiles.length === 0) || isTyping} 
+            className="h-10 w-10 rounded-xl bg-blue-500 hover:bg-blue-600 shadow-sm flex-shrink-0"
           >
             <Send className="h-5 w-5" />
           </Button>

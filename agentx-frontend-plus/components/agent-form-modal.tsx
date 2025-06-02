@@ -274,6 +274,7 @@ export default function AgentFormModal({
             welcomeMessage={formData.welcomeMessage}
             toolIds={formData.tools.map(t => t.id)}
             toolPresetParams={formData.toolPresetParams as unknown as Record<string, Record<string, Record<string, string>>>}
+            multiModal={formData.multiModal}
             disabled={!formData.name || !formData.systemPrompt}
             className="h-[500px]"
           />

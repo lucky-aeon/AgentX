@@ -8,6 +8,7 @@ export interface AgentPreviewRequest {
   toolPresetParams?: Record<string, Record<string, Record<string, string>>>
   messageHistory?: MessageHistoryItem[]
   modelId?: string // 可选，不传则使用用户默认模型
+  fileUrls?: string[] // 新增：文件URL列表
 }
 
 // 消息历史项
@@ -16,6 +17,7 @@ export interface MessageHistoryItem {
   role: 'USER' | 'ASSISTANT' | 'SYSTEM'
   content: string
   createdAt?: string
+  fileUrls?: string[] // 新增：文件URL列表
 }
 
 // 聊天响应类型（流式）

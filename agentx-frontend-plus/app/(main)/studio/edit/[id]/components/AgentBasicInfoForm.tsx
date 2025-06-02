@@ -5,13 +5,15 @@ import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Upload, Trash } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Upload, Trash, FileImage, MessageSquare } from "lucide-react";
 
 interface AgentFormData {
   name: string;
   avatar: string | null;
   description: string;
   enabled: boolean;
+  multiModal: boolean;
 }
 
 interface AgentBasicInfoFormProps {
@@ -95,17 +97,46 @@ const AgentBasicInfoForm: React.FC<AgentBasicInfoFormProps> = ({
         />
       </div>
 
-      {/* 状态信息 */}
+      {/* 功能配置 */}
       <div>
-        <h2 className="text-lg font-medium mb-4">状态信息</h2>
-        <div className="flex items-center gap-2 p-4 bg-gray-50 rounded-lg border">
-          <div className="flex-1">
-            <p className="text-sm text-muted-foreground">当前状态</p>
-            <p className="font-medium">{formData.enabled ? "已启用" : "已禁用"}</p>
+        <h2 className="text-lg font-medium mb-4">功能配置</h2>
+        <div className="space-y-4">
+          {/* 多模态开关 */}
+          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <FileImage className="h-5 w-5 text-blue-600" />
+              </div>
+              <div>
+                <p className="font-medium">多模态功能</p>
+                <p className="text-sm text-muted-foreground">
+                  启用后支持上传图片、文档等文件，让助理理解多种类型的内容
+                </p>
+              </div>
+            </div>
+            <Switch
+              checked={formData.multiModal}
+              onCheckedChange={(checked) => updateFormField("multiModal", checked)}
+            />
+          </div>
+
+          {/* 状态信息 */}
+          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-green-100 rounded-lg">
+                <MessageSquare className="h-5 w-5 text-green-600" />
+              </div>
+              <div>
+                <p className="font-medium">启用状态</p>
+                <p className="text-sm text-muted-foreground">
+                  控制助理是否可以被使用
+                </p>
+              </div>
           </div>
           <Badge variant={formData.enabled ? "default" : "outline"}>
             {formData.enabled ? "已启用" : "已禁用"}
           </Badge>
+          </div>
         </div>
       </div>
     </div>

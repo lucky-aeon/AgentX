@@ -54,6 +54,9 @@ public class AgentDTO {
     /** 最后更新时间 */
     private LocalDateTime updatedAt;
 
+    /** 是否支持多模态 */
+    private Boolean multiModal;
+
     /** 无参构造函数 */
     public AgentDTO() {
         this.toolIds = new ArrayList<>();
@@ -184,5 +187,13 @@ public class AgentDTO {
 
     public Map<String, Map<String, Map<String, String>>> getToolPresetParams() {
         return toolPresetParams;
+    }
+
+    public Boolean getMultiModal() {
+        return multiModal;
+    }
+
+    public void setMultiModal(Boolean multiModal) {
+        this.multiModal = multiModal;
     }
 }

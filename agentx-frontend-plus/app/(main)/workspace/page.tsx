@@ -172,6 +172,9 @@ export default function WorkspacePage() {
   
   // 判断当前Agent是否为功能性Agent (agentType = 2)
   const isFunctionalAgent = currentAgent?.agentType === AgentType.FUNCTIONAL
+  
+  // 获取当前会话的多模态设置
+  const multiModal = currentSession?.multiModal || false
 
   return (
     <div className="flex h-[calc(100vh-3.5rem)] w-full">
@@ -297,6 +300,7 @@ export default function WorkspacePage() {
                 isFunctionalAgent={isFunctionalAgent}
                 agentName={currentAgent?.name || "AI助手"}
                 onToggleScheduledTaskPanel={() => setShowScheduledTaskPanel(!showScheduledTaskPanel)}
+                multiModal={multiModal}
               />
             </div>
             {showScheduledTaskPanel && isFunctionalAgent && (

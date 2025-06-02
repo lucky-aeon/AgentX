@@ -25,6 +25,7 @@ CREATE TABLE messages (
     provider VARCHAR(50),
     model VARCHAR(50),
     metadata JSONB,
+    file_urls JSONB,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP
@@ -55,6 +56,7 @@ CREATE TABLE agents (
     agent_type INTEGER DEFAULT 1,
     user_id VARCHAR(36) NOT NULL,
     tool_preset_params JSONB,
+    multi_modal BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP
@@ -80,6 +82,7 @@ CREATE TABLE agent_versions (
     published_at TIMESTAMP,
     user_id VARCHAR(36) NOT NULL,
     tool_preset_params JSONB,
+    multi_modal BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP

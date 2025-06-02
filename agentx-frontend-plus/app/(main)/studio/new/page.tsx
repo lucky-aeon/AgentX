@@ -41,6 +41,7 @@ export default function CreateAgentPage() {
         knowledgeBaseIds: formData.knowledgeBaseIds,
         toolPresetParams: formData.toolPresetParams,
         userId: API_CONFIG.CURRENT_USER_ID,
+        multiModal: formData.multiModal,
       };
 
       const response = await createAgentWithToast(agentData);

@@ -50,7 +50,7 @@ public class OssUploadService {
             List<Object> conditions = new ArrayList<>();
             conditions.add(Map.of("bucket", s3Properties.getBucketName()));
             conditions.add(new String[]{"starts-with", "$key", keyPrefix});
-            conditions.add(new String[]{"content-length-range", "0", "10240"});
+            conditions.add(new Object[]{"content-length-range", 0, 10485760}); // 0到10MB
             policy.put("conditions", conditions);
             
             // 转换为JSON并Base64编码
@@ -75,7 +75,7 @@ public class OssUploadService {
                 keyPrefix,
                 accessUrlPrefix,
                 expiration,
-                10240
+                10485760
             );
             
         } catch (Exception e) {
@@ -174,6 +174,19 @@ public class OssUploadService {
                 for (int i = 0; i < array.length; i++) {
                     if (i > 0) json.append(",");
                     json.append("\"").append(array[i]).append("\"");
+                }
+                json.append("]");
+            } else if (item instanceof Object[]) {
+                // 处理Object数组，例如content-length-range
+                Object[] array = (Object[]) item;
+                json.append("[");
+                for (int i = 0; i < array.length; i++) {
+                    if (i > 0) json.append(",");
+                    if (array[i] instanceof String) {
+                        json.append("\"").append(array[i]).append("\"");
+                    } else {
+                        json.append(array[i]); // 数字直接输出，不加引号
+                    }
                 }
                 json.append("]");
             } else if (item instanceof Map) {

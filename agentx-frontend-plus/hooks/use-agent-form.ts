@@ -21,6 +21,7 @@ export interface AgentFormData {
   }
   enabled: boolean
   agentType: number
+  multiModal: boolean
 }
 
 interface UseAgentFormProps {
@@ -61,6 +62,7 @@ export function useAgentForm({ initialData, isEditMode = false }: UseAgentFormPr
     toolPresetParams: {},
     enabled: true,
     agentType: 1, // 统一使用agent类型
+    multiModal: false, // 默认关闭多模态
     ...initialData,
   })
 

@@ -50,6 +50,11 @@ public class ChatContext {
     /** 使用的 mcp server name */
     private List<String> mcpServerNames;
 
+    /**
+     * 多模态的文件
+     */
+    private List<String> fileUrls;
+
     public String getSessionId() {
         return sessionId;
     }
@@ -128,5 +133,13 @@ public class ChatContext {
 
     public void setMcpServerNames(List<String> mcpServerNames) {
         this.mcpServerNames = mcpServerNames;
+    }
+
+    public List<String> getFileUrls() {
+        return fileUrls;
+    }
+
+    public void setFileUrls(List<String> fileUrls) {
+        this.fileUrls = fileUrls;
     }
 }

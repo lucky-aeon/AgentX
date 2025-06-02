@@ -13,6 +13,7 @@ export interface MessageDTO {
   messageType?: MessageType | string
   createdAt?: string
   updatedAt?: string
+  fileUrls?: string[] // 文件URL列表
 }
 
 // 获取会话消息列表

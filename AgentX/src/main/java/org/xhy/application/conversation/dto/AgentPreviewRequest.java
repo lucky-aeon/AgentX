@@ -27,6 +27,19 @@ public class AgentPreviewRequest {
     /** 使用的模型ID，如果为空则使用用户默认模型 */
     private String modelId;
 
+    /**
+     * 文件列表
+     */
+    private List<String> fileUrls;
+
+    public List<String> getFileUrls() {
+        return fileUrls;
+    }
+
+    public void setFileUrls(List<String> fileUrls) {
+        this.fileUrls = fileUrls;
+    }
+
     public String getUserMessage() {
         return userMessage;
     }
