@@ -12,6 +12,7 @@ AgentX 是一个基于 LLM + 插件构建的 Agent 平台。致力于简化 Agen
  - [x] LLM 上下文管理（滑动窗口，摘要算法）
  - [x] Agent 策略（MCP）
  - [x] 用户
+ - [x] 大模型服务商
  - [x] 工具市场
  - [x] MCP Server Community
  - [x] MCP Gateway
