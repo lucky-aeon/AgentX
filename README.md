@@ -1,10 +1,10 @@
  
 
-# AgentX - 智能对话系统平台
+# AgentX - Agent平台
 
 [](https://opensource.org/licenses/MIT)
 
-AgentX 是一个基于大模型 (LLM) 和多能力平台 (MCP) 的智能 Agent 构建平台。它致力于简化 Agent 的创建流程，让用户无需复杂的流程节点或拖拽操作，仅通过自然语言和工具集成即可打造个性化的智能 Agent。
+AgentX 是一个基于 LLM + 插件构建的 Agent 平台。致力于简化 Agent 的创建流程，让用户无需复杂的流程节点或拖拽操作，仅通过自然语言和工具集成即可打造 Agent。
 
 
 ## ⏳ 功能
