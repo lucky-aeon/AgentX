@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect, useCallback } from "react"
-import { FileText, Send, ClipboardList, Wrench, CheckCircle, ListTodo, Circle, AlertCircle } from 'lucide-react'
+import { FileText, Send, ClipboardList, Wrench, CheckCircle, ListTodo, Circle, AlertCircle, Square } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -19,6 +19,8 @@ import { MessageType, type Message as MessageInterface } from "@/types/conversat
 import { formatDistanceToNow } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
 import { nanoid } from 'nanoid'
+import axios from "axios"
+import { API_ENDPOINTS, buildApiUrl } from "@/lib/api-config"
 
 interface ChatPanelProps {
   conversationId: string
@@ -1112,6 +1114,24 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
     });
   };
 
+  function getAuthHeaders(): HeadersInit {
+    const headers: HeadersInit = {
+      "Content-Type": "application/json",
+      Accept: "*/*",
+      Connection: "keep-alive",
+    }
+  
+    // 添加认证令牌
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("auth_token")
+      if (token) {
+        headers.Authorization = `Bearer ${token}`
+      }
+    }
+  
+    return headers
+  }
+
   // 处理消息类型函数 - 任务状态更新
   const handleMessageTypeForTaskUpdate = (data: StreamData) => {
     if (!data.messageType) return;
@@ -1458,13 +1478,39 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
             className="min-h-[56px] flex-1 resize-none overflow-hidden rounded-xl bg-white px-3 py-2 font-normal border-gray-200 shadow-sm focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-opacity-50"
             rows={Math.min(5, Math.max(2, input.split('\n').length))}
           />
-          <Button 
-            onClick={handleSendMessage} 
-            disabled={!input.trim()} 
-            className="h-10 w-10 rounded-xl bg-blue-500 hover:bg-blue-600 shadow-sm"
-          >
-            <Send className="h-5 w-5" />
-          </Button>
+          {isTyping ? (
+            <Button 
+              variant="ghost"
+              size="icon"
+              className="h-10 w-10 rounded-xl text-gray-500 hover:text-red-500 border border-gray-200"
+              onClick={async () => {
+                try {
+                  await fetch(buildApiUrl(API_ENDPOINTS.INTERRUPT_SESSION(conversationId)), {
+                    method: "POST",
+                    headers: getAuthHeaders()
+                  });
+                } catch (e) {
+                  toast({ description: '中断请求失败', variant: 'destructive' });
+                }
+                if (abortControllerRef.current) {
+                  abortControllerRef.current.abort();
+                  abortControllerRef.current = null;
+                }
+                setIsTyping(false);
+                setIsThinking(false);
+              }}
+            >
+              <Square className="h-5 w-5" />
+            </Button>
+          ) : (
+            <Button 
+              onClick={handleSendMessage} 
+              disabled={!input.trim()} 
+              className="h-10 w-10 rounded-xl bg-blue-500 hover:bg-blue-600 shadow-sm"
+            >
+              <Send className="h-5 w-5" />
+            </Button>
+          )}
         </div>
       </div>
     </div>

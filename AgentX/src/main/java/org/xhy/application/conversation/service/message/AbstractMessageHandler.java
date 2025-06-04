@@ -26,7 +26,6 @@ import org.xhy.infrastructure.exception.StreamInterruptedException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
 
 public abstract class AbstractMessageHandler {
 
@@ -83,13 +82,10 @@ public abstract class AbstractMessageHandler {
 
             return connection;
         } catch (Exception e) {
-            AtomicReference<StreamStateManager.StreamState> stateRef = StreamStateManager.getStateRef(sessionId);
-            if (stateRef != null) {
-                StreamStateManager.StreamState state = stateRef.get();
-                if (state != null) {
-                    state.isActive = false;
-                    state.isCompleted = true;
-                }
+            StreamStateManager.StreamState state = StreamStateManager.getState(sessionId);
+            if (state != null) {
+                state.setActive(false);
+                state.setCompleted(true);
             }
             transport.handleError(connection, e);
             transport.completeConnection(connection);
@@ -107,89 +103,86 @@ public abstract class AbstractMessageHandler {
     protected <T> void processChat(Agent agent, MessageTransport<T> transport, ChatContext chatContext,
             MessageEntity userMessageEntity, MessageEntity llmEntity) {
         String sessionId = chatContext.getSessionId();
-        AtomicReference<StreamStateManager.StreamState> stateRef = StreamStateManager.getStateRef(sessionId);
-        if (stateRef == null)
+        StreamStateManager.StreamState state = StreamStateManager.getState(sessionId);
+        if (state == null)
             return;
 
         TokenStream tokenStream = agent.chat(chatContext.getUserMessage());
 
         tokenStream.onPartialResponse(reply -> {
-            StreamStateManager.StreamState state = stateRef.get();
-            if (state == null || !state.isActive || state.isCompleted) {
-                throw new StreamInterruptedException(state != null ? state.partialContent.toString() : "");
+            if (state == null || !state.isActive() || state.isCompleted()) {
+                throw new StreamInterruptedException(state != null ? state.getPartialContent().toString() : "");
             }
 
             try {
-                state.partialContent.append(reply);
-                transport.sendMessage((T) state.connection, AgentChatResponse.build(reply, MessageType.TEXT));
+                state.getPartialContent().append(reply);
+                transport.sendMessage((T) state.getConnection(), AgentChatResponse.build(reply, MessageType.TEXT));
             } catch (Exception e) {
-                state.isActive = false;
-                throw new StreamInterruptedException(state.partialContent.toString());
+                state.setActive(false);
+                throw new StreamInterruptedException(state.getPartialContent().toString());
             }
         });
 
         tokenStream.onCompleteResponse(chatResponse -> {
-            StreamStateManager.StreamState state = stateRef.get();
-            if (state == null || state.isCompleted)
+            if (state == null || state.isCompleted())
                 return;
 
             try {
-                if (state.isActive) {
+                if (state.isActive()) {
                     llmEntity.setTokenCount(chatResponse.tokenUsage().outputTokenCount());
-                    llmEntity.setContent(state.partialContent.toString());
+                    llmEntity.setContent(state.getPartialContent().toString());
                     userMessageEntity.setTokenCount(chatResponse.tokenUsage().inputTokenCount());
                     messageDomainService.updateMessage(userMessageEntity);
                     messageDomainService.saveMessageAndUpdateContext(Collections.singletonList(llmEntity),
                             chatContext.getContextEntity());
-                    transport.sendEndMessage((T) state.connection, AgentChatResponse.buildEndMessage(MessageType.TEXT));
+                    transport.sendEndMessage((T) state.getConnection(),
+                            AgentChatResponse.buildEndMessage(MessageType.TEXT));
                 }
             } finally {
-                state.isCompleted = true;
-                transport.completeConnection((T) state.connection);
+                state.setCompleted(true);
+                transport.completeConnection((T) state.getConnection());
                 StreamStateManager.removeState(sessionId);
             }
         });
 
         tokenStream.onError(throwable -> {
-            StreamStateManager.StreamState state = stateRef.get();
-            if (state == null || state.isCompleted)
+            if (state == null || state.isCompleted())
                 return;
 
             try {
                 if (throwable instanceof StreamInterruptedException) {
                     log.info("会话 [{}] 被 StreamInterruptedException 中断", sessionId);
-                    if (state.partialContent.length() > 0) {
-                        llmEntity.setContent(state.partialContent.toString());
+                    if (state.getPartialContent().length() > 0) {
+                        llmEntity.setContent(state.getPartialContent().toString());
                         llmEntity.setRole(Role.ASSISTANT);
                         messageDomainService.saveMessageAndUpdateContext(Collections.singletonList(llmEntity),
                                 chatContext.getContextEntity());
-                        log.debug("已经保存内容：{}", state.partialContent);
-                        state.partialContent.setLength(0);
-                        log.debug("已清空保存内容，目前的内容为：{}", state.partialContent);
+                        log.debug("已经保存内容：{}", state.getPartialContent());
+                        state.getPartialContent().setLength(0);
+                        log.debug("已清空保存内容，目前的内容为：{}", state.getPartialContent());
                     }
                 } else {
-                    transport.handleError((T) state.connection, throwable);
+                    transport.handleError((T) state.getConnection(), throwable);
                 }
             } finally {
-                state.isCompleted = true;
-                transport.completeConnection((T) state.connection);
-                StreamStateManager.removeState(sessionId);
+                state.setActive(true);
+                state.setCompleted(true);
+                transport.completeConnection((T) state.getConnection());
             }
         });
 
         tokenStream.onToolExecuted(toolExecution -> {
-            StreamStateManager.StreamState state = stateRef.get();
-            if (state == null || !state.isActive || state.isCompleted) {
-                throw new StreamInterruptedException(state != null ? state.partialContent.toString() : "");
+            if (state == null || !state.isActive() || state.isCompleted()) {
+                throw new StreamInterruptedException(state != null ? state.getPartialContent().toString() : "");
             }
 
-            if (state.partialContent.length() > 0) {
-                transport.sendMessage((T) state.connection, AgentChatResponse.buildEndMessage(MessageType.TEXT));
+            if (state.getPartialContent().length() > 0) {
+                transport.sendMessage((T) state.getConnection(), AgentChatResponse.buildEndMessage(MessageType.TEXT));
                 MessageEntity preToolAiMessage = createLlmMessage(chatContext);
-                preToolAiMessage.setContent(state.partialContent.toString());
+                preToolAiMessage.setContent(state.getPartialContent().toString());
                 messageDomainService.saveMessageAndUpdateContext(Collections.singletonList(preToolAiMessage),
                         chatContext.getContextEntity());
-                state.partialContent.setLength(0);
+                state.getPartialContent().setLength(0);
             }
 
             String message = "执行工具：" + toolExecution.request().name();
@@ -198,7 +191,7 @@ public abstract class AbstractMessageHandler {
             toolMessage.setContent(message);
             messageDomainService.saveMessageAndUpdateContext(Collections.singletonList(toolMessage),
                     chatContext.getContextEntity());
-            transport.sendMessage((T) state.connection,
+            transport.sendMessage((T) state.getConnection(),
                     AgentChatResponse.buildEndMessage(message, MessageType.TOOL_CALL));
         });
 
@@ -268,4 +261,8 @@ public abstract class AbstractMessageHandler {
             }
         }
     }
+
+    protected abstract <T> void processChat(Agent agent, T connection, MessageTransport<T> transport,
+            ChatContext chatContext, MessageEntity userEntity, MessageEntity llmEntity);
+
 }

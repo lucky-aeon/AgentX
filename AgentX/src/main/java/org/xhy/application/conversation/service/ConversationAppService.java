@@ -8,6 +8,7 @@ import org.xhy.application.conversation.dto.AgentPreviewRequest;
 import org.xhy.application.conversation.dto.ChatRequest;
 import org.xhy.application.conversation.dto.MessageDTO;
 import org.xhy.application.conversation.service.message.AbstractMessageHandler;
+import org.xhy.application.conversation.service.message.StreamStateManager;
 import org.xhy.application.conversation.service.message.preview.PreviewMessageHandler;
 import org.xhy.application.user.service.UserSettingsAppService;
 import org.xhy.domain.agent.constant.AgentType;
@@ -42,6 +43,7 @@ import org.xhy.infrastructure.exception.BusinessException;
 import org.xhy.infrastructure.llm.config.ProviderConfig;
 import org.xhy.infrastructure.transport.MessageTransport;
 import org.xhy.infrastructure.transport.MessageTransportFactory;
+import org.xhy.interfaces.api.common.Result;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -419,5 +421,17 @@ public class ConversationAppService {
 
         environment.setContextEntity(contextEntity);
         environment.setMessageHistory(messageEntities);
+    }
+
+    public void interruptSession(String sessionId) {
+        // 获取当前会话流状态
+        StreamStateManager.StreamState state = StreamStateManager.getState(sessionId);
+        if (state != null && state.isActive() && !state.isCompleted()) {
+            // 标记为非活跃
+            state.setActive(false);
+            // 抛出异常以中断流
+            throw new org.xhy.infrastructure.exception.StreamInterruptedException(
+                    state.getPartialContent() != null ? state.getPartialContent().toString() : "");
+        }
     }
 }

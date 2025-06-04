@@ -12,6 +12,7 @@ export const API_ENDPOINTS = {
   DELETE_SESSION: (id: string) => `/agent/session/${id}`,
   CHAT: "/agent/session/chat",
   SEND_MESSAGE: (sessionId: string) => `/agent/session/${sessionId}/message`,
+  INTERRUPT_SESSION: (sessionId: string) => `/agent/session/interrupt/${sessionId}`,
   
   // 任务相关
   SESSION_TASKS: (sessionId: string) => `/tasks/session/${sessionId}/latest`,
@@ -46,8 +47,6 @@ export const API_ENDPOINTS = {
   TOGGLE_PROVIDER_STATUS: (id: string) => `/llm/providers/${id}/status`,
   
   // 模型相关
-  MODELS: "/llm/models", // 获取模型列表
-  DEFAULT_MODEL: "/llm/models/default", // 获取默认模型
   MODEL_DETAIL: (id: string) => `/llm/models/${id}`,
   CREATE_MODEL: "/llm/models",
   UPDATE_MODEL: "/llm/models",

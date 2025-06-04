@@ -3,7 +3,6 @@ package org.xhy.interfaces.api.portal.agent;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.xhy.application.agent.service.AgentSessionAppService;
-import org.xhy.application.conversation.dto.AgentPreviewRequest;
 import org.xhy.application.conversation.dto.ChatRequest;
 import org.xhy.application.conversation.service.ConversationAppService;
 import org.xhy.application.conversation.dto.MessageDTO;
@@ -13,6 +12,7 @@ import org.xhy.interfaces.api.common.Result;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import org.xhy.application.conversation.service.message.StreamStateManager;
 
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -79,12 +79,10 @@ public class PortalAgentSessionController {
         return conversationAppService.chat(chatRequest, UserContext.getCurrentUserId());
     }
 
-    /** Agent预览功能 用于在创建/编辑Agent时预览对话效果，无需保存会话
-     * @param previewRequest 预览请求对象
-     * @return SSE流 */
-    @PostMapping("/preview")
-    public SseEmitter preview(@RequestBody AgentPreviewRequest previewRequest) {
-        String userId = UserContext.getCurrentUserId();
-        return conversationAppService.previewAgent(previewRequest, userId);
+    /** 主动中断大模型流式回复 */
+    @PostMapping("/interrupt/{sessionId}")
+    public Result<Void> interruptSession(@PathVariable String sessionId) {
+        conversationAppService.interruptSession(sessionId);
+        return Result.success();
     }
 }
