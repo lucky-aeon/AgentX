@@ -1,13 +1,14 @@
 "use client"
 
 import { useState, useRef, useEffect, useCallback } from "react"
-import { FileText, Send, ClipboardList, Wrench, CheckCircle, ListTodo, Circle, AlertCircle, Clock } from 'lucide-react'
+
+import { FileText, Send, ClipboardList, Wrench, CheckCircle, ListTodo, Circle, AlertCircle, Square , Clock } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { streamChat } from "@/lib/api"
-import { toast } from "@/hooks/use-toast"
+import { toast } from "@/components/ui/use-toast"
 import { getSessionMessages, getSessionMessagesWithToast, type MessageDTO } from "@/lib/session-message-service"
 import { getSessionTasksWithToast } from "@/lib/task-service"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -16,14 +17,18 @@ import remarkGfm from "remark-gfm"
 import { Highlight, themes } from "prism-react-renderer"
 import { CurrentTaskList } from "@/components/current-task-list"
 import { MessageType, type Message as MessageInterface } from "@/types/conversation"
+import MultiModalUpload, { type ChatFile } from "@/components/multi-modal-upload"
+import MessageFileDisplay from "@/components/message-file-display"
 import { formatDistanceToNow } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
 import { nanoid } from 'nanoid'
-import MultiModalUpload, { type ChatFile } from "@/components/multi-modal-upload"
-import MessageFileDisplay from "@/components/message-file-display"
+import axios from "axios"
+import { API_ENDPOINTS, buildApiUrl } from "@/lib/api-config"
 
 interface ChatPanelProps {
   conversationId: string
+  onToggleTaskHistory?: () => void
+  showTaskHistory?: boolean
   isFunctionalAgent?: boolean
   agentName?: string
   agentType?: number // 新增：助理类型，2表示功能性Agent
@@ -59,12 +64,12 @@ interface StreamData {
   messageType?: string // 消息类型
   taskId?: string // 任务ID
   tasks?: TaskDTO[] // 任务数据
-  files?: string[] // 新增：文件URL列表
 }
 
 interface TaskAggregate {
   task: TaskDTO      // 父任务
   subTasks: TaskDTO[] // 子任务列表
+  endTime?: string    // 可选，任务结束时间
 }
 
 // 定义消息类型为字符串字面量类型
@@ -96,7 +101,7 @@ interface TaskDTO {
   endTime?: string    // 可选，任务结束时间
 }
 
-export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName = "AI助手", agentType = 1, onToggleScheduledTaskPanel, multiModal = false }: ChatPanelProps) {
+export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory = false, isFunctionalAgent = false, agentName = "AI助手", agentType = 1, onToggleScheduledTaskPanel, multiModal = false }: ChatPanelProps) {
   const [input, setInput] = useState("")
   const [messages, setMessages] = useState<MessageInterface[]>([])
   const [isTyping, setIsTyping] = useState(false)
@@ -120,6 +125,9 @@ export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName
     type: MessageType.TEXT as MessageType,
     taskId: null as string | null
   });
+  
+  // 新增：AbortController引用
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // 在组件顶部添加状态来跟踪已完成的TEXT消息
   const [completedTextMessages, setCompletedTextMessages] = useState<Set<string>>(new Set());
@@ -157,7 +165,7 @@ export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName
       createdAt: message.createdAt instanceof Date 
         ? message.createdAt.toISOString() 
         : message.createdAt || new Date().toISOString(),
-      fileUrls: message.fileUrls || [] // 修改：使用fileUrls
+        fileUrls: message.fileUrls || [] // 修改：使用fileUrls
     };
     
     setMessages(prev => [...prev, messageObj]);
@@ -540,15 +548,16 @@ export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName
 
   // 处理发送消息
   const handleSendMessage = async () => {
-    if (!input.trim() && uploadedFiles.length === 0) return
+    if ((!input.trim() && uploadedFiles.length === 0) || !conversationId) return
 
     // 添加调试信息
     console.log("当前聊天模式:", agentType === 2 ? "功能性Agent" : "普通对话")
-    
+
     // 获取已完成上传的文件URL
     const completedFiles = uploadedFiles.filter(file => file.url && file.uploadProgress === 100)
     const fileUrls = completedFiles.map(file => file.url)
 
+    // 保存当前输入，并清空输入框
     const userMessage = input.trim()
     setInput("")
     setUploadedFiles([]) // 清空已上传的文件
@@ -556,7 +565,7 @@ export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName
     setIsThinking(true) // 设置思考状态
     setCurrentAssistantMessage(null) // 重置助手消息状态
     scrollToBottom() // 用户发送新消息时强制滚动到底部
-    
+
     // 重置所有状态
     setCompletedTextMessages(new Set())
     resetMessageAccumulator()
@@ -567,6 +576,56 @@ export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName
     if (fileUrls.length > 0) {
       console.log('发送消息包含的文件URL:', fileUrls)
     }
+
+    // 如果当前有正在进行的消息处理，终止它并保留已生成的内容
+    if(isTyping) {
+      console.log("检测到正在输出的消息，终止当前请求");
+      
+      // 终止当前请求
+      if(abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
+      
+      // 完成当前消息（如果有累积的内容）
+      if(messageContentAccumulator.current.content) {
+        // 生成当前消息序列的唯一ID，使用唯一标记避免重复
+        const interruptedMessageTime = Date.now();
+        const currentMessageId = `assistant-interrupted-${interruptedMessageTime}`;
+        const messageContent = messageContentAccumulator.current.content;
+        
+        console.log("保存未完成的消息:", currentMessageId);
+        
+        // 完成当前消息，添加标记表示这是被中断的消息
+        finalizeMessage(currentMessageId, {
+          ...messageContentAccumulator.current,
+          content: messageContent
+        });
+        
+        // 等待一小段时间确保消息已保存
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      
+      // 立即重置状态
+      setIsTyping(false);
+      setIsThinking(false);
+      resetMessageAccumulator();
+      
+      // 等待一小段时间确保状态已重置
+      await new Promise(resolve => setTimeout(resolve, 50));
+    }
+    
+    // 设置新消息的状态
+    setIsTyping(true);
+    setIsThinking(true); // 设置思考状态
+    setCurrentAssistantMessage(null); // 重置助手消息状态
+    scrollToBottom(); // 用户发送新消息时强制滚动到底部
+    
+    // 重置状态为新的消息
+    setCompletedTextMessages(new Set());
+    resetMessageAccumulator();
+    hasReceivedFirstResponse.current = false;
+    messageSequenceNumber.current = 0; // 重置消息序列计数器
 
     // 添加用户消息到消息列表
     const userMessageId = `user-${Date.now()}`
@@ -583,9 +642,14 @@ export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName
     ])
 
     try {
+      
+      // 创建新的AbortController
+      abortControllerRef.current = new AbortController();
+      
       // 发送消息到服务器并获取流式响应，包含文件URL
-      const response = await streamChat(userMessage, conversationId, fileUrls.length > 0 ? fileUrls : undefined)
+      const response = await streamChat(userMessage, conversationId, abortControllerRef.current.signal,fileUrls.length > 0 ? fileUrls : undefined)
 
+      
       // 检查响应状态，如果不是成功状态，则关闭思考状态并返回
       if (!response.ok) {
         // 错误已在streamChat中处理并显示toast
@@ -648,15 +712,21 @@ export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName
         }
       }
     } catch (error) {
-      console.error("Error in stream chat:", error)
-      setIsThinking(false) // 错误发生时关闭思考状态
-      toast({
-        title: "发送消息失败",
-        description: error instanceof Error ? error.message : "未知错误",
-        variant: "destructive",
-      })
+      // 检查是否为中止错误
+      if ((error as Error).name === 'AbortError') {
+        console.log("请求被用户主动中断");
+      } else {
+        console.error("Error in stream chat:", error)
+        setIsThinking(false) // 错误发生时关闭思考状态
+        toast({
+          description: error instanceof Error ? error.message : "未知错误",
+          variant: "destructive",
+        })
+      }
     } finally {
       setIsTyping(false)
+      // 清理AbortController
+      abortControllerRef.current = null;
     }
   }
 
@@ -726,9 +796,15 @@ export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName
     type: MessageType;
     taskId: string | null;
   }) => {
+    // 检查消息ID是否已完成处理
+    if (completedTextMessages.has(messageId)) {
+      console.log(`消息ID ${messageId} 已经完成，跳过UI更新`);
+      return;
+    }
+    
     // 使用函数式更新，在一次原子操作中检查并更新/创建消息
     setMessages(prev => {
-      // 检查消息是否已存在
+      // 检查消息是否已存在（通过ID）
       const messageIndex = prev.findIndex(msg => msg.id === messageId);
       
       if (messageIndex >= 0) {
@@ -741,7 +817,35 @@ export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName
         };
         return newMessages;
       } else {
-        // 消息不存在，创建新消息
+        // 检查是否存在内容相似的消息（防止重复）
+        const similarMessageIndex = prev.findIndex(msg => 
+          msg.role === 'assistant' && 
+          msg.content && 
+          messageData.content &&
+          (
+            // 完全相同的内容
+            msg.content === messageData.content ||
+            // 一个是另一个的子串（处理流式输出的情况）
+            msg.content.includes(messageData.content) || 
+            messageData.content.includes(msg.content.replace(" [已中断]", ""))
+          )
+        );
+        
+        if (similarMessageIndex >= 0) {
+          console.log(`发现相似内容的消息 ${prev[similarMessageIndex].id}，不创建新消息`);
+          // 如果找到相似消息，可以选择更新它而不是创建新消息
+          const newMessages = [...prev];
+          // 只在新内容更长时更新
+          if (messageData.content.length > prev[similarMessageIndex].content.length) {
+            newMessages[similarMessageIndex] = {
+              ...newMessages[similarMessageIndex],
+              content: messageData.content
+            };
+          }
+          return newMessages;
+        }
+        
+        // 消息不存在且没有相似内容，创建新消息
         console.log(`创建新消息: ${messageId}, 类型: ${messageData.type}`);
         return [
           ...prev,
@@ -775,6 +879,12 @@ export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName
       return;
     }
     
+    // 检查消息是否已被处理过
+    if (completedTextMessages.has(messageId)) {
+      console.log(`消息ID ${messageId} 已经完成，跳过处理`);
+      return;
+    }
+    
     // 确保UI已更新到最终状态，使用相同的原子操作模式
     setMessages(prev => {
       // 检查消息是否已存在
@@ -790,6 +900,44 @@ export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName
         };
         return newMessages;
       } else {
+        // 检查是否存在相似内容的消息（避免重复）
+        const similarIndex = prev.findIndex(msg => 
+          msg.role === 'assistant' && 
+          msg.content && 
+          messageData.content &&
+          (
+            // 完全相同的内容
+            msg.content === messageData.content ||
+            // 一个是另一个的子串（处理流式输出的情况）
+            msg.content.includes(messageData.content) || 
+            messageData.content.includes(msg.content.replace(" [已中断]", ""))
+          )
+        );
+        
+        if (similarIndex >= 0) {
+          console.log(`发现相似内容的消息 ${prev[similarIndex].id}，不创建新消息`);
+          // 如果找到相似消息，可以选择更新它而不是创建新消息
+          const newMessages = [...prev];
+          // 只在新内容更长时更新
+          if (messageData.content.length > prev[similarIndex].content.length) {
+            newMessages[similarIndex] = {
+              ...newMessages[similarIndex],
+              content: messageData.content
+            };
+          }
+          
+          // 即使使用已有消息，也要标记当前消息ID为已完成
+          setTimeout(() => {
+            setCompletedTextMessages(prevSet => {
+              const newSet = new Set(prevSet);
+              newSet.add(messageId);
+              return newSet;
+            });
+          }, 0);
+          
+          return newMessages;
+        }
+        
         // 消息不存在，创建新消息
         console.log(`创建并完成新消息: ${messageId}`);
         return [
@@ -1026,6 +1174,24 @@ export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName
       variant: "destructive",
     });
   };
+
+  function getAuthHeaders(): HeadersInit {
+    const headers: HeadersInit = {
+      "Content-Type": "application/json",
+      Accept: "*/*",
+      Connection: "keep-alive",
+    }
+  
+    // 添加认证令牌
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("auth_token")
+      if (token) {
+        headers.Authorization = `Bearer ${token}`
+      }
+    }
+  
+    return headers
+  }
 
   // 处理消息类型函数 - 任务状态更新
   const handleMessageTypeForTaskUpdate = (data: StreamData) => {
@@ -1277,7 +1443,7 @@ export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName
                               <MessageFileDisplay fileUrls={message.fileUrls} />
                             </div>
                           )}
-                          
+
                           {/* 消息内容 */}
                           {message.content && (
                             <div className="bg-blue-50 text-gray-800 p-3 rounded-lg shadow-sm">
@@ -1308,20 +1474,20 @@ export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName
                             <span className="mx-1 text-gray-400">·</span>
                             <span>{formatMessageTime(message.createdAt)}</span>
                           </div>
-                          
                           {/* 文件显示 - 在消息内容之前 */}
                           {message.fileUrls && message.fileUrls.length > 0 && (
                             <div className="mb-3">
                               <MessageFileDisplay fileUrls={message.fileUrls} />
                             </div>
                           )}
-                          
+
                           {/* 消息内容 */}
                           {message.content && (
                             <div className="p-3 rounded-lg">
                               {renderMessageContent(message)}
                             </div>
                           )}
+                         
                         </div>
                       </div>
                     )}
@@ -1393,7 +1559,7 @@ export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName
             disabled={isTyping}
             className="flex-shrink-0"
           />
-          
+
           <Textarea
             placeholder="输入消息...(Shift+Enter换行, Enter发送)"
             value={input}
@@ -1402,15 +1568,48 @@ export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName
             className="min-h-[56px] flex-1 resize-none overflow-hidden rounded-xl bg-white px-3 py-2 font-normal border-gray-200 shadow-sm focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-opacity-50"
             rows={Math.min(5, Math.max(2, input.split('\n').length))}
           />
-          <Button 
-            onClick={handleSendMessage} 
-            disabled={(!input.trim() && uploadedFiles.length === 0) || isTyping} 
-            className="h-10 w-10 rounded-xl bg-blue-500 hover:bg-blue-600 shadow-sm flex-shrink-0"
-          >
-            <Send className="h-5 w-5" />
-          </Button>
+          
+
+          {isTyping ? (
+            <Button 
+              variant="ghost"
+              size="icon"
+              className="h-10 w-10 rounded-xl text-gray-500 hover:text-red-500 border border-gray-200"
+              onClick={async () => {
+                try {
+                  await fetch(buildApiUrl(API_ENDPOINTS.INTERRUPT_SESSION(conversationId)), {
+                    method: "POST",
+                    headers: getAuthHeaders()
+                  });
+                } catch (e) {
+                  toast({ description: '中断请求失败', variant: 'destructive' });
+                }
+                if (abortControllerRef.current) {
+                  abortControllerRef.current.abort();
+                  abortControllerRef.current = null;
+                }
+                setIsTyping(false);
+                setIsThinking(false);
+              }}
+            >
+              <Square className="h-5 w-5" />
+            </Button>
+          ) : (
+            <Button 
+              onClick={handleSendMessage} 
+              disabled={(!input.trim() && uploadedFiles.length === 0) || isTyping} 
+              className="h-10 w-10 rounded-xl bg-blue-500 hover:bg-blue-600 shadow-sm"
+            >
+              <Send className="h-5 w-5" />
+            </Button>
+          )}
+
+
+
         </div>
       </div>
+
+      
     </div>
   )
 }

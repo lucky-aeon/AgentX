@@ -66,22 +66,22 @@ async function handleErrorResponse(response: Response): Promise<Response> {
  * 发送流式聊天消息
  * @param sessionId 会话ID
  * @param message 消息内容
- * @param fileUrls 可选的文件URL列表，用于多模态功能
  * @returns 流式响应
  */
-export async function streamChat(sessionId: string, message: string, fileUrls?: string[]): Promise<Response> {
+export async function streamChat(sessionId: string, message: string, signal?: AbortSignal, fileUrls?: string[]): Promise<Response> {
   try {
     // 使用API_ENDPOINTS.CHAT常量
     const url = `${API_CONFIG.BASE_URL}${API_ENDPOINTS.CHAT}`
     
     console.log(`Sending stream chat message to: ${url}`)
-    
-    // 构建请求体，包含可选的文件URL
-    const requestBody: any = {
+
+     // 构建请求体，包含可选的文件URL
+     const requestBody: any = {
       sessionId,
-      message
+      message,
+      signal
     }
-    
+
     // 如果有文件URL，添加到请求体中
     if (fileUrls && fileUrls.length > 0) {
       requestBody.fileUrls = fileUrls
@@ -91,7 +91,7 @@ export async function streamChat(sessionId: string, message: string, fileUrls?: 
     const response = await fetch(url, {
       method: "POST",
       headers: getAuthHeaders(),
-      body: JSON.stringify(requestBody)
+      body: JSON.stringify(requestBody) // 添加AbortSignal，允许外部中断请求
     })
     
     // 处理非成功响应

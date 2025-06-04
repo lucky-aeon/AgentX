@@ -1,13 +1,18 @@
 package org.xhy.application.conversation.service.message;
 
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
-import dev.langchain4j.data.message.*;
+import dev.langchain4j.data.message.AiMessage;
+import dev.langchain4j.data.message.ImageContent;
+import dev.langchain4j.data.message.SystemMessage;
+import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.service.AiServices;
 import dev.langchain4j.service.TokenStream;
 import dev.langchain4j.service.tool.ToolProvider;
 import dev.langchain4j.store.memory.chat.InMemoryChatMemoryStore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.xhy.application.conversation.dto.AgentChatResponse;
 import org.xhy.application.conversation.service.handler.context.AgentPromptTemplates;
 import org.xhy.application.conversation.service.handler.context.ChatContext;
@@ -17,14 +22,15 @@ import org.xhy.domain.conversation.model.MessageEntity;
 import org.xhy.domain.conversation.service.MessageDomainService;
 import org.xhy.infrastructure.llm.LLMServiceFactory;
 import org.xhy.infrastructure.transport.MessageTransport;
+import org.xhy.infrastructure.exception.StreamInterruptedException;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
 
 public abstract class AbstractMessageHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(AbstractMessageHandler.class);
 
     /** 连接超时时间（毫秒） */
     protected static final long CONNECTION_TIMEOUT = 3000000L;
@@ -37,42 +43,65 @@ public abstract class AbstractMessageHandler {
         this.messageDomainService = messageDomainService;
     }
 
-    /** 处理对话的模板方法
-     *
+    /*
      * @param chatContext 对话环境
+     * 
      * @param transport 消息传输实现
+     * 
      * @return 连接对象
-     * @param <T> 连接类型 */
+     * 
+     * @param <T> 连接类型
+     */
     public <T> T chat(ChatContext chatContext, MessageTransport<T> transport) {
-        // 1. 创建连接
+        String sessionId = chatContext.getSessionId();
+
+        // 处理已存在的流
+        StreamStateManager.handleExistingStream(sessionId, transport);
+
+        // 2. 创建新的连接和状态
         T connection = transport.createConnection(CONNECTION_TIMEOUT);
+        StreamStateManager.StreamState newState = StreamStateManager.createState(sessionId, connection);
 
-        // 2. 获取LLM客户端
-        StreamingChatModel streamingClient = llmServiceFactory.getStreamingClient(chatContext.getProvider(),
-                chatContext.getModel());
+        try {
+            // 3. 获取LLM客户端
+            StreamingChatModel streamingClient = llmServiceFactory.getStreamingClient(chatContext.getProvider(),
+                    chatContext.getModel());
 
-        // 3. 创建消息实体
-        MessageEntity llmMessageEntity = createLlmMessage(chatContext);
-        MessageEntity userMessageEntity = createUserMessage(chatContext);
+            // 4. 创建消息实体
+            MessageEntity llmMessageEntity = createLlmMessage(chatContext);
+            MessageEntity userMessageEntity = createUserMessage(chatContext);
 
-        // 4. 保存用户消息和更新上下文
+            // 5. 保存用户消息和更新上下文
+            messageDomainService.saveMessageAndUpdateContext(Collections.singletonList(userMessageEntity),
+                    chatContext.getContextEntity());
 
-        // 5. 初始化聊天内存
-        MessageWindowChatMemory memory = initMemory();
+            // 6. 初始化聊天内存
+            MessageWindowChatMemory memory = initMemory();
 
-        // 6. 构建历史消息
-        buildHistoryMessage(chatContext, memory);
+            // 7. 构建历史消息
+            buildHistoryMessage(chatContext, memory);
 
-        // 7. 根据子类决定是否需要工具
-        ToolProvider toolProvider = provideTools(chatContext);
+            // 8. 根据子类决定是否需要工具
+            ToolProvider toolProvider = provideTools(chatContext);
 
-        // 8. 创建Agent
-        Agent agent = buildAgent(streamingClient, memory, toolProvider);
+            // 9. 创建Agent
+            Agent agent = buildAgent(streamingClient, memory, toolProvider);
 
-        // 9. 处理聊天
-        processChat(agent, connection, transport, chatContext, userMessageEntity, llmMessageEntity);
+            // 10. 处理聊天
+            processChat(agent, transport, chatContext, userMessageEntity, llmMessageEntity);
 
-        return connection;
+            return connection;
+        } catch (Exception e) {
+            StreamStateManager.StreamState state = StreamStateManager.getState(sessionId);
+            if (state != null) {
+                state.setActive(false);
+                state.setCompleted(true);
+            }
+            transport.handleError(connection, e);
+            transport.completeConnection(connection);
+            StreamStateManager.removeState(sessionId);
+            throw e;
+        }
     }
 
     /** 子类可以覆盖这个方法提供工具 */
@@ -81,68 +110,101 @@ public abstract class AbstractMessageHandler {
     }
 
     /** 子类实现具体的聊天处理逻辑 */
-    protected <T> void processChat(Agent agent, T connection, MessageTransport<T> transport, ChatContext chatContext,
-            MessageEntity userEntity, MessageEntity llmEntity) {
+    protected <T> void processChat(Agent agent, MessageTransport<T> transport, ChatContext chatContext,
+            MessageEntity userMessageEntity, MessageEntity llmEntity) {
+        String sessionId = chatContext.getSessionId();
+        StreamStateManager.StreamState state = StreamStateManager.getState(sessionId);
+        if (state == null)
+            return;
 
-        messageDomainService.saveMessageAndUpdateContext(Collections.singletonList(userEntity),
-                chatContext.getContextEntity());
-
-        AtomicReference<StringBuilder> messageBuilder = new AtomicReference<>(new StringBuilder());
         TokenStream tokenStream = agent.chat(chatContext.getUserMessage());
 
-        tokenStream.onError(throwable -> {
-            transport.sendMessage(connection,
-                    AgentChatResponse.buildEndMessage(throwable.getMessage(), MessageType.TEXT));
-        });
-
-        // 部分响应处理
         tokenStream.onPartialResponse(reply -> {
-            messageBuilder.get().append(reply);
-            transport.sendMessage(connection, AgentChatResponse.build(reply, MessageType.TEXT));
-        });
-
-        // 完整响应处理
-        tokenStream.onCompleteResponse(chatResponse -> {
-            // 更新token信息
-            llmEntity.setTokenCount(chatResponse.tokenUsage().outputTokenCount());
-            llmEntity.setContent(chatResponse.aiMessage().text());
-
-            userEntity.setTokenCount(chatResponse.tokenUsage().inputTokenCount());
-            messageDomainService.updateMessage(userEntity);
-
-            // 保存AI消息
-            messageDomainService.saveMessageAndUpdateContext(Collections.singletonList(llmEntity),
-                    chatContext.getContextEntity());
-
-            // 发送结束消息
-            transport.sendEndMessage(connection, AgentChatResponse.buildEndMessage(MessageType.TEXT));
-        });
-
-        // 错误处理
-        // tokenStream.onError(throwable -> handleError(
-        // connection, transport, chatContext,
-        // messageBuilder.toString(), llmEntity, throwable));
-
-        // 工具执行处理
-        tokenStream.onToolExecuted(toolExecution -> {
-            if (!messageBuilder.get().isEmpty()) {
-                transport.sendMessage(connection, AgentChatResponse.buildEndMessage(MessageType.TEXT));
-                llmEntity.setContent(messageBuilder.toString());
-                messageDomainService.saveMessageAndUpdateContext(Collections.singletonList(llmEntity),
-                        chatContext.getContextEntity());
-                messageBuilder.set(new StringBuilder());
+            if (state == null || !state.isActive() || state.isCompleted()) {
+                throw new StreamInterruptedException(state != null ? state.getPartialContent().toString() : "");
             }
+
+            try {
+                state.getPartialContent().append(reply);
+                transport.sendMessage((T) state.getConnection(), AgentChatResponse.build(reply, MessageType.TEXT));
+            } catch (Exception e) {
+                state.setActive(false);
+                throw new StreamInterruptedException(state.getPartialContent().toString());
+            }
+        });
+
+        tokenStream.onCompleteResponse(chatResponse -> {
+            if (state == null || state.isCompleted())
+                return;
+
+            try {
+                if (state.isActive()) {
+                    llmEntity.setTokenCount(chatResponse.tokenUsage().outputTokenCount());
+                    llmEntity.setContent(state.getPartialContent().toString());
+                    userMessageEntity.setTokenCount(chatResponse.tokenUsage().inputTokenCount());
+                    messageDomainService.updateMessage(userMessageEntity);
+                    messageDomainService.saveMessageAndUpdateContext(Collections.singletonList(llmEntity),
+                            chatContext.getContextEntity());
+                    transport.sendEndMessage((T) state.getConnection(),
+                            AgentChatResponse.buildEndMessage(MessageType.TEXT));
+                }
+            } finally {
+                state.setCompleted(true);
+                transport.completeConnection((T) state.getConnection());
+                StreamStateManager.removeState(sessionId);
+            }
+        });
+
+        tokenStream.onError(throwable -> {
+            if (state == null || state.isCompleted())
+                return;
+
+            try {
+                if (throwable instanceof StreamInterruptedException) {
+                    log.info("会话 [{}] 被 StreamInterruptedException 中断", sessionId);
+                    if (state.getPartialContent().length() > 0) {
+                        llmEntity.setContent(state.getPartialContent().toString());
+                        llmEntity.setRole(Role.ASSISTANT);
+                        messageDomainService.saveMessageAndUpdateContext(Collections.singletonList(llmEntity),
+                                chatContext.getContextEntity());
+                        log.debug("已经保存内容：{}", state.getPartialContent());
+                        state.getPartialContent().setLength(0);
+                        log.debug("已清空保存内容，目前的内容为：{}", state.getPartialContent());
+                    }
+                } else {
+                    transport.handleError((T) state.getConnection(), throwable);
+                }
+            } finally {
+                state.setActive(true);
+                state.setCompleted(true);
+                transport.completeConnection((T) state.getConnection());
+            }
+        });
+
+        tokenStream.onToolExecuted(toolExecution -> {
+            if (state == null || !state.isActive() || state.isCompleted()) {
+                throw new StreamInterruptedException(state != null ? state.getPartialContent().toString() : "");
+            }
+
+            if (state.getPartialContent().length() > 0) {
+                transport.sendMessage((T) state.getConnection(), AgentChatResponse.buildEndMessage(MessageType.TEXT));
+                MessageEntity preToolAiMessage = createLlmMessage(chatContext);
+                preToolAiMessage.setContent(state.getPartialContent().toString());
+                messageDomainService.saveMessageAndUpdateContext(Collections.singletonList(preToolAiMessage),
+                        chatContext.getContextEntity());
+                state.getPartialContent().setLength(0);
+            }
+
             String message = "执行工具：" + toolExecution.request().name();
             MessageEntity toolMessage = createLlmMessage(chatContext);
             toolMessage.setMessageType(MessageType.TOOL_CALL);
             toolMessage.setContent(message);
             messageDomainService.saveMessageAndUpdateContext(Collections.singletonList(toolMessage),
                     chatContext.getContextEntity());
-
-            transport.sendMessage(connection, AgentChatResponse.buildEndMessage(message, MessageType.TOOL_CALL));
+            transport.sendMessage((T) state.getConnection(),
+                    AgentChatResponse.buildEndMessage(message, MessageType.TOOL_CALL));
         });
 
-        // 启动流处理
         tokenStream.start();
     }
 
@@ -216,4 +278,8 @@ public abstract class AbstractMessageHandler {
             }
         }
     }
+
+    protected abstract <T> void processChat(Agent agent, T connection, MessageTransport<T> transport,
+            ChatContext chatContext, MessageEntity userEntity, MessageEntity llmEntity);
+
 }

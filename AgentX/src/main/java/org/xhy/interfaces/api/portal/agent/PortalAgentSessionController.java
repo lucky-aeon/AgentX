@@ -13,6 +13,7 @@ import org.xhy.interfaces.api.common.Result;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import org.xhy.application.conversation.service.message.StreamStateManager;
 
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -86,5 +87,12 @@ public class PortalAgentSessionController {
     public SseEmitter preview(@RequestBody AgentPreviewRequest previewRequest) {
         String userId = UserContext.getCurrentUserId();
         return conversationAppService.previewAgent(previewRequest, userId);
+    }
+
+    /** 主动中断大模型流式回复 */
+    @PostMapping("/interrupt/{sessionId}")
+    public Result<Void> interruptSession(@PathVariable String sessionId) {
+        conversationAppService.interruptSession(sessionId);
+        return Result.success();
     }
 }

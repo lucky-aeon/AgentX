@@ -12,6 +12,7 @@ export const API_ENDPOINTS = {
   DELETE_SESSION: (id: string) => `/agent/session/${id}`,
   CHAT: "/agent/session/chat",
   SEND_MESSAGE: (sessionId: string) => `/agent/session/${sessionId}/message`,
+  INTERRUPT_SESSION: (sessionId: string) => `/agent/session/interrupt/${sessionId}`,
   
   // 任务相关
   SESSION_TASKS: (sessionId: string) => `/tasks/session/${sessionId}/latest`,
