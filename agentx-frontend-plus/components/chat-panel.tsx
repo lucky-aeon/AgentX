@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect, useCallback } from "react"
-import { FileText, Send, Wrench, Clock } from 'lucide-react'
+import { Send, Wrench, Clock } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -622,13 +622,6 @@ export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName
 
   return (
     <div className="relative flex h-full w-full flex-col overflow-hidden bg-white">
-      <div className="flex items-center justify-between px-4 py-2 border-b">
-        <div className="flex items-center">
-          <FileText className="h-5 w-5 text-gray-500 mr-2" />
-          <span className="font-medium">对话</span>
-        </div>
-      </div>
-
       <div 
         ref={chatContainerRef}
         className="flex-1 overflow-y-auto px-4 pt-3 pb-4 w-full"
