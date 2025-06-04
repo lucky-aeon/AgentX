@@ -40,6 +40,7 @@ import org.xhy.domain.tool.model.UserToolEntity;
 import org.xhy.domain.tool.service.ToolDomainService;
 import org.xhy.domain.tool.service.UserToolDomainService;
 import org.xhy.infrastructure.exception.BusinessException;
+import org.xhy.infrastructure.exception.StreamInterruptedException;
 import org.xhy.infrastructure.llm.config.ProviderConfig;
 import org.xhy.infrastructure.transport.MessageTransport;
 import org.xhy.infrastructure.transport.MessageTransportFactory;
@@ -430,8 +431,7 @@ public class ConversationAppService {
             // 标记为非活跃
             state.setActive(false);
             // 抛出异常以中断流
-            throw new org.xhy.infrastructure.exception.StreamInterruptedException(
-                    state.getPartialContent() != null ? state.getPartialContent().toString() : "");
+            throw new StreamInterruptedException("用户主动中断");
         }
     }
 }

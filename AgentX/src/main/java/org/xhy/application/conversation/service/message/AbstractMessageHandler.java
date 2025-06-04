@@ -2,6 +2,7 @@ package org.xhy.application.conversation.service.message;
 
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import dev.langchain4j.data.message.AiMessage;
+import dev.langchain4j.data.message.ImageContent;
 import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
@@ -42,6 +43,15 @@ public abstract class AbstractMessageHandler {
         this.messageDomainService = messageDomainService;
     }
 
+    /*
+     * @param chatContext 对话环境
+     * 
+     * @param transport 消息传输实现
+     * 
+     * @return 连接对象
+     * 
+     * @param <T> 连接类型
+     */
     public <T> T chat(ChatContext chatContext, MessageTransport<T> transport) {
         String sessionId = chatContext.getSessionId();
 
@@ -221,6 +231,7 @@ public abstract class AbstractMessageHandler {
         messageEntity.setRole(Role.USER);
         messageEntity.setContent(environment.getUserMessage());
         messageEntity.setSessionId(environment.getSessionId());
+        messageEntity.setFileUrls(environment.getFileUrls());
         return messageEntity;
     }
 
@@ -253,7 +264,13 @@ public abstract class AbstractMessageHandler {
         List<MessageEntity> messageHistory = chatContext.getMessageHistory();
         for (MessageEntity messageEntity : messageHistory) {
             if (messageEntity.isUserMessage()) {
-                memory.add(new UserMessage(messageEntity.getContent()));
+                List<String> fileUrls = messageEntity.getFileUrls();
+                for (String fileUrl : fileUrls) {
+                    memory.add(UserMessage.from(ImageContent.from(fileUrl)));
+                }
+                if (!StringUtils.isEmpty(messageEntity.getContent())) {
+                    memory.add(new UserMessage(messageEntity.getContent()));
+                }
             } else if (messageEntity.isAIMessage()) {
                 memory.add(new AiMessage(messageEntity.getContent()));
             } else if (messageEntity.isSystemMessage()) {

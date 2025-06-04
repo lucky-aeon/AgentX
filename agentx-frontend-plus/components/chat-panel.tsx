@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useRef, useEffect, useCallback } from "react"
-import { FileText, Send, ClipboardList, Wrench, CheckCircle, ListTodo, Circle, AlertCircle, Square } from 'lucide-react'
+
+import { FileText, Send, ClipboardList, Wrench, CheckCircle, ListTodo, Circle, AlertCircle, Square , Clock } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -16,6 +17,8 @@ import remarkGfm from "remark-gfm"
 import { Highlight, themes } from "prism-react-renderer"
 import { CurrentTaskList } from "@/components/current-task-list"
 import { MessageType, type Message as MessageInterface } from "@/types/conversation"
+import MultiModalUpload, { type ChatFile } from "@/components/multi-modal-upload"
+import MessageFileDisplay from "@/components/message-file-display"
 import { formatDistanceToNow } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
 import { nanoid } from 'nanoid'
@@ -29,6 +32,8 @@ interface ChatPanelProps {
   isFunctionalAgent?: boolean
   agentName?: string
   agentType?: number // 新增：助理类型，2表示功能性Agent
+  onToggleScheduledTaskPanel?: () => void // 新增：切换定时任务面板的回调
+  multiModal?: boolean // 新增：是否启用多模态功能
 }
 
 interface Message {
@@ -41,6 +46,7 @@ interface Message {
   type?: MessageType // 消息类型枚举
   createdAt?: string
   updatedAt?: string
+  fileUrls?: string[] // 修改：文件URL列表
 }
 
 interface AssistantMessage {
@@ -63,6 +69,7 @@ interface StreamData {
 interface TaskAggregate {
   task: TaskDTO      // 父任务
   subTasks: TaskDTO[] // 子任务列表
+  endTime?: string    // 可选，任务结束时间
 }
 
 // 定义消息类型为字符串字面量类型
@@ -94,7 +101,7 @@ interface TaskDTO {
   endTime?: string    // 可选，任务结束时间
 }
 
-export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory = false, isFunctionalAgent = false, agentName = "AI助手", agentType = 1 }: ChatPanelProps) {
+export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory = false, isFunctionalAgent = false, agentName = "AI助手", agentType = 1, onToggleScheduledTaskPanel, multiModal = false }: ChatPanelProps) {
   const [input, setInput] = useState("")
   const [messages, setMessages] = useState<MessageInterface[]>([])
   const [isTyping, setIsTyping] = useState(false)
@@ -105,6 +112,7 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
   const [currentAssistantMessage, setCurrentAssistantMessage] = useState<AssistantMessage | null>(null)
   const [tasks, setTasks] = useState<Map<string, TaskDTO>>(new Map()) // 任务映射
   const [tasksMessageId, setTasksMessageId] = useState<string | null>(null) // 存储任务列表消息的ID
+  const [uploadedFiles, setUploadedFiles] = useState<ChatFile[]>([]) // 新增：已上传的文件列表
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const chatContainerRef = useRef<HTMLDivElement>(null)
   const [taskFetchingInProgress, setTaskFetchingInProgress] = useState(false);
@@ -146,6 +154,7 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
     type?: MessageType;
     taskId?: string;
     createdAt?: string | Date;
+    fileUrls?: string[]; // 修改：使用fileUrls
   }) => {
     const messageObj: MessageInterface = {
       id: message.id,
@@ -155,7 +164,8 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
       taskId: message.taskId,
       createdAt: message.createdAt instanceof Date 
         ? message.createdAt.toISOString() 
-        : message.createdAt || new Date().toISOString()
+        : message.createdAt || new Date().toISOString(),
+        fileUrls: message.fileUrls || [] // 修改：使用fileUrls
     };
     
     setMessages(prev => [...prev, messageObj]);
@@ -199,7 +209,8 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
               content: msg.content,
               type: messageType,
               createdAt: msg.createdAt,
-              updatedAt: msg.updatedAt
+              updatedAt: msg.updatedAt,
+              fileUrls: msg.fileUrls || [] // 添加文件URL列表
             }
           })
           
@@ -537,14 +548,34 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
 
   // 处理发送消息
   const handleSendMessage = async () => {
-    if (!input.trim() || !conversationId) return
+    if ((!input.trim() && uploadedFiles.length === 0) || !conversationId) return
 
     // 添加调试信息
     console.log("当前聊天模式:", agentType === 2 ? "功能性Agent" : "普通对话")
 
+    // 获取已完成上传的文件URL
+    const completedFiles = uploadedFiles.filter(file => file.url && file.uploadProgress === 100)
+    const fileUrls = completedFiles.map(file => file.url)
+
     // 保存当前输入，并清空输入框
     const userMessage = input.trim()
     setInput("")
+    setUploadedFiles([]) // 清空已上传的文件
+    setIsTyping(true)
+    setIsThinking(true) // 设置思考状态
+    setCurrentAssistantMessage(null) // 重置助手消息状态
+    scrollToBottom() // 用户发送新消息时强制滚动到底部
+
+    // 重置所有状态
+    setCompletedTextMessages(new Set())
+    resetMessageAccumulator()
+    hasReceivedFirstResponse.current = false
+    messageSequenceNumber.current = 0; // 重置消息序列计数器
+
+    // 输出文件URL到控制台
+    if (fileUrls.length > 0) {
+      console.log('发送消息包含的文件URL:', fileUrls)
+    }
 
     // 如果当前有正在进行的消息处理，终止它并保留已生成的内容
     if(isTyping) {
@@ -605,19 +636,26 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
         role: "USER",
         content: userMessage,
         type: MessageType.TEXT,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        fileUrls: fileUrls.length > 0 ? fileUrls : undefined // 修改：使用fileUrls
       },
     ])
 
     try {
+      
       // 创建新的AbortController
       abortControllerRef.current = new AbortController();
       
-      // 发送消息到服务器并获取流式响应
-      const response = await streamChat(userMessage, conversationId, abortControllerRef.current.signal)
+      // 发送消息到服务器并获取流式响应，包含文件URL
+      const response = await streamChat(userMessage, conversationId, abortControllerRef.current.signal,fileUrls.length > 0 ? fileUrls : undefined)
 
+      
+      // 检查响应状态，如果不是成功状态，则关闭思考状态并返回
       if (!response.ok) {
-        throw new Error(`Stream chat failed with status ${response.status}`)
+        // 错误已在streamChat中处理并显示toast
+        setIsTyping(false)
+        setIsThinking(false) // 关闭思考状态，修复动画一直显示的问题
+        return // 直接返回，不继续处理
       }
 
       const reader = response.body?.getReader()
@@ -625,8 +663,8 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
         throw new Error("No reader available")
       }
 
-      // 生成基础消息ID，确保唯一性
-      const baseMessageId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      // 生成基础消息ID，作为所有消息序列的前缀
+      const baseMessageId = Date.now().toString()
       
       // 重置状态
       hasReceivedFirstResponse.current = false;
@@ -1032,51 +1070,74 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
   // 渲染消息内容
   const renderMessageContent = (message: MessageInterface) => {
     return (
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        components={{
-          // 代码块渲染
-          code({ inline, className, children, ...props }: any) {
-            const match = /language-(\w+)/.exec(className || "");
-            return !inline && match ? (
-              <Highlight
-                theme={themes.vsDark}
-                code={String(children).replace(/\n$/, "")}
-                language={match[1]}
-              >
-                {({ className, style, tokens, getLineProps, getTokenProps }) => (
-                  <pre
-                    className={`${className} rounded p-2 my-2 overflow-auto text-sm`}
-                    style={style}
-                  >
-                    {tokens.map((line, i) => (
-                      <div key={i} {...getLineProps({ line, key: i })}>
-                        <span className="text-gray-500 mr-2 text-right w-6 inline-block select-none">
-                          {i + 1}
-                        </span>
-                        {line.map((token, tokenIndex) => {
-                          // 获取token props但不包含key
-                          const tokenProps = getTokenProps({ token, key: tokenIndex });
-                          // 删除key属性
-                          const { key, ...restTokenProps } = tokenProps;
-                          // 单独传递key属性
-                          return <span key={tokenIndex} {...restTokenProps} />;
+      <div className="react-markdown">
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
+          components={{
+            // 代码块渲染
+            code({ inline, className, children, ...props }: any) {
+              const match = /language-(\w+)/.exec(className || "");
+              return !inline && match ? (
+                <Highlight
+                  theme={themes.vsDark}
+                  code={String(children).replace(/\n$/, "")}
+                  language={match[1]}
+                >
+                  {({ className, style, tokens, getLineProps, getTokenProps }) => (
+                    <div className="code-block-container">
+                      <pre
+                        className={`${className} rounded p-2 my-2 overflow-x-auto max-w-full text-sm`}
+                        style={{...style, wordBreak: 'break-all', overflowWrap: 'break-word'}}
+                      >
+                        {tokens.map((line, i) => {
+                          // 获取line props但不通过展开操作符传递key
+                          const lineProps = getLineProps({ line, key: i });
+                          return (
+                            <div 
+                              key={i} 
+                              className={lineProps.className}
+                              style={{
+                                ...lineProps.style,
+                                whiteSpace: 'pre-wrap', 
+                                wordBreak: 'break-all'
+                              }}
+                            >
+                              <span className="text-gray-500 mr-2 text-right w-6 inline-block select-none">
+                                {i + 1}
+                              </span>
+                              {line.map((token, tokenIndex) => {
+                                // 获取token props但不包含key
+                                const tokenProps = getTokenProps({ token, key: tokenIndex });
+                                // 删除key属性，使用单独的key属性
+                                return <span 
+                                  key={tokenIndex} 
+                                  className={tokenProps.className}
+                                  style={{
+                                    ...tokenProps.style,
+                                    wordBreak: 'break-all',
+                                    overflowWrap: 'break-word'
+                                  }}
+                                  children={tokenProps.children}
+                                />;
+                              })}
+                            </div>
+                          );
                         })}
-                      </div>
-                    ))}
-                  </pre>
-                )}
-              </Highlight>
-            ) : (
-              <code className={`${className} bg-gray-100 px-1 py-0.5 rounded`} {...props}>
-                {children}
-              </code>
-            );
-          },
-        }}
-      >
-        {message.content}
-      </ReactMarkdown>
+                      </pre>
+                    </div>
+                  )}
+                </Highlight>
+              ) : (
+                <code className={`${className} bg-gray-100 px-1 py-0.5 rounded break-all`} {...props}>
+                  {children}
+                </code>
+              );
+            },
+          }}
+        >
+          {message.content}
+        </ReactMarkdown>
+      </div>
     );
   };
 
@@ -1333,9 +1394,9 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
             variant="ghost"
             size="icon"
             className="h-8 w-8"
-            onClick={onToggleTaskHistory}
+            onClick={onToggleScheduledTaskPanel}
           >
-            <ClipboardList className={`h-5 w-5 ${showTaskHistory ? 'text-primary' : 'text-gray-500'}`} />
+            <Clock className={`h-5 w-5 text-gray-500 hover:text-primary`} />
           </Button>
         )}
       </div>
@@ -1376,9 +1437,20 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
                     {message.role === "USER" ? (
                       <div className="flex justify-end">
                         <div className="max-w-[80%]">
-                          <div className="bg-blue-50 text-gray-800 p-3 rounded-lg shadow-sm">
-                            {message.content}
-                          </div>
+                          {/* 文件显示 - 在消息内容之前 */}
+                          {message.fileUrls && message.fileUrls.length > 0 && (
+                            <div className="mb-3">
+                              <MessageFileDisplay fileUrls={message.fileUrls} />
+                            </div>
+                          )}
+
+                          {/* 消息内容 */}
+                          {message.content && (
+                            <div className="bg-blue-50 text-gray-800 p-3 rounded-lg shadow-sm">
+                              {message.content}
+                            </div>
+                          )}
+                          
                           <div className="text-xs text-gray-500 mt-1 text-right">
                             {formatMessageTime(message.createdAt)}
                           </div>
@@ -1402,11 +1474,20 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
                             <span className="mx-1 text-gray-400">·</span>
                             <span>{formatMessageTime(message.createdAt)}</span>
                           </div>
-                          
+                          {/* 文件显示 - 在消息内容之前 */}
+                          {message.fileUrls && message.fileUrls.length > 0 && (
+                            <div className="mb-3">
+                              <MessageFileDisplay fileUrls={message.fileUrls} />
+                            </div>
+                          )}
+
                           {/* 消息内容 */}
-                          <div className="p-3 rounded-lg">
-                            {renderMessageContent(message)}
-                          </div>
+                          {message.content && (
+                            <div className="p-3 rounded-lg">
+                              {renderMessageContent(message)}
+                            </div>
+                          )}
+                         
                         </div>
                       </div>
                     )}
@@ -1469,7 +1550,16 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
 
       {/* 输入框 */}
       <div className="border-t p-2 bg-white">
-        <div className="flex items-end gap-2 max-w-5xl mx-auto">
+        <div className="flex items-end gap-2">
+          {/* 多模态文件上传组件 */}
+          <MultiModalUpload
+            multiModal={multiModal}
+            uploadedFiles={uploadedFiles}
+            setUploadedFiles={setUploadedFiles}
+            disabled={isTyping}
+            className="flex-shrink-0"
+          />
+
           <Textarea
             placeholder="输入消息...(Shift+Enter换行, Enter发送)"
             value={input}
@@ -1478,6 +1568,8 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
             className="min-h-[56px] flex-1 resize-none overflow-hidden rounded-xl bg-white px-3 py-2 font-normal border-gray-200 shadow-sm focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-opacity-50"
             rows={Math.min(5, Math.max(2, input.split('\n').length))}
           />
+          
+
           {isTyping ? (
             <Button 
               variant="ghost"
@@ -1505,14 +1597,19 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
           ) : (
             <Button 
               onClick={handleSendMessage} 
-              disabled={!input.trim()} 
+              disabled={(!input.trim() && uploadedFiles.length === 0) || isTyping} 
               className="h-10 w-10 rounded-xl bg-blue-500 hover:bg-blue-600 shadow-sm"
             >
               <Send className="h-5 w-5" />
             </Button>
           )}
+
+
+
         </div>
       </div>
+
+      
     </div>
   )
 }
