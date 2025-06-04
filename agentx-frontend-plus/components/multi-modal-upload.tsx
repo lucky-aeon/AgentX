@@ -23,6 +23,7 @@ interface MultiModalUploadProps {
   setUploadedFiles: React.Dispatch<React.SetStateAction<ChatFile[]>> // 设置文件列表的函数
   disabled?: boolean // 是否禁用
   className?: string // 额外的样式类
+  showFileList?: boolean // 是否显示文件列表，默认为true
 }
 
 export default function MultiModalUpload({
@@ -30,7 +31,8 @@ export default function MultiModalUpload({
   uploadedFiles,
   setUploadedFiles,
   disabled = false,
-  className = ""
+  className = "",
+  showFileList = true
 }: MultiModalUploadProps) {
   const [isUploadingFiles, setIsUploadingFiles] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -174,7 +176,7 @@ export default function MultiModalUpload({
       {multiModal && (
         <div className="flex flex-col items-start gap-1">
           {/* 已上传文件列表 - 紧凑显示 */}
-          {uploadedFiles.length > 0 && (
+          {showFileList && uploadedFiles.length > 0 && (
             <div className="flex flex-wrap gap-1 max-w-xs">
               {uploadedFiles.map((file) => (
                 <div

@@ -758,17 +758,64 @@ export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName
 
       {/* 输入框 */}
       <div className="border-t p-2 bg-white">
+        {/* 已上传文件显示区域 - 在输入框上方 */}
+        {uploadedFiles.length > 0 && (
+          <div className="mb-2 px-2">
+            <div className="flex flex-wrap gap-2">
+              {uploadedFiles.map((file) => (
+                <div
+                  key={file.id}
+                  className="flex items-center gap-2 px-3 py-2 bg-blue-50 rounded-lg text-sm border border-blue-200"
+                >
+                  <div className="flex-shrink-0 w-5 h-5 bg-blue-100 rounded flex items-center justify-center">
+                    {file.type.startsWith('image/') ? (
+                      <span className="text-sm">🖼️</span>
+                    ) : (
+                      <span className="text-sm">📄</span>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate max-w-32">
+                      {file.name}
+                    </p>
+                    {/* 上传进度条 */}
+                    {file.uploadProgress !== undefined && file.uploadProgress < 100 && (
+                      <div className="w-full bg-gray-200 rounded-full h-1 mt-1">
+                        <div
+                          className="bg-blue-600 h-1 rounded-full transition-all duration-300"
+                          style={{ width: `${file.uploadProgress}%` }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => {
+                      setUploadedFiles(prev => prev.filter(f => f.id !== file.id))
+                    }}
+                    className="flex-shrink-0 w-4 h-4 rounded-full bg-red-100 hover:bg-red-200 flex items-center justify-center transition-colors"
+                    disabled={isTyping}
+                  >
+                    <span className="text-xs text-red-600">×</span>
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {/* 输入框和按钮区域 */}
         <div className="flex items-end gap-2">
-          {/* 多模态文件上传组件 */}
+          {/* 多模态文件上传按钮 */}
           <MultiModalUpload
             multiModal={multiModal}
             uploadedFiles={uploadedFiles}
             setUploadedFiles={setUploadedFiles}
             disabled={isTyping}
             className="flex-shrink-0"
+            showFileList={false}
           />
           
-          {/* 定时任务按钮 - 移动到输入框旁边 */}
+          {/* 定时任务按钮 */}
           {isFunctionalAgent && (
             <Button
               variant="ghost"
