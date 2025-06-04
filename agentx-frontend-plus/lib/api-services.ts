@@ -410,6 +410,7 @@ interface ModelConfig {
   modelId: string;
   temperature: number;
   topP: number;
+  topK: number;
   maxTokens: number;
   strategyType: string;
   reserveRatio: number;

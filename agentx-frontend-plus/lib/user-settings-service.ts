@@ -98,8 +98,27 @@ export async function getAllModels(): Promise<ApiResponse<Model[]>> {
   try {
     console.log('Fetching all models for user settings')
     
+    const response = await httpClient.get<ApiResponse<Model[]>>('/llm/models')
+    
+    return response
+  } catch (error) {
+    console.error("获取模型列表错误:", error)
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : "未知错误",
+      data: [],
+      timestamp: Date.now(),
+    }
+  }
+}
+
+// 获取指定类型的模型
+export async function getModelsByType(modelType: 'CHAT' | 'EMBEDDING'): Promise<ApiResponse<Model[]>> {
+  try {
+    console.log(`Fetching models of type: ${modelType}`)
+    
     const response = await httpClient.get<ApiResponse<Model[]>>('/llm/models', {
-      params: { type: 'all' }
+      params: { modelType }
     })
     
     return response
@@ -112,6 +131,11 @@ export async function getAllModels(): Promise<ApiResponse<Model[]>> {
       timestamp: Date.now(),
     }
   }
+}
+
+// 获取聊天模型（最常用的场景）
+export async function getChatModels(): Promise<ApiResponse<Model[]>> {
+  return getModelsByType('CHAT')
 }
 
 // 带Toast提示的函数
@@ -138,4 +162,16 @@ export const getAllModelsWithToast = withToast(getAllModels, {
   showSuccessToast: false,
   showErrorToast: true,
   errorTitle: "获取模型列表失败"
+})
+
+export const getModelsByTypeWithToast = withToast(getModelsByType, {
+  showSuccessToast: false,
+  showErrorToast: true,
+  errorTitle: "获取模型列表失败"
+})
+
+export const getChatModelsWithToast = withToast(getChatModels, {
+  showSuccessToast: false,
+  showErrorToast: true,
+  errorTitle: "获取聊天模型失败"
 }) 
