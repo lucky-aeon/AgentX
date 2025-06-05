@@ -1,5 +1,3 @@
- 
-
 # AgentX - 智能对话系统平台
 
 [](https://opensource.org/licenses/MIT)
@@ -111,7 +109,7 @@ npm run dev
 
 ### Agent 管理
 
-用户可自行通过 LLM + “插件” 打造 Agent，插件指的是：工具，知识库等，一切为 LLM 服务都叫做 “插件”
+用户可自行通过 LLM + "插件" 打造 Agent，插件指的是：工具，知识库等，一切为 LLM 服务都叫做 "插件"
 
 用户打造的 Agent 可以发布给 TA 人使用
 
@@ -144,4 +142,28 @@ Agent = LLM + 工具
 ### MCP Gateway
 
 采用自研的 MCP 网关来统一管理所有的 MCP Server：https://github.com/lucky-aeon/mcp-gateway
+
+
+## 联系我们
+
+我们致力于构建一个活跃的开发者社区，欢迎各种形式的交流与合作！
+
+### 📱 私人微信
+如有技术问题或商务合作，可添加开发者微信：
+
+<img src="docs/images/wechat.jpg" alt="私人微信" width="200"/>
+
+### 👥 微信交流群
+加入我们的技术交流群，与更多开发者一起讨论：
+
+<img src="docs/images/group.jpg" alt="微信交流群" width="200"/>
+
+### 📢 微信公众号
+关注我们的公众号，获取最新技术动态和产品更新：
+
+<img src="docs/images/微信公众号.jpg" alt="微信公众号" width="200"/>
+
+---
+
+**如果二维码过期或无法扫描，请通过私人微信联系我。**
 
