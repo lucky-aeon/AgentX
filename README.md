@@ -9,6 +9,7 @@ AgentX 是一个基于大模型 (LLM) 和多能力平台 (MCP) 的智能 Agent �
  - [x] Agent 管理（创建/发布）
  - [x] LLM 上下文管理（滑动窗口，摘要算法）
  - [x] Agent 策略（MCP）
+ - [x] 大模型服务商
  - [x] 用户
  - [x] 工具市场
  - [x] MCP Server Community
