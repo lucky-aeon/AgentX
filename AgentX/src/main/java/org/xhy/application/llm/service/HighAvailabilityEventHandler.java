@@ -9,6 +9,7 @@ import org.xhy.domain.llm.event.ModelCreatedEvent;
 import org.xhy.domain.llm.event.ModelDeletedEvent;
 import org.xhy.domain.llm.event.ModelStatusChangedEvent;
 import org.xhy.domain.llm.event.ModelUpdatedEvent;
+import org.xhy.domain.llm.event.ModelsBatchDeletedEvent;
 import org.xhy.domain.llm.service.HighAvailabilityDomainService;
 
 /**
@@ -97,8 +98,6 @@ public class HighAvailabilityEventHandler {
             logger.info("处理模型状态变更事件: modelId={}, userId={}, enabled={}, reason={}", 
                 event.getModelId(), event.getUserId(), event.isEnabled(), event.getReason());
             
-            // 直接调用高可用领域服务来同步状态变更到网关
-            // 注意：这里不会引起循环，因为changeModelStatusInGateway不再发布事件
             highAvailabilityDomainService.changeModelStatusInGateway(
                 event.getModel(), 
                 event.isEnabled(), 
@@ -111,6 +110,25 @@ public class HighAvailabilityEventHandler {
         } catch (Exception e) {
             logger.error("处理模型状态变更事件失败: modelId={}, enabled={}", 
                 event.getModelId(), event.isEnabled(), e);
+        }
+    }
+
+    /**
+     * 处理模型批量删除事件
+     * 批量从高可用网关中删除模型
+     */
+    @EventListener
+    @Async
+    public void handleModelsBatchDeleted(ModelsBatchDeletedEvent event) {
+        try {
+            logger.info("处理模型批量删除事件: 用户={}, 删除数量={}", event.getUserId(), event.getDeleteItems().size());
+            
+            highAvailabilityDomainService.batchRemoveModelsFromGateway(event.getDeleteItems(), event.getUserId());
+            
+            logger.info("模型批量删除事件处理成功: 用户={}, 删除数量={}", event.getUserId(), event.getDeleteItems().size());
+            
+        } catch (Exception e) {
+            logger.error("处理模型批量删除事件失败: 用户={}, 删除数量={}", event.getUserId(), event.getDeleteItems().size(), e);
         }
     }
 } 

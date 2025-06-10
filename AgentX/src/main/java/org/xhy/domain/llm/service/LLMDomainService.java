@@ -20,6 +20,7 @@ import org.xhy.domain.llm.repository.ModelRepository;
 import org.xhy.domain.llm.repository.ProviderRepository;
 import org.springframework.stereotype.Service;
 import org.xhy.infrastructure.exception.BusinessException;
+import org.xhy.domain.llm.event.ModelsBatchDeletedEvent;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -205,13 +206,28 @@ public class LLMDomainService {
      * @param userId 用户id */
     @Transactional
     public void deleteProvider(String providerId, String userId, Operator operator) {
+        // 删除服务商前先获取要删除的模型列表，用于发布批量删除事件
+        Wrapper<ModelEntity> modelQueryWrapper = Wrappers.<ModelEntity>lambdaQuery()
+                .eq(ModelEntity::getProviderId, providerId);
+        List<ModelEntity> modelsToDelete = modelRepository.selectList(modelQueryWrapper);
+        
         Wrapper<ProviderEntity> wrapper = Wrappers.<ProviderEntity>lambdaQuery().eq(ProviderEntity::getId, providerId)
                 .eq(operator.needCheckUserId(), ProviderEntity::getUserId, userId);
         providerRepository.checkedDelete(wrapper);
+        
         // 删除模型
         Wrapper<ModelEntity> modelWrapper = Wrappers.<ModelEntity>lambdaQuery().eq(ModelEntity::getProviderId,
                 providerId);
-        modelRepository.delete(modelWrapper);
+        int delete = modelRepository.delete(modelWrapper);
+
+        // 如果有模型被删除，发布批量删除事件
+        if (delete > 0) {
+            List<ModelsBatchDeletedEvent.ModelDeleteItem> deleteItems = modelsToDelete.stream()
+                    .map(model -> new ModelsBatchDeletedEvent.ModelDeleteItem(model.getId(), model.getUserId()))
+                    .collect(Collectors.toList());
+            
+            eventPublisher.publishEvent(new ModelsBatchDeletedEvent(deleteItems, userId));
+        }
     }
 
     /** 验证服务商协议是否支持
