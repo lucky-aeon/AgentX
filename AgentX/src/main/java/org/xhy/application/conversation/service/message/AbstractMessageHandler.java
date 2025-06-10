@@ -16,6 +16,7 @@ import org.xhy.domain.conversation.constant.Role;
 import org.xhy.domain.conversation.model.MessageEntity;
 import org.xhy.domain.conversation.service.MessageDomainService;
 import org.xhy.domain.llm.service.HighAvailabilityDomainService;
+import org.xhy.infrastructure.exception.BusinessException;
 import org.xhy.infrastructure.llm.LLMServiceFactory;
 import org.xhy.infrastructure.transport.MessageTransport;
 
@@ -111,6 +112,7 @@ public abstract class AbstractMessageHandler {
         tokenStream.onPartialResponse(reply -> {
             messageBuilder.get().append(reply);
             transport.sendMessage(connection, AgentChatResponse.build(reply, MessageType.TEXT));
+            throw new BusinessException("test");
         });
 
         // 完整响应处理

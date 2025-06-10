@@ -20,6 +20,7 @@ import org.xhy.infrastructure.highavailability.dto.request.SelectInstanceRequest
 import org.xhy.infrastructure.highavailability.dto.response.ApiInstanceDTO;
 import org.xhy.domain.llm.event.ModelsBatchDeletedEvent;
 import org.xhy.infrastructure.highavailability.dto.request.ApiInstanceBatchDeleteRequest;
+import org.xhy.infrastructure.highavailability.constant.AffinityType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -105,6 +106,11 @@ public class HighAvailabilityDomainServiceImpl implements HighAvailabilityDomain
 
     @Override
     public HighAvailabilityResult selectBestProvider(ModelEntity model, String userId) {
+        return selectBestProvider(model, userId, null);
+    }
+
+    @Override
+    public HighAvailabilityResult selectBestProvider(ModelEntity model, String userId, String sessionId) {
         if (!properties.isEnabled()) {
             // 高可用未启用，使用默认逻辑
             logger.debug("高可用功能未启用，使用默认Provider选择逻辑: modelId={}", model.getId());
@@ -115,6 +121,13 @@ public class HighAvailabilityDomainServiceImpl implements HighAvailabilityDomain
         try {
             // 构建选择实例请求
             SelectInstanceRequest request = new SelectInstanceRequest(userId, model.getModelId(), "MODEL");
+            
+            // 如果提供了sessionId，则设置会话亲和性
+            if (sessionId != null && !sessionId.trim().isEmpty()) {
+                request.setAffinityKey(sessionId);
+                request.setAffinityType(AffinityType.SESSION);
+                logger.debug("启用会话亲和性: sessionId={}, modelId={}", sessionId, model.getId());
+            }
 
             // 通过高可用网关选择最佳实例，客户端已经处理了响应解析
             ApiInstanceDTO selectedInstance = gatewayClient.selectBestInstance(request);
@@ -128,20 +141,20 @@ public class HighAvailabilityDomainServiceImpl implements HighAvailabilityDomain
             // 返回最佳模型对应的Provider
             ProviderEntity provider = llmDomainService.getProvider(bestModel.getProviderId(), userId);
 
-            logger.info("通过高可用网关选择Provider成功: modelId={}, bestBusinessId={}, providerId={}", model.getId(), businessId,
-                    provider.getId());
+            logger.info("通过高可用网关选择Provider成功: modelId={}, bestBusinessId={}, providerId={}, sessionId={}", 
+                    model.getId(), businessId, provider.getId(), sessionId);
 
             return new HighAvailabilityResult(provider, bestModel, instanceId);
 
         } catch (Exception e) {
-            logger.warn("高可用网关选择Provider失败，降级到默认逻辑: modelId={}", model.getId(), e);
+            logger.warn("高可用网关选择Provider失败，降级到默认逻辑: modelId={}, sessionId={}", model.getId(), sessionId, e);
 
             // 降级处理：使用默认逻辑
             try {
                 ProviderEntity provider = llmDomainService.getProvider(model.getProviderId(), userId);
                 return new HighAvailabilityResult(provider, model, null);
             } catch (Exception fallbackException) {
-                logger.error("降级逻辑也失败了: modelId={}", model.getId(), fallbackException);
+                logger.error("降级逻辑也失败了: modelId={}, sessionId={}", model.getId(), sessionId, fallbackException);
                 throw new BusinessException("获取Provider失败", fallbackException);
             }
         }
