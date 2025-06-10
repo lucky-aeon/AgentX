@@ -19,7 +19,7 @@ public class ModelEntity extends BaseEntity {
     private String modelId;
     private String name;
     private String description;
-    
+
     /** 模型部署名称 */
     private String modelEndpoint;
 

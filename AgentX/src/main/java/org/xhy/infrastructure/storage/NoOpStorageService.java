@@ -13,9 +13,7 @@ import org.springframework.core.type.AnnotatedTypeMetadata;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-/**
- * S3存储服务禁用条件
- */
+/** S3存储服务禁用条件 */
 class S3DisabledCondition extends SpringBootCondition {
     @Override
     public ConditionOutcome getMatchOutcome(ConditionContext context, AnnotatedTypeMetadata metadata) {
@@ -24,10 +22,8 @@ class S3DisabledCondition extends SpringBootCondition {
         String endpoint = context.getEnvironment().getProperty("s3.endpoint");
         String bucketName = context.getEnvironment().getProperty("s3.bucket-name");
 
-        boolean hasValidConfig = StringUtils.hasText(accessKey) 
-            && StringUtils.hasText(secretKey)
-            && StringUtils.hasText(endpoint)
-            && StringUtils.hasText(bucketName);
+        boolean hasValidConfig = StringUtils.hasText(accessKey) && StringUtils.hasText(secretKey)
+                && StringUtils.hasText(endpoint) && StringUtils.hasText(bucketName);
 
         if (!hasValidConfig) {
             return ConditionOutcome.match("S3配置不完整，使用NoOp存储服务");
@@ -37,10 +33,7 @@ class S3DisabledCondition extends SpringBootCondition {
     }
 }
 
-/**
- * 无操作存储服务实现
- * 当S3配置不完整时使用，提供友好的错误提示
- */
+/** 无操作存储服务实现 当S3配置不完整时使用，提供友好的错误提示 */
 @Service
 @Conditional(S3DisabledCondition.class)
 public class NoOpStorageService implements StorageService {
@@ -52,7 +45,7 @@ public class NoOpStorageService implements StorageService {
     public NoOpStorageService() {
         logger.warn("S3存储服务配置不完整，存储相关功能将不可用。请检查以下配置项：");
         logger.warn("  - s3.access-key");
-        logger.warn("  - s3.secret-key"); 
+        logger.warn("  - s3.secret-key");
         logger.warn("  - s3.endpoint");
         logger.warn("  - s3.bucket-name");
         logger.warn("如需使用存储功能，请在application.yml中正确配置S3相关参数");
@@ -107,4 +100,4 @@ public class NoOpStorageService implements StorageService {
     public String generateObjectKey(String originalFileName, String folder) {
         throw new UnsupportedOperationException(ERROR_MESSAGE);
     }
-} 
+}

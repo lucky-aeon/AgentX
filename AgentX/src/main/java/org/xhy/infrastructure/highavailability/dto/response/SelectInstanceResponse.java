@@ -1,36 +1,24 @@
 package org.xhy.infrastructure.highavailability.dto.response;
 
-/**
- * 选择实例响应对象
+/** 选择实例响应对象
  * 
  * @author xhy
- * @since 1.0.0
- */
+ * @since 1.0.0 */
 public class SelectInstanceResponse {
 
-    /**
-     * 选择的实例ID
-     */
+    /** 选择的实例ID */
     private String instanceId;
 
-    /**
-     * 业务ID
-     */
+    /** 业务ID */
     private String businessId;
 
-    /**
-     * 选择原因/策略信息
-     */
+    /** 选择原因/策略信息 */
     private String reason;
 
-    /**
-     * 是否成功
-     */
+    /** 是否成功 */
     private Boolean success;
 
-    /**
-     * 错误信息（如果失败）
-     */
+    /** 错误信息（如果失败） */
     private String errorMessage;
 
     public SelectInstanceResponse() {
@@ -82,4 +70,4 @@ public class SelectInstanceResponse {
     public void setErrorMessage(String errorMessage) {
         this.errorMessage = errorMessage;
     }
-} 
+}

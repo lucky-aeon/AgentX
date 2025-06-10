@@ -24,12 +24,10 @@ import org.xhy.infrastructure.highavailability.dto.request.ApiInstanceBatchDelet
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * 高可用领域服务实现
+/** 高可用领域服务实现
  * 
  * @author xhy
- * @since 1.0.0
- */
+ * @since 1.0.0 */
 @Service
 public class HighAvailabilityDomainServiceImpl implements HighAvailabilityDomainService {
 
@@ -40,9 +38,7 @@ public class HighAvailabilityDomainServiceImpl implements HighAvailabilityDomain
     private final LLMDomainService llmDomainService;
 
     public HighAvailabilityDomainServiceImpl(HighAvailabilityProperties properties,
-                                             HighAvailabilityGatewayClient gatewayClient,
-                                             LLMDomainService llmDomainService
-                                           ) {
+            HighAvailabilityGatewayClient gatewayClient, LLMDomainService llmDomainService) {
         this.properties = properties;
         this.gatewayClient = gatewayClient;
         this.llmDomainService = llmDomainService;
@@ -56,15 +52,11 @@ public class HighAvailabilityDomainServiceImpl implements HighAvailabilityDomain
         }
 
         try {
-            ApiInstanceCreateRequest request = new ApiInstanceCreateRequest(
-                model.getUserId(),
-                model.getModelId(),
-                "MODEL",
-                model.getId()
-            );
+            ApiInstanceCreateRequest request = new ApiInstanceCreateRequest(model.getUserId(), model.getModelId(),
+                    "MODEL", model.getId());
 
             gatewayClient.createApiInstance(request);
-            
+
             logger.info("成功同步模型到高可用网关: modelId={}", model.getId());
 
         } catch (Exception e) {
@@ -82,7 +74,7 @@ public class HighAvailabilityDomainServiceImpl implements HighAvailabilityDomain
 
         try {
             gatewayClient.deleteApiInstance("MODEL", modelId);
-            
+
             logger.info("成功从高可用网关删除模型: modelId={}", modelId);
 
         } catch (Exception e) {
@@ -98,15 +90,12 @@ public class HighAvailabilityDomainServiceImpl implements HighAvailabilityDomain
         }
 
         try {
-            ApiInstanceUpdateRequest request = new ApiInstanceUpdateRequest(
-                model.getUserId(),
-                model.getModelId(),
-                null, // routingParams
-                null  // metadata
+            ApiInstanceUpdateRequest request = new ApiInstanceUpdateRequest(model.getUserId(), model.getModelId(), null, // routingParams
+                    null // metadata
             );
 
             gatewayClient.updateApiInstance("MODEL", model.getId(), request);
-            
+
             logger.info("成功更新高可用网关中的模型: modelId={}", model.getId());
 
         } catch (Exception e) {
@@ -125,32 +114,28 @@ public class HighAvailabilityDomainServiceImpl implements HighAvailabilityDomain
 
         try {
             // 构建选择实例请求
-            SelectInstanceRequest request = new SelectInstanceRequest(
-                userId,
-                model.getModelId(),
-                "MODEL"
-            );
+            SelectInstanceRequest request = new SelectInstanceRequest(userId, model.getModelId(), "MODEL");
 
             // 通过高可用网关选择最佳实例，客户端已经处理了响应解析
             ApiInstanceDTO selectedInstance = gatewayClient.selectBestInstance(request);
-            
+
             String businessId = selectedInstance.getBusinessId();
             String instanceId = selectedInstance.getId();
 
             // 获取最佳实例对应的模型
             ModelEntity bestModel = llmDomainService.getModelById(businessId);
-            
+
             // 返回最佳模型对应的Provider
             ProviderEntity provider = llmDomainService.getProvider(bestModel.getProviderId(), userId);
-            
-            logger.info("通过高可用网关选择Provider成功: modelId={}, bestBusinessId={}, providerId={}", 
-                model.getId(), businessId, provider.getId());
-            
+
+            logger.info("通过高可用网关选择Provider成功: modelId={}, bestBusinessId={}, providerId={}", model.getId(), businessId,
+                    provider.getId());
+
             return new HighAvailabilityResult(provider, bestModel, instanceId);
 
         } catch (Exception e) {
             logger.warn("高可用网关选择Provider失败，降级到默认逻辑: modelId={}", model.getId(), e);
-            
+
             // 降级处理：使用默认逻辑
             try {
                 ProviderEntity provider = llmDomainService.getProvider(model.getProviderId(), userId);
@@ -164,7 +149,8 @@ public class HighAvailabilityDomainServiceImpl implements HighAvailabilityDomain
 
     @Override
     @Async
-    public void reportCallResult(String instanceId, String modelId, boolean success, long latencyMs, String errorMessage) {
+    public void reportCallResult(String instanceId, String modelId, boolean success, long latencyMs,
+            String errorMessage) {
         if (!properties.isEnabled()) {
             return;
         }
@@ -179,9 +165,9 @@ public class HighAvailabilityDomainServiceImpl implements HighAvailabilityDomain
             request.setCallTimestamp(System.currentTimeMillis());
 
             gatewayClient.reportResult(request);
-            
-            logger.debug("成功上报调用结果: instanceId={}, modelId={}, success={}, latency={}ms", 
-                instanceId, modelId, success, latencyMs);
+
+            logger.debug("成功上报调用结果: instanceId={}, modelId={}, success={}, latency={}ms", instanceId, modelId, success,
+                    latencyMs);
 
         } catch (Exception e) {
             logger.error("上报调用结果失败: instanceId={}, modelId={}", instanceId, modelId, e);
@@ -197,14 +183,11 @@ public class HighAvailabilityDomainServiceImpl implements HighAvailabilityDomain
 
         try {
             // 创建项目
-            ProjectCreateRequest projectRequest = new ProjectCreateRequest(
-                "AgentX",
-                "AgentX高可用项目",
-                properties.getApiKey()
-            );
+            ProjectCreateRequest projectRequest = new ProjectCreateRequest("AgentX", "AgentX高可用项目",
+                    properties.getApiKey());
 
             gatewayClient.createProject(projectRequest);
-            
+
             logger.info("高可用项目初始化成功");
 
         } catch (Exception e) {
@@ -222,7 +205,7 @@ public class HighAvailabilityDomainServiceImpl implements HighAvailabilityDomain
         try {
             // 获取所有激活的模型
             List<ModelEntity> allActiveModels = llmDomainService.getAllActiveModels();
-            
+
             if (allActiveModels.isEmpty()) {
                 logger.info("没有激活的模型需要同步");
                 return;
@@ -231,18 +214,14 @@ public class HighAvailabilityDomainServiceImpl implements HighAvailabilityDomain
             // 构建批量创建请求列表
             List<ApiInstanceCreateRequest> instanceRequests = new ArrayList<>();
             for (ModelEntity model : allActiveModels) {
-                ApiInstanceCreateRequest request = new ApiInstanceCreateRequest(
-                    model.getUserId(),
-                    model.getModelId(),
-                    "MODEL",
-                    model.getId()
-                );
+                ApiInstanceCreateRequest request = new ApiInstanceCreateRequest(model.getUserId(), model.getModelId(),
+                        "MODEL", model.getId());
                 instanceRequests.add(request);
             }
 
             // 批量同步到高可用网关
             gatewayClient.batchCreateApiInstances(instanceRequests);
-            
+
             logger.info("成功批量同步{}个模型到高可用网关", allActiveModels.size());
 
         } catch (Exception e) {
@@ -269,8 +248,7 @@ public class HighAvailabilityDomainServiceImpl implements HighAvailabilityDomain
             }
 
         } catch (Exception e) {
-            logger.error("变更高可用网关中的模型状态失败: modelId={}, enabled={}", 
-                model.getId(), enabled, e);
+            logger.error("变更高可用网关中的模型状态失败: modelId={}, enabled={}", model.getId(), enabled, e);
         }
     }
 
@@ -290,14 +268,14 @@ public class HighAvailabilityDomainServiceImpl implements HighAvailabilityDomain
             // 构建批量删除请求列表
             List<ApiInstanceBatchDeleteRequest.ApiInstanceDeleteItem> instances = new ArrayList<>();
             for (ModelsBatchDeletedEvent.ModelDeleteItem deleteItem : deleteItems) {
-                ApiInstanceBatchDeleteRequest.ApiInstanceDeleteItem item = 
-                    new ApiInstanceBatchDeleteRequest.ApiInstanceDeleteItem("MODEL", deleteItem.getModelId());
+                ApiInstanceBatchDeleteRequest.ApiInstanceDeleteItem item = new ApiInstanceBatchDeleteRequest.ApiInstanceDeleteItem(
+                        "MODEL", deleteItem.getModelId());
                 instances.add(item);
             }
 
             // 批量删除到高可用网关
             gatewayClient.batchDeleteApiInstances(instances);
-            
+
             logger.info("成功批量删除{}个模型从高可用网关，用户ID: {}", deleteItems.size(), userId);
 
         } catch (Exception e) {
@@ -305,4 +283,4 @@ public class HighAvailabilityDomainServiceImpl implements HighAvailabilityDomain
             // 批量删除失败不抛异常，避免影响主流程
         }
     }
-} 
+}

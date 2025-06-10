@@ -1,26 +1,18 @@
 package org.xhy.infrastructure.highavailability.dto.request;
 
-/**
- * 项目创建请求
+/** 项目创建请求
  * 
  * @author xhy
- * @since 1.0.0
- */
+ * @since 1.0.0 */
 public class ProjectCreateRequest {
 
-    /**
-     * 项目名称
-     */
+    /** 项目名称 */
     private String name;
 
-    /**
-     * 项目描述
-     */
+    /** 项目描述 */
     private String description;
 
-    /**
-     * API密钥
-     */
+    /** API密钥 */
     private String apiKey;
 
     public ProjectCreateRequest() {
@@ -55,4 +47,4 @@ public class ProjectCreateRequest {
     public void setApiKey(String apiKey) {
         this.apiKey = apiKey;
     }
-} 
+}

@@ -58,11 +58,10 @@ public class ModelAssembler {
         model.setModelEndpoint(request.getModelEndpoint());
         model.setUpdatedAt(LocalDateTime.now());
         model.setModelEndpoint(request.getModelEndpoint());
-        if (ObjectUtils.isEmpty(request.getModelEndpoint())){
+        if (ObjectUtils.isEmpty(request.getModelEndpoint())) {
             model.setModelEndpoint(request.getModelId());
 
         }
-
 
         return model;
     }
@@ -78,10 +77,9 @@ public class ModelAssembler {
         model.setUpdatedAt(LocalDateTime.now());
         model.setId(request.getId());
         model.setModelEndpoint(request.getModelEndpoint());
-        if (ObjectUtils.isEmpty(request.getModelEndpoint())){
+        if (ObjectUtils.isEmpty(request.getModelEndpoint())) {
             model.setModelEndpoint(request.getModelId());
         }
-
 
         return model;
     }

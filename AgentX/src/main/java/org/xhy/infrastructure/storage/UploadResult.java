@@ -2,9 +2,7 @@ package org.xhy.infrastructure.storage;
 
 import java.time.LocalDateTime;
 
-/**
- * 上传结果类
- */
+/** 上传结果类 */
 public class UploadResult {
     private final String fileId;
     private final String originalName;
@@ -37,43 +35,43 @@ public class UploadResult {
     public String getFileId() {
         return fileId;
     }
-    
+
     public String getOriginalName() {
         return originalName;
     }
-    
+
     public String getStorageName() {
         return storageName;
     }
-    
+
     public Long getFileSize() {
         return fileSize;
     }
-    
+
     public String getContentType() {
         return contentType;
     }
-    
+
     public String getBucketName() {
         return bucketName;
     }
-    
+
     public String getFilePath() {
         return filePath;
     }
-    
+
     public String getAccessUrl() {
         return accessUrl;
     }
-    
+
     public String getMd5Hash() {
         return md5Hash;
     }
-    
+
     public String getEtag() {
         return etag;
     }
-    
+
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
@@ -81,9 +79,9 @@ public class UploadResult {
     @Override
     public String toString() {
         return "UploadResult{" + "fileId='" + fileId + '\'' + ", originalName='" + originalName + '\''
-                + ", storageName='" + storageName + '\'' + ", fileSize=" + fileSize + ", contentType='"
-                + contentType + '\'' + ", bucketName='" + bucketName + '\'' + ", filePath='" + filePath + '\''
-                + ", accessUrl='" + accessUrl + '\'' + ", md5Hash='" + md5Hash + '\'' + ", etag='" + etag + '\''
-                + ", createdAt=" + createdAt + '}';
+                + ", storageName='" + storageName + '\'' + ", fileSize=" + fileSize + ", contentType='" + contentType
+                + '\'' + ", bucketName='" + bucketName + '\'' + ", filePath='" + filePath + '\'' + ", accessUrl='"
+                + accessUrl + '\'' + ", md5Hash='" + md5Hash + '\'' + ", etag='" + etag + '\'' + ", createdAt="
+                + createdAt + '}';
     }
-} 
+}

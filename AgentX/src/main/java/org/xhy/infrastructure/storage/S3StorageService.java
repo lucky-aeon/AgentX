@@ -33,10 +33,7 @@ import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 
-/** 
- * S3对象存储服务实现
- * 支持阿里云OSS通过S3协议访问
- */
+/** S3对象存储服务实现 支持阿里云OSS通过S3协议访问 */
 @Service
 @Conditional(S3EnabledCondition.class)
 public class S3StorageService implements StorageService {
@@ -73,22 +70,16 @@ public class S3StorageService implements StorageService {
     /** 创建S3客户端 */
     private S3Client createS3Client() {
         try {
-            AwsBasicCredentials awsCredentials = AwsBasicCredentials.create(
-                s3Properties.getAccessKey(),
-                s3Properties.getSecretKey()
-            );
+            AwsBasicCredentials awsCredentials = AwsBasicCredentials.create(s3Properties.getAccessKey(),
+                    s3Properties.getSecretKey());
 
             S3Configuration s3Config = S3Configuration.builder()
-                    .pathStyleAccessEnabled(s3Properties.isPathStyleAccess())
-                    .build();
+                    .pathStyleAccessEnabled(s3Properties.isPathStyleAccess()).build();
 
-            return S3Client.builder()
-                    .endpointOverride(URI.create(s3Properties.getEndpoint()))
+            return S3Client.builder().endpointOverride(URI.create(s3Properties.getEndpoint()))
                     .region(Region.of(s3Properties.getRegion()))
                     .credentialsProvider(StaticCredentialsProvider.create(awsCredentials))
-                    .serviceConfiguration(s3Config)
-                    .httpClient(UrlConnectionHttpClient.builder().build())
-                    .build();
+                    .serviceConfiguration(s3Config).httpClient(UrlConnectionHttpClient.builder().build()).build();
         } catch (Exception e) {
             logger.error("创建S3客户端失败", e);
             throw new RuntimeException("创建S3客户端失败", e);
@@ -112,37 +103,22 @@ public class S3StorageService implements StorageService {
             String md5Hash = calculateMD5Hex(file);
 
             // 构建上传请求 (不设置contentMD5，让SDK自动计算)
-            PutObjectRequest putObjectRequest = PutObjectRequest.builder()
-                    .bucket(bucketName)
-                    .key(objectKey)
-                    .contentLength(file.length())
-                    .contentType(getContentType(file.getName()))
-                    .build();
+            PutObjectRequest putObjectRequest = PutObjectRequest.builder().bucket(bucketName).key(objectKey)
+                    .contentLength(file.length()).contentType(getContentType(file.getName())).build();
 
             // 执行上传
-            PutObjectResponse putObjectResponse = s3Client.putObject(
-                putObjectRequest,
-                RequestBody.fromInputStream(fileInputStream, file.length())
-            );
+            PutObjectResponse putObjectResponse = s3Client.putObject(putObjectRequest,
+                    RequestBody.fromInputStream(fileInputStream, file.length()));
 
             // 构建访问URL
             String accessUrl = buildAccessUrl(bucketName, objectKey);
 
-            logger.info("文件上传成功: bucket={}, key={}, size={}, etag={}", 
-                bucketName, objectKey, file.length(), putObjectResponse.eTag());
+            logger.info("文件上传成功: bucket={}, key={}, size={}, etag={}", bucketName, objectKey, file.length(),
+                    putObjectResponse.eTag());
 
-            return new UploadResult(
-                UUID.randomUUID().toString(),
-                file.getName(),
-                objectKey,
-                file.length(),
-                getContentType(file.getName()),
-                bucketName,
-                objectKey,
-                accessUrl,
-                md5Hash,
-                putObjectResponse.eTag()
-            );
+            return new UploadResult(UUID.randomUUID().toString(), file.getName(), objectKey, file.length(),
+                    getContentType(file.getName()), bucketName, objectKey, accessUrl, md5Hash,
+                    putObjectResponse.eTag());
 
         } catch (Exception e) {
             logger.error("文件上传失败: bucket={}, key={}", bucketName, objectKey, e);
@@ -159,36 +135,21 @@ public class S3StorageService implements StorageService {
     public UploadResult uploadStream(InputStream inputStream, String objectKey, long contentLength, String bucketName) {
         try {
             // 构建上传请求
-            PutObjectRequest putObjectRequest = PutObjectRequest.builder()
-                    .bucket(bucketName)
-                    .key(objectKey)
-                    .contentLength(contentLength)
-                    .build();
+            PutObjectRequest putObjectRequest = PutObjectRequest.builder().bucket(bucketName).key(objectKey)
+                    .contentLength(contentLength).build();
 
             // 执行上传
-            PutObjectResponse putObjectResponse = s3Client.putObject(
-                putObjectRequest,
-                RequestBody.fromInputStream(inputStream, contentLength)
-            );
+            PutObjectResponse putObjectResponse = s3Client.putObject(putObjectRequest,
+                    RequestBody.fromInputStream(inputStream, contentLength));
 
             // 构建访问URL
             String accessUrl = buildAccessUrl(bucketName, objectKey);
 
-            logger.info("输入流上传成功: bucket={}, key={}, size={}, etag={}", 
-                bucketName, objectKey, contentLength, putObjectResponse.eTag());
+            logger.info("输入流上传成功: bucket={}, key={}, size={}, etag={}", bucketName, objectKey, contentLength,
+                    putObjectResponse.eTag());
 
-            return new UploadResult(
-                UUID.randomUUID().toString(),
-                extractFileName(objectKey),
-                objectKey,
-                contentLength,
-                getContentType(objectKey),
-                bucketName,
-                objectKey,
-                accessUrl,
-                null,
-                putObjectResponse.eTag()
-            );
+            return new UploadResult(UUID.randomUUID().toString(), extractFileName(objectKey), objectKey, contentLength,
+                    getContentType(objectKey), bucketName, objectKey, accessUrl, null, putObjectResponse.eTag());
 
         } catch (Exception e) {
             logger.error("输入流上传失败: bucket={}, key={}", bucketName, objectKey, e);
@@ -204,9 +165,7 @@ public class S3StorageService implements StorageService {
     @Override
     public boolean deleteFile(String objectKey, String bucketName) {
         try {
-            DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder()
-                    .bucket(bucketName)
-                    .key(objectKey)
+            DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder().bucket(bucketName).key(objectKey)
                     .build();
 
             s3Client.deleteObject(deleteObjectRequest);
@@ -228,10 +187,7 @@ public class S3StorageService implements StorageService {
     @Override
     public boolean fileExists(String objectKey, String bucketName) {
         try {
-            HeadObjectRequest headObjectRequest = HeadObjectRequest.builder()
-                    .bucket(bucketName)
-                    .key(objectKey)
-                    .build();
+            HeadObjectRequest headObjectRequest = HeadObjectRequest.builder().bucket(bucketName).key(objectKey).build();
 
             HeadObjectResponse headObjectResponse = s3Client.headObject(headObjectRequest);
             return headObjectResponse != null;
@@ -317,22 +273,22 @@ public class S3StorageService implements StorageService {
 
         String extension = getFileExtension(fileName).toLowerCase();
         switch (extension) {
-            case ".jpg":
-            case ".jpeg":
+            case ".jpg" :
+            case ".jpeg" :
                 return "image/jpeg";
-            case ".png":
+            case ".png" :
                 return "image/png";
-            case ".gif":
+            case ".gif" :
                 return "image/gif";
-            case ".pdf":
+            case ".pdf" :
                 return "application/pdf";
-            case ".txt":
+            case ".txt" :
                 return "text/plain";
-            case ".json":
+            case ".json" :
                 return "application/json";
-            case ".xml":
+            case ".xml" :
                 return "application/xml";
-            default:
+            default :
                 return "application/octet-stream";
         }
     }

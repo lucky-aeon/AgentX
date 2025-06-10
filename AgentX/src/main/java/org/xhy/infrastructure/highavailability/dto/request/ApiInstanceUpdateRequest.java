@@ -2,12 +2,10 @@ package org.xhy.infrastructure.highavailability.dto.request;
 
 import java.util.Map;
 
-/**
- * API实例更新请求
+/** API实例更新请求
  * 
  * @author xhy
- * @since 1.0.0
- */
+ * @since 1.0.0 */
 public class ApiInstanceUpdateRequest {
 
     private String userId;
@@ -21,7 +19,8 @@ public class ApiInstanceUpdateRequest {
     public ApiInstanceUpdateRequest() {
     }
 
-    public ApiInstanceUpdateRequest(String userId, String apiIdentifier, Map<String, Object> routingParams, Map<String, Object> metadata) {
+    public ApiInstanceUpdateRequest(String userId, String apiIdentifier, Map<String, Object> routingParams,
+            Map<String, Object> metadata) {
         this.userId = userId;
         this.apiIdentifier = apiIdentifier;
         this.routingParams = routingParams;
@@ -62,11 +61,7 @@ public class ApiInstanceUpdateRequest {
 
     @Override
     public String toString() {
-        return "ApiInstanceUpdateRequest{" +
-                "userId='" + userId + '\'' +
-                ", apiIdentifier='" + apiIdentifier + '\'' +
-                ", routingParams=" + routingParams +
-                ", metadata=" + metadata +
-                '}';
+        return "ApiInstanceUpdateRequest{" + "userId='" + userId + '\'' + ", apiIdentifier='" + apiIdentifier + '\''
+                + ", routingParams=" + routingParams + ", metadata=" + metadata + '}';
     }
-} 
+}

@@ -14,12 +14,11 @@ public class AgentMessageHandler extends AbstractMessageHandler {
 
     private final AgentToolManager agentToolManager;
 
-
     protected final HighAvailabilityDomainService highAvailabilityDomainService;
 
     public AgentMessageHandler(LLMServiceFactory llmServiceFactory, AgentToolManager agentToolManager,
-                               MessageDomainService messageDomainService, HighAvailabilityDomainService highAvailabilityDomainService) {
-        super(llmServiceFactory, messageDomainService,highAvailabilityDomainService);
+            MessageDomainService messageDomainService, HighAvailabilityDomainService highAvailabilityDomainService) {
+        super(llmServiceFactory, messageDomainService, highAvailabilityDomainService);
         this.agentToolManager = agentToolManager;
         this.highAvailabilityDomainService = highAvailabilityDomainService;
     }

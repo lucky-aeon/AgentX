@@ -1,28 +1,18 @@
 package org.xhy.infrastructure.highavailability.dto.request;
 
-/**
- * 选择API实例请求
+/** 选择API实例请求
  * 
  * @author xhy
- * @since 1.0.0
- */
+ * @since 1.0.0 */
 public class SelectInstanceRequest {
 
-
-
-    /**
-     * 用户ID，可选
-     */
+    /** 用户ID，可选 */
     private String userId;
 
-    /**
-     * API标识符，必填
-     */
+    /** API标识符，必填 */
     private String apiIdentifier;
 
-    /**
-     * API类型，必填
-     */
+    /** API类型，必填 */
     private String apiType;
 
     public SelectInstanceRequest() {
@@ -57,4 +47,4 @@ public class SelectInstanceRequest {
     public void setApiType(String apiType) {
         this.apiType = apiType;
     }
-} 
+}
