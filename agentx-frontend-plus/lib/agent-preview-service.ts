@@ -37,7 +37,7 @@ export interface AgentChatResponse {
  */
 export async function previewAgentStream(request: AgentPreviewRequest): Promise<ReadableStream<Uint8Array> | null> {
   try {
-    const url = `${API_CONFIG.BASE_URL}/agent/session/preview`
+    const url = `${API_CONFIG.BASE_URL}/agents/sessions/preview`
     
     const response = await fetch(url, {
       method: 'POST',

@@ -20,7 +20,7 @@ import java.util.concurrent.Executors;
 
 /** Agent会话管理 */
 @RestController
-@RequestMapping("/agent/session")
+@RequestMapping("/agents/sessions")
 public class PortalAgentSessionController {
 
     private final Logger logger = LoggerFactory.getLogger(PortalAgentSessionController.class);

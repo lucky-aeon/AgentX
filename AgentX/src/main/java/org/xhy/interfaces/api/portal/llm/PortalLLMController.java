@@ -28,7 +28,7 @@ import org.xhy.interfaces.dto.llm.request.ProviderUpdateRequest;
 
 /** 大模型服务商 */
 @RestController
-@RequestMapping("/llm")
+@RequestMapping("/llms")
 public class PortalLLMController {
 
     public final LLMAppService llmAppService;

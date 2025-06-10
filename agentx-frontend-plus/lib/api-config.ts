@@ -6,54 +6,54 @@ export const API_CONFIG = {
 // API 端点
 export const API_ENDPOINTS = {
   // 会话相关
-  SESSION: "/agent/session",
-  SESSION_DETAIL: (id: string) => `/agent/session/${id}`,
-  SESSION_MESSAGES: (id: string) => `/agent/session/${id}/messages`,
-  DELETE_SESSION: (id: string) => `/agent/session/${id}`,
-  CHAT: "/agent/session/chat",
-  SEND_MESSAGE: (sessionId: string) => `/agent/session/${sessionId}/message`,
+  SESSION: "/agents/sessions",
+  SESSION_DETAIL: (id: string) => `/agents/sessions/${id}`,
+  SESSION_MESSAGES: (id: string) => `/agents/sessions/${id}/messages`,
+  DELETE_SESSION: (id: string) => `/agents/sessions/${id}`,
+  CHAT: "/agents/sessions/chat",
+  SEND_MESSAGE: (sessionId: string) => `/agents/sessions/${sessionId}/message`,
   
   // 任务相关
   SESSION_TASKS: (sessionId: string) => `/tasks/session/${sessionId}/latest`,
   SESSION_TASK_DETAIL: (taskId: string) => `/tasks/${taskId}`,
 
   // 助理相关
-  USER_AGENTS: (userId: string) => `/agent/user/${userId}`,
-  AGENT_DETAIL: (id: string) => `/agent/${id}`,
-  CREATE_AGENT: "/agent",
-  UPDATE_AGENT: (id: string) => `/agent/${id}`,
-  DELETE_AGENT: (id: string) => `/agent/${id}`,
-  TOGGLE_AGENT_STATUS: (id: string) => `/agent/${id}/toggle-status`,
-  AGENT_VERSIONS: (id: string) => `/agent/${id}/versions`,
-  AGENT_VERSION_DETAIL: (id: string, version: string) => `/agent/${id}/versions/${version}`,
-  AGENT_LATEST_VERSION: (id: string) => `/agent/${id}/versions/latest`,
-  PUBLISH_AGENT_VERSION: (id: string) => `/agent/${id}/publish`,
-  PUBLISHED_AGENTS: "/agent/published",
+  USER_AGENTS: (userId: string) => `/agents/user/${userId}`,
+  AGENT_DETAIL: (id: string) => `/agents/${id}`,
+  CREATE_AGENT: "/agents",
+  UPDATE_AGENT: (id: string) => `/agents/${id}`,
+  DELETE_AGENT: (id: string) => `/agents/${id}`,
+  TOGGLE_AGENT_STATUS: (id: string) => `/agents/${id}/toggle-status`,
+  AGENT_VERSIONS: (id: string) => `/agents/${id}/versions`,
+  AGENT_VERSION_DETAIL: (id: string, version: string) => `/agents/${id}/versions/${version}`,
+  AGENT_LATEST_VERSION: (id: string) => `/agents/${id}/versions/latest`,
+  PUBLISH_AGENT_VERSION: (id: string) => `/agents/${id}/publish`,
+  PUBLISHED_AGENTS: "/agents/published",
   
   // Agent工作区相关
-  AGENT_WORKSPACE: "/agent/workspace",
-  ADD_AGENT_TO_WORKSPACE: (agentId: string) => `/agent/workspace/${agentId}`,
-  AGENT_MODEL_CONFIG: (agentId: string) => `/agent/workspace/${agentId}/model-config`,
-  SET_AGENT_MODEL_CONFIG: (agentId: string) => `/agent/workspace/${agentId}/model/config`,
+  AGENT_WORKSPACE: "/agents/workspaces",
+  ADD_AGENT_TO_WORKSPACE: (agentId: string) => `/agents/workspaces/${agentId}`,
+  AGENT_MODEL_CONFIG: (agentId: string) => `/agents/workspaces/${agentId}/model-config`,
+  SET_AGENT_MODEL_CONFIG: (agentId: string) => `/agents/workspaces/${agentId}/model/config`,
   
   // LLM相关
-  PROVIDERS: "/llm/providers",
-  PROVIDER_DETAIL: (id: string) => `/llm/providers/${id}`,
-  CREATE_PROVIDER: "/llm/providers",
-  UPDATE_PROVIDER: "/llm/providers",
-  DELETE_PROVIDER: (id: string) => `/llm/providers/${id}`,
-  PROVIDER_PROTOCOLS: "/llm/providers/protocols",
-  TOGGLE_PROVIDER_STATUS: (id: string) => `/llm/providers/${id}/status`,
+  PROVIDERS: "/llms/providers",
+  PROVIDER_DETAIL: (id: string) => `/llms/providers/${id}`,
+  CREATE_PROVIDER: "/llms/providers",
+  UPDATE_PROVIDER: "/llms/providers",
+  DELETE_PROVIDER: (id: string) => `/llms/providers/${id}`,
+  PROVIDER_PROTOCOLS: "/llms/providers/protocols",
+  TOGGLE_PROVIDER_STATUS: (id: string) => `/llms/providers/${id}/status`,
   
   // 模型相关
-  MODELS: "/llm/models", // 获取模型列表
-  DEFAULT_MODEL: "/llm/models/default", // 获取默认模型
-  MODEL_DETAIL: (id: string) => `/llm/models/${id}`,
-  CREATE_MODEL: "/llm/models",
-  UPDATE_MODEL: "/llm/models",
-  DELETE_MODEL: (id: string) => `/llm/models/${id}`,
-  TOGGLE_MODEL_STATUS: (id: string) => `/llm/models/${id}/status`,
-  MODEL_TYPES: "/llm/models/types",
+  MODELS: "/llms/models", // 获取模型列表
+  DEFAULT_MODEL: "/llms/models/default", // 获取默认模型
+  MODEL_DETAIL: (id: string) => `/llms/models/${id}`,
+  CREATE_MODEL: "/llms/models",
+  UPDATE_MODEL: "/llms/models",
+  DELETE_MODEL: (id: string) => `/llms/models/${id}`,
+  TOGGLE_MODEL_STATUS: (id: string) => `/llms/models/${id}/status`,
+  MODEL_TYPES: "/llms/models/types",
   
   // 工具市场相关
   MARKET_TOOLS: "/tools/market",

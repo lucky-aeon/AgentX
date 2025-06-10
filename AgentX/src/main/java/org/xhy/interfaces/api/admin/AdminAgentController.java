@@ -10,7 +10,7 @@ import org.xhy.interfaces.dto.agent.request.ReviewAgentVersionRequest;
 import java.util.List;
 /** 管理员Agent管理 负责处理管理员对Agent的管理操作，如审核、查看待审核列表等 */
 @RestController
-@RequestMapping("/admin/agent")
+@RequestMapping("/admin/agents")
 public class AdminAgentController {
 
     private final AgentAppService agentAppService;

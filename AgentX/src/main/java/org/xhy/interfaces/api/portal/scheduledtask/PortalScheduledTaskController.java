@@ -13,7 +13,7 @@ import java.util.List;
 
 /** 定时任务管理控制器 */
 @RestController
-@RequestMapping("/scheduled-task")
+@RequestMapping("/scheduled-tasks")
 public class PortalScheduledTaskController {
 
     private final ScheduledTaskAppService scheduledTaskAppService;

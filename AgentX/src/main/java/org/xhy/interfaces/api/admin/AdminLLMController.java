@@ -20,7 +20,7 @@ import org.xhy.interfaces.dto.llm.request.ProviderUpdateRequest;
 
 /** 管理员LLM管理 */
 @RestController
-@RequestMapping("/admin/llm")
+@RequestMapping("/admin/llms")
 public class AdminLLMController {
 
     private final AdminLLMAppService adminLLMAppService;
