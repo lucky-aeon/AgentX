@@ -20,7 +20,7 @@ export interface SessionDTO {
 export async function getAgentSessions(agentId: string): Promise<ApiResponse<SessionDTO[]>> {
   try {
     const data = await httpClient.get<ApiResponse<SessionDTO[]>>(
-      `/agent/session/${agentId}`
+      `/agents/sessions/${agentId}`
     )
     return data
   } catch (error) {
@@ -39,7 +39,7 @@ export async function getAgentSessions(agentId: string): Promise<ApiResponse<Ses
 export async function createAgentSession(agentId: string): Promise<ApiResponse<SessionDTO>> {
   try {
     const data = await httpClient.post<ApiResponse<SessionDTO>>(
-      `/agent/session/${agentId}`
+      `/agents/sessions/${agentId}`
     )
     toast({
       description: data.message,
@@ -63,7 +63,7 @@ export async function updateAgentSession(sessionId: string, title: string): Prom
   try {
     const params = { title }
     const data = await httpClient.put<ApiResponse<null>>(
-      `/agent/session/${sessionId}`,
+      `/agents/sessions/${sessionId}`,
       {},
       { params }
     )
@@ -84,7 +84,7 @@ export async function updateAgentSession(sessionId: string, title: string): Prom
 export async function deleteAgentSession(sessionId: string): Promise<ApiResponse<null>> {
   try {
     const data = await httpClient.delete<ApiResponse<null>>(
-      `/agent/session/${sessionId}`
+      `/agents/sessions/${sessionId}`
     )
     return data
   } catch (error) {

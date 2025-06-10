@@ -16,7 +16,7 @@ const testScheduledTaskAPI = async () => {
   
   try {
     // 测试创建定时任务
-    const response = await fetch('http://localhost:8080/api/scheduled-task', {
+    const response = await fetch('http://localhost:8080/api/scheduled-tasks', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

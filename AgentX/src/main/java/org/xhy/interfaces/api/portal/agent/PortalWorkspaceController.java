@@ -14,7 +14,7 @@ import java.util.List;
 
 /** Agent工作区 */
 @RestController
-@RequestMapping("/agent/workspace")
+@RequestMapping("/agents/workspaces")
 public class PortalWorkspaceController {
 
     private final AgentWorkspaceAppService agentWorkspaceAppService;

@@ -17,7 +17,7 @@ export async function getUserAgents(params?: Partial<GetAgentsParams>): Promise<
   try {
     console.log(`Fetching user agents`)
     
-    const response = await httpClient.get<ApiResponse<Agent[]>>("/agent/user", {
+    const response = await httpClient.get<ApiResponse<Agent[]>>("/agents/user", {
       params: params
     });
     
@@ -39,7 +39,7 @@ export async function getWorkspaceAgents(): Promise<ApiResponse<Agent[]>> {
   try {
     console.log(`Fetching workspace agents`)
     
-    const response = await httpClient.get<ApiResponse<Agent[]>>("/agent/workspace/agents");
+    const response = await httpClient.get<ApiResponse<Agent[]>>("/agents/workspaces/agents");
     
     return response;
   } catch (error) {
@@ -299,7 +299,7 @@ export async function getAgentBySessionId(sessionId: string): Promise<ApiRespons
   try {
     console.log(`Fetching agent by session ID: ${sessionId}`)
     
-    const response = await httpClient.get<ApiResponse<Agent>>(`/agent/session-agent/${sessionId}`);
+    const response = await httpClient.get<ApiResponse<Agent>>(`/agents/session-agent/${sessionId}`);
     
     return response;
   } catch (error) {
@@ -319,7 +319,7 @@ export async function deleteWorkspaceAgent(agentId: string): Promise<ApiResponse
   try {
     console.log(`Deleting workspace agent: ${agentId}`)
     
-    const response = await httpClient.delete<ApiResponse<null>>(`/agent/workspace/agents/${agentId}`);
+    const response = await httpClient.delete<ApiResponse<null>>(`/agents/workspaces/agents/${agentId}`);
     
     return response;
   } catch (error) {

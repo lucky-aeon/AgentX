@@ -3,11 +3,11 @@ import { httpClient } from "@/lib/http-client"
 
 // 定时任务API端点
 export const SCHEDULED_TASK_ENDPOINTS = {
-  SCHEDULED_TASKS: "/scheduled-task",
-  SCHEDULED_TASKS_BY_AGENT: (agentId: string) => `/scheduled-task/agent/${agentId}`,
-  SCHEDULED_TASK_DETAIL: (id: string) => `/scheduled-task/${id}`,
-  PAUSE_SCHEDULED_TASK: (id: string) => `/scheduled-task/${id}/pause`,
-  RESUME_SCHEDULED_TASK: (id: string) => `/scheduled-task/${id}/resume`,
+  SCHEDULED_TASKS: "/scheduled-tasks",
+  SCHEDULED_TASKS_BY_AGENT: (agentId: string) => `/scheduled-tasks/agent/${agentId}`,
+  SCHEDULED_TASK_DETAIL: (id: string) => `/scheduled-tasks/${id}`,
+  PAUSE_SCHEDULED_TASK: (id: string) => `/scheduled-tasks/${id}/pause`,
+  RESUME_SCHEDULED_TASK: (id: string) => `/scheduled-tasks/${id}/resume`,
 }
 
 // 重复类型枚举

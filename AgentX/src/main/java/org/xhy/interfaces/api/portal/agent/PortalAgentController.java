@@ -16,7 +16,7 @@ import java.util.List;
 
 /** 用户Agent管理 */
 @RestController
-@RequestMapping("/agent")
+@RequestMapping("/agents")
 public class PortalAgentController {
 
     private final AgentAppService agentAppService;

@@ -594,7 +594,7 @@ export async function getWorkspaceAgents(): Promise<ApiResponse<any[]>> {
   try {
     console.log('Fetching workspace agents')
     
-    const response = await httpClient.get<ApiResponse<any[]>>('/agent/workspace/agents');
+    const response = await httpClient.get<ApiResponse<any[]>>('/agents/workspaces/agents');
     
     return response;
   } catch (error) {

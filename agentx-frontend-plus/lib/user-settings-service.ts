@@ -99,7 +99,7 @@ export async function getAllModels(): Promise<ApiResponse<Model[]>> {
   try {
     console.log('Fetching all models for user settings')
     
-    const response = await httpClient.get<ApiResponse<Model[]>>('/llm/models')
+    const response = await httpClient.get<ApiResponse<Model[]>>('/llms/models')
     
     return response
   } catch (error) {
@@ -118,7 +118,7 @@ export async function getModelsByType(modelType: 'CHAT' | 'EMBEDDING'): Promise<
   try {
     console.log(`Fetching models of type: ${modelType}`)
     
-    const response = await httpClient.get<ApiResponse<Model[]>>('/llm/models', {
+    const response = await httpClient.get<ApiResponse<Model[]>>('/llms/models', {
       params: { modelType }
     })
     

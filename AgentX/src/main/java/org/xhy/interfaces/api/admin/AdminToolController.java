@@ -13,7 +13,7 @@ import java.util.List;
 
 /** 管理员Tool管理 */
 @RestController
-@RequestMapping("/admin/tool")
+@RequestMapping("/admin/tools")
 public class AdminToolController {
 
     private final AdminToolAppService adminToolAppService;
