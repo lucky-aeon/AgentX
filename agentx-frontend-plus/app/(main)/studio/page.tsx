@@ -128,8 +128,8 @@ export default function StudioPage() {
   }
 
   // 获取助理类型文本
-  const getAgentTypeText = (type: number) => {
-    return type === 1 ? "聊天助理" : "功能性助理"
+  const getAgentTypeText = () => {
+    return "AI助理"
   }
 
   // 清除搜索
@@ -293,7 +293,7 @@ export default function StudioPage() {
                   </DropdownMenu>
                 </div>
                 <CardDescription className="text-xs flex items-center gap-2 mt-1">
-                  <span>{getAgentTypeText(agent.agentType)}</span>
+                  <span>{getAgentTypeText()}</span>
                   <span className="w-1 h-1 rounded-full bg-gray-300"></span>
                   <span>{agent.enabled ? "已启用" : "已禁用"}</span>
                   <span className="w-1 h-1 rounded-full bg-gray-300"></span>

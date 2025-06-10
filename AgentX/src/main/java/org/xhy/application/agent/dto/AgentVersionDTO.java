@@ -1,6 +1,6 @@
 package org.xhy.application.agent.dto;
 
-import org.xhy.domain.agent.constant.AgentType;
+
 import org.xhy.domain.agent.constant.PublishStatus;
 
 import java.time.LocalDateTime;
@@ -43,8 +43,7 @@ public class AgentVersionDTO {
     /** 版本更新日志 */
     private String changeLog;
 
-    /** Agent类型：1-聊天助手, 2-功能性Agent */
-    private Integer agentType;
+
 
     /** 发布状态：1-审核中, 2-已发布, 3-拒绝, 4-已下架 */
     private Integer publishStatus;
@@ -165,18 +164,7 @@ public class AgentVersionDTO {
         this.changeLog = changeLog;
     }
 
-    public Integer getAgentType() {
-        return agentType;
-    }
 
-    public void setAgentType(Integer agentType) {
-        this.agentType = agentType;
-    }
-
-    /** 获取类型文本描述 */
-    public String getAgentTypeText() {
-        return AgentType.fromCode(agentType).getDescription();
-    }
 
     public Integer getPublishStatus() {
         return publishStatus;

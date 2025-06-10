@@ -1,7 +1,7 @@
 package org.xhy.interfaces.dto.agent.request;
 
 import jakarta.validation.constraints.NotBlank;
-import org.xhy.domain.agent.constant.AgentType;
+
 
 import java.util.List;
 import java.util.Map;
@@ -13,7 +13,7 @@ public class CreateAgentRequest {
     private String name;
     private String description;
     private String avatar;
-    private AgentType agentType = AgentType.CHAT_ASSISTANT;
+
     private String systemPrompt;
     private String welcomeMessage;
     private List<String> toolIds;
@@ -48,13 +48,7 @@ public class CreateAgentRequest {
         this.avatar = avatar;
     }
 
-    public AgentType getAgentType() {
-        return agentType;
-    }
 
-    public void setAgentType(AgentType agentType) {
-        this.agentType = agentType;
-    }
 
     public String getSystemPrompt() {
         return systemPrompt;

@@ -18,7 +18,7 @@ public class LLMProviderFactory {
      * @param providerConfig 服务商信息 */
     public static ChatModel getLLMProvider(ProviderProtocol protocol, ProviderConfig providerConfig) {
         ChatModel model = null;
-        if (protocol == ProviderProtocol.OpenAI) {
+        if (protocol == ProviderProtocol.OPENAI) {
             OpenAiChatModel.OpenAiChatModelBuilder openAiChatModelBuilder = new OpenAiChatModel.OpenAiChatModelBuilder();
             openAiChatModelBuilder.apiKey(providerConfig.getApiKey());
             openAiChatModelBuilder.baseUrl(providerConfig.getBaseUrl());
@@ -35,7 +35,7 @@ public class LLMProviderFactory {
 
     public static StreamingChatModel getLLMProviderByStream(ProviderProtocol protocol, ProviderConfig providerConfig) {
         StreamingChatModel model = null;
-        if (protocol == ProviderProtocol.OpenAI) {
+        if (protocol == ProviderProtocol.OPENAI) {
             model = new OpenAiStreamingChatModel.OpenAiStreamingChatModelBuilder().apiKey(providerConfig.getApiKey())
                     .baseUrl(providerConfig.getBaseUrl()).customHeaders(providerConfig.getCustomHeaders())
                     .modelName(providerConfig.getModel()).timeout(Duration.ofHours(1)).build();

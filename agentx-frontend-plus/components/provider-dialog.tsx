@@ -48,7 +48,7 @@ interface ProviderFormData {
 
 // 默认的协议配置字段
 const DEFAULT_PROTOCOL_CONFIG: ProtocolConfigFields = {
-  "OpenAI": [
+  "OPENAI": [
     { 
       label: "API Key", 
       placeholder: "输入API Key", 

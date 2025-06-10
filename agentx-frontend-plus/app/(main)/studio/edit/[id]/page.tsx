@@ -95,7 +95,6 @@ export default function EditAgentPage() {
             knowledgeBaseIds: agent.knowledgeBaseIds || [],
             toolPresetParams: agent.toolPresetParams || {},
             enabled: agent.enabled,
-            agentType: agent.agentType,
             multiModal: agent.multiModal || false,
           }
 
@@ -181,7 +180,6 @@ export default function EditAgentPage() {
         knowledgeBaseIds: formData.knowledgeBaseIds,
         toolPresetParams: formData.toolPresetParams,
         enabled: formData.enabled,
-        agentType: formData.agentType,
         multiModal: formData.multiModal,
       }
 
@@ -218,11 +216,7 @@ export default function EditAgentPage() {
     }
   }
 
-  // 处理切换助理状态
-  const handleToggleStatus = () => {
-    // 这个功能需要在AgentFormModal内部实现
-    // 因为它需要访问formData状态
-  }
+
 
   // 处理发布助理版本
   const handlePublishVersion = async () => {
@@ -329,7 +323,6 @@ export default function EditAgentPage() {
         knowledgeBaseIds: version.knowledgeBaseIds || [],
         toolPresetParams: version.toolPresetParams || {},
         enabled: initialData?.enabled || true,
-        agentType: version.agentType,
         multiModal: version.multiModal || false,
       }
       
@@ -386,7 +379,7 @@ export default function EditAgentPage() {
         onCancel={handleCancel}
         onDelete={() => setShowDeleteDialog(true)}
         onPublish={openPublishDialog}
-        onToggleStatus={handleToggleStatus}
+
         onShowVersions={() => {
               setShowVersionsDialog(true);
               loadVersions();

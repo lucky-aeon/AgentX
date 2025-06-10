@@ -5,7 +5,7 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 
-import org.xhy.domain.agent.constant.AgentType;
+
 import org.xhy.infrastructure.converter.ListStringConverter;
 import org.xhy.infrastructure.converter.MapConverter;
 import org.xhy.infrastructure.entity.BaseEntity;
@@ -60,9 +60,7 @@ public class AgentEntity extends BaseEntity {
     @TableField("enabled")
     private Boolean enabled;
 
-    /** Agent类型：1-聊天助手, 2-功能性Agent */
-    @TableField("agent_type")
-    private Integer agentType;
+
 
     /** 创建者用户ID */
     @TableField("user_id")
@@ -163,13 +161,7 @@ public class AgentEntity extends BaseEntity {
         this.enabled = enabled;
     }
 
-    public Integer getAgentType() {
-        return agentType;
-    }
 
-    public void setAgentType(Integer agentType) {
-        this.agentType = agentType;
-    }
 
     public String getUserId() {
         return userId;
@@ -180,13 +172,11 @@ public class AgentEntity extends BaseEntity {
     }
 
     /** 创建新的Agent对象 */
-    public static AgentEntity createNew(String name, String description, String avatar, Integer agentType,
-            String userId) {
+    public static AgentEntity createNew(String name, String description, String avatar, String userId) {
         AgentEntity agent = new AgentEntity();
         agent.setName(name);
         agent.setDescription(description);
         agent.setAvatar(avatar);
-        agent.setAgentType(agentType != null ? agentType : AgentType.CHAT_ASSISTANT.getCode());
         agent.setUserId(userId);
         agent.setEnabled(true); // 默认启用
         agent.setCreatedAt(LocalDateTime.now());
@@ -225,10 +215,7 @@ public class AgentEntity extends BaseEntity {
         this.deletedAt = LocalDateTime.now();
     }
 
-    /** 获取Agent类型枚举 */
-    public AgentType getAgentTypeEnum() {
-        return AgentType.fromCode(this.agentType);
-    }
+
 
     public void isEnable() {
         if (!this.enabled) {

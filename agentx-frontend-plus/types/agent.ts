@@ -37,12 +37,10 @@ export interface Agent {
   knowledgeBaseIds: string[]
   publishedVersion: string | null
   enabled: boolean // 更新为布尔值，表示启用/禁用状态
-  agentType: number
   userId: string
   createdAt: string
   updatedAt: string
   statusText?: string
-  agentTypeText?: string
   modelId?: string // 关联的模型ID
   modelName?: string // 关联的模型名称
   multiModal?: boolean // 多模态功能开关
@@ -56,11 +54,7 @@ export interface ApiResponse<T> {
   timestamp: number
 }
 
-// 助理类型枚举
-export enum AgentType {
-  CHAT = 1,
-  FUNCTIONAL = 2,
-}
+
 
 // 获取助理列表请求参数
 export interface GetAgentsParams {
@@ -73,7 +67,7 @@ export interface CreateAgentRequest {
   name: string
   avatar?: string | null
   description?: string
-  agentType: "CHAT_ASSISTANT" | "FUNCTIONAL_AGENT"
+
   systemPrompt?: string
   welcomeMessage?: string
   modelConfig: ModelConfig
@@ -109,7 +103,7 @@ export interface UpdateAgentRequest {
     }
   } // 工具预设参数
   knowledgeBaseIds?: string[]
-  agentType?: number
+
   enabled?: boolean
   multiModal?: boolean // 多模态功能开关
 }
@@ -161,7 +155,6 @@ export interface AgentVersion {
   } // 工具预设参数
   knowledgeBaseIds: string[]
   changeLog: string
-  agentType: number
   publishStatus: number // 1-审核中, 2-已发布, 3-拒绝, 4-已下架
   rejectReason: string | null
   reviewTime: string
@@ -170,7 +163,6 @@ export interface AgentVersion {
   createdAt: string
   updatedAt: string
   deletedAt: string | null
-  agentTypeText?: string
   publishStatusText?: string
   published?: boolean
   rejected?: boolean

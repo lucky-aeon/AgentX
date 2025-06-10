@@ -24,7 +24,7 @@ interface ChatPanelProps {
   conversationId: string
   isFunctionalAgent?: boolean
   agentName?: string
-  agentType?: number // 新增：助理类型，2表示功能性Agent
+
   onToggleScheduledTaskPanel?: () => void // 新增：切换定时任务面板的回调
   multiModal?: boolean // 新增：是否启用多模态功能
 }
@@ -61,7 +61,7 @@ type MessageTypeValue =
   | "TEXT" 
   | "TOOL_CALL";
 
-export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName = "AI助手", agentType = 1, onToggleScheduledTaskPanel, multiModal = false }: ChatPanelProps) {
+export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName = "AI助手", onToggleScheduledTaskPanel, multiModal = false }: ChatPanelProps) {
   const [input, setInput] = useState("")
   const [messages, setMessages] = useState<MessageInterface[]>([])
   const [isTyping, setIsTyping] = useState(false)
@@ -216,7 +216,7 @@ export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName
     if (!input.trim() && uploadedFiles.length === 0) return
 
     // 添加调试信息
-    console.log("当前聊天模式:", agentType === 2 ? "功能性Agent" : "普通对话")
+    console.log("当前聊天模式:", isFunctionalAgent ? "功能性Agent" : "普通对话")
     
     // 获取已完成上传的文件URL
     const completedFiles = uploadedFiles.filter(file => file.url && file.uploadProgress === 100)

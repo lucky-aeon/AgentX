@@ -10,7 +10,7 @@ import org.xhy.application.conversation.dto.MessageDTO;
 import org.xhy.application.conversation.service.message.AbstractMessageHandler;
 import org.xhy.application.conversation.service.message.preview.PreviewMessageHandler;
 import org.xhy.application.user.service.UserSettingsAppService;
-import org.xhy.domain.agent.constant.AgentType;
+
 import org.xhy.domain.agent.model.AgentEntity;
 import org.xhy.domain.agent.model.AgentVersionEntity;
 import org.xhy.domain.agent.model.AgentWorkspaceEntity;
@@ -374,7 +374,7 @@ public class ConversationAppService {
         virtualAgent.setSystemPrompt(previewRequest.getSystemPrompt());
         virtualAgent.setToolIds(previewRequest.getToolIds());
         virtualAgent.setToolPresetParams(previewRequest.getToolPresetParams());
-        virtualAgent.setAgentType(AgentType.CHAT_ASSISTANT.getCode());
+
         virtualAgent.setEnabled(true);
         virtualAgent.setCreatedAt(LocalDateTime.now());
         virtualAgent.setUpdatedAt(LocalDateTime.now());

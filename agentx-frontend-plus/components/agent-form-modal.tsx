@@ -36,7 +36,6 @@ interface AgentFormModalProps {
   // 编辑模式特有的操作
   onDelete?: () => void
   onPublish?: () => void
-  onToggleStatus?: () => void
   onShowVersions?: () => void
   
   // 加载状态
@@ -56,7 +55,6 @@ export default function AgentFormModal({
   onCancel,
   onDelete,
   onPublish,
-  onToggleStatus,
   onShowVersions,
   isSubmitting: externalIsSubmitting = false,
   children,
@@ -98,7 +96,22 @@ export default function AgentFormModal({
 
   // 处理提交
   const handleSubmit = async () => {
+    // 前端校验
     if (!formData.name.trim()) {
+      toast({
+        title: "请输入助理名称",
+        description: "助理名称是必填项",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (!formData.description?.trim()) {
+      toast({
+        title: "请输入助理描述",
+        description: "助理描述是必填项",
+        variant: "destructive",
+      })
       return
     }
     
@@ -175,11 +188,7 @@ export default function AgentFormModal({
                       发布版本
                     </Button>
                   )}
-                  {onToggleStatus && (
-                    <Button variant="outline" size="sm" onClick={onToggleStatus}>
-                      {formData.enabled ? "禁用" : "启用"}
-                    </Button>
-                  )}
+
                   {onDelete && (
                     <Button variant="destructive" size="sm" onClick={onDelete}>
                       删除
