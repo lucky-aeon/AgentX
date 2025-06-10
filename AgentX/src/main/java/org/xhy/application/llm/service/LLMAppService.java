@@ -189,9 +189,11 @@ public class LLMAppService {
      * @param modelType 模型类型（可选）
      * @return 模型列表 */
     public List<ModelDTO> getActiveModelsByType(ProviderType providerType, String userId, ModelType modelType) {
-        return llmDomainService.getProvidersByType(providerType, userId).stream().filter(ProviderAggregate::getStatus)
-                .flatMap(provider -> provider.getModels().stream())
-                .filter(model -> modelType == null || model.getType() == modelType).map(ModelAssembler::toDTO)
+        return llmDomainService.getProvidersByType(providerType, userId).stream()
+                .filter(ProviderAggregate::getStatus)
+                .flatMap(provider -> provider.getModels().stream()
+                        .filter(model -> modelType == null || model.getType() == modelType)
+                        .map(model -> ModelAssembler.toDTO(model, provider.getName())))
                 .collect(Collectors.toList());
     }
 

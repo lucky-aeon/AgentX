@@ -17,13 +17,19 @@ import {
   type UserSettings,
   type UserSettingsConfig, 
   type UserSettingsUpdateRequest, 
-  type Model 
+  type Model,
+  type FallbackConfig 
 } from "@/lib/user-settings-service"
+import { FallbackConfigComponent } from "@/components/settings/fallback-config"
 
 export default function GeneralSettingsPage() {
   const [settings, setSettings] = useState<UserSettings>({
     settingConfig: {
-      defaultModel: null
+      defaultModel: null,
+      fallbackConfig: {
+        enabled: false,
+        fallbackChain: []
+      }
     }
   })
   const [models, setModels] = useState<Model[]>([])
@@ -39,7 +45,16 @@ export default function GeneralSettingsPage() {
         const response = await getUserSettingsWithToast()
         
         if (response.code === 200 && response.data) {
-          setSettings(response.data)
+          setSettings({
+            ...response.data,
+            settingConfig: {
+              ...response.data.settingConfig,
+              fallbackConfig: response.data.settingConfig.fallbackConfig || {
+                enabled: false,
+                fallbackChain: []
+              }
+            }
+          })
         }
       } catch (error) {
         console.error("获取用户设置失败:", error)
@@ -85,6 +100,16 @@ export default function GeneralSettingsPage() {
     }))
   }
 
+  const handleFallbackConfigChange = (fallbackConfig: FallbackConfig) => {
+    setSettings(prev => ({
+      ...prev,
+      settingConfig: {
+        ...prev.settingConfig,
+        fallbackConfig
+      }
+    }))
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
@@ -101,7 +126,8 @@ export default function GeneralSettingsPage() {
       
       const updateData: UserSettingsUpdateRequest = {
         settingConfig: {
-          defaultModel: settings.settingConfig.defaultModel
+          defaultModel: settings.settingConfig.defaultModel,
+          fallbackConfig: settings.settingConfig.fallbackConfig
         }
       }
       
@@ -120,84 +146,98 @@ export default function GeneralSettingsPage() {
     }
   }
 
-  // 渲染加载状态
-  if (loading || modelsLoading) {
+  if (loading) {
     return (
-      <div className="container max-w-2xl py-6">
-        <div className="mb-6">
-          <Skeleton className="h-10 w-64 mb-2" />
-          <Skeleton className="h-4 w-40" />
+      <div className="container mx-auto py-6 space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold">通用设置</h1>
+          <p className="text-muted-foreground">管理您的账户偏好设置</p>
         </div>
+        
         <Card>
           <CardHeader>
-            <Skeleton className="h-6 w-32 mb-2" />
-            <Skeleton className="h-4 w-56" />
+            <Skeleton className="h-6 w-32" />
+            <Skeleton className="h-4 w-64" />
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="space-y-2">
-              <Skeleton className="h-4 w-20" />
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-3 w-48" />
-            </div>
+          <CardContent>
+            <Skeleton className="h-10 w-full" />
           </CardContent>
-          <CardFooter>
-            <Skeleton className="h-10 w-24" />
-          </CardFooter>
         </Card>
       </div>
     )
   }
 
   return (
-    <div className="container max-w-2xl py-6">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold tracking-tight">通用设置</h1>
-        <p className="text-muted-foreground">配置您的默认选项和偏好</p>
+    <div className="container mx-auto py-6 space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold">通用设置</h1>
+        <p className="text-muted-foreground">管理您的账户偏好设置</p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>默认模型设置</CardTitle>
-          <CardDescription>设置系统在创建Agent和生成内容时使用的默认模型</CardDescription>
-        </CardHeader>
-        <form onSubmit={handleSubmit}>
-          <CardContent className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* 默认模型设置 */}
+        <Card>
+          <CardHeader>
+            <CardTitle>默认模型</CardTitle>
+            <CardDescription>
+              选择您的默认AI模型，这将作为新对话的默认选择
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
             <div className="space-y-2">
-              <Label htmlFor="defaultModel">默认模型</Label>
-              <Select
-                value={settings.settingConfig.defaultModel || ""}
-                onValueChange={handleDefaultModelChange}
-              >
-                <SelectTrigger className="w-full max-w-md">
-                  <SelectValue placeholder="请选择默认模型" />
-                </SelectTrigger>
-                <SelectContent className="max-w-md">
-                  {models.map((model) => (
-                    <SelectItem key={model.id} value={model.id} className="cursor-pointer">
-                      <div className="flex items-center justify-between w-full">
-                        <span className="font-medium text-sm">{model.name}</span>
-                        {model.isOfficial && (
-                          <Badge variant="secondary" className="ml-2 text-xs">
-                            官方
-                          </Badge>
-                        )}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                此模型将用于生成Agent系统提示词、代码补全等功能
-              </p>
+              <Label htmlFor="default-model">默认模型</Label>
+              {modelsLoading ? (
+                <Skeleton className="h-10 w-full" />
+              ) : (
+                <Select 
+                  value={settings.settingConfig.defaultModel || ""} 
+                  onValueChange={handleDefaultModelChange}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="选择默认模型" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {models.map((model) => (
+                      <SelectItem key={model.id} value={model.id}>
+                        <div className="flex items-center gap-2">
+                          <span>{model.name}</span>
+                          {model.providerName && (
+                            <Badge variant="secondary" className="text-xs">
+                              {model.providerName}
+                            </Badge>
+                          )}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
           </CardContent>
-          <CardFooter>
-            <Button type="submit" disabled={submitting || !settings.settingConfig.defaultModel}>
+        </Card>
+
+        {/* 降级配置 */}
+        {!modelsLoading && (
+          <FallbackConfigComponent
+            fallbackConfig={settings.settingConfig.fallbackConfig || { enabled: false, fallbackChain: [] }}
+            models={models}
+            onConfigChange={handleFallbackConfigChange}
+          />
+        )}
+
+        {/* 保存按钮 */}
+        <Card>
+          <CardFooter className="pt-6">
+            <Button 
+              type="submit" 
+              disabled={submitting || !settings.settingConfig.defaultModel}
+              className="w-full"
+            >
               {submitting ? "保存中..." : "保存设置"}
             </Button>
           </CardFooter>
-        </form>
-      </Card>
+        </Card>
+      </form>
     </div>
   )
 } 

@@ -37,6 +37,15 @@ public class ModelAssembler {
         return dto;
     }
 
+    /** 将领域对象转换为DTO，并设置服务商名称 */
+    public static ModelDTO toDTO(ModelEntity model, String providerName) {
+        ModelDTO dto = toDTO(model);
+        if (dto != null) {
+            dto.setProviderName(providerName);
+        }
+        return dto;
+    }
+
     /** 将多个领域对象转换为DTO列表 */
     public static List<ModelDTO> toDTOs(List<ModelEntity> models) {
         if (models == null || models.isEmpty()) {

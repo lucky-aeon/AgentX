@@ -1,5 +1,7 @@
 package org.xhy.infrastructure.highavailability.dto.request;
 
+import java.util.List;
+
 /** 选择API实例请求
  * 
  * @author xhy
@@ -21,6 +23,9 @@ public class SelectInstanceRequest {
     /** 亲和性类型，可选
      * 定义亲和性的类型，例如：SESSION、USER、BATCH、REGION等 */
     private String affinityType;
+
+    /** 降级链，按优先级排序的模型ID列表 */
+    private List<String> fallbackChain;
 
     public SelectInstanceRequest() {
     }
@@ -77,5 +82,13 @@ public class SelectInstanceRequest {
 
     public void setAffinityType(String affinityType) {
         this.affinityType = affinityType;
+    }
+
+    public List<String> getFallbackChain() {
+        return fallbackChain;
+    }
+
+    public void setFallbackChain(List<String> fallbackChain) {
+        this.fallbackChain = fallbackChain;
     }
 }
