@@ -20,7 +20,7 @@ export interface AgentFormData {
     }
   }
   enabled: boolean
-  agentType: number
+
   multiModal: boolean
 }
 
@@ -59,7 +59,7 @@ export function useAgentForm({ initialData, isEditMode = false }: UseAgentFormPr
     knowledgeBaseIds: [],
     toolPresetParams: {},
     enabled: true,
-    agentType: 1, // 统一使用agent类型
+
     multiModal: false, // 默认关闭多模态
     ...initialData,
   })

@@ -1,7 +1,7 @@
 import { useState, useRef } from "react"
 import type { AgentTool } from "@/types/agent"
 
-type AgentType = "chat" | "agent"
+
 
 interface AgentFormData {
   name: string
@@ -19,11 +19,11 @@ interface AgentFormData {
     }
   }
   enabled: boolean
-  agentType: number
+
 }
 
 export function useAgentEdit() {
-  const [selectedType, setSelectedType] = useState<AgentType>("chat")
+  const [selectedType, setSelectedType] = useState("chat")
   const [activeTab, setActiveTab] = useState("basic")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
@@ -48,7 +48,7 @@ export function useAgentEdit() {
     knowledgeBaseIds: [],
     toolPresetParams: {},
     enabled: true,
-    agentType: 1,
+
   })
 
   // 更新表单字段
@@ -106,4 +106,4 @@ export function useAgentEdit() {
   }
 }
 
-export type { AgentType, AgentFormData } 
+export type { AgentFormData } 

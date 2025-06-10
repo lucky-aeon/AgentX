@@ -85,11 +85,11 @@ export function useAgentOperations() {
           knowledgeBaseIds: agent.knowledgeBaseIds || [],
           toolPresetParams: agent.toolPresetParams || {},
           enabled: agent.enabled,
-          agentType: agent.agentType,
+
         })
 
-        // 设置助理类型
-        setSelectedType(agent.agentType === 1 ? "chat" : "agent")
+        // 设置助理类型为默认值
+        setSelectedType("chat")
       } else {
         toast({
           title: "获取助理详情失败",
@@ -190,7 +190,7 @@ export function useAgentOperations() {
         knowledgeBaseIds: formData.knowledgeBaseIds,
         toolPresetParams: formData.toolPresetParams,
         enabled: formData.enabled,
-        agentType: formData.agentType,
+
       }
 
       // 调用API更新助理
@@ -318,9 +318,9 @@ export function useAgentOperations() {
         knowledgeBaseIds: version.knowledgeBaseIds || [],
         toolPresetParams: version.toolPresetParams || {},
         enabled: formData.enabled,
-        agentType: version.agentType,
+
       })
-      setSelectedType(version.agentType === 1 ? "chat" : "agent")
+      setSelectedType("chat")
 
       toast({
         title: "回滚成功",

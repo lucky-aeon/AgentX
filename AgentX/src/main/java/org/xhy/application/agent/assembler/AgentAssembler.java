@@ -2,7 +2,7 @@ package org.xhy.application.agent.assembler;
 
 import org.springframework.beans.BeanUtils;
 import org.xhy.domain.agent.model.AgentEntity;
-import org.xhy.domain.agent.constant.AgentType;
+
 import org.xhy.application.agent.dto.AgentDTO;
 import org.xhy.interfaces.dto.agent.request.CreateAgentRequest;
 import org.xhy.interfaces.dto.agent.request.SearchAgentsRequest;
@@ -26,9 +26,7 @@ public class AgentAssembler {
         entity.setSystemPrompt(request.getSystemPrompt());
         entity.setWelcomeMessage(request.getWelcomeMessage());
 
-        // 设置Agent类型，默认为聊天助手类型
-        AgentType agentType = request.getAgentType();
-        entity.setAgentType(agentType.getCode());
+
         entity.setUserId(userId);
 
         // 设置初始状态为启用

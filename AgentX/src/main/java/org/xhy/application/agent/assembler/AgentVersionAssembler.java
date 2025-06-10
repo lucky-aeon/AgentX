@@ -44,7 +44,7 @@ public class AgentVersionAssembler {
         dto.setToolIds(entity.getToolIds());
         dto.setKnowledgeBaseIds(entity.getKnowledgeBaseIds());
         dto.setChangeLog(entity.getChangeLog());
-        dto.setAgentType(entity.getAgentType());
+
         dto.setPublishedAt(entity.getPublishedAt());
         dto.setPublishStatus(entity.getPublishStatus());
 

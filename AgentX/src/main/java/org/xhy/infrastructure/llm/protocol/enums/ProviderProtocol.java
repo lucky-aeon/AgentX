@@ -1,10 +1,9 @@
 package org.xhy.infrastructure.llm.protocol.enums;
 
-import org.xhy.infrastructure.exception.BusinessException;
-
 public enum ProviderProtocol {
 
-    OpenAI, ANTHROPIC;
+    OPENAI, ANTHROPIC;
+
 
     public static ProviderProtocol fromCode(String code) {
         for (ProviderProtocol protocol : values()) {
@@ -12,6 +11,6 @@ public enum ProviderProtocol {
                 return protocol;
             }
         }
-        throw new BusinessException("Unknown model type code: " + code);
+        throw new IllegalArgumentException("Unknown model type code: " + code);
     }
 }

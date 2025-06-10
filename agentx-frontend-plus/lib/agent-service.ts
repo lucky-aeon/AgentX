@@ -124,8 +124,6 @@ export async function updateAgent(agentId: string, agentData: Partial<UpdateAgen
     // 确保请求数据中包含必要字段
     const requestData = {
       ...agentData,
-      // 确保agentType字段存在，这样后端才能正确计算statusText
-      agentType: agentData.agentType || 1
     };
     
     const response = await httpClient.put<ApiResponse<Agent>>(API_ENDPOINTS.UPDATE_AGENT(agentId), requestData);

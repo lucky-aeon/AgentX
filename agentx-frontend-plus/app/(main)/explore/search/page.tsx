@@ -68,13 +68,8 @@ export default function SearchPage() {
     fetchAgents()
   }, [debouncedQuery])
 
-  // 根据类型过滤助理
-  const filteredAgents = agents.filter((agent) => {
-    if (activeTab === "all") return true
-    if (activeTab === "chat") return agent.agentType === 1
-    if (activeTab === "functional") return agent.agentType === 2
-    return true
-  })
+  // 根据类型过滤助理 - 简化为显示所有助理
+  const filteredAgents = agents.filter(() => true)
 
   // 清除搜索
   const clearSearch = () => {
@@ -120,24 +115,10 @@ export default function SearchPage() {
           </Button>
         </div>
 
-        {/* 分类标签页 */}
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList>
-            <TabsTrigger value="all">全部</TabsTrigger>
-            <TabsTrigger value="chat">聊天助理</TabsTrigger>
-            <TabsTrigger value="functional">功能性助理</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="all" className="mt-6">
-            {renderAgentList(filteredAgents, loading, error)}
-          </TabsContent>
-          <TabsContent value="chat" className="mt-6">
-            {renderAgentList(filteredAgents, loading, error)}
-          </TabsContent>
-          <TabsContent value="functional" className="mt-6">
-            {renderAgentList(filteredAgents, loading, error)}
-          </TabsContent>
-        </Tabs>
+        {/* 助理列表 */}
+        <div className="mt-6">
+          {renderAgentList(filteredAgents, loading, error)}
+        </div>
       </div>
     </div>
   )
@@ -217,7 +198,7 @@ function renderAgentList(agents: AgentVersion[], loading: boolean, error: string
                   <CardTitle className="text-base">{agent.name}</CardTitle>
                   <div className="flex items-center gap-1 mt-1">
                     <Badge variant="outline" className="text-[10px]">
-                      {agent.agentType === 1 ? "聊天助理" : "功能性助理"}
+                      助理
                     </Badge>
                     <Badge variant="outline" className="text-[10px]">
                       v{agent.versionNumber}
@@ -225,11 +206,7 @@ function renderAgentList(agents: AgentVersion[], loading: boolean, error: string
                   </div>
                 </div>
               </div>
-              {agent.agentType === 1 ? (
-                <MessageCircle className="h-4 w-4 text-blue-500" />
-              ) : (
-                <Zap className="h-4 w-4 text-purple-500" />
-              )}
+              <MessageCircle className="h-4 w-4 text-blue-500" />
             </div>
           </CardHeader>
           <CardContent>
@@ -241,17 +218,8 @@ function renderAgentList(agents: AgentVersion[], loading: boolean, error: string
             </Button>
             <Button size="sm" asChild>
               <Link href={`/explore/chat/${agent.agentId}`}>
-                {agent.agentType === 1 ? (
-                  <>
-                    <MessageCircle className="mr-2 h-4 w-4" />
-                    开始对话
-                  </>
-                ) : (
-                  <>
-                    <Zap className="mr-2 h-4 w-4" />
-                    使用
-                  </>
-                )}
+                <MessageCircle className="mr-2 h-4 w-4" />
+                开始对话
               </Link>
             </Button>
           </CardFooter>

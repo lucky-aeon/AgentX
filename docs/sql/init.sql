@@ -53,7 +53,6 @@ CREATE TABLE agents (
     tool_ids JSONB,
     published_version VARCHAR(36),
     enabled BOOLEAN DEFAULT TRUE,
-    agent_type INTEGER DEFAULT 1,
     user_id VARCHAR(36) NOT NULL,
     tool_preset_params JSONB,
     multi_modal BOOLEAN DEFAULT FALSE,
@@ -75,7 +74,6 @@ CREATE TABLE agent_versions (
     tool_ids JSONB,
     knowledge_base_ids JSONB,
     change_log TEXT,
-    agent_type INTEGER DEFAULT 1,
     publish_status INTEGER DEFAULT 1,
     reject_reason TEXT,
     review_time TIMESTAMP,
@@ -335,7 +333,6 @@ COMMENT ON COLUMN agents.system_prompt IS 'Agent系统提示词';
 COMMENT ON COLUMN agents.welcome_message IS '欢迎消息';
 COMMENT ON COLUMN agents.published_version IS '当前发布的版本ID';
 COMMENT ON COLUMN agents.enabled IS 'Agent状态：TRUE-启用，FALSE-禁用';
-COMMENT ON COLUMN agents.agent_type IS 'Agent类型：1-聊天助手, 2-功能性Agent';
 COMMENT ON COLUMN agents.user_id IS '创建者用户ID';
 COMMENT ON COLUMN agents.created_at IS '创建时间';
 COMMENT ON COLUMN agents.updated_at IS '更新时间';
@@ -353,7 +350,6 @@ COMMENT ON COLUMN agent_versions.welcome_message IS '欢迎消息';
 COMMENT ON COLUMN agent_versions.tools IS 'Agent可使用的工具列表，JSON数组格式';
 COMMENT ON COLUMN agent_versions.knowledge_base_ids IS '关联的知识库ID列表，JSON数组格式';
 COMMENT ON COLUMN agent_versions.change_log IS '版本更新日志';
-COMMENT ON COLUMN agent_versions.agent_type IS 'Agent类型：1-聊天助手, 2-功能性Agent';
 COMMENT ON COLUMN agent_versions.publish_status IS '发布状态：1-审核中, 2-已发布, 3-拒绝, 4-已下架';
 COMMENT ON COLUMN agent_versions.reject_reason IS '审核拒绝原因';
 COMMENT ON COLUMN agent_versions.review_time IS '审核时间';

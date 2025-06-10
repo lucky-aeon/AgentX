@@ -31,7 +31,7 @@ import {
 // 导入模型选择对话框组件
 import { ModelSelectDialog } from "@/components/model-select-dialog"
 import { ScheduledTaskPanel } from "@/components/scheduled-task-panel"
-import { AgentType } from "@/types/agent"
+
 import { Metadata } from "next"
 import { redirect } from "next/navigation"
 
@@ -170,8 +170,8 @@ export default function WorkspacePage() {
   // 获取当前选中的Agent信息
   const currentAgent = agents.find(agent => agent.id === selectedWorkspaceId)
   
-  // 判断当前Agent是否为功能性Agent (agentType = 2)
-  const isFunctionalAgent = currentAgent?.agentType === AgentType.FUNCTIONAL
+  // 简化判断 - 默认为普通对话模式
+  const isFunctionalAgent = false
   
   // 获取当前会话的多模态设置
   const multiModal = currentSession?.multiModal || false

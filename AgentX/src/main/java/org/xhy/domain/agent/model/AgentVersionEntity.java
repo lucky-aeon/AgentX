@@ -63,9 +63,7 @@ public class AgentVersionEntity extends BaseEntity {
     @TableField("change_log")
     private String changeLog;
 
-    /** Agent类型：1-聊天助手, 2-功能性Agent */
-    @TableField("agent_type")
-    private Integer agentType;
+
 
     /** 发布状态：1-审核中, 2-已发布, 3-拒绝, 4-已下架 */
     @TableField("publish_status")
@@ -166,13 +164,7 @@ public class AgentVersionEntity extends BaseEntity {
         this.changeLog = changeLog;
     }
 
-    public Integer getAgentType() {
-        return agentType;
-    }
 
-    public void setAgentType(Integer agentType) {
-        this.agentType = agentType;
-    }
 
     public Integer getPublishStatus() {
         return publishStatus;
@@ -268,7 +260,6 @@ public class AgentVersionEntity extends BaseEntity {
         version.setToolIds(agent.getToolIds());
         version.setKnowledgeBaseIds(agent.getKnowledgeBaseIds());
         version.setChangeLog(changeLog);
-        version.setAgentType(agent.getAgentType());
         version.setUserId(agent.getUserId());
 
         // 创建时间和发布时间应该相同

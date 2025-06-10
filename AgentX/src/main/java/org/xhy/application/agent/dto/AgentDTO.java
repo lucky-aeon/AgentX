@@ -1,6 +1,6 @@
 package org.xhy.application.agent.dto;
 
-import org.xhy.domain.agent.constant.AgentType;
+
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -40,8 +40,7 @@ public class AgentDTO {
     /** Agent状态：true-启用，false-禁用 */
     private Boolean enabled = Boolean.TRUE;
 
-    /** Agent类型：1-聊天助手, 2-功能性Agent */
-    private Integer agentType;
+
 
     /** 创建者用户ID */
     private String userId;
@@ -144,13 +143,7 @@ public class AgentDTO {
         this.enabled = enabled;
     }
 
-    public Integer getAgentType() {
-        return agentType;
-    }
 
-    public void setAgentType(Integer agentType) {
-        this.agentType = agentType;
-    }
 
     public String getUserId() {
         return userId;
@@ -176,10 +169,7 @@ public class AgentDTO {
         this.updatedAt = updatedAt;
     }
 
-    /** 获取类型文本描述 */
-    public String getAgentTypeText() {
-        return AgentType.fromCode(agentType).getDescription();
-    }
+
 
     public void setToolPresetParams(Map<String, Map<String, Map<String, String>>> toolPresetParams) {
         this.toolPresetParams = toolPresetParams;

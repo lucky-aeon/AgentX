@@ -25,12 +25,7 @@ public class MessageHandlerFactory {
      * @param agent 智能体实体
      * @return 消息处理器 */
     public AbstractMessageHandler getHandler(AgentEntity agent) {
-        if (agent.getAgentType() == 1) {
-            return getHandlerByType(MessageHandlerType.STANDARD);
-
-        } else if (agent.getAgentType() == 2) {
-            return getHandlerByType(MessageHandlerType.AGENT);
-        }
+        // 统一使用标准消息处理器
         return getHandlerByType(MessageHandlerType.STANDARD);
     }
 

@@ -29,7 +29,7 @@ export default function CreateAgentPage() {
         name: formData.name,
         avatar: formData.avatar,
         description: formData.description || "",
-        agentType: "FUNCTIONAL_AGENT" as "CHAT_ASSISTANT" | "FUNCTIONAL_AGENT", // 统一使用FUNCTIONAL_AGENT
+
         systemPrompt: formData.systemPrompt,
         welcomeMessage: formData.welcomeMessage,
         modelConfig: {

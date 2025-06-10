@@ -91,10 +91,9 @@ export default function ExplorePage() {
   const getFilteredAgents = (tab: string) => {
     if (tab === "推荐") return agents
 
-    // 将标签名称映射到 agentType 或其他属性
+    // 简化过滤逻辑，所有助理都显示在"助手"标签下
     return agents.filter((agent) => {
-      if (tab === "Agent" && agent.agentType === 2) return true
-      if (tab === "助手" && agent.agentType === 1) return true
+      if (tab === "助手") return true
       // 其他标签可以根据需要添加更多过滤条件
       return false
     })
