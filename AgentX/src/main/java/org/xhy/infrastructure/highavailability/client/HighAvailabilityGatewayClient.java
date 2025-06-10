@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 import org.xhy.infrastructure.config.HighAvailabilityProperties;
 import org.xhy.infrastructure.exception.BusinessException;
 import org.xhy.infrastructure.highavailability.dto.request.ApiInstanceBatchCreateRequest;
+import org.xhy.infrastructure.highavailability.dto.request.ApiInstanceBatchDeleteRequest;
 import org.xhy.infrastructure.highavailability.dto.request.ApiInstanceCreateRequest;
 import org.xhy.infrastructure.highavailability.dto.request.ApiInstanceUpdateRequest;
 import org.xhy.infrastructure.highavailability.dto.request.ProjectCreateRequest;
@@ -22,6 +23,8 @@ import org.xhy.infrastructure.highavailability.dto.request.SelectInstanceRequest
 import org.xhy.infrastructure.highavailability.dto.response.ApiInstanceDTO;
 import org.xhy.infrastructure.highavailability.dto.response.GatewayResult;
 import org.xhy.infrastructure.utils.JsonUtils;
+import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
+import java.net.URI;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -293,8 +296,6 @@ public class HighAvailabilityGatewayClient {
         }
     }
 
-
-
     /**
      * 创建项目
      */
@@ -359,6 +360,48 @@ public class HighAvailabilityGatewayClient {
         } catch (Exception e) {
             logger.error("批量创建API实例失败", e);
             throw new BusinessException("批量创建API实例失败", e);
+        }
+    }
+
+    /**
+     * 批量删除API实例
+     */
+    public void batchDeleteApiInstances(List<ApiInstanceBatchDeleteRequest.ApiInstanceDeleteItem> instances) {
+        if (!properties.isEnabled()) {
+            return;
+        }
+
+        try {
+            String url = properties.getGatewayUrl() + "/instances/batch";
+            
+            // 创建支持请求体的DELETE请求
+            HttpEntityEnclosingRequestBase httpDelete = new HttpEntityEnclosingRequestBase() {
+                @Override
+                public String getMethod() {
+                    return "DELETE";
+                }
+            };
+            httpDelete.setURI(URI.create(url));
+            httpDelete.setHeader("Content-Type", "application/json");
+            httpDelete.setHeader("api-key", properties.getApiKey());
+            
+            ApiInstanceBatchDeleteRequest batchRequest = new ApiInstanceBatchDeleteRequest(instances);
+            String jsonRequest = JsonUtils.toJsonString(batchRequest);
+            httpDelete.setEntity(new StringEntity(jsonRequest, StandardCharsets.UTF_8));
+            
+            try (CloseableHttpResponse response = httpClient.execute(httpDelete)) {
+                if (response.getStatusLine().getStatusCode() != 200) {
+                    String responseBody = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
+                    logger.error("批量删除API实例失败，响应码: {}, 响应体: {}", 
+                        response.getStatusLine().getStatusCode(), responseBody);
+                } else {
+                    logger.info("批量删除API实例成功，删除数量: {}", instances.size());
+                }
+            }
+            
+        } catch (Exception e) {
+            logger.error("批量删除API实例失败", e);
+            // 删除失败不抛异常，避免影响主流程
         }
     }
 } 

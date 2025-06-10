@@ -2,10 +2,8 @@ package org.xhy.infrastructure.highavailability.service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.xhy.domain.llm.event.ModelStatusChangedEvent;
 import org.xhy.domain.llm.model.HighAvailabilityResult;
 import org.xhy.domain.llm.model.ModelEntity;
 import org.xhy.domain.llm.model.ProviderEntity;
@@ -20,6 +18,8 @@ import org.xhy.infrastructure.highavailability.dto.request.ProjectCreateRequest;
 import org.xhy.infrastructure.highavailability.dto.request.ReportResultRequest;
 import org.xhy.infrastructure.highavailability.dto.request.SelectInstanceRequest;
 import org.xhy.infrastructure.highavailability.dto.response.ApiInstanceDTO;
+import org.xhy.domain.llm.event.ModelsBatchDeletedEvent;
+import org.xhy.infrastructure.highavailability.dto.request.ApiInstanceBatchDeleteRequest;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,16 +38,14 @@ public class HighAvailabilityDomainServiceImpl implements HighAvailabilityDomain
     private final HighAvailabilityProperties properties;
     private final HighAvailabilityGatewayClient gatewayClient;
     private final LLMDomainService llmDomainService;
-    private final ApplicationEventPublisher eventPublisher;
 
     public HighAvailabilityDomainServiceImpl(HighAvailabilityProperties properties,
                                              HighAvailabilityGatewayClient gatewayClient,
-                                             LLMDomainService llmDomainService,
-                                             ApplicationEventPublisher eventPublisher) {
+                                             LLMDomainService llmDomainService
+                                           ) {
         this.properties = properties;
         this.gatewayClient = gatewayClient;
         this.llmDomainService = llmDomainService;
-        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -89,7 +87,6 @@ public class HighAvailabilityDomainServiceImpl implements HighAvailabilityDomain
 
         } catch (Exception e) {
             logger.error("从高可用网关删除模型失败: modelId={}", modelId, e);
-            // 删除失败不抛异常，避免影响主流程
         }
     }
 
@@ -114,7 +111,6 @@ public class HighAvailabilityDomainServiceImpl implements HighAvailabilityDomain
 
         } catch (Exception e) {
             logger.error("更新高可用网关中的模型失败: modelId={}", model.getId(), e);
-            // 更新失败不抛异常，避免影响主流程
         }
     }
 
@@ -175,7 +171,7 @@ public class HighAvailabilityDomainServiceImpl implements HighAvailabilityDomain
 
         try {
             ReportResultRequest request = new ReportResultRequest();
-            request.setInstanceId(instanceId); // 使用真正的实例ID
+            request.setInstanceId(instanceId);
             request.setBusinessId(modelId);
             request.setSuccess(success);
             request.setLatencyMs(latencyMs);
@@ -189,7 +185,6 @@ public class HighAvailabilityDomainServiceImpl implements HighAvailabilityDomain
 
         } catch (Exception e) {
             logger.error("上报调用结果失败: instanceId={}, modelId={}", instanceId, modelId, e);
-            // 上报失败不抛异常
         }
     }
 
@@ -214,7 +209,6 @@ public class HighAvailabilityDomainServiceImpl implements HighAvailabilityDomain
 
         } catch (Exception e) {
             logger.error("高可用项目初始化失败", e);
-            // 初始化失败不抛异常，允许系统继续运行
         }
     }
 
@@ -253,7 +247,6 @@ public class HighAvailabilityDomainServiceImpl implements HighAvailabilityDomain
 
         } catch (Exception e) {
             logger.error("批量同步模型到高可用网关失败", e);
-            // 批量同步失败不抛异常，允许系统继续运行
         }
     }
 
@@ -275,13 +268,41 @@ public class HighAvailabilityDomainServiceImpl implements HighAvailabilityDomain
                 logger.info("成功禁用高可用网关中的模型: modelId={}, reason={}", model.getId(), reason);
             }
 
-            // 注意：这里不再发布事件，避免循环调用
-            // 事件发布应该在LLMDomainService.updateModelStatus()中进行
-
         } catch (Exception e) {
             logger.error("变更高可用网关中的模型状态失败: modelId={}, enabled={}", 
                 model.getId(), enabled, e);
-            // 状态变更失败不抛异常，避免影响主流程
+        }
+    }
+
+    @Override
+    public void batchRemoveModelsFromGateway(List<ModelsBatchDeletedEvent.ModelDeleteItem> deleteItems, String userId) {
+        if (!properties.isEnabled()) {
+            logger.debug("高可用功能未启用，跳过批量模型删除: 用户={}, 数量={}", userId, deleteItems.size());
+            return;
+        }
+
+        if (deleteItems == null || deleteItems.isEmpty()) {
+            logger.debug("没有要删除的模型");
+            return;
+        }
+
+        try {
+            // 构建批量删除请求列表
+            List<ApiInstanceBatchDeleteRequest.ApiInstanceDeleteItem> instances = new ArrayList<>();
+            for (ModelsBatchDeletedEvent.ModelDeleteItem deleteItem : deleteItems) {
+                ApiInstanceBatchDeleteRequest.ApiInstanceDeleteItem item = 
+                    new ApiInstanceBatchDeleteRequest.ApiInstanceDeleteItem("MODEL", deleteItem.getModelId());
+                instances.add(item);
+            }
+
+            // 批量删除到高可用网关
+            gatewayClient.batchDeleteApiInstances(instances);
+            
+            logger.info("成功批量删除{}个模型从高可用网关，用户ID: {}", deleteItems.size(), userId);
+
+        } catch (Exception e) {
+            logger.error("批量删除模型从高可用网关失败，用户ID: {}, 数量: {}", userId, deleteItems.size(), e);
+            // 批量删除失败不抛异常，避免影响主流程
         }
     }
 } 
