@@ -26,10 +26,9 @@ public class PreviewMessageHandler extends AbstractMessageHandler {
 
     protected final HighAvailabilityDomainService highAvailabilityDomainService;
 
-
     public PreviewMessageHandler(LLMServiceFactory llmServiceFactory, MessageDomainService messageDomainService,
-                                 AgentToolManager agentToolManager, HighAvailabilityDomainService highAvailabilityDomainService) {
-        super(llmServiceFactory, messageDomainService,highAvailabilityDomainService);
+            AgentToolManager agentToolManager, HighAvailabilityDomainService highAvailabilityDomainService) {
+        super(llmServiceFactory, messageDomainService, highAvailabilityDomainService);
         this.agentToolManager = agentToolManager;
         this.highAvailabilityDomainService = highAvailabilityDomainService;
     }

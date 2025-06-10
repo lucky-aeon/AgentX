@@ -2,62 +2,40 @@ package org.xhy.infrastructure.highavailability.dto.response;
 
 import java.util.Map;
 
-/**
- * API实例DTO - 与网关端保持一致
+/** API实例DTO - 与网关端保持一致
  * 
  * @author xhy
- * @since 1.0.0
- */
+ * @since 1.0.0 */
 public class ApiInstanceDTO {
 
-    /**
-     * 实例ID
-     */
+    /** 实例ID */
     private String id;
 
-    /**
-     * 项目ID
-     */
+    /** 项目ID */
     private String projectId;
 
-    /**
-     * 项目名称
-     */
+    /** 项目名称 */
     private String projectName;
 
-    /**
-     * 用户ID
-     */
+    /** 用户ID */
     private String userId;
 
-    /**
-     * API标识符
-     */
+    /** API标识符 */
     private String apiIdentifier;
 
-    /**
-     * API类型
-     */
+    /** API类型 */
     private String apiType;
 
-    /**
-     * 业务ID
-     */
+    /** 业务ID */
     private String businessId;
 
-    /**
-     * 路由参数
-     */
+    /** 路由参数 */
     private Map<String, Object> routingParams;
 
-    /**
-     * 实例状态
-     */
+    /** 实例状态 */
     private String status;
 
-    /**
-     * 元数据
-     */
+    /** 元数据 */
     private Map<String, Object> metadata;
 
     public ApiInstanceDTO() {
@@ -145,17 +123,9 @@ public class ApiInstanceDTO {
 
     @Override
     public String toString() {
-        return "ApiInstanceDTO{" +
-                "id='" + id + '\'' +
-                ", projectId='" + projectId + '\'' +
-                ", projectName='" + projectName + '\'' +
-                ", userId='" + userId + '\'' +
-                ", apiIdentifier='" + apiIdentifier + '\'' +
-                ", apiType='" + apiType + '\'' +
-                ", businessId='" + businessId + '\'' +
-                ", routingParams=" + routingParams +
-                ", status='" + status + '\'' +
-                ", metadata=" + metadata +
-                '}';
+        return "ApiInstanceDTO{" + "id='" + id + '\'' + ", projectId='" + projectId + '\'' + ", projectName='"
+                + projectName + '\'' + ", userId='" + userId + '\'' + ", apiIdentifier='" + apiIdentifier + '\''
+                + ", apiType='" + apiType + '\'' + ", businessId='" + businessId + '\'' + ", routingParams="
+                + routingParams + ", status='" + status + '\'' + ", metadata=" + metadata + '}';
     }
-} 
+}

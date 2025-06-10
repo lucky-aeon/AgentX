@@ -7,13 +7,10 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
 import org.xhy.domain.llm.service.HighAvailabilityDomainService;
 
-/**
- * 高可用初始化器
- * 在应用启动时初始化高可用项目和同步模型
+/** 高可用初始化器 在应用启动时初始化高可用项目和同步模型
  * 
  * @author xhy
- * @since 1.0.0
- */
+ * @since 1.0.0 */
 @Component
 public class HighAvailabilityInitializer implements ApplicationRunner {
 
@@ -43,4 +40,4 @@ public class HighAvailabilityInitializer implements ApplicationRunner {
             // 初始化失败不阻止应用启动
         }
     }
-} 
+}

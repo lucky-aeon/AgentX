@@ -12,8 +12,9 @@ public class ChatMessageHandler extends AbstractMessageHandler {
 
     protected final HighAvailabilityDomainService highAvailabilityDomainService;
 
-    public ChatMessageHandler(LLMServiceFactory llmServiceFactory, MessageDomainService messageDomainService, HighAvailabilityDomainService highAvailabilityDomainService) {
-        super(llmServiceFactory, messageDomainService,highAvailabilityDomainService);
+    public ChatMessageHandler(LLMServiceFactory llmServiceFactory, MessageDomainService messageDomainService,
+            HighAvailabilityDomainService highAvailabilityDomainService) {
+        super(llmServiceFactory, messageDomainService, highAvailabilityDomainService);
         this.highAvailabilityDomainService = highAvailabilityDomainService;
     }
 }

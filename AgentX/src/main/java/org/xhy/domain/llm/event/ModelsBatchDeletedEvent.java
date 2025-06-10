@@ -2,22 +2,16 @@ package org.xhy.domain.llm.event;
 
 import java.util.List;
 
-/**
- * 模型批量删除事件
+/** 模型批量删除事件
  * 
  * @author xhy
- * @since 1.0.0
- */
+ * @since 1.0.0 */
 public class ModelsBatchDeletedEvent {
 
-    /**
-     * 删除项列表
-     */
+    /** 删除项列表 */
     private final List<ModelDeleteItem> deleteItems;
 
-    /**
-     * 用户ID
-     */
+    /** 用户ID */
     private final String userId;
 
     public ModelsBatchDeletedEvent(List<ModelDeleteItem> deleteItems, String userId) {
@@ -33,9 +27,7 @@ public class ModelsBatchDeletedEvent {
         return userId;
     }
 
-    /**
-     * 模型删除项
-     */
+    /** 模型删除项 */
     public static class ModelDeleteItem {
         private final String modelId;
         private final String userId;
@@ -53,4 +45,4 @@ public class ModelsBatchDeletedEvent {
             return userId;
         }
     }
-} 
+}

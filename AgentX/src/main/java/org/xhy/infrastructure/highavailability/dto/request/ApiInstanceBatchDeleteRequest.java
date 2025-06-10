@@ -2,20 +2,17 @@ package org.xhy.infrastructure.highavailability.dto.request;
 
 import java.util.List;
 
-/**
- * API实例批量删除请求
+/** API实例批量删除请求
  * 
  * @author xhy
- * @since 1.0.0
- */
+ * @since 1.0.0 */
 public class ApiInstanceBatchDeleteRequest {
 
-    /**
-     * 批量删除的API实例标识列表
-     */
+    /** 批量删除的API实例标识列表 */
     private List<ApiInstanceDeleteItem> instances;
 
-    public ApiInstanceBatchDeleteRequest() {}
+    public ApiInstanceBatchDeleteRequest() {
+    }
 
     public ApiInstanceBatchDeleteRequest(List<ApiInstanceDeleteItem> instances) {
         this.instances = instances;
@@ -29,16 +26,15 @@ public class ApiInstanceBatchDeleteRequest {
         this.instances = instances;
     }
 
-    /**
-     * API实例删除项
-     */
+    /** API实例删除项 */
     public static class ApiInstanceDeleteItem {
-        
+
         private String apiType;
-        
+
         private String businessId;
 
-        public ApiInstanceDeleteItem() {}
+        public ApiInstanceDeleteItem() {
+        }
 
         public ApiInstanceDeleteItem(String apiType, String businessId) {
             this.apiType = apiType;
@@ -61,4 +57,4 @@ public class ApiInstanceBatchDeleteRequest {
             this.businessId = businessId;
         }
     }
-} 
+}

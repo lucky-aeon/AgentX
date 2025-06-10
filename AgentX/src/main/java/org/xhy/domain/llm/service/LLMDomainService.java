@@ -36,7 +36,8 @@ public class LLMDomainService {
     private final ModelRepository modelRepository;
     private final ApplicationEventPublisher eventPublisher;
 
-    public LLMDomainService(ProviderRepository providerRepository, ModelRepository modelRepository, ApplicationEventPublisher eventPublisher) {
+    public LLMDomainService(ProviderRepository providerRepository, ModelRepository modelRepository,
+            ApplicationEventPublisher eventPublisher) {
         this.providerRepository = providerRepository;
         this.modelRepository = modelRepository;
         this.eventPublisher = eventPublisher;
@@ -207,14 +208,14 @@ public class LLMDomainService {
     @Transactional
     public void deleteProvider(String providerId, String userId, Operator operator) {
         // 删除服务商前先获取要删除的模型列表，用于发布批量删除事件
-        Wrapper<ModelEntity> modelQueryWrapper = Wrappers.<ModelEntity>lambdaQuery()
-                .eq(ModelEntity::getProviderId, providerId);
+        Wrapper<ModelEntity> modelQueryWrapper = Wrappers.<ModelEntity>lambdaQuery().eq(ModelEntity::getProviderId,
+                providerId);
         List<ModelEntity> modelsToDelete = modelRepository.selectList(modelQueryWrapper);
-        
+
         Wrapper<ProviderEntity> wrapper = Wrappers.<ProviderEntity>lambdaQuery().eq(ProviderEntity::getId, providerId)
                 .eq(operator.needCheckUserId(), ProviderEntity::getUserId, userId);
         providerRepository.checkedDelete(wrapper);
-        
+
         // 删除模型
         Wrapper<ModelEntity> modelWrapper = Wrappers.<ModelEntity>lambdaQuery().eq(ModelEntity::getProviderId,
                 providerId);
@@ -225,7 +226,7 @@ public class LLMDomainService {
             List<ModelsBatchDeletedEvent.ModelDeleteItem> deleteItems = modelsToDelete.stream()
                     .map(model -> new ModelsBatchDeletedEvent.ModelDeleteItem(model.getId(), model.getUserId()))
                     .collect(Collectors.toList());
-            
+
             eventPublisher.publishEvent(new ModelsBatchDeletedEvent(deleteItems, userId));
         }
     }
@@ -256,7 +257,7 @@ public class LLMDomainService {
      * @param model 模型信息 */
     public void createModel(ModelEntity model) {
         modelRepository.insert(model);
-        
+
         // 发布模型创建事件
         eventPublisher.publishEvent(new ModelCreatedEvent(model.getId(), model.getUserId(), model));
     }
@@ -267,7 +268,7 @@ public class LLMDomainService {
         Wrapper<ModelEntity> wrapper = Wrappers.<ModelEntity>lambdaQuery().eq(ModelEntity::getId, model.getId())
                 .eq(ModelEntity::getUserId, model.getUserId());
         modelRepository.checkedUpdate(model, wrapper);
-        
+
         // 发布模型更新事件
         eventPublisher.publishEvent(new ModelUpdatedEvent(model.getId(), model.getUserId(), model));
     }
@@ -278,7 +279,7 @@ public class LLMDomainService {
         Wrapper<ModelEntity> wrapper = Wrappers.<ModelEntity>lambdaQuery().eq(ModelEntity::getId, modelId)
                 .eq(operator.needCheckUserId(), ModelEntity::getUserId, userId);
         modelRepository.checkedDelete(wrapper);
-        
+
         // 发布模型删除事件
         eventPublisher.publishEvent(new ModelDeletedEvent(modelId, userId));
     }
@@ -291,7 +292,7 @@ public class LLMDomainService {
         ModelEntity currentModel = getModelById(modelId);
         boolean currentStatus = currentModel.getStatus();
         boolean newStatus = !currentStatus; // 状态取反
-        
+
         LambdaUpdateWrapper<ModelEntity> updateWrapper = Wrappers.lambdaUpdate(ModelEntity.class)
                 .eq(ModelEntity::getId, modelId).eq(ModelEntity::getUserId, userId).setSql("status = NOT status");
 
@@ -299,15 +300,9 @@ public class LLMDomainService {
 
         // 获取更新后的模型信息
         ModelEntity updatedModel = getModelById(modelId);
-        
+
         // 发布模型状态变更事件
-        eventPublisher.publishEvent(new ModelStatusChangedEvent(
-            modelId, 
-            userId, 
-            updatedModel, 
-            newStatus, 
-            ""
-        ));
+        eventPublisher.publishEvent(new ModelStatusChangedEvent(modelId, userId, updatedModel, newStatus, ""));
     }
 
     /** 根据类型获取服务商
@@ -355,8 +350,7 @@ public class LLMDomainService {
     /** 获取所有激活的模型
      * @return 所有激活的模型列表 */
     public List<ModelEntity> getAllActiveModels() {
-        Wrapper<ModelEntity> wrapper = Wrappers.<ModelEntity>lambdaQuery()
-                .eq(ModelEntity::getStatus, true);
+        Wrapper<ModelEntity> wrapper = Wrappers.<ModelEntity>lambdaQuery().eq(ModelEntity::getStatus, true);
         return modelRepository.selectList(wrapper);
     }
 }
