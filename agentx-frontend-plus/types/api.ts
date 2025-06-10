@@ -56,6 +56,7 @@ export interface Model {
   providerId: string;
   providerName?: string;
   type: string;
+  modelEndpoint?: string;
   contextSize: number;
   status: number;
   createdAt?: string;

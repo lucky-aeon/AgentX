@@ -11,6 +11,7 @@ import org.xhy.application.conversation.service.message.agent.AgentToolManager;
 import org.xhy.domain.conversation.constant.MessageType;
 import org.xhy.domain.conversation.model.MessageEntity;
 import org.xhy.domain.conversation.service.MessageDomainService;
+import org.xhy.domain.llm.service.HighAvailabilityDomainService;
 import org.xhy.infrastructure.llm.LLMServiceFactory;
 import org.xhy.infrastructure.transport.MessageTransport;
 
@@ -23,10 +24,14 @@ public class PreviewMessageHandler extends AbstractMessageHandler {
 
     private final AgentToolManager agentToolManager;
 
+    protected final HighAvailabilityDomainService highAvailabilityDomainService;
+
+
     public PreviewMessageHandler(LLMServiceFactory llmServiceFactory, MessageDomainService messageDomainService,
-            AgentToolManager agentToolManager) {
-        super(llmServiceFactory, messageDomainService);
+                                 AgentToolManager agentToolManager, HighAvailabilityDomainService highAvailabilityDomainService) {
+        super(llmServiceFactory, messageDomainService,highAvailabilityDomainService);
         this.agentToolManager = agentToolManager;
+        this.highAvailabilityDomainService = highAvailabilityDomainService;
     }
 
     @Override

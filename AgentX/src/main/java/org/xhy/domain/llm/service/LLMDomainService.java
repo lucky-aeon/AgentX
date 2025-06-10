@@ -4,7 +4,12 @@ import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.annotation.Transactional;
+import org.xhy.domain.llm.event.ModelCreatedEvent;
+import org.xhy.domain.llm.event.ModelDeletedEvent;
+import org.xhy.domain.llm.event.ModelStatusChangedEvent;
+import org.xhy.domain.llm.event.ModelUpdatedEvent;
 import org.xhy.domain.llm.model.ModelEntity;
 import org.xhy.domain.llm.model.ProviderAggregate;
 import org.xhy.domain.llm.model.ProviderEntity;
@@ -28,10 +33,12 @@ public class LLMDomainService {
 
     private final ProviderRepository providerRepository;
     private final ModelRepository modelRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
-    public LLMDomainService(ProviderRepository providerRepository, ModelRepository modelRepository) {
+    public LLMDomainService(ProviderRepository providerRepository, ModelRepository modelRepository, ApplicationEventPublisher eventPublisher) {
         this.providerRepository = providerRepository;
         this.modelRepository = modelRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     /** 创建服务商
@@ -233,6 +240,9 @@ public class LLMDomainService {
      * @param model 模型信息 */
     public void createModel(ModelEntity model) {
         modelRepository.insert(model);
+        
+        // 发布模型创建事件
+        eventPublisher.publishEvent(new ModelCreatedEvent(model.getId(), model.getUserId(), model));
     }
 
     /** 修改模型
@@ -241,6 +251,9 @@ public class LLMDomainService {
         Wrapper<ModelEntity> wrapper = Wrappers.<ModelEntity>lambdaQuery().eq(ModelEntity::getId, model.getId())
                 .eq(ModelEntity::getUserId, model.getUserId());
         modelRepository.checkedUpdate(model, wrapper);
+        
+        // 发布模型更新事件
+        eventPublisher.publishEvent(new ModelUpdatedEvent(model.getId(), model.getUserId(), model));
     }
 
     /** 删除模型
@@ -249,16 +262,36 @@ public class LLMDomainService {
         Wrapper<ModelEntity> wrapper = Wrappers.<ModelEntity>lambdaQuery().eq(ModelEntity::getId, modelId)
                 .eq(operator.needCheckUserId(), ModelEntity::getUserId, userId);
         modelRepository.checkedDelete(wrapper);
+        
+        // 发布模型删除事件
+        eventPublisher.publishEvent(new ModelDeletedEvent(modelId, userId));
     }
 
     /** 修改模型状态
      * @param modelId 模型id
      * @param userId 用户id */
     public void updateModelStatus(String modelId, String userId) {
+        // 先获取当前模型信息，用于判断状态变更
+        ModelEntity currentModel = getModelById(modelId);
+        boolean currentStatus = currentModel.getStatus();
+        boolean newStatus = !currentStatus; // 状态取反
+        
         LambdaUpdateWrapper<ModelEntity> updateWrapper = Wrappers.lambdaUpdate(ModelEntity.class)
                 .eq(ModelEntity::getId, modelId).eq(ModelEntity::getUserId, userId).setSql("status = NOT status");
 
         modelRepository.checkedUpdate(updateWrapper);
+
+        // 获取更新后的模型信息
+        ModelEntity updatedModel = getModelById(modelId);
+        
+        // 发布模型状态变更事件
+        eventPublisher.publishEvent(new ModelStatusChangedEvent(
+            modelId, 
+            userId, 
+            updatedModel, 
+            newStatus, 
+            ""
+        ));
     }
 
     /** 根据类型获取服务商
@@ -301,5 +334,13 @@ public class LLMDomainService {
             throw new BusinessException("模型不存在");
         }
         return modelEntity;
+    }
+
+    /** 获取所有激活的模型
+     * @return 所有激活的模型列表 */
+    public List<ModelEntity> getAllActiveModels() {
+        Wrapper<ModelEntity> wrapper = Wrappers.<ModelEntity>lambdaQuery()
+                .eq(ModelEntity::getStatus, true);
+        return modelRepository.selectList(wrapper);
     }
 }

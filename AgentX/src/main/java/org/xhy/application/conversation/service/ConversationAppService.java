@@ -29,6 +29,8 @@ import org.xhy.domain.conversation.service.MessageDomainService;
 import org.xhy.domain.conversation.service.SessionDomainService;
 import org.xhy.domain.llm.model.ModelEntity;
 import org.xhy.domain.llm.model.ProviderEntity;
+import org.xhy.domain.llm.model.HighAvailabilityResult;
+import org.xhy.domain.llm.service.HighAvailabilityDomainService;
 import org.xhy.domain.llm.service.LLMDomainService;
 import org.xhy.domain.shared.enums.TokenOverflowStrategyEnum;
 import org.xhy.domain.token.model.TokenMessage;
@@ -67,6 +69,7 @@ public class ConversationAppService {
     private final UserToolDomainService userToolDomainService;
     private final UserSettingsAppService userSettingsAppService;
     private final PreviewMessageHandler previewMessageHandler;
+    private final HighAvailabilityDomainService highAvailabilityDomainService;
 
     public ConversationAppService(ConversationDomainService conversationDomainService,
             SessionDomainService sessionDomainService, AgentDomainService agentDomainService,
@@ -74,7 +77,8 @@ public class ConversationAppService {
             ContextDomainService contextDomainService, TokenDomainService tokenDomainService,
             MessageDomainService messageDomainService, MessageHandlerFactory messageHandlerFactory,
             MessageTransportFactory transportFactory, UserToolDomainService toolDomainService,
-            UserSettingsAppService userSettingsAppService, PreviewMessageHandler previewMessageHandler) {
+            UserSettingsAppService userSettingsAppService, PreviewMessageHandler previewMessageHandler,
+            HighAvailabilityDomainService highAvailabilityDomainService) {
         this.conversationDomainService = conversationDomainService;
         this.sessionDomainService = sessionDomainService;
         this.agentDomainService = agentDomainService;
@@ -88,6 +92,7 @@ public class ConversationAppService {
         this.userToolDomainService = toolDomainService;
         this.userSettingsAppService = userSettingsAppService;
         this.previewMessageHandler = previewMessageHandler;
+        this.highAvailabilityDomainService = highAvailabilityDomainService;
     }
 
     /** 获取会话中的消息列表
@@ -168,8 +173,11 @@ public class ConversationAppService {
         ModelEntity model = llmDomainService.getModelById(modelId);
         model.isActive();
 
-        // 4. 获取服务商信息
-        ProviderEntity provider = llmDomainService.getProvider(model.getProviderId(), userId);
+        // 4. 获取服务商信息（支持高可用）
+        HighAvailabilityResult result = highAvailabilityDomainService.selectBestProvider(model, userId);
+        ProviderEntity provider = result.getProvider();
+        ModelEntity selectedModel = result.getModel(); // 可能是不同的部署名称
+        String instanceId = result.getInstanceId(); // 获取实例ID
         provider.isActive();
 
         // 5. 创建环境对象
@@ -178,11 +186,12 @@ public class ConversationAppService {
         chatContext.setUserId(userId);
         chatContext.setUserMessage(chatRequest.getMessage());
         chatContext.setAgent(agent);
-        chatContext.setModel(model);
+        chatContext.setModel(selectedModel); // 使用高可用选择的模型（可能有不同的部署名称）
         chatContext.setProvider(provider);
         chatContext.setLlmModelConfig(llmModelConfig);
         chatContext.setMcpServerNames(mcpServerNames);
         chatContext.setFileUrls(chatRequest.getFileUrls());
+        chatContext.setInstanceId(instanceId); // 设置实例ID
         // 6. 设置上下文信息和消息历史
         setupContextAndHistory(chatContext, chatRequest);
 

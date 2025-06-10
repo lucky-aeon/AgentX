@@ -24,6 +24,8 @@ public class ModelDTO {
     private String description;
     /** 模型类型 */
     private ModelType type;
+    /** 模型部署名称 */
+    private String modelEndpoint;
     /** 是否官方 */
     private Boolean isOfficial;
     /** 模型状态 */
@@ -95,6 +97,14 @@ public class ModelDTO {
 
     public void setType(ModelType type) {
         this.type = type;
+    }
+
+    public String getModelEndpoint() {
+        return modelEndpoint;
+    }
+
+    public void setModelEndpoint(String modelEndpoint) {
+        this.modelEndpoint = modelEndpoint;
     }
 
     public Boolean getIsOfficial() {

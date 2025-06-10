@@ -1,5 +1,7 @@
 package org.xhy.application.llm.assembler;
 
+import org.springframework.util.ObjectUtils;
+import org.springframework.util.StringUtils;
 import org.xhy.application.llm.dto.ModelDTO;
 import org.xhy.domain.llm.model.ModelEntity;
 import org.xhy.interfaces.dto.llm.request.ModelCreateRequest;
@@ -28,6 +30,7 @@ public class ModelAssembler {
         dto.setDescription(model.getDescription());
         dto.setType(model.getType());
         dto.setStatus(model.getStatus());
+        dto.setModelEndpoint(model.getModelEndpoint());
         dto.setCreatedAt(model.getCreatedAt());
         dto.setUpdatedAt(model.getUpdatedAt());
         dto.setIsOfficial(model.getOfficial());
@@ -52,7 +55,14 @@ public class ModelAssembler {
         model.setDescription(request.getDescription());
         model.setType(request.getType());
         model.setCreatedAt(LocalDateTime.now());
+        model.setModelEndpoint(request.getModelEndpoint());
         model.setUpdatedAt(LocalDateTime.now());
+        model.setModelEndpoint(request.getModelEndpoint());
+        if (ObjectUtils.isEmpty(request.getModelEndpoint())){
+            model.setModelEndpoint(request.getModelId());
+
+        }
+
 
         return model;
     }
@@ -63,9 +73,15 @@ public class ModelAssembler {
         model.setName(request.getName());
         model.setDescription(request.getDescription());
         model.setModelId(request.getModelId());
+        model.setModelEndpoint(request.getModelEndpoint());
         model.setCreatedAt(LocalDateTime.now());
         model.setUpdatedAt(LocalDateTime.now());
         model.setId(request.getId());
+        model.setModelEndpoint(request.getModelEndpoint());
+        if (ObjectUtils.isEmpty(request.getModelEndpoint())){
+            model.setModelEndpoint(request.getModelId());
+        }
+
 
         return model;
     }

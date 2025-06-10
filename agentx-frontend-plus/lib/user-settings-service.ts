@@ -36,6 +36,7 @@ export interface Model {
   name: string
   description?: string
   type: string
+  modelEndpoint?: string
   isOfficial: boolean
   status: boolean
   createdAt?: string

@@ -38,6 +38,7 @@ interface ModelFormData {
   name: string;
   description: string;
   type: string;
+  modelEndpoint?: string;
   config: ModelConfig;
 }
 
@@ -65,6 +66,7 @@ export function ModelDialog({
     name: "",
     description: "",
     type: "CHAT",
+    modelEndpoint: "",
     config: {
       maxContextLength: 4096
     }
@@ -105,6 +107,7 @@ export function ModelDialog({
         name: model.name || "",
         description: model.description || "",
         type: model.type || "CHAT",
+        modelEndpoint: model.modelEndpoint || "",
         config: model.config || { maxContextLength: 4096 }
       });
     } else {
@@ -115,6 +118,7 @@ export function ModelDialog({
         name: "",
         description: "",
         type: "CHAT",
+        modelEndpoint: "",
         config: {
           maxContextLength: 4096
         }
@@ -195,7 +199,7 @@ export function ModelDialog({
               name="modelId"
               value={formData.modelId}
               onChange={handleInputChange}
-              placeholder="例如：gpt-3.5-turbo"
+              placeholder="模型真正的 ID，用于高可用"
               required
             />
           </div>
@@ -242,6 +246,17 @@ export function ModelDialog({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          
+          <div className="grid gap-2">
+            <Label htmlFor="modelEndpoint">模型部署名称</Label>
+            <Input
+              id="modelEndpoint"
+              name="modelEndpoint"
+              value={formData.modelEndpoint}
+              onChange={handleInputChange}
+              placeholder="部署名称"
+            />
           </div>
        
         </div>

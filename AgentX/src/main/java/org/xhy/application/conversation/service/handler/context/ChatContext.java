@@ -53,6 +53,9 @@ public class ChatContext {
     /** 多模态的文件 */
     private List<String> fileUrls;
 
+    /** 高可用实例ID */
+    private String instanceId;
+
     public String getSessionId() {
         return sessionId;
     }
@@ -139,5 +142,13 @@ public class ChatContext {
 
     public void setFileUrls(List<String> fileUrls) {
         this.fileUrls = fileUrls;
+    }
+
+    public String getInstanceId() {
+        return instanceId;
+    }
+
+    public void setInstanceId(String instanceId) {
+        this.instanceId = instanceId;
     }
 }
