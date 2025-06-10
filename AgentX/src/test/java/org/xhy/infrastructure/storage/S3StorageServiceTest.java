@@ -16,7 +16,6 @@ import org.junit.jupiter.api.io.TempDir;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestPropertySource;
 import org.xhy.infrastructure.config.S3Properties;
-import org.xhy.infrastructure.storage.S3StorageService.UploadResult;
 
 /** S3StorageService 单元测试 测试基于阿里云OSS的S3协议文件上传功能 */
 @SpringBootTest

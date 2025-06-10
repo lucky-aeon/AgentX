@@ -23,6 +23,9 @@ public class ModelCreateRequest {
     /** 模型类型 */
     private ModelType type;
 
+    /** 模型部署名称 */
+    private String modelEndpoint;
+
     public String getProviderId() {
         return providerId;
     }
@@ -61,6 +64,14 @@ public class ModelCreateRequest {
 
     public void setType(ModelType type) {
         this.type = type;
+    }
+
+    public String getModelEndpoint() {
+        return modelEndpoint;
+    }
+
+    public void setModelEndpoint(String modelEndpoint) {
+        this.modelEndpoint = modelEndpoint;
     }
 
 }

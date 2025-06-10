@@ -15,6 +15,7 @@ import org.xhy.domain.conversation.constant.MessageType;
 import org.xhy.domain.conversation.constant.Role;
 import org.xhy.domain.conversation.model.MessageEntity;
 import org.xhy.domain.conversation.service.MessageDomainService;
+import org.xhy.domain.llm.service.HighAvailabilityDomainService;
 import org.xhy.infrastructure.llm.LLMServiceFactory;
 import org.xhy.infrastructure.transport.MessageTransport;
 
@@ -31,10 +32,12 @@ public abstract class AbstractMessageHandler {
 
     protected final LLMServiceFactory llmServiceFactory;
     protected final MessageDomainService messageDomainService;
+    protected final HighAvailabilityDomainService highAvailabilityDomainService;
 
-    public AbstractMessageHandler(LLMServiceFactory llmServiceFactory, MessageDomainService messageDomainService) {
+    public AbstractMessageHandler(LLMServiceFactory llmServiceFactory, MessageDomainService messageDomainService, HighAvailabilityDomainService highAvailabilityDomainService) {
         this.llmServiceFactory = llmServiceFactory;
         this.messageDomainService = messageDomainService;
+        this.highAvailabilityDomainService = highAvailabilityDomainService;
     }
 
     /** 处理对话的模板方法
@@ -89,10 +92,23 @@ public abstract class AbstractMessageHandler {
 
         AtomicReference<StringBuilder> messageBuilder = new AtomicReference<>(new StringBuilder());
         TokenStream tokenStream = agent.chat(chatContext.getUserMessage());
+        
+        // 记录调用开始时间
+        long startTime = System.currentTimeMillis();
 
         tokenStream.onError(throwable -> {
             transport.sendMessage(connection,
                     AgentChatResponse.buildEndMessage(throwable.getMessage(), MessageType.TEXT));
+            
+            // 上报调用失败结果
+            long latency = System.currentTimeMillis() - startTime;
+            highAvailabilityDomainService.reportCallResult(
+                chatContext.getInstanceId(),
+                chatContext.getModel().getId(),
+                false,
+                latency,
+                throwable.getMessage()
+            );
         });
 
         // 部分响应处理
@@ -116,6 +132,16 @@ public abstract class AbstractMessageHandler {
 
             // 发送结束消息
             transport.sendEndMessage(connection, AgentChatResponse.buildEndMessage(MessageType.TEXT));
+            
+            // 上报调用成功结果
+            long latency = System.currentTimeMillis() - startTime;
+            highAvailabilityDomainService.reportCallResult(
+                chatContext.getInstanceId(),
+                chatContext.getModel().getId(),
+                true,
+                latency,
+                null
+            );
         });
 
         // 错误处理

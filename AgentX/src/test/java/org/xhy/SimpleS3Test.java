@@ -6,7 +6,7 @@ import java.io.IOException;
 
 import org.xhy.infrastructure.config.S3Properties;
 import org.xhy.infrastructure.storage.S3StorageService;
-import org.xhy.infrastructure.storage.S3StorageService.UploadResult;
+import org.xhy.infrastructure.storage.UploadResult;
 
 /** 简单的S3测试类 直接测试阿里云OSS的S3协议文件上传功能 */
 public class SimpleS3Test {

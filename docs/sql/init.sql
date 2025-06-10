@@ -121,6 +121,7 @@ CREATE TABLE models (
     provider_id VARCHAR(36) NOT NULL,
     model_id VARCHAR(100) NOT NULL,
     name VARCHAR(100) NOT NULL,
+    model_endpoint VARCHAR(255) NOT NULL,
     description TEXT,
     is_official BOOLEAN DEFAULT FALSE,
     type VARCHAR(20) NOT NULL,

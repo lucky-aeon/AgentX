@@ -19,6 +19,9 @@ public class ModelUpdateRequest {
     /** 模型描述 */
     private String description;
 
+    /** 模型部署名称 */
+    private String modelEndpoint;
+
     /** 模型状态 */
     public String getId() {
         return id;
@@ -50,5 +53,13 @@ public class ModelUpdateRequest {
 
     public void setModelId(String modelId) {
         this.modelId = modelId;
+    }
+
+    public String getModelEndpoint() {
+        return modelEndpoint;
+    }
+
+    public void setModelEndpoint(String modelEndpoint) {
+        this.modelEndpoint = modelEndpoint;
     }
 }
