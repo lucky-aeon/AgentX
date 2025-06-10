@@ -1,5 +1,7 @@
 package org.xhy.application.conversation.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -9,7 +11,7 @@ import org.xhy.application.conversation.dto.ChatRequest;
 import org.xhy.application.conversation.dto.MessageDTO;
 import org.xhy.application.conversation.service.message.AbstractMessageHandler;
 import org.xhy.application.conversation.service.message.preview.PreviewMessageHandler;
-import org.xhy.application.user.service.UserSettingsAppService;
+import org.xhy.domain.user.service.UserSettingsDomainService;
 
 import org.xhy.domain.agent.model.AgentEntity;
 import org.xhy.domain.agent.model.AgentVersionEntity;
@@ -54,6 +56,8 @@ import java.util.stream.Collectors;
 @Service
 public class ConversationAppService {
 
+    private static final Logger logger = LoggerFactory.getLogger(ConversationAppService.class);
+
     private final ConversationDomainService conversationDomainService;
     private final SessionDomainService sessionDomainService;
     private final AgentDomainService agentDomainService;
@@ -67,7 +71,7 @@ public class ConversationAppService {
     private final MessageTransportFactory transportFactory;
 
     private final UserToolDomainService userToolDomainService;
-    private final UserSettingsAppService userSettingsAppService;
+    private final UserSettingsDomainService userSettingsDomainService;
     private final PreviewMessageHandler previewMessageHandler;
     private final HighAvailabilityDomainService highAvailabilityDomainService;
 
@@ -77,7 +81,7 @@ public class ConversationAppService {
             ContextDomainService contextDomainService, TokenDomainService tokenDomainService,
             MessageDomainService messageDomainService, MessageHandlerFactory messageHandlerFactory,
             MessageTransportFactory transportFactory, UserToolDomainService toolDomainService,
-            UserSettingsAppService userSettingsAppService, PreviewMessageHandler previewMessageHandler,
+            UserSettingsDomainService userSettingsDomainService, PreviewMessageHandler previewMessageHandler,
             HighAvailabilityDomainService highAvailabilityDomainService) {
         this.conversationDomainService = conversationDomainService;
         this.sessionDomainService = sessionDomainService;
@@ -90,7 +94,7 @@ public class ConversationAppService {
         this.messageHandlerFactory = messageHandlerFactory;
         this.transportFactory = transportFactory;
         this.userToolDomainService = toolDomainService;
-        this.userSettingsAppService = userSettingsAppService;
+        this.userSettingsDomainService = userSettingsDomainService;
         this.previewMessageHandler = previewMessageHandler;
         this.highAvailabilityDomainService = highAvailabilityDomainService;
     }
@@ -173,8 +177,12 @@ public class ConversationAppService {
         ModelEntity model = llmDomainService.getModelById(modelId);
         model.isActive();
 
-        // 4. 获取服务商信息（支持高可用和会话亲和性）
-        HighAvailabilityResult result = highAvailabilityDomainService.selectBestProvider(model, userId, sessionId);
+        // 4. 获取用户降级配置
+        List<String> fallbackChain = userSettingsDomainService.getUserFallbackChain(userId);
+
+
+        // 5. 获取服务商信息（支持高可用、会话亲和性和降级）
+        HighAvailabilityResult result = highAvailabilityDomainService.selectBestProvider(model, userId, sessionId, fallbackChain);
         ProviderEntity provider = result.getProvider();
         ModelEntity selectedModel = result.getModel(); // 可能是不同的部署名称
         String instanceId = result.getInstanceId(); // 获取实例ID
@@ -323,7 +331,7 @@ public class ConversationAppService {
         String modelId = previewRequest.getModelId();
         if (modelId == null || modelId.trim().isEmpty()) {
             // 使用用户默认模型
-            modelId = userSettingsAppService.getUserDefaultModelId(userId);
+            modelId = userSettingsDomainService.getUserDefaultModelId(userId);
             if (modelId == null) {
                 throw new BusinessException("用户未设置默认模型，且预览请求中未指定模型");
             }

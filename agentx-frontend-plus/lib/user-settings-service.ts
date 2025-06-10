@@ -9,9 +9,16 @@ export interface ApiResponse<T> {
   timestamp: number
 }
 
+// 降级配置类型
+export interface FallbackConfig {
+  enabled: boolean
+  fallbackChain: string[]
+}
+
 // 用户设置配置类型 - 对应后端UserSettingsConfig
 export interface UserSettingsConfig {
   defaultModel: string | null
+  fallbackConfig?: FallbackConfig
 }
 
 // 用户设置类型 - 对应后端UserSettingsDTO

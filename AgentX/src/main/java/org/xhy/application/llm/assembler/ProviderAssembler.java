@@ -113,7 +113,7 @@ public class ProviderAssembler {
             return dto;
         }
         for (ModelEntity model : models) {
-            ModelDTO modelDTO = ModelAssembler.toDTO(model);
+            ModelDTO modelDTO = ModelAssembler.toDTO(model, provider.getName());
             modelDTO.setIsOfficial(provider.getIsOfficial());
             dto.getModels().add(modelDTO);
         }

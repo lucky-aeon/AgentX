@@ -21,6 +21,8 @@ import org.xhy.infrastructure.highavailability.dto.response.ApiInstanceDTO;
 import org.xhy.domain.llm.event.ModelsBatchDeletedEvent;
 import org.xhy.infrastructure.highavailability.dto.request.ApiInstanceBatchDeleteRequest;
 import org.xhy.infrastructure.highavailability.constant.AffinityType;
+import org.xhy.domain.user.service.UserSettingsDomainService;
+import org.xhy.domain.user.model.config.FallbackConfig;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,7 +41,8 @@ public class HighAvailabilityDomainServiceImpl implements HighAvailabilityDomain
     private final LLMDomainService llmDomainService;
 
     public HighAvailabilityDomainServiceImpl(HighAvailabilityProperties properties,
-            HighAvailabilityGatewayClient gatewayClient, LLMDomainService llmDomainService) {
+            HighAvailabilityGatewayClient gatewayClient, LLMDomainService llmDomainService
+            ) {
         this.properties = properties;
         this.gatewayClient = gatewayClient;
         this.llmDomainService = llmDomainService;
@@ -111,6 +114,12 @@ public class HighAvailabilityDomainServiceImpl implements HighAvailabilityDomain
 
     @Override
     public HighAvailabilityResult selectBestProvider(ModelEntity model, String userId, String sessionId) {
+        return selectBestProvider(model, userId, sessionId, null);
+    }
+
+
+    @Override
+    public HighAvailabilityResult selectBestProvider(ModelEntity model, String userId, String sessionId, List<String> fallbackChain) {
         if (!properties.isEnabled()) {
             // 高可用未启用，使用默认逻辑
             logger.debug("高可用功能未启用，使用默认Provider选择逻辑: modelId={}", model.getId());
@@ -127,6 +136,13 @@ public class HighAvailabilityDomainServiceImpl implements HighAvailabilityDomain
                 request.setAffinityKey(sessionId);
                 request.setAffinityType(AffinityType.SESSION);
                 logger.debug("启用会话亲和性: sessionId={}, modelId={}", sessionId, model.getId());
+            }
+
+            // 设置降级链（从参数传入，而不是内部获取）
+            if (fallbackChain != null && !fallbackChain.isEmpty()) {
+                request.setFallbackChain(fallbackChain);
+                logger.debug("启用降级链: userId={}, primaryModel={}, fallbackModels={}", 
+                        userId, model.getModelId(), fallbackChain);
             }
 
             // 通过高可用网关选择最佳实例，客户端已经处理了响应解析
@@ -159,6 +175,8 @@ public class HighAvailabilityDomainServiceImpl implements HighAvailabilityDomain
             }
         }
     }
+
+
 
     @Override
     @Async
