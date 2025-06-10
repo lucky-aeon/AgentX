@@ -36,6 +36,15 @@ public interface HighAvailabilityDomainService {
      * @return 高可用选择结果（包含Provider和Model） */
     HighAvailabilityResult selectBestProvider(ModelEntity model, String userId);
 
+    /** 通过高可用网关选择最佳Provider和Model（支持会话亲和性）
+     * 如果高可用未启用或选择失败，则降级到默认逻辑
+     * 
+     * @param model 模型实体
+     * @param userId 用户ID
+     * @param sessionId 会话ID，用于会话亲和性
+     * @return 高可用选择结果（包含Provider和Model） */
+    HighAvailabilityResult selectBestProvider(ModelEntity model, String userId, String sessionId);
+
     /** 上报调用结果到高可用网关
      * 
      * @param instanceId 实例ID（从selectBestProvider返回）
