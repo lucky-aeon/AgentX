@@ -1,4 +1,4 @@
-package org.xhy.application.llm.service;
+package org.xhy.application.highavailability.listener;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,13 +17,13 @@ import org.xhy.domain.llm.service.HighAvailabilityDomainService;
  * @author xhy
  * @since 1.0.0 */
 @Component
-public class HighAvailabilityEventHandler {
+public class HighAvailabilityEventListener {
 
-    private static final Logger logger = LoggerFactory.getLogger(HighAvailabilityEventHandler.class);
+    private static final Logger logger = LoggerFactory.getLogger(HighAvailabilityEventListener.class);
 
     private final HighAvailabilityDomainService highAvailabilityDomainService;
 
-    public HighAvailabilityEventHandler(HighAvailabilityDomainService highAvailabilityDomainService) {
+    public HighAvailabilityEventListener(HighAvailabilityDomainService highAvailabilityDomainService) {
         this.highAvailabilityDomainService = highAvailabilityDomainService;
     }
 
