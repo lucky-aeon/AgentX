@@ -4,7 +4,6 @@ public enum ProviderProtocol {
 
     OPENAI, ANTHROPIC;
 
-
     public static ProviderProtocol fromCode(String code) {
         for (ProviderProtocol protocol : values()) {
             if (protocol.name().equals(code)) {

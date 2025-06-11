@@ -2,7 +2,6 @@ package org.xhy.interfaces.dto.agent.request;
 
 import jakarta.validation.constraints.NotBlank;
 
-
 import java.util.List;
 import java.util.Map;
 
@@ -47,8 +46,6 @@ public class CreateAgentRequest {
     public void setAvatar(String avatar) {
         this.avatar = avatar;
     }
-
-
 
     public String getSystemPrompt() {
         return systemPrompt;

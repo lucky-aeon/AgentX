@@ -180,9 +180,9 @@ public class ConversationAppService {
         // 4. 获取用户降级配置
         List<String> fallbackChain = userSettingsDomainService.getUserFallbackChain(userId);
 
-
         // 5. 获取服务商信息（支持高可用、会话亲和性和降级）
-        HighAvailabilityResult result = highAvailabilityDomainService.selectBestProvider(model, userId, sessionId, fallbackChain);
+        HighAvailabilityResult result = highAvailabilityDomainService.selectBestProvider(model, userId, sessionId,
+                fallbackChain);
         ProviderEntity provider = result.getProvider();
         ModelEntity selectedModel = result.getModel(); // 可能是不同的部署名称
         String instanceId = result.getInstanceId(); // 获取实例ID

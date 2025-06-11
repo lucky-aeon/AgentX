@@ -1,6 +1,5 @@
 package org.xhy.application.agent.dto;
 
-
 import org.xhy.domain.agent.constant.PublishStatus;
 
 import java.time.LocalDateTime;
@@ -42,8 +41,6 @@ public class AgentVersionDTO {
 
     /** 版本更新日志 */
     private String changeLog;
-
-
 
     /** 发布状态：1-审核中, 2-已发布, 3-拒绝, 4-已下架 */
     private Integer publishStatus;
@@ -163,8 +160,6 @@ public class AgentVersionDTO {
     public void setChangeLog(String changeLog) {
         this.changeLog = changeLog;
     }
-
-
 
     public Integer getPublishStatus() {
         return publishStatus;

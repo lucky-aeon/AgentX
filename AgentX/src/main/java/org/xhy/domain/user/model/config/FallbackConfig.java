@@ -53,4 +53,4 @@ public class FallbackConfig implements Serializable {
     public List<String> getFallbackModels() {
         return new ArrayList<>(fallbackChain);
     }
-} 
+}
