@@ -25,9 +25,11 @@ jobs:
       
       - name: 使用Spotless检查格式
         run: mvn spotless:check
+        working-directory: ./AgentX
         
       - name: 代码格式错误提示
         if: ${{ failure() }}
         run: |
           echo "::error::代码格式检查失败！请在本地运行 'mvn spotless:apply' 修复格式问题后再提交。"
+          echo "::error::请确保在 AgentX 目录下执行命令：cd AgentX && mvn spotless:apply"
           exit 1 
