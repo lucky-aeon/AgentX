@@ -1,50 +1,50 @@
-package org.xhy.infrastructure.highavailability.service;
+package org.xhy.domain.highavailability.service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.xhy.domain.highavailability.gateway.HighAvailabilityGateway;
 import org.xhy.domain.llm.model.HighAvailabilityResult;
 import org.xhy.domain.llm.model.ModelEntity;
 import org.xhy.domain.llm.model.ProviderEntity;
 import org.xhy.domain.llm.service.HighAvailabilityDomainService;
 import org.xhy.domain.llm.service.LLMDomainService;
+import org.xhy.domain.llm.event.ModelsBatchDeletedEvent;
 import org.xhy.infrastructure.config.HighAvailabilityProperties;
 import org.xhy.infrastructure.exception.BusinessException;
-import org.xhy.infrastructure.highavailability.client.HighAvailabilityGatewayClient;
 import org.xhy.infrastructure.highavailability.dto.request.ApiInstanceCreateRequest;
 import org.xhy.infrastructure.highavailability.dto.request.ApiInstanceUpdateRequest;
 import org.xhy.infrastructure.highavailability.dto.request.ProjectCreateRequest;
 import org.xhy.infrastructure.highavailability.dto.request.ReportResultRequest;
 import org.xhy.infrastructure.highavailability.dto.request.SelectInstanceRequest;
-import org.xhy.infrastructure.highavailability.dto.response.ApiInstanceDTO;
-import org.xhy.domain.llm.event.ModelsBatchDeletedEvent;
 import org.xhy.infrastructure.highavailability.dto.request.ApiInstanceBatchDeleteRequest;
+import org.xhy.infrastructure.highavailability.dto.response.ApiInstanceDTO;
 import org.xhy.infrastructure.highavailability.constant.AffinityType;
-import org.xhy.domain.user.service.UserSettingsDomainService;
-import org.xhy.domain.user.model.config.FallbackConfig;
 
 import java.util.ArrayList;
 import java.util.List;
 
-/** 高可用领域服务实现
+/**
+ * 高可用领域服务实现
+ * 负责高可用相关的业务逻辑和策略决策
  * 
  * @author xhy
- * @since 1.0.0 */
+ * @since 1.0.0
+ */
 @Service
 public class HighAvailabilityDomainServiceImpl implements HighAvailabilityDomainService {
 
     private static final Logger logger = LoggerFactory.getLogger(HighAvailabilityDomainServiceImpl.class);
 
     private final HighAvailabilityProperties properties;
-    private final HighAvailabilityGatewayClient gatewayClient;
+    private final HighAvailabilityGateway gateway;
     private final LLMDomainService llmDomainService;
 
     public HighAvailabilityDomainServiceImpl(HighAvailabilityProperties properties,
-            HighAvailabilityGatewayClient gatewayClient, LLMDomainService llmDomainService
-            ) {
+            HighAvailabilityGateway gateway, LLMDomainService llmDomainService) {
         this.properties = properties;
-        this.gatewayClient = gatewayClient;
+        this.gateway = gateway;
         this.llmDomainService = llmDomainService;
     }
 
@@ -59,7 +59,7 @@ public class HighAvailabilityDomainServiceImpl implements HighAvailabilityDomain
             ApiInstanceCreateRequest request = new ApiInstanceCreateRequest(model.getUserId(), model.getModelId(),
                     "MODEL", model.getId());
 
-            gatewayClient.createApiInstance(request);
+            gateway.createApiInstance(request);
 
             logger.info("成功同步模型到高可用网关: modelId={}", model.getId());
 
@@ -77,7 +77,7 @@ public class HighAvailabilityDomainServiceImpl implements HighAvailabilityDomain
         }
 
         try {
-            gatewayClient.deleteApiInstance("MODEL", modelId);
+            gateway.deleteApiInstance("MODEL", modelId);
 
             logger.info("成功从高可用网关删除模型: modelId={}", modelId);
 
@@ -98,7 +98,7 @@ public class HighAvailabilityDomainServiceImpl implements HighAvailabilityDomain
                     null // metadata
             );
 
-            gatewayClient.updateApiInstance("MODEL", model.getId(), request);
+            gateway.updateApiInstance("MODEL", model.getId(), request);
 
             logger.info("成功更新高可用网关中的模型: modelId={}", model.getId());
 
@@ -116,7 +116,6 @@ public class HighAvailabilityDomainServiceImpl implements HighAvailabilityDomain
     public HighAvailabilityResult selectBestProvider(ModelEntity model, String userId, String sessionId) {
         return selectBestProvider(model, userId, sessionId, null);
     }
-
 
     @Override
     public HighAvailabilityResult selectBestProvider(ModelEntity model, String userId, String sessionId, List<String> fallbackChain) {
@@ -145,8 +144,8 @@ public class HighAvailabilityDomainServiceImpl implements HighAvailabilityDomain
                         userId, model.getModelId(), fallbackChain);
             }
 
-            // 通过高可用网关选择最佳实例，客户端已经处理了响应解析
-            ApiInstanceDTO selectedInstance = gatewayClient.selectBestInstance(request);
+            // 通过高可用网关选择最佳实例
+            ApiInstanceDTO selectedInstance = gateway.selectBestInstance(request);
 
             String businessId = selectedInstance.getBusinessId();
             String instanceId = selectedInstance.getId();
@@ -176,8 +175,6 @@ public class HighAvailabilityDomainServiceImpl implements HighAvailabilityDomain
         }
     }
 
-
-
     @Override
     @Async
     public void reportCallResult(String instanceId, String modelId, boolean success, long latencyMs,
@@ -195,7 +192,7 @@ public class HighAvailabilityDomainServiceImpl implements HighAvailabilityDomain
             request.setErrorMessage(errorMessage);
             request.setCallTimestamp(System.currentTimeMillis());
 
-            gatewayClient.reportResult(request);
+            gateway.reportResult(request);
 
             logger.debug("成功上报调用结果: instanceId={}, modelId={}, success={}, latency={}ms", instanceId, modelId, success,
                     latencyMs);
@@ -217,7 +214,7 @@ public class HighAvailabilityDomainServiceImpl implements HighAvailabilityDomain
             ProjectCreateRequest projectRequest = new ProjectCreateRequest("AgentX", "AgentX高可用项目",
                     properties.getApiKey());
 
-            gatewayClient.createProject(projectRequest);
+            gateway.createProject(projectRequest);
 
             logger.info("高可用项目初始化成功");
 
@@ -251,7 +248,7 @@ public class HighAvailabilityDomainServiceImpl implements HighAvailabilityDomain
             }
 
             // 批量同步到高可用网关
-            gatewayClient.batchCreateApiInstances(instanceRequests);
+            gateway.batchCreateApiInstances(instanceRequests);
 
             logger.info("成功批量同步{}个模型到高可用网关", allActiveModels.size());
 
@@ -270,11 +267,11 @@ public class HighAvailabilityDomainServiceImpl implements HighAvailabilityDomain
         try {
             if (enabled) {
                 // 启用模型
-                gatewayClient.activateApiInstance("MODEL", model.getId());
+                gateway.activateApiInstance("MODEL", model.getId());
                 logger.info("成功启用高可用网关中的模型: modelId={}, reason={}", model.getId(), reason);
             } else {
                 // 禁用模型
-                gatewayClient.deactivateApiInstance("MODEL", model.getId());
+                gateway.deactivateApiInstance("MODEL", model.getId());
                 logger.info("成功禁用高可用网关中的模型: modelId={}, reason={}", model.getId(), reason);
             }
 
@@ -305,7 +302,7 @@ public class HighAvailabilityDomainServiceImpl implements HighAvailabilityDomain
             }
 
             // 批量删除到高可用网关
-            gatewayClient.batchDeleteApiInstances(instances);
+            gateway.batchDeleteApiInstances(instances);
 
             logger.info("成功批量删除{}个模型从高可用网关，用户ID: {}", deleteItems.size(), userId);
 
@@ -314,4 +311,4 @@ public class HighAvailabilityDomainServiceImpl implements HighAvailabilityDomain
             // 批量删除失败不抛异常，避免影响主流程
         }
     }
-}
+} 

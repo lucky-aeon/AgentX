@@ -49,7 +49,6 @@ public interface HighAvailabilityDomainService {
      * 如果高可用未启用或选择失败，则降级到默认逻辑
      *
      * @param model 模型实体
-     * @param provider 默认服务商（用于降级）
      * @param userId 用户ID
      * @param sessionId 会话ID，用于会话亲和性
      * @param fallbackChain 降级模型链，为null时不启用降级
