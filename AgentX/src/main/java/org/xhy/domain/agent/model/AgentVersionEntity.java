@@ -63,8 +63,6 @@ public class AgentVersionEntity extends BaseEntity {
     @TableField("change_log")
     private String changeLog;
 
-
-
     /** 发布状态：1-审核中, 2-已发布, 3-拒绝, 4-已下架 */
     @TableField("publish_status")
     private Integer publishStatus;
@@ -163,8 +161,6 @@ public class AgentVersionEntity extends BaseEntity {
     public void setChangeLog(String changeLog) {
         this.changeLog = changeLog;
     }
-
-
 
     public Integer getPublishStatus() {
         return publishStatus;

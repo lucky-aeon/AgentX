@@ -53,12 +53,12 @@ public class UserSettingsAppService {
         if (settings == null || settings.getSettingConfig() == null) {
             return null;
         }
-        
+
         FallbackConfig fallbackConfig = settings.getSettingConfig().getFallbackConfig();
         if (fallbackConfig == null || !fallbackConfig.isEnabled() || fallbackConfig.getFallbackChain().isEmpty()) {
             return null;
         }
-        
+
         return fallbackConfig.getFallbackChain();
     }
 }

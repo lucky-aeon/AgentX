@@ -25,13 +25,10 @@ import org.xhy.infrastructure.highavailability.constant.AffinityType;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * 高可用领域服务实现
- * 负责高可用相关的业务逻辑和策略决策
+/** 高可用领域服务实现 负责高可用相关的业务逻辑和策略决策
  * 
  * @author xhy
- * @since 1.0.0
- */
+ * @since 1.0.0 */
 @Service
 public class HighAvailabilityDomainServiceImpl implements HighAvailabilityDomainService {
 
@@ -41,8 +38,8 @@ public class HighAvailabilityDomainServiceImpl implements HighAvailabilityDomain
     private final HighAvailabilityGateway gateway;
     private final LLMDomainService llmDomainService;
 
-    public HighAvailabilityDomainServiceImpl(HighAvailabilityProperties properties,
-            HighAvailabilityGateway gateway, LLMDomainService llmDomainService) {
+    public HighAvailabilityDomainServiceImpl(HighAvailabilityProperties properties, HighAvailabilityGateway gateway,
+            LLMDomainService llmDomainService) {
         this.properties = properties;
         this.gateway = gateway;
         this.llmDomainService = llmDomainService;
@@ -118,7 +115,8 @@ public class HighAvailabilityDomainServiceImpl implements HighAvailabilityDomain
     }
 
     @Override
-    public HighAvailabilityResult selectBestProvider(ModelEntity model, String userId, String sessionId, List<String> fallbackChain) {
+    public HighAvailabilityResult selectBestProvider(ModelEntity model, String userId, String sessionId,
+            List<String> fallbackChain) {
         if (!properties.isEnabled()) {
             // 高可用未启用，使用默认逻辑
             logger.debug("高可用功能未启用，使用默认Provider选择逻辑: modelId={}", model.getId());
@@ -129,7 +127,7 @@ public class HighAvailabilityDomainServiceImpl implements HighAvailabilityDomain
         try {
             // 构建选择实例请求
             SelectInstanceRequest request = new SelectInstanceRequest(userId, model.getModelId(), "MODEL");
-            
+
             // 如果提供了sessionId，则设置会话亲和性
             if (sessionId != null && !sessionId.trim().isEmpty()) {
                 request.setAffinityKey(sessionId);
@@ -140,8 +138,8 @@ public class HighAvailabilityDomainServiceImpl implements HighAvailabilityDomain
             // 设置降级链（从参数传入，而不是内部获取）
             if (fallbackChain != null && !fallbackChain.isEmpty()) {
                 request.setFallbackChain(fallbackChain);
-                logger.debug("启用降级链: userId={}, primaryModel={}, fallbackModels={}", 
-                        userId, model.getModelId(), fallbackChain);
+                logger.debug("启用降级链: userId={}, primaryModel={}, fallbackModels={}", userId, model.getModelId(),
+                        fallbackChain);
             }
 
             // 通过高可用网关选择最佳实例
@@ -156,7 +154,7 @@ public class HighAvailabilityDomainServiceImpl implements HighAvailabilityDomain
             // 返回最佳模型对应的Provider
             ProviderEntity provider = llmDomainService.getProvider(bestModel.getProviderId(), userId);
 
-            logger.info("通过高可用网关选择Provider成功: modelId={}, bestBusinessId={}, providerId={}, sessionId={}", 
+            logger.info("通过高可用网关选择Provider成功: modelId={}, bestBusinessId={}, providerId={}, sessionId={}",
                     model.getId(), businessId, provider.getId(), sessionId);
 
             return new HighAvailabilityResult(provider, bestModel, instanceId);
@@ -311,4 +309,4 @@ public class HighAvailabilityDomainServiceImpl implements HighAvailabilityDomain
             // 批量删除失败不抛异常，避免影响主流程
         }
     }
-} 
+}

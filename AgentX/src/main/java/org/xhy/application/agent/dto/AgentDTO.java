@@ -1,7 +1,5 @@
 package org.xhy.application.agent.dto;
 
-
-
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,8 +37,6 @@ public class AgentDTO {
 
     /** Agent状态：true-启用，false-禁用 */
     private Boolean enabled = Boolean.TRUE;
-
-
 
     /** 创建者用户ID */
     private String userId;
@@ -143,8 +139,6 @@ public class AgentDTO {
         this.enabled = enabled;
     }
 
-
-
     public String getUserId() {
         return userId;
     }
@@ -168,8 +162,6 @@ public class AgentDTO {
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
     }
-
-
 
     public void setToolPresetParams(Map<String, Map<String, Map<String, String>>> toolPresetParams) {
         this.toolPresetParams = toolPresetParams;

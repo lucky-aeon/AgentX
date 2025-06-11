@@ -26,7 +26,6 @@ public class AgentAssembler {
         entity.setSystemPrompt(request.getSystemPrompt());
         entity.setWelcomeMessage(request.getWelcomeMessage());
 
-
         entity.setUserId(userId);
 
         // 设置初始状态为启用

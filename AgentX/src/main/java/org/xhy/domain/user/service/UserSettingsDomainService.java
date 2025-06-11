@@ -54,12 +54,12 @@ public class UserSettingsDomainService {
         if (settings == null || settings.getSettingConfig() == null) {
             return new ArrayList<>();
         }
-        
+
         FallbackConfig fallbackConfig = settings.getSettingConfig().getFallbackConfig();
         if (fallbackConfig == null || !fallbackConfig.isEnabled() || fallbackConfig.getFallbackChain().isEmpty()) {
             return new ArrayList<>();
         }
-        
+
         return fallbackConfig.getFallbackChain();
     }
 }

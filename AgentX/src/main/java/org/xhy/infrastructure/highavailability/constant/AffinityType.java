@@ -21,4 +21,4 @@ public class AffinityType {
     private AffinityType() {
         // 工具类，禁止实例化
     }
-} 
+}

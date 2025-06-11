@@ -13,13 +13,10 @@ import org.xhy.infrastructure.highavailability.dto.response.ApiInstanceDTO;
 
 import java.util.List;
 
-/**
- * 高可用网关基础设施实现
- * 负责所有技术细节，包括HTTP调用、序列化、网络异常处理等
+/** 高可用网关基础设施实现 负责所有技术细节，包括HTTP调用、序列化、网络异常处理等
  * 
  * @author xhy
- * @since 1.0.0
- */
+ * @since 1.0.0 */
 @Component
 public class HighAvailabilityGatewayImpl implements HighAvailabilityGateway {
 
@@ -78,4 +75,4 @@ public class HighAvailabilityGatewayImpl implements HighAvailabilityGateway {
     public void batchDeleteApiInstances(List<ApiInstanceBatchDeleteRequest.ApiInstanceDeleteItem> instances) {
         gatewayClient.batchDeleteApiInstances(instances);
     }
-} 
+}

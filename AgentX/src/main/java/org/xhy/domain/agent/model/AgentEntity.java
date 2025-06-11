@@ -5,7 +5,6 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 
-
 import org.xhy.infrastructure.converter.ListStringConverter;
 import org.xhy.infrastructure.converter.MapConverter;
 import org.xhy.infrastructure.entity.BaseEntity;
@@ -59,8 +58,6 @@ public class AgentEntity extends BaseEntity {
     /** Agent状态：1-启用，0-禁用 */
     @TableField("enabled")
     private Boolean enabled;
-
-
 
     /** 创建者用户ID */
     @TableField("user_id")
@@ -161,8 +158,6 @@ public class AgentEntity extends BaseEntity {
         this.enabled = enabled;
     }
 
-
-
     public String getUserId() {
         return userId;
     }
@@ -214,8 +209,6 @@ public class AgentEntity extends BaseEntity {
     public void delete() {
         this.deletedAt = LocalDateTime.now();
     }
-
-
 
     public void isEnable() {
         if (!this.enabled) {

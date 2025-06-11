@@ -20,8 +20,7 @@ public class SelectInstanceRequest {
     /** 亲和性键，用于会话绑定，可选 */
     private String affinityKey;
 
-    /** 亲和性类型，可选
-     * 定义亲和性的类型，例如：SESSION、USER、BATCH、REGION等 */
+    /** 亲和性类型，可选 定义亲和性的类型，例如：SESSION、USER、BATCH、REGION等 */
     private String affinityType;
 
     /** 降级链，按优先级排序的模型ID列表 */
@@ -36,7 +35,8 @@ public class SelectInstanceRequest {
         this.apiType = apiType;
     }
 
-    public SelectInstanceRequest(String userId, String apiIdentifier, String apiType, String affinityKey, String affinityType) {
+    public SelectInstanceRequest(String userId, String apiIdentifier, String apiType, String affinityKey,
+            String affinityType) {
         this.userId = userId;
         this.apiIdentifier = apiIdentifier;
         this.apiType = apiType;
