@@ -119,41 +119,13 @@ npm run dev
 
 ## 功能介绍
 
-### Agent 管理
+## Contributors
 
-用户可自行通过 LLM + "插件" 打造 Agent，插件指的是：工具，知识库等，一切为 LLM 服务都叫做 "插件"
+[![AgentX](https://contrib.rocks/image?repo=lucky-aeon/agentX)](https://contrib.rocks/image?repo=lucky-aeon/agentX)
 
-用户打造的 Agent 可以发布给 TA 人使用
+## Star History
 
-在使用 Agent 的时候，模型的选择是使用者所决定
-
-### Token 上下文管理
-
-虽然使用了 langchain4j 提供了内置的 Token 上下文处理，但是在系统中也提供了基于 Token 的滑动窗口以及 摘要算法
-
-### Agent 策略
-
-Agent = LLM + 工具
-
-在项目中使用了 LLM + MCP 的方式实现 Agent，通过 langchan4j 提供 MCP 实现
-
-在未来，会经过自测调研的方式自研 Agent 策略
-
-### 用户
-
-提供 github、Emial 的方式进行注册登录
-
-### 工具市场
-
-用户可自行上传工具，也可以使用官方的工具，工具给 Agent 进行使用
-
-### MCP Server Commmunity
-
-用户上传的工具在通过 `人工审核` 通过后会同步到 https://github.com/lucky-aeon/agent-mcp-community 中
-
-### MCP Gateway
-
-采用自研的 MCP 网关来统一管理所有的 MCP Server：https://github.com/lucky-aeon/mcp-gateway
+[![Star History Chart](https://api.star-history.com/svg?repos=lucky-aeon/agentX&type=Date)](https://api.star-history.com/svg?repos=lucky-aeon/agentX&type=Date)
 
 
 ## 联系我们
