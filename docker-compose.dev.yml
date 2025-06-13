@@ -1,0 +1,107 @@
+version: "3.8"
+
+services:
+  # PostgreSQL数据库 (与生产版本相同)
+  postgres:
+    image: ankane/pgvector:latest
+    container_name: agentx-postgres
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=agentx
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./docs/sql:/docker-entrypoint-initdb.d
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d agentx"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - agentx-network
+
+  # API网关服务 (开发模式 - 挂载源码)
+  api-gateway:
+    build:
+      context: /Users/xhy/course/API-Premium-Gateway
+      dockerfile: Dockerfile.dev
+    container_name: agentx-api-gateway-dev
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker,dev
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/agentx
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+      - SPRING_DEVTOOLS_RESTART_ENABLED=true
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./logs/gateway:/app/logs
+      - maven-cache:/root/.m2
+    networks:
+      - agentx-network
+    restart: unless-stopped
+
+  # AgentX后端服务 (开发模式 - 使用Maven缓存)
+  agentx-backend:
+    build:
+      context: ./AgentX
+      dockerfile: Dockerfile.dev
+    container_name: agentx-backend-dev
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker,dev
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/agentx
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+      - SPRING_DEVTOOLS_RESTART_ENABLED=true
+    depends_on:
+      postgres:
+        condition: service_healthy
+      api-gateway:
+        condition: service_started
+    volumes:
+      - ./logs/backend:/app/logs
+      - maven-cache:/root/.m2 # Maven 依赖缓存
+    networks:
+      - agentx-network
+    restart: unless-stopped
+
+  # AgentX前端服务 (开发模式 - 使用npm缓存)
+  agentx-frontend:
+    build:
+      context: ./agentx-frontend-plus
+      dockerfile: Dockerfile.dev
+    container_name: agentx-frontend-dev
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=http://localhost:8080
+      - NEXT_PUBLIC_GATEWAY_URL=http://localhost:8081
+    depends_on:
+      - agentx-backend
+    volumes:
+      - npm-cache:/root/.npm # NPM 缓存
+    networks:
+      - agentx-network
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+    name: agentx-postgres-data
+  maven-cache:
+    name: agentx-maven-cache
+  npm-cache:
+    name: agentx-npm-cache
+
+networks:
+  agentx-network:
+    driver: bridge
+    name: agentx-network
