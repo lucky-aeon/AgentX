@@ -63,13 +63,7 @@
             <optional>true</optional>
         </dependency>
         
-        <!-- Spring Boot DevTools for hot reload -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-devtools</artifactId>
-            <scope>runtime</scope>
-            <optional>true</optional>
-        </dependency>
+        <!-- Spring Boot DevTools - 通过Profile控制 -->
 
         <dependency>
             <groupId>com.baomidou</groupId>
@@ -271,4 +265,88 @@
             </plugin>
         </plugins>
     </build>
+
+    <!-- Maven Profiles for different environments -->
+    <profiles>
+        <!-- 容器开发环境 - 启用DevTools -->
+        <profile>
+            <id>container-dev</id>
+            <activation>
+                <property>
+                    <name>spring.profiles.active</name>
+                    <value>container</value>
+                </property>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-devtools</artifactId>
+                    <scope>runtime</scope>
+                    <optional>true</optional>
+                </dependency>
+            </dependencies>
+        </profile>
+
+        <!-- Docker环境 - 启用DevTools -->
+        <profile>
+            <id>docker</id>
+            <activation>
+                <property>
+                    <name>env.DOCKER</name>
+                    <value>true</value>
+                </property>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-devtools</artifactId>
+                    <scope>runtime</scope>
+                    <optional>true</optional>
+                </dependency>
+            </dependencies>
+        </profile>
+
+        <!-- 容器热更新环境 - 启用DevTools -->
+        <profile>
+            <id>hotreload</id>
+            <activation>
+                <property>
+                    <name>spring.profiles.active</name>
+                    <value>hotreload</value>
+                </property>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-devtools</artifactId>
+                    <scope>runtime</scope>
+                    <optional>true</optional>
+                </dependency>
+            </dependencies>
+        </profile>
+
+        <!-- 本地开发环境 - 禁用DevTools（默认） -->
+        <profile>
+            <id>local-dev</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <!-- 不包含DevTools依赖 -->
+            <properties>
+                <spring.profiles.active>local</spring.profiles.active>
+            </properties>
+        </profile>
+
+        <!-- 生产环境 - 禁用DevTools -->
+        <profile>
+            <id>prod</id>
+            <activation>
+                <property>
+                    <name>spring.profiles.active</name>
+                    <value>prod</value>
+                </property>
+            </activation>
+            <!-- 不包含DevTools依赖 -->
+        </profile>
+    </profiles>
 </project>

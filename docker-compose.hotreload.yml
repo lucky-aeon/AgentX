@@ -82,13 +82,13 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - SPRING_PROFILES_ACTIVE=docker,dev
+      - SPRING_PROFILES_ACTIVE=docker,dev,container
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/agentx
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=postgres
-      - SPRING_DEVTOOLS_RESTART_ENABLED=true
-      - SPRING_DEVTOOLS_LIVERELOAD_ENABLED=true
       - HIGH_AVAILABILITY_GATEWAY_URL=http://api-gateway:8081
+      # 环境变量标识，用于激活Maven Profile
+      - DOCKER=true
     depends_on:
       postgres:
         condition: service_healthy
