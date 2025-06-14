@@ -136,19 +136,16 @@ public class UserDomainService {
         return userRepository.selectByIds(userIds);
     }
 
-    /**
-     * 创建默认用户（用于系统初始化）
-     * 绕过常规的业务校验，直接插入用户数据
+    /** 创建默认用户（用于系统初始化） 绕过常规的业务校验，直接插入用户数据
      * 
-     * @param user 用户实体
-     */
+     * @param user 用户实体 */
     public void createDefaultUser(UserEntity user) {
         // 设置基础字段
         user.valid();
-        
+
         // 直接插入，不进行重复性校验（因为调用方已经检查过）
         userRepository.insert(user);
-        
+
         // 创建用户设置
         UserSettingsEntity userSettingsEntity = new UserSettingsEntity();
         userSettingsEntity.setUserId(user.getId());
