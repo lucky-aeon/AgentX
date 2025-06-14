@@ -112,7 +112,6 @@ public abstract class AbstractMessageHandler {
         tokenStream.onPartialResponse(reply -> {
             messageBuilder.get().append(reply);
             transport.sendMessage(connection, AgentChatResponse.build(reply, MessageType.TEXT));
-            throw new BusinessException("test");
         });
 
         // 完整响应处理
