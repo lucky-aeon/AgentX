@@ -347,6 +347,16 @@ public class LLMDomainService {
         return modelEntity;
     }
 
+    public ModelEntity findModelById(String modelId) {
+        ModelEntity modelEntity = modelRepository.selectById(modelId);
+        if (modelEntity == null) {
+           return new ModelEntity();
+        }
+        return modelEntity;
+    }
+
+
+
     /** 获取所有激活的模型
      * @return 所有激活的模型列表 */
     public List<ModelEntity> getAllActiveModels() {

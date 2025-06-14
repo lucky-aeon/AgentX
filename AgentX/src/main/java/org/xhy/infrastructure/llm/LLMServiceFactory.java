@@ -19,7 +19,7 @@ public class LLMServiceFactory {
     public StreamingChatModel getStreamingClient(ProviderEntity provider, ModelEntity model) {
         org.xhy.domain.llm.model.config.ProviderConfig config = provider.getConfig();
 
-        ProviderConfig providerConfig = new ProviderConfig(config.getApiKey(), config.getBaseUrl(), model.getModelId(),
+        ProviderConfig providerConfig = new ProviderConfig(config.getApiKey(), config.getBaseUrl(), model.getModelEndpoint(),
                 provider.getProtocol());
 
         return LLMProviderService.getStream(provider.getProtocol(), providerConfig);
@@ -33,7 +33,7 @@ public class LLMServiceFactory {
     public ChatModel getStrandClient(ProviderEntity provider, ModelEntity model) {
         org.xhy.domain.llm.model.config.ProviderConfig config = provider.getConfig();
 
-        ProviderConfig providerConfig = new ProviderConfig(config.getApiKey(), config.getBaseUrl(), model.getModelId(),
+        ProviderConfig providerConfig = new ProviderConfig(config.getApiKey(), config.getBaseUrl(), model.getModelEndpoint(),
                 provider.getProtocol());
 
         return LLMProviderService.getStrand(provider.getProtocol(), providerConfig);

@@ -113,14 +113,6 @@ export default function GeneralSettingsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (!settings.settingConfig.defaultModel) {
-      toast({
-        title: "请选择默认模型",
-        variant: "destructive",
-      })
-      return
-    }
-    
     try {
       setSubmitting(true)
       
@@ -230,7 +222,7 @@ export default function GeneralSettingsPage() {
           <CardFooter className="pt-6">
             <Button 
               type="submit" 
-              disabled={submitting || !settings.settingConfig.defaultModel}
+              disabled={submitting}
               className="w-full"
             >
               {submitting ? "保存中..." : "保存设置"}

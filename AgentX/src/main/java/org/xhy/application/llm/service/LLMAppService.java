@@ -198,7 +198,7 @@ public class LLMAppService {
 
     public ModelDTO getDefaultModel(String userId) {
         String userDefaultModelId = userSettingsDomainService.getUserDefaultModelId(userId);
-        ModelEntity modelEntity = llmDomainService.getModelById(userDefaultModelId);
+        ModelEntity modelEntity = llmDomainService.findModelById(userDefaultModelId);
         return ModelAssembler.toDTO(modelEntity);
     }
 }

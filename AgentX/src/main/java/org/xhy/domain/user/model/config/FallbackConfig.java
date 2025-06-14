@@ -49,8 +49,4 @@ public class FallbackConfig implements Serializable {
         fallbackChain.remove(modelId);
     }
 
-    /** 获取所有降级模型列表 */
-    public List<String> getFallbackModels() {
-        return new ArrayList<>(fallbackChain);
-    }
 }

@@ -27,11 +27,4 @@ public class UserSettingsConfig implements Serializable {
         this.fallbackConfig = fallbackConfig;
     }
 
-    /** 获取降级配置，如果为空则返回默认配置 */
-    public FallbackConfig getFallbackConfigOrDefault() {
-        if (fallbackConfig == null) {
-            fallbackConfig = new FallbackConfig();
-        }
-        return fallbackConfig;
-    }
 }
