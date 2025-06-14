@@ -138,7 +138,7 @@ services:
       - ./agentx-frontend-plus/tailwind.config.ts:/app/tailwind.config.ts:ro
       - ./agentx-frontend-plus/postcss.config.mjs:/app/postcss.config.mjs:ro
       - ./agentx-frontend-plus/tsconfig.json:/app/tsconfig.json:ro
-      - ./agentx-frontend-plus/next-env.d.ts:/app/next-env.d.ts:ro
+      - ./agentx-frontend-plus/next-env.d.ts:/app/next-env.d.ts
       - ./agentx-frontend-plus/middleware.ts:/app/middleware.ts:ro
       - ./agentx-frontend-plus/components.json:/app/components.json:ro
     networks:
