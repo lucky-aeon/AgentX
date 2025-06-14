@@ -38,22 +38,80 @@ AgentX 是一个基于大模型 (LLM) 和多能力平台 (MCP) 的智能 Agent �
 
 ### 🛠️ 环境准备
 
-  * **Node.js & npm**: 推荐使用 LTS 版本。
-  * **Java Development Kit (JDK)**: JDK 17 或更高版本。
-  * **Docker & Docker Compose**: 用于部署数据库和其他依赖服务。
+  * **Docker & Docker Compose**: 用于容器化部署（推荐）
+  * **Node.js & npm**: 推荐使用 LTS 版本（本地开发）
+  * **Java Development Kit (JDK)**: JDK 17 或更高版本（本地开发）
 
-### 💻 本地启动
+### 🐳 一键启动（推荐）
 
-#### 1\. 克隆仓库
+#### 🔥 热更新开发模式
+
+**最佳开发体验**：代码修改实时生效，无需重启容器！
 
 ```bash
-git clone https://github.com/your-username/AgentX.git # 替换为实际的仓库地址
+# 克隆仓库
+git clone https://github.com/lucky-aeon/AgentX.git
 cd AgentX
+
+# 一键启动热更新模式
+./bin/start-dev.sh --hot
 ```
 
-#### 2\. 启动数据库 (PostgreSQL)
+#### 🚀 标准开发模式
 
-进入 `script` 目录，并执行启动脚本。此脚本将使用 Docker Compose 启动一个 PostgreSQL 容器并初始化数据库。
+```bash
+# 标准开发模式（重启生效）
+./bin/start-dev.sh
+```
+
+#### 🏭 生产模式
+
+```bash
+# 生产环境启动
+./bin/start.sh
+```
+
+### 📋 服务访问地址
+
+启动成功后，您可以通过以下地址访问服务：
+
+- **前端应用**: http://localhost:3000
+- **后端API**: http://localhost:8080
+- **API网关**: http://localhost:8081
+- **数据库连接**: localhost:5432
+
+### 🔐 默认登录账号
+
+系统会自动创建以下默认账号：
+
+| 角色 | 邮箱 | 密码 |
+|------|------|------|
+| 管理员 | admin@agentx.ai | admin123 |
+| 测试用户 | test@agentx.ai | test123 |
+
+⚠️ **安全提示**：首次登录后请立即修改默认密码，生产环境请删除测试账号。
+
+### 🛠️ 开发管理命令
+
+```bash
+# 查看服务状态
+docker compose -f docker-compose.hotreload.yml ps
+
+# 停止所有服务
+docker compose -f docker-compose.hotreload.yml down
+
+# 查看服务日志
+docker compose -f docker-compose.hotreload.yml logs -f [服务名]
+
+# 重启特定服务
+docker compose -f docker-compose.hotreload.yml restart [服务名]
+```
+
+### 💻 本地开发启动（传统方式）
+
+如果您更喜欢传统的本地开发方式：
+
+#### 1\. 启动数据库
 
 ```bash
 cd script
@@ -61,61 +119,20 @@ chmod +x setup_with_compose.sh
 ./setup_with_compose.sh
 ```
 
-成功启动后，您将看到 PostgreSQL 的连接信息：
-
-```
-🎉 PostgreSQL 容器已成功启动！
-容器名称: agentx-postgres
-连接信息:
-  主机: localhost
-  端口: 5432
-  用户: postgres
-  密码: postgres
-  数据库: agentx
-  连接URL: jdbc:postgresql://localhost:5432/agentx
-
-你可以使用以下命令连接到数据库:
-  docker exec -it agentx-postgres psql -U postgres -d agentx
-
-✅ 数据库初始化完成！
-```
-
-#### 3\. 启动后端服务 (AgentX Java Application)
-
-返回项目根目录，进入 `AgentX` 目录，并使用 Maven 或 Gradle（如果使用）构建并运行后端服务。
+#### 2\. 启动后端服务
 
 ```bash
-cd ../AgentX
-# 如果是Maven项目，通常是
-./mvnw clean install
+cd AgentX
 ./mvnw spring-boot:run
-# 或者根据实际的jar包路径运行
-# java -jar target/AgentX-0.0.1-SNAPSHOT.jar # 替换为实际的jar包名称
 ```
 
-后端服务启动后，通常会监听 `8080` 端口。
-
-#### 4\. 启动前端服务 (AgentX-Frontend-Plus)
-
-返回项目根目录，进入 `agentx-frontend-plus` 目录，安装依赖并启动前端服务。
+#### 3\. 启动前端服务
 
 ```bash
-cd ../agentx-frontend-plus
+cd agentx-frontend-plus
 npm install --legacy-peer-deps
 npm run dev
 ```
-
-前端服务启动后，通常会监听 `3000` 端口。
-
-### ⚙️ 常用 Docker Compose 命令
-
-在 `script` 目录下：
-
-  * **启动所有服务**: `./setup_with_compose.sh` (首次运行或需要重新初始化数据库时推荐)
-  * **启动/重启服务 (不初始化数据库)**: `docker-compose up -d`
-  * **停止所有服务**: `docker-compose down`
-  * **查看服务状态**: `docker ps`
-  * **查看数据库日志**: `docker logs agentx-postgres`
 
 ## 功能介绍
 

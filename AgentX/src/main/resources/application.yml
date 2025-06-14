@@ -84,7 +84,7 @@ mcp:
 high-availability:
   enabled: true # 是否启用高可用功能
   gateway-url: ${HIGH_AVAILABILITY_GATEWAY_URL:http://localhost:8081} # 高可用网关地址
-  api-key: ${HIGH_AVAILABILITY_API_KEY:gw_9NrXz5JC9Cebghj9r2l3f6S5bO3tihfX} # API密钥
+  api-key: ${HIGH_AVAILABILITY_API_KEY:default-api-key-1234567890} # API密钥
   connect-timeout: 30000 # 连接超时时间(毫秒)
   read-timeout: 60000 # 读取超时时间(毫秒)
 
