@@ -46,41 +46,48 @@ services:
     networks:
       - agentx-network
 
-  # API网关服务
+  # API网关服务 (热更新模式)
   api-gateway:
     build:
       context: ./API-Premium-Gateway
       dockerfile: Dockerfile
-    container_name: agentx-api-gateway
+    container_name: agentx-api-gateway-hotreload
     ports:
       - "8081:8081"
     environment:
-      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_PROFILES_ACTIVE=docker,dev
       - SPRING_DATASOURCE_URL=jdbc:postgresql://gateway-postgres:5432/api_gateway?useUnicode=true&characterEncoding=UTF-8&useSSL=false&stringtype=unspecified&assumeMinServerVersion=9.6&prepareThreshold=0&DateStyle=ISO
       - SPRING_DATASOURCE_USERNAME=gateway_user
       - SPRING_DATASOURCE_PASSWORD=gateway_pass
+      - SPRING_DEVTOOLS_RESTART_ENABLED=true
+      - SPRING_DEVTOOLS_LIVERELOAD_ENABLED=true
     depends_on:
       gateway-postgres:
         condition: service_healthy
     volumes:
       - ./logs/gateway:/app/logs
+      - maven-cache:/root/.m2
+      # 挂载API网关源码实现热更新
+      - ./API-Premium-Gateway/src:/app/src:ro
     networks:
       - agentx-network
     restart: unless-stopped
 
-  # AgentX后端服务
+  # AgentX后端服务 (热更新模式)
   agentx-backend:
     build:
       context: ./AgentX
-      dockerfile: Dockerfile.dev
-    container_name: agentx-backend
+      dockerfile: Dockerfile.hotreload
+    container_name: agentx-backend-hotreload
     ports:
       - "8080:8080"
     environment:
-      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_PROFILES_ACTIVE=docker,dev
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/agentx
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=postgres
+      - SPRING_DEVTOOLS_RESTART_ENABLED=true
+      - SPRING_DEVTOOLS_LIVERELOAD_ENABLED=true
     depends_on:
       postgres:
         condition: service_healthy
@@ -88,24 +95,51 @@ services:
         condition: service_started
     volumes:
       - ./logs/backend:/app/logs
+      - maven-cache:/root/.m2
+      # 挂载后端源码实现热更新
+      - ./AgentX/src:/app/src
+      - ./AgentX/pom.xml:/app/pom.xml:ro
+      - ./AgentX/target:/app/target
     networks:
       - agentx-network
     restart: unless-stopped
 
-  # AgentX前端服务
+  # AgentX前端服务 (热更新模式)
   agentx-frontend:
     build:
       context: ./agentx-frontend-plus
-      dockerfile: Dockerfile.dev
-    container_name: agentx-frontend
+      dockerfile: Dockerfile.hotreload
+    container_name: agentx-frontend-hotreload
     ports:
       - "3000:3000"
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=development
       - NEXT_PUBLIC_API_URL=http://localhost:8080
       - NEXT_PUBLIC_GATEWAY_URL=http://localhost:8081
+      - CHOKIDAR_USEPOLLING=true
+      - FAST_REFRESH=true
+      - WATCHPACK_POLLING=true
     depends_on:
       - agentx-backend
+    volumes:
+      - npm-cache:/root/.npm
+      # 挂载前端源码实现热更新
+      - ./agentx-frontend-plus/src:/app/src:ro
+      - ./agentx-frontend-plus/public:/app/public:ro
+      - ./agentx-frontend-plus/components:/app/components:ro
+      - ./agentx-frontend-plus/app:/app/app:ro
+      - ./agentx-frontend-plus/lib:/app/lib:ro
+      - ./agentx-frontend-plus/styles:/app/styles:ro
+      - ./agentx-frontend-plus/hooks:/app/hooks:ro
+      - ./agentx-frontend-plus/contexts:/app/contexts:ro
+      - ./agentx-frontend-plus/types:/app/types:ro
+      - ./agentx-frontend-plus/next.config.mjs:/app/next.config.mjs:ro
+      - ./agentx-frontend-plus/tailwind.config.ts:/app/tailwind.config.ts:ro
+      - ./agentx-frontend-plus/postcss.config.mjs:/app/postcss.config.mjs:ro
+      - ./agentx-frontend-plus/tsconfig.json:/app/tsconfig.json:ro
+      - ./agentx-frontend-plus/next-env.d.ts:/app/next-env.d.ts:ro
+      - ./agentx-frontend-plus/middleware.ts:/app/middleware.ts:ro
+      - ./agentx-frontend-plus/components.json:/app/components.json:ro
     networks:
       - agentx-network
     restart: unless-stopped
@@ -115,6 +149,10 @@ volumes:
     name: agentx-postgres-data
   gateway-postgres-data:
     name: api-gateway-postgres-data
+  maven-cache:
+    name: agentx-maven-cache
+  npm-cache:
+    name: agentx-npm-cache
 
 networks:
   agentx-network:

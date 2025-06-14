@@ -23,9 +23,11 @@ import {
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { ModelSelectDialog } from "../components/model-select-dialog"
 import { 
-  getWorkspaceAgentsWithToast, 
-  removeAgentFromWorkspaceWithToast 
+  getWorkspaceAgentsWithToast
 } from "@/lib/api-services"
+import { 
+  deleteWorkspaceAgentWithToast 
+} from "@/lib/agent-service"
 
 type SidebarItem = {
   title: string
@@ -307,7 +309,7 @@ export function Sidebar() {
   // 处理移除Agent
   const handleRemoveAgent = async (agentId: string) => {
     try {
-      const response = await removeAgentFromWorkspaceWithToast(agentId)
+      const response = await deleteWorkspaceAgentWithToast(agentId)
       if (response.code === 200) {
         // 重新加载工作区Agent列表
         await loadWorkspaceAgents()

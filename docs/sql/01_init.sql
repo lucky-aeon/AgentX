@@ -286,7 +286,6 @@ CREATE INDEX idx_scheduled_tasks_user_id ON scheduled_tasks(user_id);
 CREATE INDEX idx_scheduled_tasks_agent_id ON scheduled_tasks(agent_id);
 CREATE INDEX idx_scheduled_tasks_session_id ON scheduled_tasks(session_id);
 CREATE INDEX idx_scheduled_tasks_status ON scheduled_tasks(status);
-CREATE INDEX idx_user_settings_user_id ON user_settings(user_id);
 
 -- 添加表和列的注释
 COMMENT ON TABLE sessions IS '会话实体类，代表一个独立的对话会话/主题';
@@ -347,7 +346,7 @@ COMMENT ON COLUMN agent_versions.description IS 'Agent描述';
 COMMENT ON COLUMN agent_versions.version_number IS '版本号，如1.0.0';
 COMMENT ON COLUMN agent_versions.system_prompt IS 'Agent系统提示词';
 COMMENT ON COLUMN agent_versions.welcome_message IS '欢迎消息';
-COMMENT ON COLUMN agent_versions.tools IS 'Agent可使用的工具列表，JSON数组格式';
+COMMENT ON COLUMN agent_versions.tool_ids IS 'Agent可使用的工具ID列表，JSON数组格式';
 COMMENT ON COLUMN agent_versions.knowledge_base_ids IS '关联的知识库ID列表，JSON数组格式';
 COMMENT ON COLUMN agent_versions.change_log IS '版本更新日志';
 COMMENT ON COLUMN agent_versions.publish_status IS '发布状态：1-审核中, 2-已发布, 3-拒绝, 4-已下架';
@@ -475,18 +474,37 @@ COMMENT ON COLUMN tool_versions.deleted_at IS '逻辑删除时间';
 COMMENT ON TABLE user_tools IS '用户工具关联实体类';
 COMMENT ON COLUMN user_tools.id IS '唯一ID';
 COMMENT ON COLUMN user_tools.user_id IS '用户ID';
-COMMENT ON COLUMN user_tools.tool_version_id IS '工具版本ID';
+COMMENT ON COLUMN user_tools.name IS '工具名称';
+COMMENT ON COLUMN user_tools.description IS '工具描述';
+COMMENT ON COLUMN user_tools.icon IS '工具图标';
+COMMENT ON COLUMN user_tools.subtitle IS '副标题';
+COMMENT ON COLUMN user_tools.tool_id IS '工具ID';
 COMMENT ON COLUMN user_tools.version IS '版本号';
-COMMENT ON COLUMN user_tools.upload_type IS '上传方式';
-COMMENT ON COLUMN user_tools.upload_url IS '上传URL';
 COMMENT ON COLUMN user_tools.tool_list IS '工具列表，JSON数组格式';
 COMMENT ON COLUMN user_tools.labels IS '标签列表，JSON数组格式';
 COMMENT ON COLUMN user_tools.is_office IS '是否官方工具';
 COMMENT ON COLUMN user_tools.public_state IS '公开状态';
+COMMENT ON COLUMN user_tools.mcp_server_name IS 'MCP服务器名称';
 COMMENT ON COLUMN user_tools.created_at IS '创建时间';
 COMMENT ON COLUMN user_tools.updated_at IS '更新时间';
 COMMENT ON COLUMN user_tools.deleted_at IS '逻辑删除时间';
     
+-- API密钥管理表
+CREATE TABLE api_keys (
+    id VARCHAR(36) PRIMARY KEY,
+    api_key VARCHAR(64) NOT NULL UNIQUE,
+    agent_id VARCHAR(36) NOT NULL,
+    user_id VARCHAR(36) NOT NULL,
+    name VARCHAR(100),
+    status BOOLEAN DEFAULT TRUE,
+    usage_count INTEGER DEFAULT 0,
+    last_used_at TIMESTAMP,
+    expires_at TIMESTAMP,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP
+);
+
 -- 添加表和列的注释
 COMMENT ON TABLE user_settings IS '用户设置表，存储用户的个性化配置';
 COMMENT ON COLUMN user_settings.id IS '设置记录唯一ID';
@@ -495,3 +513,17 @@ COMMENT ON COLUMN user_settings.setting_config IS '设置配置JSON，格式：{
 COMMENT ON COLUMN user_settings.created_at IS '创建时间';
 COMMENT ON COLUMN user_settings.updated_at IS '更新时间';
 COMMENT ON COLUMN user_settings.deleted_at IS '逻辑删除时间';
+
+COMMENT ON TABLE api_keys IS 'API密钥管理表';
+COMMENT ON COLUMN api_keys.id IS 'API Key ID';
+COMMENT ON COLUMN api_keys.api_key IS 'API密钥';
+COMMENT ON COLUMN api_keys.agent_id IS '关联的Agent ID';
+COMMENT ON COLUMN api_keys.user_id IS '创建者用户ID';
+COMMENT ON COLUMN api_keys.name IS 'API Key名称/描述';
+COMMENT ON COLUMN api_keys.status IS '状态：TRUE-启用，FALSE-禁用';
+COMMENT ON COLUMN api_keys.usage_count IS '已使用次数';
+COMMENT ON COLUMN api_keys.last_used_at IS '最后使用时间';
+COMMENT ON COLUMN api_keys.expires_at IS '过期时间';
+COMMENT ON COLUMN api_keys.created_at IS '创建时间';
+COMMENT ON COLUMN api_keys.updated_at IS '更新时间';
+COMMENT ON COLUMN api_keys.deleted_at IS '逻辑删除时间';

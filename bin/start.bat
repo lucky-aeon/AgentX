@@ -63,8 +63,8 @@ if not exist "docker-compose.yml" (
     exit /b 1
 )
 
-if not exist "docs\sql\init.sql" (
-    echo %RED%错误: 数据库初始化文件 'docs\sql\init.sql' 不存在%NC%
+if not exist "docs\sql\01_init.sql" (
+    echo %RED%错误: 数据库初始化文件 'docs\sql\01_init.sql' 不存在%NC%
     pause
     exit /b 1
 )
@@ -161,7 +161,7 @@ REM 等待后端服务启动
 echo %YELLOW%等待后端服务启动...%NC%
 set "RETRIES=30"
 :wait_backend
-curl -f http://localhost:8080/actuator/health >nul 2>&1
+curl -f http://localhost:8080/api/health >nul 2>&1
 if not errorlevel 1 goto backend_ready
 set /a RETRIES=RETRIES-1
 if !RETRIES! equ 0 (

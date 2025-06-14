@@ -34,6 +34,13 @@ if not exist "..\docs\sql" (
     exit /b 1
 )
 
+:: 检查 SQL 目录中是否包含 .sql 文件
+dir "..\docs\sql\*.sql" >nul 2>nul
+if %ERRORLEVEL% neq 0 (
+    echo %RED%Error: No SQL files found in SQL directory!%NC%
+    exit /b 1
+)
+
 :: 检查容器是否已存在
 docker ps -a | findstr "agentx-postgres" >nul
 if %ERRORLEVEL% equ 0 (
