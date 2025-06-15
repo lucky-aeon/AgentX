@@ -107,8 +107,6 @@ public class MCPGatewayService {
      * @return 工具定义列表
      * @throws BusinessException 如果API调用失败 */
     public List<ToolDefinition> listTools(String toolName) throws Exception {
-        // 需要等待部署完成
-        Thread.sleep(10000);
         String url = properties.getBaseUrl() + "/" + toolName + "/sse/sse?api_key=" + properties.getApiKey();
         HttpMcpTransport transport = new HttpMcpTransport.Builder().sseUrl(url).timeout(Duration.ofSeconds(10))
                 .logRequests(false).logResponses(true).build();

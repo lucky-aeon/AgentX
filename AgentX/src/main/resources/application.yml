@@ -78,7 +78,7 @@ github:
 mcp:
   gateway:
     api-key: 123456
-    base-url: http://localhost:8005
+    base-url: ${MCP_GATEWAY_URL:http://localhost:8005}
 
 # 高可用网关配置
 high-availability:

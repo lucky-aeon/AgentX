@@ -33,6 +33,11 @@ public class FetchingToolsProcessor implements ToolStateProcessor {
 
     @Override
     public void process(ToolEntity tool) {
+        try {
+            Thread.sleep(20000);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
         logger.info("工具ID: {} 进入FETCHING_TOOLS状态，开始获取工具列表。", tool.getId());
         try {
             // 从installCommand中获取工具名称

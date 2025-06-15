@@ -86,10 +86,13 @@ services:
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=postgres
       - SPRING_DEVTOOLS_RESTART_ENABLED=true
+      - MCP_GATEWAY_URL=http://mcp-gateway:8080
     depends_on:
       postgres:
         condition: service_healthy
       api-gateway:
+        condition: service_started
+      mcp-gateway:
         condition: service_started
     volumes:
       - ./logs/backend:/app/logs
@@ -115,6 +118,16 @@ services:
       - agentx-backend
     volumes:
       - npm-cache:/root/.npm # NPM 缓存
+    networks:
+      - agentx-network
+    restart: unless-stopped
+
+  # MCP网关服务 (开发模式)
+  mcp-gateway:
+    image: ghcr.io/lucky-aeon/mcp-gateway:latest
+    container_name: agentx-mcp-gateway-dev
+    ports:
+      - "8005:8080" # 映射到主机的8082端口，避免冲突
     networks:
       - agentx-network
     restart: unless-stopped
