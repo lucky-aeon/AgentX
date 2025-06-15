@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.xhy.application.apikey.assembler.ApiKeyAssembler;
 import org.xhy.application.apikey.dto.ApiKeyDTO;
+import org.xhy.application.apikey.dto.ApiKeyValidationResult;
 import org.xhy.domain.agent.model.AgentEntity;
 import org.xhy.domain.agent.service.AgentDomainService;
 import org.xhy.domain.apikey.model.ApiKeyEntity;
@@ -171,19 +172,22 @@ public class ApiKeyAppService {
         return dto;
     }
 
-    /** 验证API密钥（供外部API使用）
+    /** 验证外部API Key
      *
      * @param apiKey API密钥
-     * @return API密钥实体 */
-    public ApiKeyEntity validateApiKey(String apiKey) {
-        return apiKeyDomainService.validateApiKey(apiKey);
-    }
+     * @return 验证结果 */
+    public ApiKeyValidationResult validateExternalApiKey(String apiKey) {
+        try {
+            ApiKeyEntity apiKeyEntity = apiKeyDomainService.validateApiKey(apiKey);
+            // 更新使用记录
+            apiKeyDomainService.updateUsage(apiKey);
 
-    /** 更新API密钥使用记录（供外部API使用）
-     *
-     * @param apiKey API密钥 */
-    @Transactional
-    public void updateUsage(String apiKey) {
-        apiKeyDomainService.updateUsage(apiKey);
+            return ApiKeyValidationResult.success(
+                apiKeyEntity.getUserId(),
+                apiKeyEntity.getAgentId()
+            );
+        } catch (BusinessException e) {
+            return ApiKeyValidationResult.failure(e.getMessage());
+        }
     }
 }
