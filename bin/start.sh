@@ -28,6 +28,7 @@ echo "  - PostgreSQL 数据库 (端口: 5432)"
 echo "  - API Premium Gateway (端口: 8081)"
 echo "  - AgentX 后端服务 (端口: 8080)"
 echo "  - AgentX 前端服务 (端口: 3000)"
+echo "  - MCP 网关服务 (端口: 8005)"
 echo
 
 # 检查 Docker 和 Docker Compose 是否已安装
@@ -234,6 +235,7 @@ echo -e "${BLUE}服务访问地址:${NC}"
 echo "  - 前端应用: http://localhost:3000"
 echo "  - 后端API: http://localhost:8080"
 echo "  - API网关: http://localhost:8081"
+echo "  - MCP网关: http://localhost:8082"
 echo "  - 数据库连接: localhost:5432"
 echo
 echo -e "${YELLOW}🔐 默认登录账号:${NC}"

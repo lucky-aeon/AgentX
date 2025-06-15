@@ -298,6 +298,7 @@ echo -e "${BLUE}服务访问地址:${NC}"
 echo "  - 前端应用: http://localhost:3000"
 echo "  - 后端API: http://localhost:8080"
 echo "  - API网关: http://localhost:8081"
+echo "  - MCP网关: http://localhost:8005"
 echo "  - 数据库连接: localhost:5432"
 echo
 echo -e "${YELLOW}🔐 默认登录账号:${NC}"

@@ -81,10 +81,13 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/agentx
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=postgres
+      - MCP_GATEWAY_URL=http://mcp-gateway:8080
     depends_on:
       postgres:
         condition: service_healthy
       api-gateway:
+        condition: service_started
+      mcp-gateway:
         condition: service_started
     volumes:
       - ./logs/backend:/app/logs
@@ -106,6 +109,16 @@ services:
       - NEXT_PUBLIC_GATEWAY_URL=http://localhost:8081
     depends_on:
       - agentx-backend
+    networks:
+      - agentx-network
+    restart: unless-stopped
+
+  # MCP网关服务
+  mcp-gateway:
+    image: ghcr.io/lucky-aeon/mcp-gateway:latest
+    container_name: agentx-mcp-gateway
+    ports:
+      - "8005:8080" # 映射到主机的8082端口，避免冲突
     networks:
       - agentx-network
     restart: unless-stopped
