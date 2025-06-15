@@ -34,12 +34,6 @@ public class MessageHandlerFactory {
      * @param type 处理器类型
      * @return 消息处理器 */
     private AbstractMessageHandler getHandlerByType(MessageHandlerType type) {
-        switch (type) {
-            case AGENT :
-                return applicationContext.getBean("agentMessageHandler", AbstractMessageHandler.class);
-            case STANDARD :
-            default :
-                return applicationContext.getBean("chatMessageHandler", AbstractMessageHandler.class);
-        }
+        return applicationContext.getBean("agentMessageHandler", AbstractMessageHandler.class);
     }
 }

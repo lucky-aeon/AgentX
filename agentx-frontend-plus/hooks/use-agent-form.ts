@@ -161,19 +161,57 @@ export function useAgentForm({ initialData, isEditMode = false }: UseAgentFormPr
   }
 
   // 更新工具预设参数
-  const updateToolPresetParameters = (toolId: string, presetParams: any) => {
-    setFormData(prev => ({
-      ...prev,
-      toolPresetParams: {
-        ...prev.toolPresetParams,
-        ...presetParams
+  const updateToolPresetParameters = (toolId: string, presetParams: Record<string, Record<string, string>>) => {
+    // 获取当前工具信息
+    const selectedTool = installedTools.find((t: Tool) => t.id === toolId || t.toolId === toolId);
+    
+    if (!selectedTool || !selectedTool.mcpServerName) {
+      console.error("无法找到对应的工具或工具缺少 mcpServerName");
+      toast({
+        title: "无法更新工具参数",
+        description: "工具信息不完整",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const mcpServerName = selectedTool.mcpServerName;
+    
+    setFormData(prev => {
+      // 创建新的 toolPresetParams 对象
+      const newToolPresetParams = { ...prev.toolPresetParams };
+      
+      // 确保 mcpServerName 的键存在
+      if (!newToolPresetParams[mcpServerName]) {
+        newToolPresetParams[mcpServerName] = {};
       }
-    }))
+      
+      // 遍历工具的所有功能
+      Object.keys(presetParams).forEach(functionName => {
+        // 获取该功能的所有参数
+        const params = presetParams[functionName];
+        
+        // 将参数添加到嵌套结构中
+        if (!newToolPresetParams[mcpServerName][functionName]) {
+          newToolPresetParams[mcpServerName][functionName] = {};
+        }
+        
+        // 添加每个参数
+        Object.entries(params).forEach(([paramName, paramValue]) => {
+          newToolPresetParams[mcpServerName][functionName][paramName] = paramValue || '';
+        });
+      });
+      
+      return {
+        ...prev,
+        toolPresetParams: newToolPresetParams
+      };
+    });
     
     toast({
-      title: "预设参数已更新",
-      description: `已为工具 ${toolId} 更新预设参数`,
-    })
+      title: "参数预设已更新",
+      description: `已为工具 ${selectedTool.name} 更新参数预设`,
+    });
   }
 
   // 获取可用的标签页
