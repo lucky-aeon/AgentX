@@ -337,30 +337,6 @@ echo "  - API网关项目已自动克隆到: ${API_GATEWAY_DIR}"
 echo
 echo -e "${GREEN}🎉 AgentX 开发环境已成功启动！${NC}"
 echo
-
-# 显示完整的启动信息
-echo -e "${GREEN}"
-echo "🎉 ========================================================= 🎉"
-echo "              🚀 AGENTX 开发环境启动完成! 🚀                 "
-echo "🎉 ========================================================= 🎉"
-echo -e "${NC}"
-echo
-echo -e "${BLUE}服务访问地址:${NC}"
-echo "  - 前端应用: http://localhost:3000"
-echo "  - 后端API: http://localhost:8080"
-echo "  - API网关: http://localhost:8081"
-echo "  - 数据库连接: localhost:5432"
-echo
-echo -e "${YELLOW}🔐 默认登录账号:${NC}"
-echo "┌────────────────────────────────────────┐"
-echo "│  管理员账号                            │"
-echo "│  邮箱: admin@agentx.ai                 │"
-echo "│  密码: admin123                       │"
-echo "├────────────────────────────────────────┤"
-echo "│  测试账号                              │"
-echo "│  邮箱: test@agentx.ai                  │"
-echo "│  密码: test123                        │"
-echo "└────────────────────────────────────────┘"
 echo
 
 # 开发模式，启动文件监听
@@ -532,46 +508,8 @@ echo -e "${BLUE}🔍 正在启动开发模式热更新...${NC}"
         echo -e "${YELLOW}注意: 按 Ctrl+C 可停止监听并返回命令行${NC}"
         echo
         
-        # 创建临时的 compose watch 配置
-        cat > docker-compose.watch.yml << EOF
-version: "3.8"
-services:
-  agentx-backend:
-    develop:
-      watch:
-        - action: rebuild
-          path: ./AgentX/src
-          target: /app/src
-        - action: rebuild
-          path: ./AgentX/pom.xml
-          target: /app/pom.xml
-          
-  agentx-frontend:
-    develop:
-      watch:
-        - action: rebuild
-          path: ./agentx-frontend-plus/src
-          target: /app/src
-        - action: rebuild
-          path: ./agentx-frontend-plus/package.json
-          target: /app/package.json
-          
-  api-gateway:
-    develop:
-      watch:
-        - action: rebuild
-          path: ./API-Premium-Gateway/src
-          target: /app/src
-        - action: rebuild
-          path: ./API-Premium-Gateway/pom.xml
-          target: /app/pom.xml
-EOF
-        
-        # 合并配置并启动watch
-        $COMPOSE_CMD -f "$COMPOSE_FILE" -f docker-compose.watch.yml watch
-        
-        # 清理临时文件
-        rm -f docker-compose.watch.yml
+        # 直接使用现有的 watch 配置，但不重新构建已运行的服务
+        $COMPOSE_CMD -f "$COMPOSE_FILE" -f docker-compose.watch.yml watch --no-up
         
     else
         # 使用轮询模式 - 无需额外工具
