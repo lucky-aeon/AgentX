@@ -8,6 +8,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import org.xhy.application.conversation.assembler.MessageAssembler;
 import org.xhy.application.conversation.dto.AgentPreviewRequest;
 import org.xhy.application.conversation.dto.ChatRequest;
+import org.xhy.application.conversation.dto.ChatResponse;
 import org.xhy.application.conversation.dto.MessageDTO;
 import org.xhy.application.conversation.service.message.AbstractMessageHandler;
 import org.xhy.application.conversation.service.message.preview.PreviewMessageHandler;
@@ -136,78 +137,155 @@ public class ConversationAppService {
         return handler.chat(environment, transport);
     }
 
+    /** 对话处理（支持指定模型）- 用于外部API
+     *
+     * @param chatRequest 聊天请求
+     * @param userId 用户ID
+     * @param modelId 指定的模型ID（可选，为null时使用Agent绑定的模型）
+     * @return SSE发射器 */
+    public SseEmitter chatWithModel(ChatRequest chatRequest, String userId, String modelId) {
+        // 1. 准备对话环境（支持指定模型）
+        ChatContext environment = prepareEnvironmentWithModel(chatRequest, userId, modelId);
+
+        // 2. 获取传输方式 (当前仅支持SSE，将来支持WebSocket)
+        MessageTransport<SseEmitter> transport = transportFactory
+                .getTransport(MessageTransportFactory.TRANSPORT_TYPE_SSE);
+
+        // 3. 获取适合的消息处理器 (根据agent类型)
+        AbstractMessageHandler handler = messageHandlerFactory.getHandler(environment.getAgent());
+
+        // 4. 处理对话
+        return handler.chat(environment, transport);
+    }
+
+    /** 同步对话处理（支持指定模型）- 用于外部API
+     *
+     * @param chatRequest 聊天请求
+     * @param userId 用户ID
+     * @param modelId 指定的模型ID（可选，为null时使用Agent绑定的模型）
+     * @return 同步聊天响应 */
+    public ChatResponse chatSyncWithModel(ChatRequest chatRequest, String userId, String modelId) {
+        // 1. 准备对话环境（设置为非流式）
+        ChatContext environment = prepareEnvironmentWithModel(chatRequest, userId, modelId);
+        environment.setStreaming(false); // 设置为同步模式
+
+        // 2. 获取同步传输方式
+        MessageTransport<ChatResponse> transport = transportFactory
+                .getTransport(MessageTransportFactory.TRANSPORT_TYPE_SYNC);
+
+        // 3. 获取适合的消息处理器
+        AbstractMessageHandler handler = messageHandlerFactory.getHandler(environment.getAgent());
+
+        // 4. 处理对话
+        return handler.chat(environment, transport);
+    }
+
     /** 准备对话环境
      *
      * @param chatRequest 聊天请求
      * @param userId 用户ID
      * @return 对话环境 */
     private ChatContext prepareEnvironment(ChatRequest chatRequest, String userId) {
-        // 1. 获取会话
+        return prepareEnvironmentWithModel(chatRequest, userId, null);
+    }
+
+    /** 准备对话环境（支持指定模型）- 用于外部API
+     *
+     * @param chatRequest 聊天请求
+     * @param userId 用户ID
+     * @param modelId 指定的模型ID（可选，为null时使用Agent绑定的模型）
+     * @return 对话环境 */
+    private ChatContext prepareEnvironmentWithModel(ChatRequest chatRequest, String userId, String modelId) {
+        // 1. 获取会话和Agent信息
         String sessionId = chatRequest.getSessionId();
         SessionEntity session = sessionDomainService.getSession(sessionId, userId);
         String agentId = session.getAgentId();
+        AgentEntity agent = getAgentWithValidation(agentId, userId);
+        
+        // 2. 获取工具配置
+        List<String> mcpServerNames = getMcpServerNames(agent.getToolIds(), userId);
 
-        // 2. 获取对应agent
+        // 3. 获取模型配置
+        AgentWorkspaceEntity workspace = agentWorkspaceDomainService.getWorkspace(agentId, userId);
+        LLMModelConfig llmModelConfig = workspace.getLlmModelConfig();
+        ModelEntity model = getModelForChat(llmModelConfig, modelId, userId);
+
+        // 4. 获取高可用服务商信息
+        List<String> fallbackChain = userSettingsDomainService.getUserFallbackChain(userId);
+        HighAvailabilityResult result = highAvailabilityDomainService.selectBestProvider(model, userId, sessionId, fallbackChain);
+        ProviderEntity provider = result.getProvider();
+        ModelEntity selectedModel = result.getModel();
+        String instanceId = result.getInstanceId();
+        provider.isActive();
+
+        // 5. 创建并配置环境对象
+        ChatContext chatContext = createChatContext(chatRequest, userId, agent, selectedModel, provider, 
+                                                   llmModelConfig, mcpServerNames, instanceId);
+        setupContextAndHistory(chatContext, chatRequest);
+
+        return chatContext;
+    }
+
+    /** 获取Agent并进行验证 */
+    private AgentEntity getAgentWithValidation(String agentId, String userId) {
         AgentEntity agent = agentDomainService.getAgentById(agentId);
         if (!agent.getUserId().equals(userId) && !agent.getEnabled()) {
             throw new BusinessException("agent已被禁用");
         }
 
-        List<String> toolIds = agent.getToolIds();
-
-        // 在工作区中的助理会分为用户自己创建的和安装的助理，因此需要区分 agent，如果 agent 的 userId 等于当前用户则使用 agent，反之使用
-        // agent_version
+        // 处理安装的助理版本
         if (!agent.getUserId().equals(userId)) {
             AgentVersionEntity latestAgentVersion = agentDomainService.getLatestAgentVersion(agentId);
-            // 直接转换即可
-            toolIds = latestAgentVersion.getToolIds();
             BeanUtils.copyProperties(latestAgentVersion, agent);
         }
 
-        // 校验工具的可用性
+        return agent;
+    }
+
+    /** 获取MCP服务器名称列表 */
+    private List<String> getMcpServerNames(List<String> toolIds, String userId) {
+        if (toolIds == null || toolIds.isEmpty()) {
+            return new ArrayList<>();
+        }
         List<UserToolEntity> installTool = userToolDomainService.getInstallTool(toolIds, userId);
+        return installTool.stream().map(UserToolEntity::getMcpServerName).collect(Collectors.toList());
+    }
 
-        // 获取 mcp server name
-        List<String> mcpServerNames = installTool.stream().map(UserToolEntity::getMcpServerName).toList();
-
-        // 3. 获取工作区和模型配置
-        AgentWorkspaceEntity workspace = agentWorkspaceDomainService.getWorkspace(agentId, userId);
-        LLMModelConfig llmModelConfig = workspace.getLlmModelConfig();
-        String modelId = llmModelConfig.getModelId();
-        ModelEntity model = llmDomainService.findModelById(modelId);
-        if (modelId == null) {
-            String userDefaultModelId = userSettingsDomainService.getUserDefaultModelId(userId);
-            model = llmDomainService.getModelById(userDefaultModelId);
+    /** 获取对话使用的模型 */
+    private ModelEntity getModelForChat(LLMModelConfig llmModelConfig, String specifiedModelId, String userId) {
+        String finalModelId;
+        if (specifiedModelId != null && !specifiedModelId.trim().isEmpty()) {
+            finalModelId = specifiedModelId;
+        } else {
+            finalModelId = llmModelConfig.getModelId();
         }
 
+        ModelEntity model = llmDomainService.findModelById(finalModelId);
+        if (finalModelId == null) {
+            String userDefaultModelId = userSettingsDomainService.getUserDefaultModelId(userId);
+            model = llmDomainService.getModelById(userDefaultModelId);
+        } else if (model == null) {
+            model = llmDomainService.getModelById(finalModelId);
+        }
         model.isActive();
+        return model;
+    }
 
-        // 4. 获取用户降级配置
-        List<String> fallbackChain = userSettingsDomainService.getUserFallbackChain(userId);
-
-        // 5. 获取服务商信息（支持高可用、会话亲和性和降级）
-        HighAvailabilityResult result = highAvailabilityDomainService.selectBestProvider(model, userId, sessionId,
-                fallbackChain);
-        ProviderEntity provider = result.getProvider();
-        ModelEntity selectedModel = result.getModel(); // 可能是不同的部署名称
-        String instanceId = result.getInstanceId(); // 获取实例ID
-        provider.isActive();
-
-        // 5. 创建环境对象
+    /** 创建ChatContext对象 */
+    private ChatContext createChatContext(ChatRequest chatRequest, String userId, AgentEntity agent, 
+                                         ModelEntity model, ProviderEntity provider, LLMModelConfig llmModelConfig,
+                                         List<String> mcpServerNames, String instanceId) {
         ChatContext chatContext = new ChatContext();
-        chatContext.setSessionId(sessionId);
+        chatContext.setSessionId(chatRequest.getSessionId());
         chatContext.setUserId(userId);
         chatContext.setUserMessage(chatRequest.getMessage());
         chatContext.setAgent(agent);
-        chatContext.setModel(selectedModel); // 使用高可用选择的模型（可能有不同的部署名称）
+        chatContext.setModel(model);
         chatContext.setProvider(provider);
         chatContext.setLlmModelConfig(llmModelConfig);
         chatContext.setMcpServerNames(mcpServerNames);
         chatContext.setFileUrls(chatRequest.getFileUrls());
-        chatContext.setInstanceId(instanceId); // 设置实例ID
-        // 6. 设置上下文信息和消息历史
-        setupContextAndHistory(chatContext, chatRequest);
-
+        chatContext.setInstanceId(instanceId);
         return chatContext;
     }
 
@@ -329,52 +407,55 @@ public class ConversationAppService {
      * @param userId 用户ID
      * @return 预览对话环境 */
     private ChatContext preparePreviewEnvironment(AgentPreviewRequest previewRequest, String userId) {
-        // 1. 创建虚拟Agent实体
+        // 1. 创建虚拟Agent和获取模型
         AgentEntity virtualAgent = createVirtualAgent(previewRequest, userId);
+        String modelId = getPreviewModelId(previewRequest, userId);
+        ModelEntity model = getModelForChat(null, modelId, userId);
 
-        // 2. 获取模型信息
+        // 2. 获取服务商信息（预览不使用高可用）
+        ProviderEntity provider = llmDomainService.getProvider(model.getProviderId(), userId);
+        provider.isActive();
+
+        // 3. 获取工具配置
+        List<String> mcpServerNames = getMcpServerNames(previewRequest.getToolIds(), userId);
+
+        // 4. 创建预览配置
+        LLMModelConfig llmModelConfig = createDefaultLLMModelConfig(modelId);
+
+        // 5. 创建并配置环境对象
+        ChatContext chatContext = createPreviewChatContext(previewRequest, userId, virtualAgent, model, 
+                                                           provider, llmModelConfig, mcpServerNames);
+        setupPreviewContextAndHistory(chatContext, previewRequest);
+
+        return chatContext;
+    }
+
+    /** 获取预览使用的模型ID */
+    private String getPreviewModelId(AgentPreviewRequest previewRequest, String userId) {
         String modelId = previewRequest.getModelId();
         if (modelId == null || modelId.trim().isEmpty()) {
-            // 使用用户默认模型
             modelId = userSettingsDomainService.getUserDefaultModelId(userId);
             if (modelId == null) {
                 throw new BusinessException("用户未设置默认模型，且预览请求中未指定模型");
             }
         }
+        return modelId;
+    }
 
-        ModelEntity model = llmDomainService.getModelById(modelId);
-        model.isActive();
-
-        // 3. 获取服务商信息
-        ProviderEntity provider = llmDomainService.getProvider(model.getProviderId(), userId);
-        provider.isActive();
-
-        // 4. 处理工具配置
-        List<String> toolIds = previewRequest.getToolIds();
-        List<String> mcpServerNames = new ArrayList<>();
-        if (toolIds != null && !toolIds.isEmpty()) {
-            List<UserToolEntity> installTool = userToolDomainService.getInstallTool(toolIds, userId);
-            mcpServerNames = installTool.stream().map(UserToolEntity::getMcpServerName).toList();
-        }
-
-        // 5. 创建默认的LLM模型配置
-        LLMModelConfig llmModelConfig = createDefaultLLMModelConfig(modelId);
-
-        // 6. 创建环境对象
+    /** 创建预览ChatContext对象 */
+    private ChatContext createPreviewChatContext(AgentPreviewRequest previewRequest, String userId, 
+                                                AgentEntity agent, ModelEntity model, ProviderEntity provider,
+                                                LLMModelConfig llmModelConfig, List<String> mcpServerNames) {
         ChatContext chatContext = new ChatContext();
-        chatContext.setSessionId("preview-session"); // 虚拟会话ID
+        chatContext.setSessionId("preview-session");
         chatContext.setUserId(userId);
         chatContext.setUserMessage(previewRequest.getUserMessage());
-        chatContext.setAgent(virtualAgent);
+        chatContext.setAgent(agent);
         chatContext.setModel(model);
         chatContext.setProvider(provider);
         chatContext.setLlmModelConfig(llmModelConfig);
         chatContext.setMcpServerNames(mcpServerNames);
         chatContext.setFileUrls(previewRequest.getFileUrls());
-
-        // 7. 设置预览上下文和历史消息
-        setupPreviewContextAndHistory(chatContext, previewRequest);
-
         return chatContext;
     }
 

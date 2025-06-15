@@ -206,4 +206,35 @@ public class LLMAppService {
         ModelEntity modelEntity = llmDomainService.findModelById(userDefaultModelId);
         return ModelAssembler.toDTO(modelEntity);
     }
+
+    /** 检查用户是否可以使用指定模型
+     *
+     * @param modelId 模型ID
+     * @param userId 用户ID
+     * @return 是否可以使用 */
+    public boolean canUserUseModel(String modelId, String userId) {
+        try {
+            ModelEntity model = llmDomainService.getModelById(modelId);
+            // 官方模型 + 激活状态 = 可用
+            if (model.getOfficial() && model.getStatus()) {
+                return true;
+            }
+            // 用户自己的模型 + 激活状态 = 可用
+            if (userId.equals(model.getUserId()) && model.getStatus()) {
+                return true;
+            }
+            return false;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /** 获取用户可用的模型列表（用于外部API）
+     *
+     * @param userId 用户ID
+     * @return 用户可用的聊天模型列表 */
+    public List<ModelDTO> getAvailableModelsForUser(String userId) {
+        // 获取用户可用的模型：用户激活的 + 官方激活的聊天模型
+        return getActiveModelsByType(ProviderType.ALL, userId, ModelType.CHAT);
+    }
 }
