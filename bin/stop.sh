@@ -21,15 +21,18 @@ echo -e "${YELLOW}正在停止 AgentX 项目的所有服务...${NC}"
 
 # 检查是否有正在运行的容器
 if docker ps | grep -q "agentx-"; then
-    # 使用 Docker Compose 停止服务
+    # 使用 Docker Compose 停止服务（只停止，不删除容器）
     if docker compose version &> /dev/null; then
-        docker compose down
+        docker compose stop
     else
-        docker-compose down
+        docker-compose stop
     fi
     
     if [ $? -eq 0 ]; then
         echo -e "${GREEN}所有服务已成功停止${NC}"
+        echo -e "${BLUE}提示: 容器已停止但未删除，如需删除容器请运行:${NC}"
+        echo -e "${YELLOW}  docker compose down${NC}"
+        echo -e "${YELLOW}  或者 docker-compose down${NC}"
     else
         echo -e "${RED}停止服务时出现错误${NC}"
         exit 1

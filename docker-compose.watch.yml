@@ -1,0 +1,31 @@
+version: "3.8"
+services:
+  agentx-backend:
+    develop:
+      watch:
+        - action: rebuild
+          path: ./AgentX/src
+          target: /app/src
+        - action: rebuild
+          path: ./AgentX/pom.xml
+          target: /app/pom.xml
+          
+  agentx-frontend:
+    develop:
+      watch:
+        - action: rebuild
+          path: ./agentx-frontend-plus/src
+          target: /app/src
+        - action: rebuild
+          path: ./agentx-frontend-plus/package.json
+          target: /app/package.json
+          
+  api-gateway:
+    develop:
+      watch:
+        - action: rebuild
+          path: ./API-Premium-Gateway/src
+          target: /app/src
+        - action: rebuild
+          path: ./API-Premium-Gateway/pom.xml
+          target: /app/pom.xml

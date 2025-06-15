@@ -44,26 +44,18 @@ AgentX 是一个基于大模型 (LLM) 和多能力平台 (MCP) 的智能 Agent �
 
 ### 🐳 一键启动（推荐）
 
-#### 🔥 热更新开发模式
+#### 🔥 开发模式
 
-**最佳开发体验**：代码修改实时生效，无需重启容器！
+**最佳开发体验**：代码修改自动重启容器，无需手动操作！
 
 ```bash
 # 克隆仓库
 git clone https://github.com/lucky-aeon/AgentX.git
 cd AgentX
 
-# 一键启动热更新模式
-./bin/start-dev.sh --hot
-```
-
-#### 🚀 标准开发模式
-
-```bash
-# 标准开发模式（重启生效）
+# 一键启动开发模式（包含热更新功能）
 ./bin/start-dev.sh
 ```
-
 #### 🏭 生产模式
 
 ```bash
@@ -95,17 +87,34 @@ cd AgentX
 
 ```bash
 # 查看服务状态
-docker compose -f docker-compose.hotreload.yml ps
+docker compose -f docker-compose.dev.yml ps
 
-# 停止所有服务
-docker compose -f docker-compose.hotreload.yml down
+# 停止所有服务（保留容器）
+./bin/stop.sh
+
+# 删除所有容器
+docker compose -f docker-compose.dev.yml down
 
 # 查看服务日志
-docker compose -f docker-compose.hotreload.yml logs -f [服务名]
+docker compose -f docker-compose.dev.yml logs -f [服务名]
 
 # 重启特定服务
-docker compose -f docker-compose.hotreload.yml restart [服务名]
+docker compose -f docker-compose.dev.yml restart [服务名]
 ```
+
+### 📝 开发模式说明
+
+开发模式启动后会显示以下信息并询问是否启动文件监听：
+
+```
+🔥 是否立即启动文件监听？(推荐)
+  - 启动后修改代码会自动重启容器
+  - 可随时按 Ctrl+C 停止监听
+启动文件监听? [Y/n] (默认: Y):
+```
+
+- **选择 Y**：启动文件监听，修改代码自动生效
+- **选择 n**：跳过文件监听，需要手动重启服务
 
 ### 💻 本地开发启动（传统方式）
 
