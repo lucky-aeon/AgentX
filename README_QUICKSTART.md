@@ -41,17 +41,20 @@ chmod +x bin/*.sh
 
 #### Windows 用户
 ```cmd
-# 直接双击运行或在命令行中执行
+# 开发模式（推荐）- 支持热更新
+bin\start-dev.bat
+
+# 生产模式 - 稳定运行
 bin\start.bat
 ```
 
 ## ⚡ 启动模式对比
 
-| 启动模式 | 脚本 | 首次启动时间 | 后续启动时间 | 适用场景 |
-|---------|------|-------------|-------------|----------|
-| 🚀 开发模式 | `./bin/start-dev.sh` | ~3-5分钟 | ~1-2分钟 | 开发环境，频繁重启 |
-| 📦 生产模式 | `./bin/start.sh` | ~5-8分钟 | ~3-5分钟 | 生产环境，稳定运行 |
-| 🔧 预构建 | `./bin/prebuild.sh` | ~2-3分钟 | - | 首次使用，缓存依赖 |
+| 启动模式 | Linux/macOS | Windows | 首次启动时间 | 后续启动时间 | 适用场景 |
+|---------|-------------|---------|-------------|-------------|----------|
+| 🚀 开发模式 | `./bin/start-dev.sh` | `bin\start-dev.bat` | ~3-5分钟 | ~1-2分钟 | 开发环境，频繁重启 |
+| 📦 生产模式 | `./bin/start.sh` | `bin\start.bat` | ~5-8分钟 | ~3-5分钟 | 生产环境，稳定运行 |
+| 🔧 预构建 | `./bin/prebuild.sh` | - | ~2-3分钟 | - | 首次使用，缓存依赖 |
 
 ### 💡 性能优化特性
 
@@ -141,6 +144,8 @@ bin\start.bat
 ## 🛠️ 管理命令
 
 ### 开发模式命令
+
+#### Linux/macOS
 ```bash
 # 查看服务状态
 docker-compose -f docker-compose.dev.yml ps
@@ -155,13 +160,47 @@ docker-compose -f docker-compose.dev.yml logs -f [服务名]
 docker-compose -f docker-compose.dev.yml restart [服务名]
 ```
 
+#### Windows
+```cmd
+# 查看服务状态
+docker-compose -f docker-compose.dev.yml ps
+
+# 停止所有服务
+docker-compose -f docker-compose.dev.yml down
+
+# 查看日志
+docker-compose -f docker-compose.dev.yml logs -f [服务名]
+
+# 重启服务
+docker-compose -f docker-compose.dev.yml restart [服务名]
+```
+
 ### 生产模式命令
+
+#### Linux/macOS
 ```bash
 # 查看服务状态
 docker-compose ps
 
 # 停止所有服务
 ./bin/stop.sh
+# 或者
+docker-compose down
+
+# 查看日志
+docker-compose logs -f [服务名]
+
+# 重启服务
+docker-compose restart [服务名]
+```
+
+#### Windows
+```cmd
+# 查看服务状态
+docker-compose ps
+
+# 停止所有服务
+bin\stop.bat
 # 或者
 docker-compose down
 

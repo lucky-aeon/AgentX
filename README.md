@@ -38,9 +38,18 @@ AgentX 是一个基于大模型 (LLM) 和多能力平台 (MCP) 的智能 Agent �
 
 ### 🛠️ 环境准备
 
+#### 必需环境
   * **Docker & Docker Compose**: 用于容器化部署（推荐）
-  * **Node.js & npm**: 推荐使用 LTS 版本（本地开发）
-  * **Java Development Kit (JDK)**: JDK 17 或更高版本（本地开发）
+  * **Git**: 用于克隆项目和子模块
+
+#### 本地开发环境（可选）
+  * **Node.js & npm**: 推荐使用 LTS 版本
+  * **Java Development Kit (JDK)**: JDK 17 或更高版本
+
+#### 系统支持
+  * **Linux**: 完全支持（推荐）
+  * **macOS**: 完全支持
+  * **Windows**: 完全支持（Windows 10/11 + WSL2 或原生支持）
 
 ### 🐳 一键启动（推荐）
 
@@ -48,6 +57,7 @@ AgentX 是一个基于大模型 (LLM) 和多能力平台 (MCP) 的智能 Agent �
 
 **最佳开发体验**：代码修改自动重启容器，无需手动操作！
 
+##### Linux/macOS 用户
 ```bash
 # 克隆仓库
 git clone https://github.com/lucky-aeon/AgentX.git
@@ -56,11 +66,29 @@ cd AgentX
 # 一键启动开发模式（包含热更新功能）
 ./bin/start-dev.sh
 ```
+
+##### Windows 用户
+```cmd
+# 克隆仓库
+git clone https://github.com/lucky-aeon/AgentX.git
+cd AgentX
+
+# 一键启动开发模式（包含热更新功能）
+bin\start-dev.bat
+```
+
 #### 🏭 生产模式
 
+##### Linux/macOS 用户
 ```bash
 # 生产环境启动
 ./bin/start.sh
+```
+
+##### Windows 用户
+```cmd
+# 生产环境启动
+bin\start.bat
 ```
 
 ### 📋 服务访问地址
@@ -85,12 +113,31 @@ cd AgentX
 
 ### 🛠️ 开发管理命令
 
+#### Linux/macOS 用户
 ```bash
 # 查看服务状态
 docker compose -f docker-compose.dev.yml ps
 
 # 停止所有服务（保留容器）
 ./bin/stop.sh
+
+# 删除所有容器
+docker compose -f docker-compose.dev.yml down
+
+# 查看服务日志
+docker compose -f docker-compose.dev.yml logs -f [服务名]
+
+# 重启特定服务
+docker compose -f docker-compose.dev.yml restart [服务名]
+```
+
+#### Windows 用户
+```cmd
+# 查看服务状态
+docker compose -f docker-compose.dev.yml ps
+
+# 停止所有服务（保留容器）
+bin\stop.bat
 
 # 删除所有容器
 docker compose -f docker-compose.dev.yml down
