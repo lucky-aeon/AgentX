@@ -29,6 +29,7 @@ export const API_ENDPOINTS = {
   AGENT_LATEST_VERSION: (id: string) => `/agents/${id}/versions/latest`,
   PUBLISH_AGENT_VERSION: (id: string) => `/agents/${id}/publish`,
   PUBLISHED_AGENTS: "/agents/published",
+  GENERATE_SYSTEM_PROMPT: "/agents/generate-system-prompt",
   
   // Agent工作区相关
   AGENT_WORKSPACE: "/agents/workspaces",

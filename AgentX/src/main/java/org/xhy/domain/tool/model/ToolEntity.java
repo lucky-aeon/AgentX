@@ -18,6 +18,7 @@ import org.xhy.infrastructure.entity.BaseEntity;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /** 工具实体类 */
 @TableName(value = "tools", autoResultMap = true)
@@ -231,5 +232,22 @@ public class ToolEntity extends BaseEntity {
 
     public void setMcpServerName(String mcpServerName) {
         this.mcpServerName = mcpServerName;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("<tool>\n");
+        sb.append("  <name>").append(this.getName()).append("</name>\n");
+        sb.append("  <description>").append(this.getDescription()).append("</description>\n");
+        if (this.getToolList() != null && !this.getToolList().isEmpty()) {
+            sb.append("  <functions>\n");
+            for (ToolDefinition def : this.getToolList()) {
+                sb.append(def.toString()); // 调用ToolDefinition的toString
+            }
+            sb.append("  </functions>\n");
+        }
+        sb.append("</tool>\n");
+        return sb.toString();
     }
 }

@@ -700,3 +700,38 @@ export async function handleGithubCallbackApi(code: string) {
     `/oauth/github/callback?code=${code}`
   )
 }
+
+// 生成系统提示词
+export async function generateSystemPrompt(data: {
+  agentName: string;
+  agentDescription: string;
+  toolIds: string[];
+}): Promise<ApiResponse<string>> {
+  try {
+    console.log(`Generating system prompt for agent: ${data.agentName}`)
+    
+    const response = await httpClient.post<ApiResponse<string>>(
+      API_ENDPOINTS.GENERATE_SYSTEM_PROMPT,
+      data
+    );
+    
+    return response;
+  } catch (error) {
+    console.error("生成系统提示词错误:", error)
+    // 返回格式化的错误响应
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : "未知错误",
+      data: "",
+      timestamp: Date.now(),
+    }
+  }
+}
+
+// 带Toast的生成系统提示词
+export const generateSystemPromptWithToast = withToast(generateSystemPrompt, {
+  showSuccessToast: true,
+  showErrorToast: true,
+  successTitle: "生成系统提示词成功",
+  errorTitle: "生成系统提示词失败"
+})

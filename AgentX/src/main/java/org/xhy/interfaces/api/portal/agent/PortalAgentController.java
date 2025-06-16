@@ -3,6 +3,7 @@ package org.xhy.interfaces.api.portal.agent;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.xhy.application.agent.service.AgentAppService;
+import org.xhy.application.agent.service.SystemPromptGeneratorAppService;
 import org.xhy.application.agent.dto.AgentDTO;
 import org.xhy.application.agent.dto.AgentVersionDTO;
 import org.xhy.infrastructure.auth.UserContext;
@@ -10,6 +11,7 @@ import org.xhy.interfaces.api.common.Result;
 import org.xhy.interfaces.dto.agent.request.CreateAgentRequest;
 import org.xhy.interfaces.dto.agent.request.PublishAgentVersionRequest;
 import org.xhy.interfaces.dto.agent.request.SearchAgentsRequest;
+import org.xhy.interfaces.dto.agent.request.SystemPromptGenerateRequest;
 import org.xhy.interfaces.dto.agent.request.UpdateAgentRequest;
 
 import java.util.List;
@@ -20,9 +22,12 @@ import java.util.List;
 public class PortalAgentController {
 
     private final AgentAppService agentAppService;
+    private final SystemPromptGeneratorAppService systemPromptGeneratorAppService;
 
-    public PortalAgentController(AgentAppService agentAppService) {
+    public PortalAgentController(AgentAppService agentAppService, 
+                               SystemPromptGeneratorAppService systemPromptGeneratorAppService) {
         this.agentAppService = agentAppService;
+        this.systemPromptGeneratorAppService = systemPromptGeneratorAppService;
     }
 
     /** 创建新Agent */
@@ -102,5 +107,13 @@ public class PortalAgentController {
     @GetMapping("/{agentId}/versions/latest")
     public Result<AgentVersionDTO> getLatestAgentVersion(@PathVariable String agentId) {
         return Result.success(agentAppService.getLatestAgentVersion(agentId));
+    }
+
+    /** 生成系统提示词 */
+    @PostMapping("/generate-system-prompt")
+    public Result<String> generateSystemPrompt(@RequestBody @Validated SystemPromptGenerateRequest request) {
+        String userId = UserContext.getCurrentUserId();
+        String systemPrompt = systemPromptGeneratorAppService.generateSystemPrompt(request, userId);
+        return Result.success(systemPrompt);
     }
 }
