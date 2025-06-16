@@ -2,9 +2,7 @@ package org.xhy.interfaces.dto.agent.request;
 
 import java.util.List;
 
-/**
- * 系统提示词生成请求
- */
+/** 系统提示词生成请求 */
 public class SystemPromptGenerateRequest {
 
     /** Agent名称 */
@@ -39,4 +37,4 @@ public class SystemPromptGenerateRequest {
     public void setToolIds(List<String> toolIds) {
         this.toolIds = toolIds;
     }
-} 
+}

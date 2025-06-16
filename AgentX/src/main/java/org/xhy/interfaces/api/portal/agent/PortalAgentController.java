@@ -24,8 +24,8 @@ public class PortalAgentController {
     private final AgentAppService agentAppService;
     private final SystemPromptGeneratorAppService systemPromptGeneratorAppService;
 
-    public PortalAgentController(AgentAppService agentAppService, 
-                               SystemPromptGeneratorAppService systemPromptGeneratorAppService) {
+    public PortalAgentController(AgentAppService agentAppService,
+            SystemPromptGeneratorAppService systemPromptGeneratorAppService) {
         this.agentAppService = agentAppService;
         this.systemPromptGeneratorAppService = systemPromptGeneratorAppService;
     }

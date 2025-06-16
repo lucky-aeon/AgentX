@@ -56,7 +56,7 @@ public class ToolDefinition {
         sb.append("    <function>\n");
         sb.append("      <name>").append(name).append("</name>\n");
         sb.append("      <description>").append(description).append("</description>\n");
-        
+
         if (parameters != null && parameters.containsKey("properties")) {
             Object propsObject = parameters.get("properties");
             if (propsObject instanceof Map) {
@@ -69,7 +69,8 @@ public class ToolDefinition {
                             sb.append("        <parameter>\n");
                             sb.append("          <name>").append(paramName).append("</name>\n");
                             sb.append("          <type>").append(detailsMap.get("type")).append("</type>\n");
-                            sb.append("          <description>").append(detailsMap.get("description")).append("</description>\n");
+                            sb.append("          <description>").append(detailsMap.get("description"))
+                                    .append("</description>\n");
                             sb.append("        </parameter>\n");
                         }
                     });
@@ -77,7 +78,7 @@ public class ToolDefinition {
                 }
             }
         }
-        
+
         sb.append("    </function>\n");
         return sb.toString();
     }
