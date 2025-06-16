@@ -262,7 +262,7 @@ public class ConversationAppService {
         }
 
         ModelEntity model = llmDomainService.findModelById(finalModelId);
-        if (model == null && finalModelId == null) {
+        if (finalModelId == null) {
             String userDefaultModelId = userSettingsDomainService.getUserDefaultModelId(userId);
             model = llmDomainService.getModelById(userDefaultModelId);
         } else if (model == null) {
