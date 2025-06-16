@@ -174,7 +174,12 @@ public class ConversationAppService {
         AgentWorkspaceEntity workspace = agentWorkspaceDomainService.getWorkspace(agentId, userId);
         LLMModelConfig llmModelConfig = workspace.getLlmModelConfig();
         String modelId = llmModelConfig.getModelId();
-        ModelEntity model = llmDomainService.getModelById(modelId);
+        ModelEntity model = llmDomainService.findModelById(modelId);
+        if (modelId == null){
+            String userDefaultModelId = userSettingsDomainService.getUserDefaultModelId(userId);
+            model = llmDomainService.getModelById(userDefaultModelId);
+        }
+
         model.isActive();
 
         // 4. 获取用户降级配置

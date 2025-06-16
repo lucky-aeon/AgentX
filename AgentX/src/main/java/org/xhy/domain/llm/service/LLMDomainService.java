@@ -350,7 +350,7 @@ public class LLMDomainService {
     public ModelEntity findModelById(String modelId) {
         ModelEntity modelEntity = modelRepository.selectById(modelId);
         if (modelEntity == null) {
-           return new ModelEntity();
+           return null;
         }
         return modelEntity;
     }
