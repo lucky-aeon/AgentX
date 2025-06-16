@@ -106,7 +106,7 @@ export default function ApiKeysPage() {
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>创建 API 密钥</DialogTitle>
-                  <DialogDescription>创建一个新的 API 密钥以访问 AgentX Plus API。</DialogDescription>
+                  <DialogDescription>创建一个新的 API 密钥以访问 AgentX API。</DialogDescription>
                 </DialogHeader>
                 {!newKey ? (
                   <div className="space-y-4 py-4">

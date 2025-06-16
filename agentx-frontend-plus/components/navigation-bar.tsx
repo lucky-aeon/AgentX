@@ -110,7 +110,7 @@ export function NavigationBar() {
         </Sheet>
         <Link href="/" className="mr-6 flex items-center space-x-2">
           <Home className="h-6 w-6 text-blue-600" />
-          <span className="hidden font-bold sm:inline-block">AgentX Plus</span>
+          <span className="hidden font-bold sm:inline-block">AgentX</span>
         </Link>
         <div className="flex flex-1 items-center justify-between">
           <nav className="flex items-center space-x-6">
