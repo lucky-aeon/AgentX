@@ -201,7 +201,7 @@ public class ConversationAppService {
         SessionEntity session = sessionDomainService.getSession(sessionId, userId);
         String agentId = session.getAgentId();
         AgentEntity agent = getAgentWithValidation(agentId, userId);
-        
+
         // 2. 获取工具配置
         List<String> mcpServerNames = getMcpServerNames(agent.getToolIds(), userId);
 
@@ -212,15 +212,16 @@ public class ConversationAppService {
 
         // 4. 获取高可用服务商信息
         List<String> fallbackChain = userSettingsDomainService.getUserFallbackChain(userId);
-        HighAvailabilityResult result = highAvailabilityDomainService.selectBestProvider(model, userId, sessionId, fallbackChain);
+        HighAvailabilityResult result = highAvailabilityDomainService.selectBestProvider(model, userId, sessionId,
+                fallbackChain);
         ProviderEntity provider = result.getProvider();
         ModelEntity selectedModel = result.getModel();
         String instanceId = result.getInstanceId();
         provider.isActive();
 
         // 5. 创建并配置环境对象
-        ChatContext chatContext = createChatContext(chatRequest, userId, agent, selectedModel, provider, 
-                                                   llmModelConfig, mcpServerNames, instanceId);
+        ChatContext chatContext = createChatContext(chatRequest, userId, agent, selectedModel, provider, llmModelConfig,
+                mcpServerNames, instanceId);
         setupContextAndHistory(chatContext, chatRequest);
 
         return chatContext;
@@ -272,9 +273,8 @@ public class ConversationAppService {
     }
 
     /** 创建ChatContext对象 */
-    private ChatContext createChatContext(ChatRequest chatRequest, String userId, AgentEntity agent, 
-                                         ModelEntity model, ProviderEntity provider, LLMModelConfig llmModelConfig,
-                                         List<String> mcpServerNames, String instanceId) {
+    private ChatContext createChatContext(ChatRequest chatRequest, String userId, AgentEntity agent, ModelEntity model,
+            ProviderEntity provider, LLMModelConfig llmModelConfig, List<String> mcpServerNames, String instanceId) {
         ChatContext chatContext = new ChatContext();
         chatContext.setSessionId(chatRequest.getSessionId());
         chatContext.setUserId(userId);
@@ -423,8 +423,8 @@ public class ConversationAppService {
         LLMModelConfig llmModelConfig = createDefaultLLMModelConfig(modelId);
 
         // 5. 创建并配置环境对象
-        ChatContext chatContext = createPreviewChatContext(previewRequest, userId, virtualAgent, model, 
-                                                           provider, llmModelConfig, mcpServerNames);
+        ChatContext chatContext = createPreviewChatContext(previewRequest, userId, virtualAgent, model, provider,
+                llmModelConfig, mcpServerNames);
         setupPreviewContextAndHistory(chatContext, previewRequest);
 
         return chatContext;
@@ -443,9 +443,8 @@ public class ConversationAppService {
     }
 
     /** 创建预览ChatContext对象 */
-    private ChatContext createPreviewChatContext(AgentPreviewRequest previewRequest, String userId, 
-                                                AgentEntity agent, ModelEntity model, ProviderEntity provider,
-                                                LLMModelConfig llmModelConfig, List<String> mcpServerNames) {
+    private ChatContext createPreviewChatContext(AgentPreviewRequest previewRequest, String userId, AgentEntity agent,
+            ModelEntity model, ProviderEntity provider, LLMModelConfig llmModelConfig, List<String> mcpServerNames) {
         ChatContext chatContext = new ChatContext();
         chatContext.setSessionId("preview-session");
         chatContext.setUserId(userId);

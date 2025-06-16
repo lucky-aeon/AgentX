@@ -182,10 +182,7 @@ public class ApiKeyAppService {
             // 更新使用记录
             apiKeyDomainService.updateUsage(apiKey);
 
-            return ApiKeyValidationResult.success(
-                apiKeyEntity.getUserId(),
-                apiKeyEntity.getAgentId()
-            );
+            return ApiKeyValidationResult.success(apiKeyEntity.getUserId(), apiKeyEntity.getAgentId());
         } catch (BusinessException e) {
             return ApiKeyValidationResult.failure(e.getMessage());
         }

@@ -15,18 +15,15 @@ import org.xhy.interfaces.api.common.Result;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
-/**
- * 外部API Key拦截器
- * 用于验证外部API请求的API Key
- */
+/** 外部API Key拦截器 用于验证外部API请求的API Key */
 @Component
 public class ExternalApiKeyInterceptor implements HandlerInterceptor {
 
     private static final Logger logger = LoggerFactory.getLogger(ExternalApiKeyInterceptor.class);
-    
+
     private final ApiKeyAppService apiKeyAppService;
     private final ObjectMapper objectMapper;
-    
+
     // API Key 请求头名称
     private static final String API_KEY_HEADER = "Authorization";
     private static final String BEARER_PREFIX = "Bearer ";
@@ -37,7 +34,8 @@ public class ExternalApiKeyInterceptor implements HandlerInterceptor {
     }
 
     @Override
-    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
+            throws Exception {
         String requestURI = request.getRequestURI();
         String method = request.getMethod();
 
@@ -59,7 +57,7 @@ public class ExternalApiKeyInterceptor implements HandlerInterceptor {
 
         // 验证API Key
         ApiKeyValidationResult result = apiKeyAppService.validateExternalApiKey(apiKey);
-        
+
         // 异常分支：验证失败
         if (!result.isValid()) {
             logger.warn("外部API Key验证失败: {}, URI: {} {}", result.getMessage(), method, requestURI);
@@ -70,22 +68,20 @@ public class ExternalApiKeyInterceptor implements HandlerInterceptor {
         // 主流程：验证成功，设置上下文
         ExternalApiContext.setUserId(result.getUserId());
         ExternalApiContext.setAgentId(result.getAgentId());
-        
+
         logger.debug("外部API Key验证通过: userId={}, agentId={}", result.getUserId(), result.getAgentId());
         return true;
     }
 
     @Override
-    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, 
-                               Object handler, Exception ex) throws Exception {
+    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex)
+            throws Exception {
         // 清理上下文，避免内存泄漏
         ExternalApiContext.clear();
         logger.debug("外部API上下文已清理");
     }
 
-    /**
-     * 从请求中提取API Key
-     */
+    /** 从请求中提取API Key */
     private String extractApiKey(HttpServletRequest request) {
         String authHeader = request.getHeader(API_KEY_HEADER);
         if (StringUtils.hasText(authHeader) && authHeader.startsWith(BEARER_PREFIX)) {
@@ -94,9 +90,7 @@ public class ExternalApiKeyInterceptor implements HandlerInterceptor {
         return null;
     }
 
-    /**
-     * 写入错误响应
-     */
+    /** 写入错误响应 */
     private void writeErrorResponse(HttpServletResponse response, int statusCode, String message) throws IOException {
         response.setStatus(statusCode);
         response.setContentType("application/json");
@@ -104,8 +98,8 @@ public class ExternalApiKeyInterceptor implements HandlerInterceptor {
 
         Result<Void> errorResult = Result.error(statusCode, message);
         String jsonResponse = objectMapper.writeValueAsString(errorResult);
-        
+
         response.getWriter().write(jsonResponse);
         response.getWriter().flush();
     }
-} 
+}
