@@ -175,7 +175,7 @@ public class ConversationAppService {
         LLMModelConfig llmModelConfig = workspace.getLlmModelConfig();
         String modelId = llmModelConfig.getModelId();
         ModelEntity model = llmDomainService.findModelById(modelId);
-        if (modelId == null){
+        if (modelId == null) {
             String userDefaultModelId = userSettingsDomainService.getUserDefaultModelId(userId);
             model = llmDomainService.getModelById(userDefaultModelId);
         }

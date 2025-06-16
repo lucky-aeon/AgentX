@@ -139,8 +139,8 @@ public class LLMAppService {
         llmDomainService.createModel(model);
         String userDefaultModelId = userSettingsDomainService.getUserDefaultModelId(userId);
         // 如果用户没有默认模型则设置当前模型
-        if (userDefaultModelId == null){
-            userSettingsDomainService.setUserDefaultModelId(userId,model.getId());
+        if (userDefaultModelId == null) {
+            userSettingsDomainService.setUserDefaultModelId(userId, model.getId());
         }
         return ModelAssembler.toDTO(model);
     }

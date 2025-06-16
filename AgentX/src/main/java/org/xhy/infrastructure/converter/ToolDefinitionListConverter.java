@@ -16,9 +16,7 @@ public class ToolDefinitionListConverter extends JsonToStringConverter<List<Tool
         super((Class<List<ToolDefinition>>) (Class<?>) List.class);
     }
 
-    /**
-     * 重写parseJson方法，使用JsonUtils.parseArray来正确处理List<ToolDefinition>的反序列化
-     */
+    /** 重写parseJson方法，使用JsonUtils.parseArray来正确处理List<ToolDefinition>的反序列化 */
     @Override
     protected List<ToolDefinition> parseJson(String json) throws SQLException {
         if (json == null || json.trim().isEmpty()) {
