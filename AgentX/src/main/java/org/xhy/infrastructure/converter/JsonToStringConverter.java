@@ -51,7 +51,7 @@ public abstract class JsonToStringConverter<T> extends BaseTypeHandler<T> {
         return parseJson(json);
     }
 
-    private T parseJson(String json) throws SQLException {
+    protected T parseJson(String json) throws SQLException {
         if (json == null) {
             return null;
         }

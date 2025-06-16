@@ -62,4 +62,13 @@ public class UserSettingsDomainService {
 
         return fallbackConfig.getFallbackChain();
     }
+
+    public void setUserDefaultModelId(String userId, String modelId) {
+        UserSettingsEntity settings = getUserSettings(userId);
+        if (settings == null) {
+            settings = new UserSettingsEntity();
+        }
+        settings.setDefaultModelId(modelId);
+        userSettingsRepository.updateById(settings);
+    }
 }
