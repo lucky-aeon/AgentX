@@ -20,15 +20,14 @@ import java.util.List;
 /** 外部API控制器 提供给外部系统的API接口，使用API Key进行身份验证 */
 @RestController
 @RequestMapping("/v1")
-public class LLMAPIController {
+public class OpenController {
 
     private final ConversationAppService conversationAppService;
     private final AgentSessionAppService agentSessionAppService;
     private final LLMAppService llmAppService;
 
-    public LLMAPIController(ConversationAppService conversationAppService,
-                           AgentSessionAppService agentSessionAppService,
-                           LLMAppService llmAppService) {
+    public OpenController(ConversationAppService conversationAppService, AgentSessionAppService agentSessionAppService,
+            LLMAppService llmAppService) {
         this.conversationAppService = conversationAppService;
         this.agentSessionAppService = agentSessionAppService;
         this.llmAppService = llmAppService;
@@ -81,15 +80,15 @@ public class LLMAPIController {
     public Result<SessionDTO> createSession(@RequestBody ExternalCreateSessionRequest request) {
         String userId = ExternalApiContext.getUserId();
         String agentId = ExternalApiContext.getAgentId();
-        
+
         SessionDTO session = agentSessionAppService.createSession(userId, agentId);
-        
+
         // 如果指定了标题，更新标题
         if (request.getTitle() != null && !request.getTitle().trim().isEmpty()) {
             agentSessionAppService.updateSession(session.getId(), userId, request.getTitle().trim());
             session.setTitle(request.getTitle().trim());
         }
-        
+
         return Result.success(session);
     }
 

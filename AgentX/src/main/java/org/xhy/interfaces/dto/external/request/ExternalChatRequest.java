@@ -5,9 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * 外部API聊天请求DTO
- */
+/** 外部API聊天请求DTO */
 public class ExternalChatRequest {
 
     /** 模型ID（可选，不传使用Agent绑定的模型） */
@@ -65,4 +63,4 @@ public class ExternalChatRequest {
     public void setFiles(List<String> files) {
         this.files = files != null ? files : new ArrayList<>();
     }
-} 
+}
