@@ -24,7 +24,7 @@ AgentX 是一个基于大模型 (LLM) 和多能力平台 (MCP) 的智能 Agent �
  - [x] 用户
  - [x] 工具市场
  - [x] MCP Server Community
- - [x] MCP Gateway
+ - [ ] MCP Gateway （等待重构）
  - [x] 预先设置工具
  - [x] Agent 定时任务
  - [ ] Agent OpenAPI
