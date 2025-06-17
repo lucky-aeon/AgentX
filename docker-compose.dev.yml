@@ -87,6 +87,7 @@ services:
       - SPRING_DATASOURCE_PASSWORD=postgres
       - SPRING_DEVTOOLS_RESTART_ENABLED=true
       - MCP_GATEWAY_URL=http://mcp-gateway:8080
+      - HIGH_AVAILABILITY_GATEWAY_URL=http://api-gateway:8081
     depends_on:
       postgres:
         condition: service_healthy
