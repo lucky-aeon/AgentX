@@ -46,9 +46,9 @@ public abstract class AbstractMessageHandler {
     protected final UserSettingsDomainService userSettingsDomainService;
     protected final LLMDomainService llmDomainService;
 
-
     public AbstractMessageHandler(LLMServiceFactory llmServiceFactory, MessageDomainService messageDomainService,
-                                  HighAvailabilityDomainService highAvailabilityDomainService, SessionDomainService sessionDomainService, UserSettingsDomainService userSettingsDomainService, LLMDomainService llmDomainService) {
+            HighAvailabilityDomainService highAvailabilityDomainService, SessionDomainService sessionDomainService,
+            UserSettingsDomainService userSettingsDomainService, LLMDomainService llmDomainService) {
         this.llmServiceFactory = llmServiceFactory;
         this.messageDomainService = messageDomainService;
         this.highAvailabilityDomainService = highAvailabilityDomainService;
@@ -251,7 +251,6 @@ public abstract class AbstractMessageHandler {
         }
     }
 
-
     // 智能重命名会话
     protected void smartRenameSession(ChatContext chatContext) {
         Thread thread = new Thread(() -> {
@@ -270,8 +269,8 @@ public abstract class AbstractMessageHandler {
                 List<String> fallbackChain = userSettingsDomainService.getUserFallbackChain(userId);
 
                 // 5. 获取服务商信息（支持高可用、会话亲和性和降级）
-                HighAvailabilityResult result = highAvailabilityDomainService.selectBestProvider(model, userId, sessionId,
-                        fallbackChain);
+                HighAvailabilityResult result = highAvailabilityDomainService.selectBestProvider(model, userId,
+                        sessionId, fallbackChain);
                 ProviderEntity provider = result.getProvider();
                 ModelEntity selectedModel = result.getModel();
                 ChatModel strandClient = llmServiceFactory.getStrandClient(provider, selectedModel);

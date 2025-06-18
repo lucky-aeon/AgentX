@@ -48,6 +48,7 @@ public class MessageDomainService {
     }
 
     public boolean isFirstConversation(String sessionId) {
-        return messageRepository.selectCount(Wrappers.<MessageEntity>lambdaQuery().eq(MessageEntity::getSessionId, sessionId)) <=3;
+        return messageRepository
+                .selectCount(Wrappers.<MessageEntity>lambdaQuery().eq(MessageEntity::getSessionId, sessionId)) <= 3;
     }
 }

@@ -22,8 +22,14 @@ public class AgentMessageHandler extends AbstractMessageHandler {
     protected final UserSettingsDomainService userSettingsDomainService;
     protected final LLMDomainService llmDomainService;
 
-    public AgentMessageHandler(LLMServiceFactory llmServiceFactory, MessageDomainService messageDomainService, HighAvailabilityDomainService highAvailabilityDomainService, SessionDomainService sessionDomainService, UserSettingsDomainService userSettingsDomainService, LLMDomainService llmDomainService, AgentToolManager agentToolManager, HighAvailabilityDomainService highAvailabilityDomainService1, SessionDomainService sessionDomainService1, UserSettingsDomainService userSettingsDomainService1, LLMDomainService llmDomainService1) {
-        super(llmServiceFactory, messageDomainService, highAvailabilityDomainService, sessionDomainService, userSettingsDomainService, llmDomainService);
+    public AgentMessageHandler(LLMServiceFactory llmServiceFactory, MessageDomainService messageDomainService,
+            HighAvailabilityDomainService highAvailabilityDomainService, SessionDomainService sessionDomainService,
+            UserSettingsDomainService userSettingsDomainService, LLMDomainService llmDomainService,
+            AgentToolManager agentToolManager, HighAvailabilityDomainService highAvailabilityDomainService1,
+            SessionDomainService sessionDomainService1, UserSettingsDomainService userSettingsDomainService1,
+            LLMDomainService llmDomainService1) {
+        super(llmServiceFactory, messageDomainService, highAvailabilityDomainService, sessionDomainService,
+                userSettingsDomainService, llmDomainService);
         this.agentToolManager = agentToolManager;
         this.highAvailabilityDomainService = highAvailabilityDomainService1;
         this.sessionDomainService = sessionDomainService1;
