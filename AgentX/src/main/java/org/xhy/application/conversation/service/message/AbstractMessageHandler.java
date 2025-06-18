@@ -45,7 +45,6 @@ public abstract class AbstractMessageHandler {
     protected final SessionDomainService sessionDomainService;
     protected final UserSettingsDomainService userSettingsDomainService;
     protected final LLMDomainService llmDomainService;
-
     public AbstractMessageHandler(LLMServiceFactory llmServiceFactory, MessageDomainService messageDomainService,
             HighAvailabilityDomainService highAvailabilityDomainService, SessionDomainService sessionDomainService,
             UserSettingsDomainService userSettingsDomainService, LLMDomainService llmDomainService) {
