@@ -67,30 +67,27 @@ public abstract class AbstractMessageHandler {
         // 1. 创建连接
         T connection = transport.createConnection(CONNECTION_TIMEOUT);
 
-        // 2. 获取LLM客户端
-        StreamingChatModel streamingClient = llmServiceFactory.getStreamingClient(chatContext.getProvider(),
-                chatContext.getModel());
-
-        // 3. 创建消息实体
+        // 2. 创建消息实体
         MessageEntity llmMessageEntity = createLlmMessage(chatContext);
         MessageEntity userMessageEntity = createUserMessage(chatContext);
 
-        // 4. 保存用户消息和更新上下文
-
-        // 5. 初始化聊天内存
+        // 3. 初始化聊天内存
         MessageWindowChatMemory memory = initMemory();
 
-        // 6. 构建历史消息
+        // 4. 构建历史消息
         buildHistoryMessage(chatContext, memory);
 
-        // 7. 根据子类决定是否需要工具
+        // 5. 根据子类决定是否需要工具
         ToolProvider toolProvider = provideTools(chatContext);
 
-        // 8. 创建Agent
-        Agent agent = buildAgent(streamingClient, memory, toolProvider);
-
-        // 9. 处理聊天
-        processChat(agent, connection, transport, chatContext, userMessageEntity, llmMessageEntity);
+        // 6. 根据是否流式选择不同的处理方式
+        if (chatContext.isStreaming()) {
+            processStreamingChat(chatContext, connection, transport, userMessageEntity, llmMessageEntity, memory,
+                    toolProvider);
+        } else {
+            processSyncChat(chatContext, connection, transport, userMessageEntity, llmMessageEntity, memory,
+                    toolProvider);
+        }
 
         return connection;
     }
@@ -98,6 +95,76 @@ public abstract class AbstractMessageHandler {
     /** 子类可以覆盖这个方法提供工具 */
     protected ToolProvider provideTools(ChatContext chatContext) {
         return null; // 默认不提供工具
+    }
+
+    /** 流式聊天处理 */
+    protected <T> void processStreamingChat(ChatContext chatContext, T connection, MessageTransport<T> transport,
+            MessageEntity userEntity, MessageEntity llmEntity, MessageWindowChatMemory memory,
+            ToolProvider toolProvider) {
+
+        // 获取流式LLM客户端
+        StreamingChatModel streamingClient = llmServiceFactory.getStreamingClient(chatContext.getProvider(),
+                chatContext.getModel());
+
+        // 创建流式Agent
+        Agent agent = buildStreamingAgent(streamingClient, memory, toolProvider);
+
+        // 使用现有的流式处理逻辑
+        processChat(agent, connection, transport, chatContext, userEntity, llmEntity);
+    }
+
+    /** 同步聊天处理 */
+    protected <T> void processSyncChat(ChatContext chatContext, T connection, MessageTransport<T> transport,
+            MessageEntity userEntity, MessageEntity llmEntity, MessageWindowChatMemory memory,
+            ToolProvider toolProvider) {
+
+        // 1. 获取同步LLM客户端
+        ChatModel syncClient = llmServiceFactory.getStrandClient(chatContext.getProvider(), chatContext.getModel());
+
+        // 2. 保存用户消息
+        messageDomainService.saveMessageAndUpdateContext(Collections.singletonList(userEntity),
+                chatContext.getContextEntity());
+
+        try {
+            // 3. 记录调用开始时间
+            long startTime = System.currentTimeMillis();
+
+            List<ChatMessage> messages = memory.messages();
+            messages.add(new UserMessage(chatContext.getUserMessage()));
+            ChatResponse chatResponse = syncClient.chat(messages);
+
+            // 4. 构建同步Agent并调用
+            String responseText = chatResponse.aiMessage().text();
+
+            // 5. 处理响应 - 设置消息内容
+            llmEntity.setContent(responseText);
+            llmEntity.setTokenCount(chatResponse.tokenUsage().outputTokenCount());
+            userEntity.setTokenCount(chatResponse.tokenUsage().inputTokenCount());
+
+            // 6. 保存消息
+            messageDomainService.updateMessage(userEntity);
+            messageDomainService.saveMessageAndUpdateContext(Collections.singletonList(llmEntity),
+                    chatContext.getContextEntity());
+
+            // 7. 发送完整响应
+            AgentChatResponse response = new AgentChatResponse(responseText, true);
+            response.setMessageType(MessageType.TEXT);
+            transport.sendEndMessage(connection, response);
+
+            // 8. 上报调用成功结果
+            long latency = System.currentTimeMillis() - startTime;
+            highAvailabilityDomainService.reportCallResult(chatContext.getInstanceId(), chatContext.getModel().getId(),
+                    true, latency, null);
+
+        } catch (Exception e) {
+            // 错误处理
+            AgentChatResponse errorResponse = AgentChatResponse.buildEndMessage(e.getMessage(), MessageType.TEXT);
+            transport.sendMessage(connection, errorResponse);
+
+            long latency = System.currentTimeMillis() - System.currentTimeMillis();
+            highAvailabilityDomainService.reportCallResult(chatContext.getInstanceId(), chatContext.getModel().getId(),
+                    false, latency, e.getMessage());
+        }
     }
 
     /** 子类实现具体的聊天处理逻辑 */
@@ -186,8 +253,9 @@ public abstract class AbstractMessageHandler {
                 .build();
     }
 
-    /** 构建Agent */
-    protected Agent buildAgent(StreamingChatModel model, MessageWindowChatMemory memory, ToolProvider toolProvider) {
+    /** 构建流式Agent */
+    protected Agent buildStreamingAgent(StreamingChatModel model, MessageWindowChatMemory memory,
+            ToolProvider toolProvider) {
         AiServices<Agent> agentService = AiServices.builder(Agent.class).streamingChatModel(model).chatMemory(memory);
 
         if (toolProvider != null) {
@@ -195,6 +263,22 @@ public abstract class AbstractMessageHandler {
         }
 
         return agentService.build();
+    }
+
+    /** 构建同步Agent */
+    protected SyncAgent buildSyncAgent(ChatModel model, MessageWindowChatMemory memory, ToolProvider toolProvider) {
+        AiServices<SyncAgent> agentService = AiServices.builder(SyncAgent.class).chatModel(model).chatMemory(memory);
+
+        if (toolProvider != null) {
+            agentService.toolProvider(toolProvider);
+        }
+
+        return agentService.build();
+    }
+
+    /** 构建Agent - 保持向后兼容 */
+    protected Agent buildAgent(StreamingChatModel model, MessageWindowChatMemory memory, ToolProvider toolProvider) {
+        return buildStreamingAgent(model, memory, toolProvider);
     }
 
     /** 创建用户消息实体 */

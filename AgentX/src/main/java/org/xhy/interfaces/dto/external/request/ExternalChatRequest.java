@@ -18,7 +18,7 @@ public class ExternalChatRequest {
     /** 是否流式返回（可选，默认false） */
     private Boolean stream = false;
 
-    /** 会话ID（可选，不传创建新会话） */
+    /** 会话ID */
     private String sessionId;
 
     /** 文件列表（可选） */

@@ -13,12 +13,14 @@ public class MessageTransportFactory {
     /** 传输类型常量 */
     public static final String TRANSPORT_TYPE_SSE = "sse";
     public static final String TRANSPORT_TYPE_WEBSOCKET = "websocket";
+    public static final String TRANSPORT_TYPE_SYNC = "sync";
 
     private final Map<String, MessageTransport<?>> transports = new HashMap<>();
 
     @Autowired
-    public MessageTransportFactory(SseMessageTransport sseTransport) {
+    public MessageTransportFactory(SseMessageTransport sseTransport, SyncMessageTransport syncTransport) {
         transports.put(TRANSPORT_TYPE_SSE, sseTransport);
+        transports.put(TRANSPORT_TYPE_SYNC, syncTransport);
         // 将来可以添加WebSocket实现
         // transports.put(TRANSPORT_TYPE_WEBSOCKET, webSocketTransport);
     }

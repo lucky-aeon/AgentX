@@ -56,6 +56,9 @@ public class ChatContext {
     /** 高可用实例ID */
     private String instanceId;
 
+    /** 是否流式响应 */
+    private boolean streaming = true;
+
     public String getSessionId() {
         return sessionId;
     }
@@ -150,5 +153,13 @@ public class ChatContext {
 
     public void setInstanceId(String instanceId) {
         this.instanceId = instanceId;
+    }
+
+    public boolean isStreaming() {
+        return streaming;
+    }
+
+    public void setStreaming(boolean streaming) {
+        this.streaming = streaming;
     }
 }
