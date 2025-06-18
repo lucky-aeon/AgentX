@@ -3,7 +3,9 @@ package org.xhy.application.conversation.service.message;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import dev.langchain4j.data.message.*;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
+import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.StreamingChatModel;
+import dev.langchain4j.model.chat.response.ChatResponse;
 import dev.langchain4j.service.AiServices;
 import dev.langchain4j.service.TokenStream;
 import dev.langchain4j.service.tool.ToolProvider;
@@ -15,7 +17,13 @@ import org.xhy.domain.conversation.constant.MessageType;
 import org.xhy.domain.conversation.constant.Role;
 import org.xhy.domain.conversation.model.MessageEntity;
 import org.xhy.domain.conversation.service.MessageDomainService;
+import org.xhy.domain.conversation.service.SessionDomainService;
+import org.xhy.domain.llm.model.HighAvailabilityResult;
+import org.xhy.domain.llm.model.ModelEntity;
+import org.xhy.domain.llm.model.ProviderEntity;
 import org.xhy.domain.llm.service.HighAvailabilityDomainService;
+import org.xhy.domain.llm.service.LLMDomainService;
+import org.xhy.domain.user.service.UserSettingsDomainService;
 import org.xhy.infrastructure.exception.BusinessException;
 import org.xhy.infrastructure.llm.LLMServiceFactory;
 import org.xhy.infrastructure.transport.MessageTransport;
@@ -34,12 +42,19 @@ public abstract class AbstractMessageHandler {
     protected final LLMServiceFactory llmServiceFactory;
     protected final MessageDomainService messageDomainService;
     protected final HighAvailabilityDomainService highAvailabilityDomainService;
+    protected final SessionDomainService sessionDomainService;
+    protected final UserSettingsDomainService userSettingsDomainService;
+    protected final LLMDomainService llmDomainService;
+
 
     public AbstractMessageHandler(LLMServiceFactory llmServiceFactory, MessageDomainService messageDomainService,
-            HighAvailabilityDomainService highAvailabilityDomainService) {
+                                  HighAvailabilityDomainService highAvailabilityDomainService, SessionDomainService sessionDomainService, UserSettingsDomainService userSettingsDomainService, LLMDomainService llmDomainService) {
         this.llmServiceFactory = llmServiceFactory;
         this.messageDomainService = messageDomainService;
         this.highAvailabilityDomainService = highAvailabilityDomainService;
+        this.sessionDomainService = sessionDomainService;
+        this.userSettingsDomainService = userSettingsDomainService;
+        this.llmDomainService = llmDomainService;
     }
 
     /** 处理对话的模板方法
@@ -134,6 +149,7 @@ public abstract class AbstractMessageHandler {
             long latency = System.currentTimeMillis() - startTime;
             highAvailabilityDomainService.reportCallResult(chatContext.getInstanceId(), chatContext.getModel().getId(),
                     true, latency, null);
+            smartRenameSession(chatContext);
         });
 
         // 错误处理
@@ -233,5 +249,41 @@ public abstract class AbstractMessageHandler {
                 memory.add(new SystemMessage(messageEntity.getContent()));
             }
         }
+    }
+
+
+    // 智能重命名会话
+    protected void smartRenameSession(ChatContext chatContext) {
+        Thread thread = new Thread(() -> {
+            System.out.println("2222");
+            // 获取会话 id
+            String sessionId = chatContext.getSessionId();
+            // 是否是首次对话
+            boolean isFirstConversation = messageDomainService.isFirstConversation(sessionId);
+            // 如果首次对话，则重命名会话
+            if (isFirstConversation) {
+                // 调用用户默认模型进行智能会话名称
+                String userId = chatContext.getUserId();
+                String userDefaultModelId = userSettingsDomainService.getUserDefaultModelId(userId);
+                ModelEntity model = llmDomainService.getModelById(userDefaultModelId);
+                // 4. 获取用户降级配置
+                List<String> fallbackChain = userSettingsDomainService.getUserFallbackChain(userId);
+
+                // 5. 获取服务商信息（支持高可用、会话亲和性和降级）
+                HighAvailabilityResult result = highAvailabilityDomainService.selectBestProvider(model, userId, sessionId,
+                        fallbackChain);
+                ProviderEntity provider = result.getProvider();
+                ModelEntity selectedModel = result.getModel();
+                ChatModel strandClient = llmServiceFactory.getStrandClient(provider, selectedModel);
+                ArrayList<ChatMessage> chatMessages = new ArrayList<>();
+                chatMessages.add(new SystemMessage(AgentPromptTemplates.getStartConversationPrompt()));
+                chatMessages.add(new UserMessage(chatContext.getUserMessage()));
+                ChatResponse chat = strandClient.chat(chatMessages);
+                String sessionTitle = chat.aiMessage().text();
+                sessionDomainService.updateSession(chatContext.getSessionId(), userId, sessionTitle);
+
+            }
+        });
+        thread.start();
     }
 }

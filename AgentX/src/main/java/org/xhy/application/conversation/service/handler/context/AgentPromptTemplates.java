@@ -9,6 +9,13 @@ public class AgentPromptTemplates {
 
     private static final String SUMMARY_PREFIX = "以下是用户历史消息的摘要，请仅作为参考，用户没有提起则不要回答摘要中的内容：\\n";
 
+    // 会话重命名提示词
+    private static final String START_CONVERSATION_PROMPT = "你是一个会话助手，请根据用户的消息生成一个简洁的会话标题。生成的内容纯文本，不要有标点符号";
+
+    public static String getStartConversationPrompt() {
+        return START_CONVERSATION_PROMPT;
+    }
+
     /** 获取摘要算法的提示词 */
     public static String getSummaryPrefix() {
         return SUMMARY_PREFIX;

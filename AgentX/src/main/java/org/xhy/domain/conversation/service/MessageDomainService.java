@@ -1,5 +1,6 @@
 package org.xhy.domain.conversation.service;
 
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import org.springframework.stereotype.Service;
 import org.xhy.domain.conversation.model.ContextEntity;
 import org.xhy.domain.conversation.model.MessageEntity;
@@ -46,4 +47,7 @@ public class MessageDomainService {
         messageRepository.updateById(message);
     }
 
+    public boolean isFirstConversation(String sessionId) {
+        return messageRepository.selectCount(Wrappers.<MessageEntity>lambdaQuery().eq(MessageEntity::getSessionId, sessionId)) <=3;
+    }
 }
