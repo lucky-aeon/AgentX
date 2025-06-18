@@ -5,6 +5,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import org.xhy.application.agent.service.AgentSessionAppService;
 import org.xhy.application.conversation.dto.ChatRequest;
+import org.xhy.application.conversation.dto.ChatResponse;
 import org.xhy.application.conversation.dto.SessionDTO;
 import org.xhy.application.conversation.service.ConversationAppService;
 import org.xhy.application.llm.dto.ModelDTO;
@@ -35,9 +36,9 @@ public class OpenController {
 
     /** 发起对话
      * @param request 聊天请求
-     * @return SSE流 */
+     * @return 流式或同步响应 */
     @PostMapping("/chat/completions")
-    public SseEmitter chat(@RequestBody @Validated ExternalChatRequest request) {
+    public Object chat(@RequestBody @Validated ExternalChatRequest request) {
         String userId = ExternalApiContext.getUserId();
         String agentId = ExternalApiContext.getAgentId();
 
@@ -52,8 +53,15 @@ public class OpenController {
         chatRequest.setSessionId(request.getSessionId());
         chatRequest.setFileUrls(request.getFiles());
 
-        // 支持外部API指定模型
-        return conversationAppService.chatWithModel(chatRequest, userId, request.getModel());
+        // 根据stream参数选择返回类型
+        if (request.getStream() != null && request.getStream()) {
+            // 流式响应 - 直接返回SseEmitter，Spring Boot会自动处理响应头
+            return conversationAppService.chatWithModel(chatRequest, userId, request.getModel());
+        } else {
+            // 同步响应
+            ChatResponse response = conversationAppService.chatSyncWithModel(chatRequest, userId, request.getModel());
+            return Result.success(response);
+        }
     }
 
     /** 获取可用模型列表
