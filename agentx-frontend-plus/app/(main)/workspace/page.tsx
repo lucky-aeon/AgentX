@@ -170,8 +170,8 @@ export default function WorkspacePage() {
   // 获取当前选中的Agent信息
   const currentAgent = agents.find(agent => agent.id === selectedWorkspaceId)
   
-  // 简化判断 - 默认为普通对话模式
-  const isFunctionalAgent = false
+  // 始终显示定时任务功能
+  const isFunctionalAgent = true
   
   // 获取当前会话的多模态设置
   const multiModal = currentSession?.multiModal || false
