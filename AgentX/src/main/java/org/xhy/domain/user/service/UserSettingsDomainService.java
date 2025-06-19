@@ -63,12 +63,23 @@ public class UserSettingsDomainService {
         return fallbackConfig.getFallbackChain();
     }
 
+    /** 设置用户默认模型ID
+     * @param userId 用户ID
+     * @param modelId 模型ID */
     public void setUserDefaultModelId(String userId, String modelId) {
         UserSettingsEntity settings = getUserSettings(userId);
         if (settings == null) {
+            // 创建新的用户设置
             settings = new UserSettingsEntity();
+            settings.setUserId(userId);
+            settings.setDefaultModelId(modelId);
+            userSettingsRepository.insert(settings);
+        } else {
+            // 更新现有设置
+            settings.setDefaultModelId(modelId);
+            Wrapper<UserSettingsEntity> wrapper = Wrappers.<UserSettingsEntity>lambdaQuery()
+                    .eq(UserSettingsEntity::getUserId, userId);
+            userSettingsRepository.checkedUpdate(settings, wrapper);
         }
-        settings.setDefaultModelId(modelId);
-        userSettingsRepository.updateById(settings);
     }
 }
