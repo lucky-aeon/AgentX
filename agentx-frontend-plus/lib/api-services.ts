@@ -701,6 +701,21 @@ export async function handleGithubCallbackApi(code: string) {
   )
 }
 
+// 获取SSO登录URL
+export async function getSsoLoginUrlApi(provider: string, redirectUrl?: string) {
+  const params = redirectUrl ? `?redirectUrl=${encodeURIComponent(redirectUrl)}` : ''
+  return httpClient.get<{ code: number; message: string; data: { loginUrl: string } }>(
+    `/sso/${provider}/login${params}`
+  )
+}
+
+// 处理SSO回调
+export async function handleSsoCallbackApi(provider: string, code: string) {
+  return httpClient.get<{ code: number; message: string; data: { token: string } }>(
+    `/sso/${provider}/callback?code=${code}`
+  )
+}
+
 // 生成系统提示词
 export async function generateSystemPrompt(data: {
   agentName: string;

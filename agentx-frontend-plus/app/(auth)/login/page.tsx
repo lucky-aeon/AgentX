@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { toast } from "@/hooks/use-toast"
 import { Toaster } from "@/components/ui/toaster"
@@ -9,7 +10,7 @@ import { Toaster } from "@/components/ui/toaster"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { loginApi, getGithubAuthorizeUrlApi } from "@/lib/api-services"
+import { loginApi, getGithubAuthorizeUrlApi, getSsoLoginUrlApi } from "@/lib/api-services"
 import { setCookie } from "@/lib/utils"
 
 // GitHub 图标组件
@@ -30,6 +31,17 @@ const GitHubIcon = ({ className }: { className?: string }) => (
   </svg>
 )
 
+// 敲鸭 Logo 组件
+const QiaoyaLogo = ({ className }: { className?: string }) => (
+  <Image 
+    src="/logo.jpg" 
+    alt="敲鸭 Logo" 
+    width={20} 
+    height={20}
+    className={`${className} rounded`}
+  />
+)
+
 export default function LoginPage() {
   const router = useRouter()
   const [formData, setFormData] = useState({
@@ -38,6 +50,7 @@ export default function LoginPage() {
   })
   const [loading, setLoading] = useState(false)
   const [githubLoading, setGithubLoading] = useState(false)
+  const [qiaoyaLoading, setQiaoyaLoading] = useState(false)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -99,6 +112,31 @@ export default function LoginPage() {
     }
   }
 
+  const handleQiaoyaLogin = async () => {
+    try {
+      setQiaoyaLoading(true)
+      const res = await getSsoLoginUrlApi('community')
+      if (res.code === 200 && res.data?.loginUrl) {
+        window.location.href = res.data.loginUrl
+      } else {
+        toast({
+          variant: "destructive",
+          title: "错误",
+          description: "获取敲鸭授权链接失败"
+        })
+      }
+    } catch (error) {
+      console.error("敲鸭登录失败:", error)
+      toast({
+        variant: "destructive",
+        title: "错误",
+        description: "敲鸭登录失败，请稍后再试"
+      })
+    } finally {
+      setQiaoyaLoading(false)
+    }
+  }
+
   return (
     <>
       <div className="container max-w-[400px] py-10 h-screen flex flex-col justify-center">
@@ -147,22 +185,40 @@ export default function LoginPage() {
                 <span className="px-2 bg-background text-muted-foreground">或者</span>
               </div>
             </div>
-            <Button 
-              type="button" 
-              variant="outline" 
-              className="w-full flex items-center justify-center gap-2"
-              onClick={handleGitHubLogin}
-              disabled={githubLoading}
-            >
-              {githubLoading ? (
-                <>正在跳转到 GitHub...</>
-              ) : (
-                <>
-                  <GitHubIcon className="h-5 w-5" />
-                  <span>使用 GitHub 登录</span>
-                </>
-              )}
-            </Button>
+            <div className="space-y-2">
+              <Button 
+                type="button" 
+                variant="outline" 
+                className="w-full flex items-center justify-center gap-2"
+                onClick={handleQiaoyaLogin}
+                disabled={qiaoyaLoading}
+              >
+                {qiaoyaLoading ? (
+                  <>正在跳转到敲鸭...</>
+                ) : (
+                  <>
+                    <QiaoyaLogo className="h-5 w-5" />
+                    <span>使用敲鸭登录</span>
+                  </>
+                )}
+              </Button>
+              <Button 
+                type="button" 
+                variant="outline" 
+                className="w-full flex items-center justify-center gap-2"
+                onClick={handleGitHubLogin}
+                disabled={githubLoading}
+              >
+                {githubLoading ? (
+                  <>正在跳转到 GitHub...</>
+                ) : (
+                  <>
+                    <GitHubIcon className="h-5 w-5" />
+                    <span>使用 GitHub 登录</span>
+                  </>
+                )}
+              </Button>
+            </div>
             <div className="flex justify-between text-sm text-muted-foreground mb-2 mt-2">
               <div>
                 还没有账号？{" "}

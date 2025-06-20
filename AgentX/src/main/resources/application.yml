@@ -1,5 +1,5 @@
 server:
-  port: 8080
+  port: 8088
   servlet:
     context-path: /api
   # 添加Tomcat异步请求配置
@@ -105,3 +105,11 @@ s3:
   path-style-access: ${S3_PATH_STYLE_ACCESS:false}
   # 文件访问URL前缀
   url-prefix: ${S3_URL_PREFIX:}
+
+# SSO配置
+sso:
+  community:
+    base-url: ${SSO_COMMUNITY_BASE_URL:http://localhost:8080}
+    app-key: ${SSO_COMMUNITY_APP_KEY:}
+    app-secret: ${SSO_COMMUNITY_APP_SECRET:}
+    callback-url: ${SSO_COMMUNITY_CALLBACK_URL:http://localhost:3000/sso/community/callback}

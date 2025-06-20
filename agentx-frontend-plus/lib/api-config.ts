@@ -1,5 +1,5 @@
 export const API_CONFIG = {
-  BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080/api",
+  BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8088/api",
   CURRENT_USER_ID: "1", // 当前用户ID
 }
 
