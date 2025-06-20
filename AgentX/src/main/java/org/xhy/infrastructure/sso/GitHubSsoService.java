@@ -41,8 +41,8 @@ public class GitHubSsoService implements SsoService {
     @Override
     public String getLoginUrl(String redirectUrl) {
         String callbackUrl = redirectUrl != null ? redirectUrl : githubProperties.getRedirectUri();
-        return githubProperties.getAuthorizeUrl() + "?client_id=" + githubProperties.getClientId() 
-                + "&redirect_uri=" + callbackUrl + "&scope=user:email";
+        return githubProperties.getAuthorizeUrl() + "?client_id=" + githubProperties.getClientId() + "&redirect_uri="
+                + callbackUrl + "&scope=user:email";
     }
 
     @Override
@@ -67,14 +67,9 @@ public class GitHubSsoService implements SsoService {
             }
 
             // 4. 转换为统一的SsoUserInfo
-            return new SsoUserInfo(
-                String.valueOf(userInfo.getId()),
-                userInfo.getName() != null ? userInfo.getName() : userInfo.getLogin(),
-                userInfo.getEmail(),
-                userInfo.getAvatarUrl(),
-                "GitHub用户: " + userInfo.getLogin(),
-                SsoProvider.GITHUB
-            );
+            return new SsoUserInfo(String.valueOf(userInfo.getId()),
+                    userInfo.getName() != null ? userInfo.getName() : userInfo.getLogin(), userInfo.getEmail(),
+                    userInfo.getAvatarUrl(), "GitHub用户: " + userInfo.getLogin(), SsoProvider.GITHUB);
 
         } catch (Exception e) {
             logger.error("GitHub SSO登录失败", e);
@@ -158,8 +153,7 @@ public class GitHubSsoService implements SsoService {
                     return JSON.parseArray(result).stream()
                             .filter(item -> item instanceof Map
                                     && Boolean.TRUE.equals(((Map<?, ?>) item).get("primary")))
-                            .map(item -> (String) ((Map<?, ?>) item).get("email"))
-                            .findFirst().orElse(null);
+                            .map(item -> (String) ((Map<?, ?>) item).get("email")).findFirst().orElse(null);
                 }
             }
         } catch (IOException e) {

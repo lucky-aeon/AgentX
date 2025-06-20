@@ -31,27 +31,27 @@ public class SsoAppService {
     public String handleSsoCallback(String provider, String authCode) {
         SsoService ssoService = ssoServiceFactory.getSsoService(provider);
         SsoUserInfo ssoUserInfo = ssoService.getUserInfo(authCode);
-        
+
         // 根据SSO用户信息创建或获取本地用户
         UserEntity userEntity = findOrCreateUser(ssoUserInfo);
-        
+
         // 生成JWT token
         return JwtUtils.generateToken(userEntity.getId());
     }
 
     private UserEntity findOrCreateUser(SsoUserInfo ssoUserInfo) {
         UserEntity existingUser = null;
-        
+
         // GitHub用户优先通过GitHub ID查找
         if (ssoUserInfo.getProvider() == SsoProvider.GITHUB) {
             existingUser = userDomainService.findUserByGithubId(ssoUserInfo.getId());
         }
-        
+
         // 如果通过特定ID没找到，再通过邮箱查找
         if (existingUser == null && ssoUserInfo.getEmail() != null) {
             existingUser = userDomainService.findUserByAccount(ssoUserInfo.getEmail());
         }
-        
+
         if (existingUser != null) {
             // 用户已存在，更新用户信息
             updateUserFromSso(existingUser, ssoUserInfo);
@@ -64,7 +64,7 @@ public class SsoAppService {
 
     private void updateUserFromSso(UserEntity user, SsoUserInfo ssoUserInfo) {
         boolean needUpdate = false;
-        
+
         // 更新用户头像和昵称（如果SSO提供的信息更新）
         if (ssoUserInfo.getName() != null && !ssoUserInfo.getName().equals(user.getNickname())) {
             user.setNickname(ssoUserInfo.getName());
@@ -74,7 +74,7 @@ public class SsoAppService {
             user.setAvatarUrl(ssoUserInfo.getAvatar());
             needUpdate = true;
         }
-        
+
         // GitHub用户需要更新GitHub相关信息
         if (ssoUserInfo.getProvider() == SsoProvider.GITHUB) {
             if (!ssoUserInfo.getId().equals(user.getGithubId())) {
@@ -82,7 +82,7 @@ public class SsoAppService {
                 needUpdate = true;
             }
         }
-        
+
         if (needUpdate) {
             userDomainService.updateUserInfo(user);
         }
@@ -92,9 +92,10 @@ public class SsoAppService {
         // 通过SSO信息创建新用户
         UserEntity userEntity = new UserEntity();
         userEntity.setEmail(ssoUserInfo.getEmail());
-        userEntity.setNickname(ssoUserInfo.getName() != null ? ssoUserInfo.getName() : "sso-user-" + System.currentTimeMillis());
+        userEntity.setNickname(
+                ssoUserInfo.getName() != null ? ssoUserInfo.getName() : "sso-user-" + System.currentTimeMillis());
         userEntity.setAvatarUrl(ssoUserInfo.getAvatar());
-        
+
         // 设置提供商特定的信息
         if (ssoUserInfo.getProvider() == SsoProvider.GITHUB) {
             userEntity.setGithubId(ssoUserInfo.getId());
@@ -103,11 +104,11 @@ public class SsoAppService {
                 userEntity.setGithubLogin(ssoUserInfo.getDesc().substring("GitHub用户: ".length()));
             }
         }
-        
+
         // SSO用户生成一个随机密码并加密（用户无法知道这个密码，只能通过SSO登录）
         String randomPassword = "SSO_" + UUID.randomUUID().toString().replace("-", "");
         userEntity.setPassword(PasswordUtils.encode(randomPassword));
-        
+
         userDomainService.createDefaultUser(userEntity);
         return userEntity;
     }

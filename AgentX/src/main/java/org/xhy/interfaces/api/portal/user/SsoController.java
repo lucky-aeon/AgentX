@@ -25,10 +25,9 @@ public class SsoController {
      * @param redirectUrl 登录成功后的回调地址
      * @return 登录URL */
     @GetMapping("/{provider}/login")
-    public Result<Map<String, String>> getSsoLoginUrl(
-            @PathVariable String provider,
+    public Result<Map<String, String>> getSsoLoginUrl(@PathVariable String provider,
             @RequestParam(required = false) String redirectUrl) {
-        
+
         String loginUrl = ssoAppService.getSsoLoginUrl(provider, redirectUrl);
         return Result.success(Map.of("loginUrl", loginUrl));
     }
@@ -38,10 +37,8 @@ public class SsoController {
      * @param code 授权码
      * @return 登录token */
     @GetMapping("/{provider}/callback")
-    public Result<Map<String, Object>> handleSsoCallback(
-            @PathVariable String provider,
-            @RequestParam String code) {
-        
+    public Result<Map<String, Object>> handleSsoCallback(@PathVariable String provider, @RequestParam String code) {
+
         String token = ssoAppService.handleSsoCallback(provider, code);
         return Result.success("登录成功", Map.of("token", token));
     }

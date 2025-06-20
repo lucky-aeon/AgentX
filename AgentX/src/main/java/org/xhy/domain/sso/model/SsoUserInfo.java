@@ -8,7 +8,8 @@ public class SsoUserInfo {
     private String desc;
     private SsoProvider provider;
 
-    public SsoUserInfo() {}
+    public SsoUserInfo() {
+    }
 
     public SsoUserInfo(String id, String name, String email, String avatar, String desc, SsoProvider provider) {
         this.id = id;

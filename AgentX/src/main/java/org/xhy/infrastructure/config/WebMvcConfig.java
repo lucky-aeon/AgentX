@@ -23,9 +23,8 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         "/health", // 健康检查接口
                         "/register", // 注册接口
                         "/send-email-code", "/verify-email-code", "/get-captcha", "/reset-password",
-                        "/send-reset-password-code", "/oauth/github/authorize", "/oauth/github/callback", 
-                        "/sso/**", // SSO相关接口
+                        "/send-reset-password-code", "/oauth/github/authorize", "/oauth/github/callback", "/sso/**", // SSO相关接口
                         "/v1/**"); // 外部API接口，使用专门的API
-                                                                                                                     // Key拦截器
+                                   // Key拦截器
     }
 }
