@@ -10,7 +10,7 @@ import { Toaster } from "@/components/ui/toaster"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { loginApi, getGithubAuthorizeUrlApi, getSsoLoginUrlApi } from "@/lib/api-services"
+import { loginApi, getSsoLoginUrlApi } from "@/lib/api-services"
 import { setCookie } from "@/lib/utils"
 
 // GitHub 图标组件
@@ -90,9 +90,9 @@ export default function LoginPage() {
   const handleGitHubLogin = async () => {
     try {
       setGithubLoading(true)
-      const res = await getGithubAuthorizeUrlApi()
-      if (res.code === 200 && res.data?.authorizeUrl) {
-        window.location.href = res.data.authorizeUrl
+      const res = await getSsoLoginUrlApi('github')
+      if (res.code === 200 && res.data?.loginUrl) {
+        window.location.href = res.data.loginUrl
       } else {
         toast({
           variant: "destructive",
