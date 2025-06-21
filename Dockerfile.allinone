@@ -1,5 +1,5 @@
-# AgentX All-in-One 镜像
-# 包含前端、后端和服务编排
+# AgentX All-in-One 镜像 - 终极版本
+# 真正的一键部署：前端 + 后端 + 数据库
 
 # 多阶段构建 - 前端
 FROM node:18-alpine AS frontend-builder
@@ -11,25 +11,33 @@ RUN npm run build
 
 # 多阶段构建 - 后端
 FROM maven:3.9-eclipse-temurin-17 AS backend-builder
-
 WORKDIR /app
 COPY AgentX/pom.xml ./
 COPY AgentX/src ./src
 RUN mvn clean package -DskipTests
 
-# 最终运行镜像
-FROM node:18-alpine
+# 最终运行镜像 - 基于 PostgreSQL 镜像
+FROM postgres:15-alpine
 
-# 安装必要工具
+# 安装 Node.js 和 OpenJDK
 RUN apk add --no-cache \
+    nodejs \
+    npm \
     openjdk17-jre \
     curl \
-    docker \
-    docker-compose \
-    supervisor \
-    bash
+    bash \
+    supervisor
 
-# 复制前端构建产物 (Next.js standalone)
+# 设置 PostgreSQL 环境
+ENV POSTGRES_DB=agentx
+ENV POSTGRES_USER=agentx_user
+ENV POSTGRES_PASSWORD=agentx_pass
+ENV PGDATA=/var/lib/postgresql/data
+
+# 创建应用目录
+WORKDIR /app
+
+# 复制前端构建产物
 COPY --from=frontend-builder /app/.next/standalone /app/frontend/
 COPY --from=frontend-builder /app/.next/static /app/frontend/.next/static
 COPY --from=frontend-builder /app/public /app/frontend/public
@@ -37,52 +45,172 @@ COPY --from=frontend-builder /app/public /app/frontend/public
 # 复制后端 JAR 文件
 COPY --from=backend-builder /app/target/*.jar /app/backend.jar
 
-# 复制外部服务编排文件
-COPY docker-compose.standalone.yml /app/docker-compose.yml
-COPY .env.example /app/.env.example
+# 创建数据库初始化脚本
+RUN mkdir -p /docker-entrypoint-initdb.d && \
+    echo "CREATE DATABASE agentx;" > /docker-entrypoint-initdb.d/01-init.sql && \
+    echo "GRANT ALL PRIVILEGES ON DATABASE agentx TO agentx_user;" >> /docker-entrypoint-initdb.d/01-init.sql
+
+# 创建应用配置文件
+RUN cat > /app/application-allinone.yml << 'EOF'
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+
+spring:
+  application:
+    name: AgentX
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://localhost:5432/agentx
+    username: agentx_user
+    password: agentx_pass
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+
+mcp:
+  gateway:
+    api-key: 123456
+    base-url: ${MCP_GATEWAY_URL:http://localhost:8005}
+
+high-availability:
+  enabled: false
+
+logging:
+  level:
+    root: info
+    org.xhy: debug
+EOF
 
 # 创建 supervisor 配置
 RUN mkdir -p /etc/supervisor/conf.d && \
-    cat > /etc/supervisor/conf.d/supervisord.conf << 'EOF'
+    cat > /etc/supervisor/conf.d/agentx.conf << 'EOF'
 [supervisord]
 nodaemon=true
 user=root
+logfile=/var/log/supervisor/supervisord.log
+pidfile=/var/run/supervisord.pid
+
+[program:postgres]
+command=/usr/local/bin/docker-entrypoint.sh postgres
+user=postgres
+autostart=true
+autorestart=true
+stdout_logfile=/var/log/postgres.log
+stderr_logfile=/var/log/postgres.log
+environment=POSTGRES_DB="agentx",POSTGRES_USER="agentx_user",POSTGRES_PASSWORD="agentx_pass"
+
+[program:backend]
+command=java -jar /app/backend.jar --spring.config.additional-location=file:/app/application-allinone.yml
+directory=/app
+user=root
+autostart=true
+autorestart=true
+stdout_logfile=/var/log/backend.log
+stderr_logfile=/var/log/backend.log
 
 [program:frontend]
 command=node server.js
 directory=/app/frontend
+user=root
 autostart=true
 autorestart=true
-stdout_logfile=/var/log/frontend.out.log
-stderr_logfile=/var/log/frontend.err.log
-environment=PORT=3000
-
-[program:backend]
-command=java -jar /app/backend.jar
-autostart=true
-autorestart=true
-stdout_logfile=/var/log/backend.out.log
-stderr_logfile=/var/log/backend.err.log
-environment=SPRING_PROFILES_ACTIVE=docker
-
-[program:external-services]
-command=docker-compose -f /app/docker-compose.yml up
-autostart=true
-autorestart=true
-stdout_logfile=/var/log/external.out.log
-stderr_logfile=/var/log/external.err.log
-directory=/app
+stdout_logfile=/var/log/frontend.log
+stderr_logfile=/var/log/frontend.log
+environment=PORT="3000",HOSTNAME="0.0.0.0"
 EOF
 
-# 暴露端口
-EXPOSE 3000 8080 8081 5432 5433 8005
+# 创建启动脚本
+RUN cat > /app/start-agentx.sh << 'EOF'
+#!/bin/bash
 
-# 设置工作目录
-WORKDIR /app
+echo "🚀 Starting AgentX All-in-One System"
+echo "====================================="
 
-# 健康检查
-HEALTHCHECK --interval=30s --timeout=10s --start-period=90s --retries=3 \
-    CMD curl -f http://localhost:3000 || exit 1
+# 初始化 PostgreSQL 数据目录
+if [ ! -d "$PGDATA" ]; then
+    echo "🔧 Initializing PostgreSQL database..."
+    mkdir -p "$PGDATA"
+    chown postgres:postgres "$PGDATA"
+    su - postgres -c "initdb -D $PGDATA"
+fi
+
+# 创建日志目录
+mkdir -p /var/log/supervisor
+
+echo "🎯 Starting all services with supervisor..."
 
 # 启动 supervisor
-CMD ["supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+exec /usr/bin/supervisord -c /etc/supervisor/conf.d/agentx.conf
+EOF
+
+RUN chmod +x /app/start-agentx.sh
+
+# 创建用户和目录
+RUN adduser -D -s /bin/bash postgres && \
+    mkdir -p /var/lib/postgresql/data && \
+    chown -R postgres:postgres /var/lib/postgresql && \
+    mkdir -p /var/log && \
+    chmod 755 /var/log
+
+# 暴露端口
+EXPOSE 3000 8080 5432
+
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=10s --start-period=180s --retries=3 \
+    CMD curl -f http://localhost:3000 && curl -f http://localhost:8080/api/actuator/health || exit 1
+
+# 创建最终启动脚本，包含用户友好的输出
+RUN cat > /docker-entrypoint.sh << 'EOF'
+#!/bin/bash
+
+echo "🎉 Welcome to AgentX All-in-One!"
+echo "================================"
+echo ""
+echo "🔧 Initializing system..."
+
+# 启动应用
+/app/start-agentx.sh &
+APP_PID=$!
+
+# 等待服务启动
+echo "⏳ Waiting for services to start (this may take 2-3 minutes)..."
+sleep 30
+
+# 检查服务状态
+for i in {1..60}; do
+    if curl -s http://localhost:3000 >/dev/null 2>&1; then
+        echo ""
+        echo "✅ All services are ready!"
+        echo ""
+        echo "🌐 Access URLs:"
+        echo "   Frontend:  http://localhost:3000"
+        echo "   Backend:   http://localhost:8080/api"
+        echo "   Database:  postgresql://agentx_user:agentx_pass@localhost:5432/agentx"
+        echo ""
+        echo "👤 Default Accounts:"
+        echo "   Admin: admin@agentx.ai / admin123"
+        echo "   User:  test@agentx.ai / test123"
+        echo ""
+        echo "📚 Documentation: https://github.com/lucky-aeon/agentx"
+        echo "🆘 Support: https://github.com/lucky-aeon/agentx/issues"
+        echo ""
+        break
+    fi
+    
+    if [ $((i % 10)) -eq 0 ]; then
+        echo "   Still starting... ($i/60)"
+    fi
+    sleep 3
+done
+
+# 保持容器运行
+wait $APP_PID
+EOF
+
+RUN chmod +x /docker-entrypoint.sh
+
+# 设置入口点
+ENTRYPOINT ["/docker-entrypoint.sh"]
