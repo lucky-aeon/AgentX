@@ -64,7 +64,7 @@ export function AdminSidebar() {
     {
       href: "/admin/providers",
       icon: Server,
-      label: "服务商列表",
+      label: "服务商管理",
     },
   ];
 
