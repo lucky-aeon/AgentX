@@ -1,0 +1,134 @@
+# AgentX All-in-One Docker Image
+# 包含整个 AgentX 系统的单一镜像部署方案
+
+FROM docker:27-dind
+
+# 安装必要的工具
+RUN apk add --no-cache \
+    curl \
+    bash \
+    git \
+    docker-compose \
+    postgresql-client \
+    netcat-openbsd \
+    jq
+
+# 设置工作目录
+WORKDIR /agentx
+
+# 复制部署配置文件
+COPY docker-compose.standalone.yml /agentx/docker-compose.yml
+COPY deploy.sh /agentx/deploy.sh
+COPY DEPLOYMENT.md /agentx/README.md
+COPY .env.example /agentx/.env.example
+
+# 创建启动脚本
+RUN cat > /agentx/start-agentx.sh << 'EOF'
+#!/bin/bash
+
+set -e
+
+echo "🚀 Starting AgentX All-in-One Container..."
+
+# 检查并处理 .env 文件
+if [ -f "/agentx/config/.env" ]; then
+    echo "📝 Found custom .env file, using it..."
+    cp /agentx/config/.env /agentx/.env
+elif [ ! -f "/agentx/.env" ]; then
+    echo "📝 No .env file found, creating default one..."
+    cp /agentx/.env.example /agentx/.env
+    echo "⚠️  Using default configuration. Please mount your .env file to /agentx/config/.env for custom settings."
+fi
+
+# 启动 Docker daemon
+echo "Starting Docker daemon..."
+dockerd-entrypoint.sh &
+DOCKER_PID=$!
+
+# 等待 Docker daemon 启动
+echo "Waiting for Docker daemon to start..."
+for i in {1..30}; do
+    if docker info >/dev/null 2>&1; then
+        echo "Docker daemon is ready!"
+        break
+    fi
+    if [ $i -eq 30 ]; then
+        echo "Docker daemon failed to start"
+        exit 1
+    fi
+    sleep 2
+done
+
+# 预拉取镜像以加快启动速度
+echo "Pre-pulling required images..."
+docker pull ankane/pgvector:latest
+docker pull postgres:15-alpine
+docker pull ghcr.io/lucky-aeon/mcp-gateway:latest
+docker pull ghcr.io/xhy/agentx-2/frontend:latest
+docker pull ghcr.io/xhy/agentx-2/backend:latest
+docker pull ghcr.io/xhy/agentx-2/api-gateway:latest
+
+# 启动 AgentX 服务
+echo "Starting AgentX services..."
+docker compose --env-file /agentx/.env up -d
+
+# 等待服务启动
+echo "Waiting for services to be ready..."
+for i in {1..60}; do
+    if curl -s http://localhost:3000 >/dev/null 2>&1; then
+        echo "✅ AgentX services are ready!"
+        break
+    fi
+    if [ $i -eq 60 ]; then
+        echo "⚠️  Services startup timeout, but continuing..."
+        break
+    fi
+    sleep 5
+done
+
+echo ""
+echo "🎉 AgentX is now running!"
+echo ""
+echo "Access URLs:"
+echo "  📱 Frontend:  http://localhost:3000"
+echo "  🔌 Backend:   http://localhost:8080"
+echo "  🚪 Gateway:   http://localhost:8081"
+echo ""
+echo "Default credentials:"
+echo "  👤 Admin:     admin@agentx.ai / admin123"
+echo "  👤 Test User: test@agentx.ai / test123"
+echo ""
+
+# 显示服务状态
+docker compose --env-file /agentx/.env ps
+
+# 保持容器运行并跟踪日志
+wait $DOCKER_PID
+EOF
+
+# 创建停止脚本
+RUN cat > /agentx/stop-agentx.sh << 'EOF'
+#!/bin/bash
+
+echo "🛑 Stopping AgentX services..."
+docker compose --env-file /agentx/.env down
+
+echo "✅ AgentX services stopped"
+EOF
+
+# 设置执行权限
+RUN chmod +x /agentx/start-agentx.sh /agentx/stop-agentx.sh /agentx/deploy.sh
+
+# 暴露端口
+EXPOSE 3000 8080 8081 5432 5433 8005
+
+# 设置环境变量
+ENV DOCKER_TLS_CERTDIR=""
+ENV DOCKER_HOST=unix:///var/run/docker.sock
+
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:3000 || exit 1
+
+# 设置启动命令
+CMD ["/agentx/start-agentx.sh"]

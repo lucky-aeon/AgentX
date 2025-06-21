@@ -1,10 +1,131 @@
 # AgentX Docker 部署指南
 
-## 快速部署
+## 🚀 一键部署（推荐）
 
-用户可以直接使用预构建的 Docker 镜像部署 AgentX，无需克隆源码。
+### 方式一：使用默认配置（最简单）
 
-### 方式一：一键部署脚本（推荐）
+```bash
+# 一键部署脚本 - 使用默认配置
+curl -fsSL https://raw.githubusercontent.com/xhy/AgentX-2/main/deploy-allinone.sh | bash
+```
+
+### 方式二：使用自定义配置（推荐）
+
+```bash
+# 1. 下载配置文件模板
+curl -O https://raw.githubusercontent.com/xhy/AgentX-2/main/.env.example
+
+# 2. 重命名并编辑配置文件
+mv .env.example .env
+nano .env  # 或使用其他编辑器编辑配置
+
+# 3. 运行部署脚本
+curl -fsSL https://raw.githubusercontent.com/xhy/AgentX-2/main/deploy-allinone.sh | bash
+```
+
+### 方式三：直接运行 Docker
+
+**使用默认配置：**
+```bash
+docker run -d \
+  --name agentx \
+  --privileged \
+  -p 3000:3000 \
+  -p 8080:8080 \
+  -p 8081:8081 \
+  -v agentx-data:/var/lib/docker \
+  ghcr.io/xhy/agentx-2:latest
+```
+
+**使用自定义配置：**
+```bash
+# 创建配置目录并放入 .env 文件
+mkdir -p ./agentx-config
+cp .env ./agentx-config/
+
+# 启动容器，挂载配置文件
+docker run -d \
+  --name agentx \
+  --privileged \
+  -p 3000:3000 \
+  -p 8080:8080 \
+  -p 8081:8081 \
+  -v agentx-data:/var/lib/docker \
+  -v $(pwd)/agentx-config:/agentx/config \
+  ghcr.io/xhy/agentx-2:latest
+```
+
+### 快速访问
+部署完成后直接访问：
+- 🌐 **前端界面**: http://localhost:3000
+- 🔌 **后端API**: http://localhost:8080  
+- 🚪 **API网关**: http://localhost:8081
+
+### 默认账户
+- 👤 **管理员**: admin@agentx.ai / admin123
+- 👤 **测试用户**: test@agentx.ai / test123
+
+---
+
+## ⚙️ 配置说明
+
+### 配置文件结构
+
+AgentX 使用 `.env` 文件进行配置，包含以下主要配置项：
+
+| 配置分类 | 配置项 | 说明 | 是否必需 |
+|---------|--------|------|----------|
+| **数据库** | `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD` | PostgreSQL 数据库连接信息 | ✅ |
+| **邮箱** | `MAIL_SMTP_HOST`, `MAIL_SMTP_PORT`, `MAIL_SMTP_USERNAME`, `MAIL_SMTP_PASSWORD` | SMTP 邮箱配置，用于发送验证码 | ❌ |
+| **GitHub OAuth** | `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `GITHUB_REDIRECT_URI` | GitHub 第三方登录 | ❌ |
+| **GitHub 插件** | `GITHUB_TARGET_USERNAME`, `GITHUB_TARGET_REPO_NAME`, `GITHUB_TARGET_TOKEN` | 插件市场仓库配置 | ❌ |
+| **对象存储** | `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_BUCKET_NAME` 等 | 文件存储配置（支持 S3/OSS） | ❌ |
+| **SSO 登录** | `SSO_COMMUNITY_APP_KEY`, `SSO_COMMUNITY_APP_SECRET` 等 | 单点登录配置 | ❌ |
+
+### 快速配置示例
+
+**最小配置（仅修改数据库密码）：**
+```bash
+# 下载配置模板
+curl -O https://raw.githubusercontent.com/xhy/AgentX-2/main/.env.example
+mv .env.example .env
+
+# 编辑配置文件，只修改数据库密码
+sed -i 's/DB_PASSWORD=postgres/DB_PASSWORD=your_secure_password/' .env
+```
+
+**GitHub OAuth 配置：**
+```bash
+# 在 .env 文件中设置 GitHub OAuth
+GITHUB_CLIENT_ID=your_github_client_id
+GITHUB_CLIENT_SECRET=your_github_client_secret
+GITHUB_REDIRECT_URI=http://localhost:3000/oauth/github/callback
+```
+
+**邮箱配置（QQ 邮箱示例）：**
+```bash
+# 在 .env 文件中设置邮箱
+MAIL_SMTP_HOST=smtp.qq.com
+MAIL_SMTP_PORT=587
+MAIL_SMTP_USERNAME=your-email@qq.com
+MAIL_SMTP_PASSWORD=your-email-app-password
+```
+
+### 配置文件获取
+
+```bash
+# 方式一：直接下载
+curl -O https://raw.githubusercontent.com/xhy/AgentX-2/main/.env.example
+
+# 方式二：从容器中获取
+docker run --rm ghcr.io/xhy/agentx-2:latest cat /agentx/.env.example > .env.example
+```
+
+---
+
+## 📋 其他部署方式
+
+### 方式一：一键部署脚本
 
 ```bash
 # 下载并运行一键部署脚本
@@ -23,7 +144,7 @@ curl -O https://raw.githubusercontent.com/xhy/AgentX-2/main/docker-compose.stand
 docker compose -f docker-compose.standalone.yml up -d
 ```
 
-### 方式三：直接拉取镜像运行
+### 方式三：手动分离部署
 
 ```bash
 # 拉取镜像
@@ -94,10 +215,12 @@ docker run -d --name agentx-frontend \
 - 后端API: http://localhost:8080
 - API网关: http://localhost:8081
 
-## 镜像列表
+## 📦 镜像列表
 
-AgentX 提供以下预构建镜像：
+### All-in-One 镜像（推荐）
+- `ghcr.io/xhy/agentx-2:latest` - **完整的 AgentX 系统**，包含所有服务
 
+### 分离式镜像
 - `ghcr.io/xhy/agentx-2/frontend:latest` - 前端服务（Next.js）
 - `ghcr.io/xhy/agentx-2/backend:latest` - 后端服务（Spring Boot）
 - `ghcr.io/xhy/agentx-2/api-gateway:latest` - API网关服务
@@ -139,14 +262,43 @@ services:
 | gateway-postgres | 5432 | 5433 | 网关数据库 |
 | mcp-gateway | 8080 | 8005 | MCP网关 |
 
-## 管理命令
+## 🔧 管理命令
 
-### 查看服务状态
+### All-in-One 镜像管理
+
+**查看容器状态：**
+```bash
+docker ps | grep agentx
+```
+
+**查看日志：**
+```bash
+# 查看容器日志
+docker logs -f agentx
+
+# 进入容器查看服务状态
+docker exec -it agentx docker compose ps
+```
+
+**重启服务：**
+```bash
+docker restart agentx
+```
+
+**停止服务：**
+```bash
+docker stop agentx
+docker rm agentx
+```
+
+### Docker Compose 管理
+
+**查看服务状态：**
 ```bash
 docker compose -f docker-compose.standalone.yml ps
 ```
 
-### 查看日志
+**查看日志：**
 ```bash
 # 查看所有服务日志
 docker compose -f docker-compose.standalone.yml logs -f
