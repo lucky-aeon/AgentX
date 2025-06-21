@@ -1,5 +1,11 @@
 version: "3.8"
 
+# AgentX 独立部署配置
+# 用户可以直接使用此文件部署 AgentX，无需克隆源码
+# 使用方法：
+#   1. 下载此文件: curl -O https://raw.githubusercontent.com/xhy/AgentX-2/main/docker-compose.standalone.yml
+#   2. 运行: docker compose -f docker-compose.standalone.yml up -d
+
 services:
   # AgentX PostgreSQL数据库
   postgres:
@@ -12,8 +18,8 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - ./docs/sql:/docker-entrypoint-initdb.d
       - postgres-data:/var/lib/postgresql/data
+      # 初始化脚本通过应用程序自动执行
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d agentx"]
       interval: 10s
@@ -35,8 +41,8 @@ services:
     ports:
       - "5433:5432"
     volumes:
-      - ./API-Premium-Gateway/docs/sql:/docker-entrypoint-initdb.d:ro
       - gateway-postgres-data:/var/lib/postgresql/data
+      # 初始化脚本通过应用程序自动执行
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U gateway_user -d api_gateway"]
       interval: 10s
@@ -61,7 +67,7 @@ services:
       gateway-postgres:
         condition: service_healthy
     volumes:
-      - ./logs/gateway:/app/logs
+      - gateway-logs:/app/logs
     networks:
       - agentx-network
     restart: unless-stopped
@@ -87,7 +93,7 @@ services:
       mcp-gateway:
         condition: service_started
     volumes:
-      - ./logs/backend:/app/logs
+      - backend-logs:/app/logs
     networks:
       - agentx-network
     restart: unless-stopped
@@ -113,7 +119,7 @@ services:
     image: ghcr.io/lucky-aeon/mcp-gateway:latest
     container_name: agentx-mcp-gateway
     ports:
-      - "8005:8080" # 映射到主机的8082端口，避免冲突
+      - "8005:8080"
     networks:
       - agentx-network
     restart: unless-stopped
@@ -123,6 +129,10 @@ volumes:
     name: agentx-postgres-data
   gateway-postgres-data:
     name: api-gateway-postgres-data
+  backend-logs:
+    name: agentx-backend-logs
+  gateway-logs:
+    name: agentx-gateway-logs
 
 networks:
   agentx-network:
