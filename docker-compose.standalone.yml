@@ -1,10 +1,5 @@
-version: "3.8"
-
 # AgentX 独立部署配置
 # 用户可以直接使用此文件部署 AgentX，无需克隆源码
-# 使用方法：
-#   1. 下载此文件: curl -O https://raw.githubusercontent.com/xhy/AgentX-2/main/docker-compose.standalone.yml
-#   2. 运行: docker compose -f docker-compose.standalone.yml up -d
 
 services:
   # AgentX PostgreSQL数据库
@@ -19,7 +14,6 @@ services:
       - "5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
-      # 初始化脚本通过应用程序自动执行
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d agentx"]
       interval: 10s
@@ -42,7 +36,6 @@ services:
       - "5433:5432"
     volumes:
       - gateway-postgres-data:/var/lib/postgresql/data
-      # 初始化脚本通过应用程序自动执行
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U gateway_user -d api_gateway"]
       interval: 10s
@@ -51,68 +44,6 @@ services:
       start_period: 30s
     networks:
       - agentx-network
-
-  # API网关服务
-  api-gateway:
-    image: ghcr.io/xhy/agentx-2/api-gateway:latest
-    container_name: agentx-api-gateway
-    ports:
-      - "8081:8081"
-    environment:
-      - SPRING_PROFILES_ACTIVE=docker
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://gateway-postgres:5432/api_gateway?useUnicode=true&characterEncoding=UTF-8&useSSL=false&stringtype=unspecified&assumeMinServerVersion=9.6&prepareThreshold=0&DateStyle=ISO
-      - SPRING_DATASOURCE_USERNAME=gateway_user
-      - SPRING_DATASOURCE_PASSWORD=gateway_pass
-    depends_on:
-      gateway-postgres:
-        condition: service_healthy
-    volumes:
-      - gateway-logs:/app/logs
-    networks:
-      - agentx-network
-    restart: unless-stopped
-
-  # AgentX后端服务
-  agentx-backend:
-    image: ghcr.io/xhy/agentx-2/backend:latest
-    container_name: agentx-backend
-    ports:
-      - "8080:8080"
-    environment:
-      - SPRING_PROFILES_ACTIVE=docker
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/agentx
-      - SPRING_DATASOURCE_USERNAME=postgres
-      - SPRING_DATASOURCE_PASSWORD=postgres
-      - MCP_GATEWAY_URL=http://mcp-gateway:8080
-      - HIGH_AVAILABILITY_GATEWAY_URL=http://api-gateway:8081
-    depends_on:
-      postgres:
-        condition: service_healthy
-      api-gateway:
-        condition: service_started
-      mcp-gateway:
-        condition: service_started
-    volumes:
-      - backend-logs:/app/logs
-    networks:
-      - agentx-network
-    restart: unless-stopped
-
-  # AgentX前端服务
-  agentx-frontend:
-    image: ghcr.io/xhy/agentx-2/frontend:latest
-    container_name: agentx-frontend
-    ports:
-      - "3000:3000"
-    environment:
-      - NODE_ENV=production
-      - NEXT_PUBLIC_API_URL=http://localhost:8080
-      - NEXT_PUBLIC_GATEWAY_URL=http://localhost:8081
-    depends_on:
-      - agentx-backend
-    networks:
-      - agentx-network
-    restart: unless-stopped
 
   # MCP网关服务
   mcp-gateway:
@@ -124,15 +55,29 @@ services:
       - agentx-network
     restart: unless-stopped
 
+  # AgentX 主服务 (前端+后端一体化，但目前我们还没有这个镜像)
+  # 临时解决方案：使用占位服务等待我们构建真正的前后端镜像
+  agentx-placeholder:
+    image: nginx:alpine
+    container_name: agentx-placeholder
+    ports:
+      - "3000:80"
+      - "8080:80"
+      - "8081:80"
+    networks:
+      - agentx-network
+    restart: unless-stopped
+    command: |
+      sh -c "
+        echo '<html><body><h1>AgentX is starting...</h1><p>Please wait while services are being prepared.</p></body></html>' > /usr/share/nginx/html/index.html &&
+        nginx -g 'daemon off;'
+      "
+
 volumes:
   postgres-data:
     name: agentx-postgres-data
   gateway-postgres-data:
     name: api-gateway-postgres-data
-  backend-logs:
-    name: agentx-backend-logs
-  gateway-logs:
-    name: agentx-gateway-logs
 
 networks:
   agentx-network:

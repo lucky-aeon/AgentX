@@ -1,131 +1,101 @@
-# AgentX All-in-One Docker Image  
-# 使用 Docker-in-Docker 编排整个 AgentX 系统
+# AgentX All-in-One 镜像
+# 包含前端、后端和服务编排
 
-FROM docker:27-dind
+# 多阶段构建 - 前端
+FROM node:18-alpine AS frontend-builder
+WORKDIR /app
+COPY agentx-frontend-plus/package*.json ./
+RUN npm install --legacy-peer-deps
+COPY agentx-frontend-plus/ ./
+RUN npm run build
 
-# 安装必要的工具
-RUN apk add --no-cache \
+# 多阶段构建 - 后端
+FROM maven:3.9-openjdk-17 AS backend-builder
+WORKDIR /app
+COPY AgentX/pom.xml ./
+COPY AgentX/src ./src
+RUN mvn clean package -DskipTests
+
+# 最终运行镜像
+FROM openjdk:17-jdk-slim
+
+# 安装必要工具
+RUN apt-get update && apt-get install -y \
+    nginx \
     curl \
-    bash \
-    git \
+    docker.io \
     docker-compose \
-    postgresql-client \
-    netcat-openbsd \
-    jq
+    supervisor \
+    && rm -rf /var/lib/apt/lists/*
 
-# 设置工作目录
-WORKDIR /agentx
+# 复制前端构建产物
+COPY --from=frontend-builder /app/out /var/www/html/
+COPY --from=frontend-builder /app/public /var/www/html/
 
-# 复制部署配置文件
-COPY docker-compose.standalone.yml /agentx/docker-compose.yml
-COPY deploy.sh /agentx/deploy.sh
-COPY DEPLOYMENT.md /agentx/README.md
-COPY .env.example /agentx/.env.example
+# 复制后端 JAR 文件
+COPY --from=backend-builder /app/target/*.jar /app/backend.jar
 
-# 创建启动脚本
-RUN cat > /agentx/start-agentx.sh << 'EOF'
-#!/bin/bash
-
-set -e
-
-echo "🚀 Starting AgentX All-in-One Container..."
-
-# 检查并处理 .env 文件
-if [ -f "/agentx/config/.env" ]; then
-    echo "📝 Found custom .env file, using it..."
-    cp /agentx/config/.env /agentx/.env
-elif [ ! -f "/agentx/.env" ]; then
-    echo "📝 No .env file found, creating default one..."
-    cp /agentx/.env.example /agentx/.env
-    echo "⚠️  Using default configuration. Please mount your .env file to /agentx/config/.env for custom settings."
-fi
-
-# 启动 Docker daemon
-echo "Starting Docker daemon..."
-dockerd-entrypoint.sh &
-DOCKER_PID=$!
-
-# 等待 Docker daemon 启动
-echo "Waiting for Docker daemon to start..."
-for i in {1..30}; do
-    if docker info >/dev/null 2>&1; then
-        echo "Docker daemon is ready!"
-        break
-    fi
-    if [ $i -eq 30 ]; then
-        echo "Docker daemon failed to start"
-        exit 1
-    fi
-    sleep 2
-done
-
-# 预拉取镜像以加快启动速度
-echo "Pre-pulling required images..."
-docker pull ankane/pgvector:latest
-docker pull postgres:15-alpine
-docker pull ghcr.io/lucky-aeon/mcp-gateway:latest
-
-# 启动 AgentX 服务
-echo "Starting AgentX services..."
-docker compose --env-file /agentx/.env up -d
-
-# 等待服务启动
-echo "Waiting for services to be ready..."
-for i in {1..60}; do
-    if curl -s http://localhost:3000 >/dev/null 2>&1; then
-        echo "✅ AgentX services are ready!"
-        break
-    fi
-    if [ $i -eq 60 ]; then
-        echo "⚠️  Services startup timeout, but continuing..."
-        break
-    fi
-    sleep 5
-done
-
-echo ""
-echo "🎉 AgentX is now running!"
-echo ""
-echo "Access URLs:"
-echo "  📱 Frontend:  http://localhost:3000"
-echo "  🔌 Backend:   http://localhost:8080"
-echo "  🚪 Gateway:   http://localhost:8081"
-echo ""
-echo "Default credentials:"
-echo "  👤 Admin:     admin@agentx.ai / admin123"
-echo "  👤 Test User: test@agentx.ai / test123"
-echo ""
-
-# 显示服务状态
-docker compose --env-file /agentx/.env ps
-
-# 保持容器运行并跟踪日志
-wait $DOCKER_PID
+# 配置 nginx
+RUN cat > /etc/nginx/sites-available/default << 'EOF'
+server {
+    listen 3000;
+    server_name _;
+    root /var/www/html;
+    index index.html;
+    
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+    
+    location /api/ {
+        proxy_pass http://localhost:8080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+}
 EOF
 
-# 创建停止脚本
-RUN cat > /agentx/stop-agentx.sh << 'EOF'
-#!/bin/bash
+# 复制外部服务编排文件
+COPY docker-compose.standalone.yml /app/docker-compose.yml
+COPY .env.example /app/.env.example
 
-echo "🛑 Stopping AgentX services..."
-docker compose --env-file /agentx/.env down
+# 创建 supervisor 配置
+RUN cat > /etc/supervisor/conf.d/supervisord.conf << 'EOF'
+[supervisord]
+nodaemon=true
+user=root
 
-echo "✅ AgentX services stopped"
+[program:nginx]
+command=nginx -g "daemon off;"
+autostart=true
+autorestart=true
+stdout_logfile=/var/log/nginx.out.log
+stderr_logfile=/var/log/nginx.err.log
+
+[program:backend]
+command=java -jar /app/backend.jar
+autostart=true
+autorestart=true
+stdout_logfile=/var/log/backend.out.log
+stderr_logfile=/var/log/backend.err.log
+environment=SPRING_PROFILES_ACTIVE=docker
+
+[program:external-services]
+command=docker-compose -f /app/docker-compose.yml up
+autostart=true
+autorestart=true
+stdout_logfile=/var/log/external.out.log
+stderr_logfile=/var/log/external.err.log
+directory=/app
 EOF
-
-# 设置执行权限
-RUN chmod +x /agentx/start-agentx.sh /agentx/stop-agentx.sh /agentx/deploy.sh
 
 # 暴露端口
 EXPOSE 3000 8080 8081 5432 5433 8005
 
-# 设置环境变量
-ENV DOCKER_TLS_CERTDIR=""
-ENV DOCKER_HOST=unix:///var/run/docker.sock
-
 # 健康检查
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD curl -f http://localhost:3000 || exit 1
+    CMD curl -f http://localhost:3000 && curl -f http://localhost:8080/api/health || exit 1
 
-# 设置启动命令
-CMD ["/agentx/start-agentx.sh"]
+# 启动 supervisor
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
