@@ -1,5 +1,5 @@
-# AgentX All-in-One Docker Image
-# 包含整个 AgentX 系统的单一镜像部署方案
+# AgentX All-in-One Docker Image  
+# 使用 Docker-in-Docker 编排整个 AgentX 系统
 
 FROM docker:27-dind
 
@@ -64,9 +64,6 @@ echo "Pre-pulling required images..."
 docker pull ankane/pgvector:latest
 docker pull postgres:15-alpine
 docker pull ghcr.io/lucky-aeon/mcp-gateway:latest
-docker pull ghcr.io/xhy/agentx-2/frontend:latest
-docker pull ghcr.io/xhy/agentx-2/backend:latest
-docker pull ghcr.io/xhy/agentx-2/api-gateway:latest
 
 # 启动 AgentX 服务
 echo "Starting AgentX services..."
