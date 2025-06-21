@@ -215,15 +215,21 @@ docker run -d --name agentx-frontend \
 - 后端API: http://localhost:8080
 - API网关: http://localhost:8081
 
-## 📦 镜像列表
+## 📦 镜像架构说明
 
-### All-in-One 镜像（推荐）
-- `ghcr.io/xhy/agentx-2:latest` - **完整的 AgentX 系统**，包含所有服务
+### 🏗️ 项目架构
+AgentX 采用微服务架构，由多个独立仓库组成：
 
-### 分离式镜像
-- `ghcr.io/xhy/agentx-2/frontend:latest` - 前端服务（Next.js）
-- `ghcr.io/xhy/agentx-2/backend:latest` - 后端服务（Spring Boot）
-- `ghcr.io/xhy/agentx-2/api-gateway:latest` - API网关服务
+| 服务 | 仓库 | 镜像 | 职责 |
+|------|------|------|------|
+| **前端+后端** | 本仓库 (AgentX-2) | `ghcr.io/xhy/agentx-2:latest` | 核心业务逻辑 |
+| **MCP 网关** | 外部仓库 | `ghcr.io/lucky-aeon/mcp-gateway:latest` | MCP 协议网关 |
+| **数据库** | 官方镜像 | `ankane/pgvector:latest` + `postgres:15-alpine` | 数据存储 |
+
+### 🎯 部署策略
+- **一个 tag** → 触发本仓库构建 → 生成 `ghcr.io/xhy/agentx-2:latest`
+- **All-in-One 容器** → 自动拉取所有依赖镜像 → 完整系统部署
+- **用户体验** → 一条命令部署整个 AgentX 系统
 
 ## 版本管理
 
