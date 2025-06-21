@@ -18,61 +18,44 @@ COPY AgentX/src ./src
 RUN mvn clean package -DskipTests
 
 # 最终运行镜像
-FROM openjdk:17-jdk-slim
+FROM node:18-alpine
 
 # 安装必要工具
-RUN apt-get update && apt-get install -y \
-    nginx \
+RUN apk add --no-cache \
+    openjdk17-jre \
     curl \
-    docker.io \
+    docker \
     docker-compose \
     supervisor \
-    && rm -rf /var/lib/apt/lists/*
+    bash
 
-# 复制前端构建产物
-COPY --from=frontend-builder /app/out /var/www/html/
-COPY --from=frontend-builder /app/public /var/www/html/
+# 复制前端构建产物 (Next.js standalone)
+COPY --from=frontend-builder /app/.next/standalone /app/frontend/
+COPY --from=frontend-builder /app/.next/static /app/frontend/.next/static
+COPY --from=frontend-builder /app/public /app/frontend/public
 
 # 复制后端 JAR 文件
 COPY --from=backend-builder /app/target/*.jar /app/backend.jar
-
-# 配置 nginx
-RUN cat > /etc/nginx/sites-available/default << 'EOF'
-server {
-    listen 3000;
-    server_name _;
-    root /var/www/html;
-    index index.html;
-    
-    location / {
-        try_files $uri $uri/ /index.html;
-    }
-    
-    location /api/ {
-        proxy_pass http://localhost:8080;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    }
-}
-EOF
 
 # 复制外部服务编排文件
 COPY docker-compose.standalone.yml /app/docker-compose.yml
 COPY .env.example /app/.env.example
 
 # 创建 supervisor 配置
-RUN cat > /etc/supervisor/conf.d/supervisord.conf << 'EOF'
+RUN mkdir -p /etc/supervisor/conf.d && \
+    cat > /etc/supervisor/conf.d/supervisord.conf << 'EOF'
 [supervisord]
 nodaemon=true
 user=root
 
-[program:nginx]
-command=nginx -g "daemon off;"
+[program:frontend]
+command=node server.js
+directory=/app/frontend
 autostart=true
 autorestart=true
-stdout_logfile=/var/log/nginx.out.log
-stderr_logfile=/var/log/nginx.err.log
+stdout_logfile=/var/log/frontend.out.log
+stderr_logfile=/var/log/frontend.err.log
+environment=PORT=3000
 
 [program:backend]
 command=java -jar /app/backend.jar
@@ -94,9 +77,12 @@ EOF
 # 暴露端口
 EXPOSE 3000 8080 8081 5432 5433 8005
 
+# 设置工作目录
+WORKDIR /app
+
 # 健康检查
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD curl -f http://localhost:3000 && curl -f http://localhost:8080/api/health || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --start-period=90s --retries=3 \
+    CMD curl -f http://localhost:3000 || exit 1
 
 # 启动 supervisor
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+CMD ["supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
