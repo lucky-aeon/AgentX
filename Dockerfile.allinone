@@ -51,108 +51,20 @@ RUN mkdir -p /docker-entrypoint-initdb.d && \
     echo "GRANT ALL PRIVILEGES ON DATABASE agentx TO agentx_user;" >> /docker-entrypoint-initdb.d/01-init.sql
 
 # 创建应用配置文件
-RUN cat > /app/application-allinone.yml << 'EOF'
-server:
-  port: 8080
-  servlet:
-    context-path: /api
-
-spring:
-  application:
-    name: AgentX
-  datasource:
-    driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://localhost:5432/agentx
-    username: agentx_user
-    password: agentx_pass
-  jpa:
-    hibernate:
-      ddl-auto: update
-    show-sql: false
-
-mcp:
-  gateway:
-    api-key: 123456
-    base-url: ${MCP_GATEWAY_URL:http://localhost:8005}
-
-high-availability:
-  enabled: false
-
-logging:
-  level:
-    root: info
-    org.xhy: debug
-EOF
+RUN printf 'server:\n  port: 8080\n  servlet:\n    context-path: /api\n\nspring:\n  application:\n    name: AgentX\n  datasource:\n    driver-class-name: org.postgresql.Driver\n    url: jdbc:postgresql://localhost:5432/agentx\n    username: agentx_user\n    password: agentx_pass\n  jpa:\n    hibernate:\n      ddl-auto: update\n    show-sql: false\n\nmcp:\n  gateway:\n    api-key: 123456\n    base-url: http://localhost:8005\n\nhigh-availability:\n  enabled: false\n\nlogging:\n  level:\n    root: info\n    org.xhy: debug\n' > /app/application-allinone.yml
 
 # 创建 supervisor 配置
 RUN mkdir -p /etc/supervisor/conf.d && \
-    cat > /etc/supervisor/conf.d/agentx.conf << 'EOF'
-[supervisord]
-nodaemon=true
-user=root
-logfile=/var/log/supervisor/supervisord.log
-pidfile=/var/run/supervisord.pid
-
-[program:postgres]
-command=/usr/local/bin/docker-entrypoint.sh postgres
-user=postgres
-autostart=true
-autorestart=true
-stdout_logfile=/var/log/postgres.log
-stderr_logfile=/var/log/postgres.log
-environment=POSTGRES_DB="agentx",POSTGRES_USER="agentx_user",POSTGRES_PASSWORD="agentx_pass"
-
-[program:backend]
-command=java -jar /app/backend.jar --spring.config.additional-location=file:/app/application-allinone.yml
-directory=/app
-user=root
-autostart=true
-autorestart=true
-stdout_logfile=/var/log/backend.log
-stderr_logfile=/var/log/backend.log
-
-[program:frontend]
-command=node server.js
-directory=/app/frontend
-user=root
-autostart=true
-autorestart=true
-stdout_logfile=/var/log/frontend.log
-stderr_logfile=/var/log/frontend.log
-environment=PORT="3000",HOSTNAME="0.0.0.0"
-EOF
+    printf '[supervisord]\nnodaemon=true\nuser=root\nlogfile=/var/log/supervisor/supervisord.log\npidfile=/var/run/supervisord.pid\n\n[program:postgres]\ncommand=/usr/local/bin/docker-entrypoint.sh postgres\nuser=postgres\nautostart=true\nautorestart=true\nstdout_logfile=/var/log/postgres.log\nstderr_logfile=/var/log/postgres.log\nenvironment=POSTGRES_DB="agentx",POSTGRES_USER="agentx_user",POSTGRES_PASSWORD="agentx_pass"\n\n[program:backend]\ncommand=java -jar /app/backend.jar --spring.config.additional-location=file:/app/application-allinone.yml\ndirectory=/app\nuser=root\nautostart=true\nautorestart=true\nstdout_logfile=/var/log/backend.log\nstderr_logfile=/var/log/backend.log\n\n[program:frontend]\ncommand=node server.js\ndirectory=/app/frontend\nuser=root\nautostart=true\nautorestart=true\nstdout_logfile=/var/log/frontend.log\nstderr_logfile=/var/log/frontend.log\nenvironment=PORT="3000",HOSTNAME="0.0.0.0"\n' > /etc/supervisor/conf.d/agentx.conf
 
 # 创建启动脚本
-RUN cat > /app/start-agentx.sh << 'EOF'
-#!/bin/bash
-
-echo "🚀 Starting AgentX All-in-One System"
-echo "====================================="
-
-# 初始化 PostgreSQL 数据目录
-if [ ! -d "$PGDATA" ]; then
-    echo "🔧 Initializing PostgreSQL database..."
-    mkdir -p "$PGDATA"
-    chown postgres:postgres "$PGDATA"
-    su - postgres -c "initdb -D $PGDATA"
-fi
-
-# 创建日志目录
-mkdir -p /var/log/supervisor
-
-echo "🎯 Starting all services with supervisor..."
-
-# 启动 supervisor
-exec /usr/bin/supervisord -c /etc/supervisor/conf.d/agentx.conf
-EOF
+RUN printf '#!/bin/bash\n\necho "🚀 Starting AgentX All-in-One System"\necho "====================================="\n\n# 初始化 PostgreSQL 数据目录\nif [ ! -d "$PGDATA" ]; then\n    echo "🔧 Initializing PostgreSQL database..."\n    mkdir -p "$PGDATA"\n    chown postgres:postgres "$PGDATA"\n    su - postgres -c "initdb -D $PGDATA"\nfi\n\n# 创建日志目录\nmkdir -p /var/log/supervisor\n\necho "🎯 Starting all services with supervisor..."\n\n# 启动 supervisor\nexec /usr/bin/supervisord -c /etc/supervisor/conf.d/agentx.conf\n' > /app/start-agentx.sh
 
 RUN chmod +x /app/start-agentx.sh
 
-# 创建用户和目录
-RUN adduser -D -s /bin/bash postgres && \
-    mkdir -p /var/lib/postgresql/data && \
+# 创建必要目录和设置权限
+RUN mkdir -p /var/lib/postgresql/data /var/log && \
     chown -R postgres:postgres /var/lib/postgresql && \
-    mkdir -p /var/log && \
     chmod 755 /var/log
 
 # 暴露端口
@@ -163,52 +75,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=180s --retries=3 \
     CMD curl -f http://localhost:3000 && curl -f http://localhost:8080/api/actuator/health || exit 1
 
 # 创建最终启动脚本，包含用户友好的输出
-RUN cat > /docker-entrypoint.sh << 'EOF'
-#!/bin/bash
-
-echo "🎉 Welcome to AgentX All-in-One!"
-echo "================================"
-echo ""
-echo "🔧 Initializing system..."
-
-# 启动应用
-/app/start-agentx.sh &
-APP_PID=$!
-
-# 等待服务启动
-echo "⏳ Waiting for services to start (this may take 2-3 minutes)..."
-sleep 30
-
-# 检查服务状态
-for i in {1..60}; do
-    if curl -s http://localhost:3000 >/dev/null 2>&1; then
-        echo ""
-        echo "✅ All services are ready!"
-        echo ""
-        echo "🌐 Access URLs:"
-        echo "   Frontend:  http://localhost:3000"
-        echo "   Backend:   http://localhost:8080/api"
-        echo "   Database:  postgresql://agentx_user:agentx_pass@localhost:5432/agentx"
-        echo ""
-        echo "👤 Default Accounts:"
-        echo "   Admin: admin@agentx.ai / admin123"
-        echo "   User:  test@agentx.ai / test123"
-        echo ""
-        echo "📚 Documentation: https://github.com/lucky-aeon/agentx"
-        echo "🆘 Support: https://github.com/lucky-aeon/agentx/issues"
-        echo ""
-        break
-    fi
-    
-    if [ $((i % 10)) -eq 0 ]; then
-        echo "   Still starting... ($i/60)"
-    fi
-    sleep 3
-done
-
-# 保持容器运行
-wait $APP_PID
-EOF
+RUN printf '#!/bin/bash\n\necho "🎉 Welcome to AgentX All-in-One!"\necho "================================"\necho ""\necho "🔧 Initializing system..."\n\n# 启动应用\n/app/start-agentx.sh &\nAPP_PID=$!\n\n# 等待服务启动\necho "⏳ Waiting for services to start (this may take 2-3 minutes)..."\nsleep 30\n\n# 检查服务状态\nfor i in {1..60}; do\n    if curl -s http://localhost:3000 >/dev/null 2>&1; then\n        echo ""\n        echo "✅ All services are ready!"\n        echo ""\n        echo "🌐 Access URLs:"\n        echo "   Frontend:  http://localhost:3000"\n        echo "   Backend:   http://localhost:8080/api"\n        echo "   Database:  postgresql://agentx_user:agentx_pass@localhost:5432/agentx"\n        echo ""\n        echo "👤 Default Accounts:"\n        echo "   Admin: admin@agentx.ai / admin123"\n        echo "   User:  test@agentx.ai / test123"\n        echo ""\n        echo "📚 Documentation: https://github.com/lucky-aeon/agentx"\n        echo "🆘 Support: https://github.com/lucky-aeon/agentx/issues"\n        echo ""\n        break\n    fi\n    \n    if [ $((i %% 10)) -eq 0 ]; then\n        echo "   Still starting... ($i/60)"\n    fi\n    sleep 3\ndone\n\n# 保持容器运行\nwait $APP_PID\n' > /docker-entrypoint.sh
 
 RUN chmod +x /docker-entrypoint.sh
 
