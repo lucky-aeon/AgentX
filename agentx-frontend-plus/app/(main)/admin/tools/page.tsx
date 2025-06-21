@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Search, Plus, Edit, Trash2, Eye, CheckCircle, XCircle } from "lucide-react";
+import { Search, Plus, Edit, Trash2, Eye, CheckCircle, XCircle, Filter } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface Tool {
   id: string;
@@ -25,6 +26,7 @@ export default function ToolsPage() {
   const [tools, setTools] = useState<Tool[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
 
   // 模拟数据加载
   useEffect(() => {
@@ -96,11 +98,15 @@ export default function ToolsPage() {
     }
   };
 
-  const filteredTools = tools.filter(tool =>
-    tool.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    tool.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    tool.author.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredTools = tools.filter(tool => {
+    const matchesSearch = tool.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      tool.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      tool.author.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesStatus = statusFilter === "all" || tool.status === statusFilter;
+    
+    return matchesSearch && matchesStatus;
+  });
 
   if (loading) {
     return (
@@ -173,9 +179,17 @@ export default function ToolsPage() {
                 className="pl-10"
               />
             </div>
-            <Button variant="outline">
-              筛选
-            </Button>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-32">
+                <SelectValue placeholder="状态筛选" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">全部状态</SelectItem>
+                <SelectItem value="published">已发布</SelectItem>
+                <SelectItem value="pending">待审核</SelectItem>
+                <SelectItem value="rejected">已拒绝</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>
@@ -191,7 +205,6 @@ export default function ToolsPage() {
               <TableRow>
                 <TableHead>工具信息</TableHead>
                 <TableHead>作者</TableHead>
-                <TableHead>版本</TableHead>
                 <TableHead>状态</TableHead>
                 <TableHead>下载量</TableHead>
                 <TableHead>更新时间</TableHead>
@@ -214,9 +227,6 @@ export default function ToolsPage() {
                   </TableCell>
                   <TableCell>
                     <div className="text-sm">{tool.author}</div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-sm font-mono">{tool.version}</div>
                   </TableCell>
                   <TableCell>
                     {getStatusBadge(tool.status)}

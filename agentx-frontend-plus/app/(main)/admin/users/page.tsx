@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Search, Plus, Edit, Trash2, UserCheck, UserX } from "lucide-react";
+import { Search } from "lucide-react";
 
 interface User {
   id: string;
@@ -96,34 +96,23 @@ export default function UsersPage() {
 
   return (
     <div className="space-y-6">
-      {/* 页面标题和操作 */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">用户管理</h1>
-          <p className="text-gray-600 mt-1">管理系统中的所有用户账户</p>
-        </div>
-        <Button>
-          <Plus className="w-4 h-4 mr-2" />
-          新增用户
-        </Button>
+      {/* 页面标题 */}
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">用户管理</h1>
+        <p className="text-gray-600 mt-1">查看系统中的所有用户账户信息</p>
       </div>
 
       {/* 搜索和过滤 */}
       <Card>
         <CardContent className="pt-6">
-          <div className="flex items-center space-x-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input
-                placeholder="搜索用户邮箱或用户名..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <Button variant="outline">
-              筛选
-            </Button>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Input
+              placeholder="搜索用户邮箱或用户名..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
           </div>
         </CardContent>
       </Card>
@@ -142,7 +131,6 @@ export default function UsersPage() {
                 <TableHead>状态</TableHead>
                 <TableHead>注册时间</TableHead>
                 <TableHead>最后登录</TableHead>
-                <TableHead>操作</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -165,19 +153,6 @@ export default function UsersPage() {
                   </TableCell>
                   <TableCell>
                     <div className="text-sm">{user.lastLoginAt}</div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center space-x-2">
-                      <Button variant="ghost" size="icon">
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon">
-                        <UserCheck className="w-4 h-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="text-red-600">
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
                   </TableCell>
                 </TableRow>
               ))}
