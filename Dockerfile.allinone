@@ -10,7 +10,8 @@ COPY agentx-frontend-plus/ ./
 RUN npm run build
 
 # 多阶段构建 - 后端
-FROM maven:3.9-openjdk-17 AS backend-builder
+FROM maven:3.9-eclipse-temurin-17 AS backend-builder
+
 WORKDIR /app
 COPY AgentX/pom.xml ./
 COPY AgentX/src ./src
