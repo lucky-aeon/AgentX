@@ -70,8 +70,13 @@
   * {
     @apply border-border;
   }
+  html,
   body {
+    height: 100%;
     @apply bg-background text-foreground;
+  }
+  #__next {
+    height: 100%;
   }
 }
 
