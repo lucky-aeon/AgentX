@@ -1,111 +1,213 @@
-# AgentX Docker 部署指南
+# AgentX 一键部署指南
 
-## 🚀 快速部署
+## 🚀 最简单的部署方式
 
-### 最简单方式（一条命令）
+**只需一条命令，AgentX 就能运行！**
 
 ```bash
 docker run -d \
   --name agentx \
-  --privileged \
   -p 3000:3000 \
   -p 8080:8080 \
-  -p 8081:8081 \
-  -v agentx-data:/var/lib/docker \
+  -v agentx-data:/var/lib/postgresql/data \
   ghcr.io/lucky-aeon/agentx:latest
 ```
 
-### 快速访问
-部署完成后（大约 2-3 分钟）直接访问：
+等待 2-3 分钟后访问：
 - 🌐 **前端界面**: http://localhost:3000
-- 🔌 **后端API**: http://localhost:8080  
-- 🚪 **API网关**: http://localhost:8081
+- 🔌 **后端API**: http://localhost:8080/api
 
-### 默认账户
-- 👤 **管理员**: admin@agentx.ai / admin123
-- 👤 **测试用户**: test@agentx.ai / test123
+## 👤 默认账户
+
+- **管理员**: admin@agentx.ai / admin123
+- **测试用户**: test@agentx.ai / test123
 
 ---
 
-## ⚙️ 自定义配置（可选）
+## 🎯 这个镜像包含什么？
 
-如果需要自定义配置（如数据库密码、邮箱设置、GitHub OAuth 等）：
+**AgentX All-in-One 镜像包含完整的系统：**
 
-```bash
-# 1. 下载配置文件模板
-curl -O https://raw.githubusercontent.com/lucky-aeon/agentx/main/.env.example
+| 组件 | 端口 | 说明 |
+|------|------|------|
+| 🌐 Next.js 前端 | 3000 | 用户界面 |
+| ⚙️ Spring Boot 后端 | 8080 | API 服务 |
+| 💾 PostgreSQL 数据库 | 5432 | 数据存储 |
 
-# 2. 编辑配置文件
-mv .env.example .env
-nano .env  # 修改需要的配置项
-
-# 3. 使用自定义配置启动
-mkdir -p ./agentx-config && cp .env ./agentx-config/
-docker run -d \
-  --name agentx \
-  --privileged \
-  -p 3000:3000 \
-  -p 8080:8080 \
-  -p 8081:8081 \
-  -v agentx-data:/var/lib/docker \
-  -v $(pwd)/agentx-config:/agentx/config \
-  ghcr.io/lucky-aeon/agentx:latest
-```
-
-### 主要配置项
-- `DB_PASSWORD`: 数据库密码
-- `GITHUB_CLIENT_ID/SECRET`: GitHub OAuth 登录
-- `MAIL_SMTP_*`: 邮箱服务配置
-- `S3_ACCESS_KEY/SECRET`: 对象存储配置
+**特点：**
+- ✅ **真正的一键部署** - 不需要 docker-compose
+- ✅ **数据持久化** - 数据保存在 Docker 卷中
+- ✅ **开箱即用** - 包含所有必要服务
+- ✅ **轻量高效** - 基于 Alpine Linux
 
 ---
 
 ## 🔧 管理命令
 
+### 查看状态
 ```bash
-# 查看容器状态
 docker ps | grep agentx
+```
 
-# 查看日志
+### 查看日志
+```bash
+# 查看启动日志
+docker logs agentx
+
+# 实时查看日志
 docker logs -f agentx
+```
 
-# 重启服务
+### 重启服务
+```bash
 docker restart agentx
+```
 
-# 停止服务
+### 停止服务
+```bash
+docker stop agentx
+docker rm agentx
+```
+
+### 更新到最新版
+```bash
+# 停止当前容器
 docker stop agentx && docker rm agentx
 
-# 更新到最新版本
+# 拉取最新镜像
 docker pull ghcr.io/lucky-aeon/agentx:latest
-docker stop agentx && docker rm agentx
-# 然后重新运行上面的启动命令
+
+# 重新启动（使用原来的启动命令）
+docker run -d \
+  --name agentx \
+  -p 3000:3000 \
+  -p 8080:8080 \
+  -v agentx-data:/var/lib/postgresql/data \
+  ghcr.io/lucky-aeon/agentx:latest
 ```
 
 ---
 
-## 📦 架构说明
+## ⚙️ 高级配置（可选）
 
-AgentX 采用微服务架构，一个镜像包含所有服务：
+### 使用外部数据库
 
-| 组件 | 端口 | 说明 |
-|------|------|------|
-| 前端 | 3000 | Next.js Web 界面 |
-| 后端 | 8080 | Spring Boot API 服务 |
-| API网关 | 8081 | 高可用网关 |
-| MCP网关 | 8005 | MCP 协议网关 |
-| 数据库 | 5432/5433 | PostgreSQL 数据存储 |
+如果你有现有的 PostgreSQL 数据库：
+
+```bash
+docker run -d \
+  --name agentx \
+  -p 3000:3000 \
+  -p 8080:8080 \
+  -e DB_HOST=your-db-host \
+  -e DB_PORT=5432 \
+  -e DB_NAME=agentx \
+  -e DB_USERNAME=your-user \
+  -e DB_PASSWORD=your-password \
+  ghcr.io/lucky-aeon/agentx:latest
+```
+
+### 自定义端口
+
+```bash
+docker run -d \
+  --name agentx \
+  -p 8000:3000 \
+  -p 9000:8080 \
+  -v agentx-data:/var/lib/postgresql/data \
+  ghcr.io/lucky-aeon/agentx:latest
+```
+
+访问地址变为：
+- 前端: http://localhost:8000
+- 后端: http://localhost:9000/api
+
+### 连接外部服务
+
+```bash
+docker run -d \
+  --name agentx \
+  -p 3000:3000 \
+  -p 8080:8080 \
+  -e MCP_GATEWAY_URL=http://your-mcp-gateway:8080 \
+  -e HA_ENABLED=true \
+  -e HIGH_AVAILABILITY_GATEWAY_URL=http://your-ha-gateway:8081 \
+  -v agentx-data:/var/lib/postgresql/data \
+  ghcr.io/lucky-aeon/agentx:latest
+```
 
 ---
 
 ## ❓ 故障排除
 
-**服务启动慢？**
-- 首次启动需要拉取依赖镜像，约 2-3 分钟
-- 可以通过 `docker logs -f agentx` 查看启动进度
+### 启动慢？
+- 首次启动需要初始化数据库，大约 2-3 分钟
+- 查看启动进度：`docker logs -f agentx`
 
-**端口冲突？**
-- 修改端口映射：`-p 8000:3000 -p 8888:8080 -p 8889:8081`
+### 端口被占用？
+```bash
+# 检查端口占用
+lsof -i :3000
+lsof -i :8080
 
-**数据持久化？**
-- 使用 Docker 卷：`-v agentx-data:/var/lib/docker`
-- 数据会自动保存在 Docker 卷中
+# 使用其他端口
+docker run -d --name agentx -p 8000:3000 -p 9000:8080 ...
+```
+
+### 数据丢失？
+确保使用了数据卷：
+```bash
+-v agentx-data:/var/lib/postgresql/data
+```
+
+### 无法访问？
+检查防火墙和容器状态：
+```bash
+docker ps
+docker logs agentx
+```
+
+### 容器无法启动？
+```bash
+# 查看详细错误
+docker logs agentx
+
+# 重新拉取镜像
+docker pull ghcr.io/lucky-aeon/agentx:latest
+```
+
+---
+
+## 🏗️ 架构说明
+
+AgentX 采用现代微服务架构，打包为单一容器：
+
+```
+ghcr.io/lucky-aeon/agentx:latest
+├── Next.js 前端 (Node.js)
+├── Spring Boot 后端 (Java)
+└── PostgreSQL 数据库
+```
+
+**数据流：**
+1. 用户访问前端 (localhost:3000)
+2. 前端调用后端 API (localhost:8080/api)
+3. 后端连接内置数据库 (localhost:5432)
+
+**优势：**
+- 🚀 **一键部署** - 无需复杂配置
+- 🔒 **数据安全** - 内置数据库，数据不出容器
+- 📦 **便携性强** - 可在任何支持 Docker 的环境运行
+- 🎯 **开发友好** - 适合快速原型和测试
+
+---
+
+## 📞 支持
+
+- 📖 **文档**: https://github.com/lucky-aeon/agentx
+- 🐛 **问题反馈**: https://github.com/lucky-aeon/agentx/issues
+- 💬 **讨论**: https://github.com/lucky-aeon/agentx/discussions
+
+---
+
+**🎉 享受 AgentX 带来的智能体验！**
