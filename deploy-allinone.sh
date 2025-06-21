@@ -13,7 +13,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # 配置
-IMAGE_NAME="ghcr.io/xhy/agentx-2:latest"
+IMAGE_NAME="ghcr.io/lucky-aeon/agentx:latest"
 CONTAINER_NAME="agentx"
 
 # 日志函数
