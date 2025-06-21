@@ -19,7 +19,9 @@
       "Bash(FILTER_BRANCH_SQUELCH_WARNING=1 git filter-branch --force --tree-filter '\nif [ -f AgentX/src/main/resources/application.yml ]; then\n    sed -i.bak \"s/app-key: \\${SSO_COMMUNITY_APP_KEY:0a20f78c4cd922b8bf36843dd8123ba9}/app-key: \\${SSO_COMMUNITY_APP_KEY:}/g\" AgentX/src/main/resources/application.yml\n    sed -i.bak \"s/app-secret: \\${SSO_COMMUNITY_APP_SECRET:a16d7e161d75de63d9e9530c90581b915541ec00a4e8d365486c798e37db3533}/app-secret: \\${SSO_COMMUNITY_APP_SECRET:}/g\" AgentX/src/main/resources/application.yml\n    rm -f AgentX/src/main/resources/application.yml.bak\nfi\n' -- c849fc7 9420b3d)",
       "Bash(FILTER_BRANCH_SQUELCH_WARNING=1 git filter-branch --force --tree-filter '\nif [ -f AgentX/src/main/resources/application.yml ]; then\n    sed -i.bak \"s/0a20f78c4cd922b8bf36843dd8123ba9//g\" AgentX/src/main/resources/application.yml\n    sed -i.bak \"s/a16d7e161d75de63d9e9530c90581b915541ec00a4e8d365486c798e37db3533//g\" AgentX/src/main/resources/application.yml\n    rm -f AgentX/src/main/resources/application.yml.bak\nfi\n' -- 82b6961..HEAD)",
       "Bash(git push:*)",
-      "Bash(git gc:*)"
+      "Bash(git gc:*)",
+      "Bash(npm run lint)",
+      "Bash(npm run dev:*)"
     ],
     "deny": []
   }
