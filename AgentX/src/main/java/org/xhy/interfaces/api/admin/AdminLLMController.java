@@ -40,8 +40,7 @@ public class AdminLLMController {
      * @param pageSize 每页大小（可选，默认20）
      * @return 服务商列表 */
     @GetMapping("/providers")
-    public Result<List<ProviderDTO>> getProviders(
-            @RequestParam(required = false, defaultValue = "1") Integer page,
+    public Result<List<ProviderDTO>> getProviders(@RequestParam(required = false, defaultValue = "1") Integer page,
             @RequestParam(required = false, defaultValue = "20") Integer pageSize) {
         String userId = UserContext.getCurrentUserId();
         return Result.success(adminLLMAppService.getOfficialProviders(userId, page, pageSize));
@@ -108,8 +107,7 @@ public class AdminLLMController {
      * @param pageSize 每页大小（可选，默认20）
      * @return 模型列表 */
     @GetMapping("/models")
-    public Result<List<ModelDTO>> getModels(
-            @RequestParam(required = false) String providerId,
+    public Result<List<ModelDTO>> getModels(@RequestParam(required = false) String providerId,
             @RequestParam(required = false) String modelType,
             @RequestParam(required = false, defaultValue = "1") Integer page,
             @RequestParam(required = false, defaultValue = "20") Integer pageSize) {

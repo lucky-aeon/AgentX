@@ -42,7 +42,8 @@ public class ToolDomainService {
     private final UserRepository userRepository;
 
     public ToolDomainService(ToolRepository toolRepository, ToolVersionRepository toolVersionRepository,
-            ToolStateDomainService toolStateService, UserToolRepository userToolRepository, UserRepository userRepository) {
+            ToolStateDomainService toolStateService, UserToolRepository userToolRepository,
+            UserRepository userRepository) {
         this.toolRepository = toolRepository;
         this.toolVersionRepository = toolVersionRepository;
         this.toolStateService = toolStateService;
@@ -275,32 +276,32 @@ public class ToolDomainService {
         statistics.setTotalTools(totalTools);
 
         // 待审核工具数量（WAITING_REVIEW状态）
-        LambdaQueryWrapper<ToolEntity> pendingWrapper = Wrappers.<ToolEntity>lambdaQuery()
-                .eq(ToolEntity::getStatus, ToolStatus.WAITING_REVIEW);
+        LambdaQueryWrapper<ToolEntity> pendingWrapper = Wrappers.<ToolEntity>lambdaQuery().eq(ToolEntity::getStatus,
+                ToolStatus.WAITING_REVIEW);
         long pendingReviewTools = toolRepository.selectCount(pendingWrapper);
         statistics.setPendingReviewTools(pendingReviewTools);
 
         // 人工审核工具数量（MANUAL_REVIEW状态）
-        LambdaQueryWrapper<ToolEntity> manualWrapper = Wrappers.<ToolEntity>lambdaQuery()
-                .eq(ToolEntity::getStatus, ToolStatus.MANUAL_REVIEW);
+        LambdaQueryWrapper<ToolEntity> manualWrapper = Wrappers.<ToolEntity>lambdaQuery().eq(ToolEntity::getStatus,
+                ToolStatus.MANUAL_REVIEW);
         long manualReviewTools = toolRepository.selectCount(manualWrapper);
         statistics.setManualReviewTools(manualReviewTools);
 
         // 已通过工具数量（APPROVED状态）
-        LambdaQueryWrapper<ToolEntity> approvedWrapper = Wrappers.<ToolEntity>lambdaQuery()
-                .eq(ToolEntity::getStatus, ToolStatus.APPROVED);
+        LambdaQueryWrapper<ToolEntity> approvedWrapper = Wrappers.<ToolEntity>lambdaQuery().eq(ToolEntity::getStatus,
+                ToolStatus.APPROVED);
         long approvedTools = toolRepository.selectCount(approvedWrapper);
         statistics.setApprovedTools(approvedTools);
 
         // 审核失败工具数量（FAILED状态）
-        LambdaQueryWrapper<ToolEntity> failedWrapper = Wrappers.<ToolEntity>lambdaQuery()
-                .eq(ToolEntity::getStatus, ToolStatus.FAILED);
+        LambdaQueryWrapper<ToolEntity> failedWrapper = Wrappers.<ToolEntity>lambdaQuery().eq(ToolEntity::getStatus,
+                ToolStatus.FAILED);
         long failedTools = toolRepository.selectCount(failedWrapper);
         statistics.setFailedTools(failedTools);
 
         // 官方工具数量
-        LambdaQueryWrapper<ToolEntity> officialWrapper = Wrappers.<ToolEntity>lambdaQuery()
-                .eq(ToolEntity::getIsOffice, true);
+        LambdaQueryWrapper<ToolEntity> officialWrapper = Wrappers.<ToolEntity>lambdaQuery().eq(ToolEntity::getIsOffice,
+                true);
         long officialTools = toolRepository.selectCount(officialWrapper);
         statistics.setOfficialTools(officialTools);
 

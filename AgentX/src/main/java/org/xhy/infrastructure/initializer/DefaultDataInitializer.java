@@ -72,6 +72,8 @@ public class DefaultDataInitializer implements ApplicationRunner {
             adminUser.setPhone("");
             // 使用项目中的密码加密方法
             adminUser.setPassword(PasswordUtils.encode("admin123"));
+            // 设置为管理员
+            adminUser.setIsAdmin(true);
 
             // 直接插入，绕过业务校验（因为是系统初始化）
             userDomainService.createDefaultUser(adminUser);
@@ -103,6 +105,8 @@ public class DefaultDataInitializer implements ApplicationRunner {
             testUser.setPhone("");
             // 使用项目中的密码加密方法
             testUser.setPassword(PasswordUtils.encode("test123"));
+            // 设置为普通用户
+            testUser.setIsAdmin(false);
 
             // 直接插入，绕过业务校验（因为是系统初始化）
             userDomainService.createDefaultUser(testUser);

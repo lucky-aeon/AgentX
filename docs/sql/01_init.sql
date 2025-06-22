@@ -170,6 +170,7 @@ CREATE TABLE users (
                              email varchar(255),
                              phone varchar(11),
                              password varchar NOT NULL,
+                             is_admin BOOLEAN DEFAULT FALSE,
                              created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                              updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                              deleted_at TIMESTAMP,

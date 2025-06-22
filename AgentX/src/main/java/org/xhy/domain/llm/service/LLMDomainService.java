@@ -364,11 +364,10 @@ public class LLMDomainService {
 
     /** 获取服务商下的所有模型（包括禁用的）- 用于管理员功能
      * @param providerId 服务商ID
-     * @param userId 用户ID  
+     * @param userId 用户ID
      * @return 所有模型列表 */
     public List<ModelEntity> getAllModelList(String providerId, String userId) {
-        Wrapper<ModelEntity> wrapper = Wrappers.<ModelEntity>lambdaQuery()
-                .eq(ModelEntity::getProviderId, providerId)
+        Wrapper<ModelEntity> wrapper = Wrappers.<ModelEntity>lambdaQuery().eq(ModelEntity::getProviderId, providerId)
                 .eq(ModelEntity::getUserId, userId);
         return modelRepository.selectList(wrapper);
     }
@@ -385,8 +384,8 @@ public class LLMDomainService {
         List<String> providerIds = providers.stream().map(ProviderEntity::getId).collect(Collectors.toList());
 
         // 批量查询所有模型（不过滤状态）
-        Wrapper<ModelEntity> modelWrapper = Wrappers.<ModelEntity>lambdaQuery()
-                .in(ModelEntity::getProviderId, providerIds);
+        Wrapper<ModelEntity> modelWrapper = Wrappers.<ModelEntity>lambdaQuery().in(ModelEntity::getProviderId,
+                providerIds);
         List<ModelEntity> allModels = modelRepository.selectList(modelWrapper);
 
         // 按服务商分组
@@ -403,8 +402,8 @@ public class LLMDomainService {
     /** 获取官方服务商（包含所有模型）- 用于管理员功能
      * @return 官方服务商聚合根列表 */
     public List<ProviderAggregate> getOfficialProvidersWithAllModels() {
-        Wrapper<ProviderEntity> wrapper = Wrappers.<ProviderEntity>lambdaQuery()
-                .eq(ProviderEntity::getIsOfficial, true);
+        Wrapper<ProviderEntity> wrapper = Wrappers.<ProviderEntity>lambdaQuery().eq(ProviderEntity::getIsOfficial,
+                true);
         List<ProviderEntity> providers = providerRepository.selectList(wrapper);
 
         return buildProviderAggregatesWithAllModels(providers);
