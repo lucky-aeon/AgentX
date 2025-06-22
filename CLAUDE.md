@@ -726,6 +726,241 @@ Page<AgentEntity> page = new Page<>(pageNum, pageSize);
 Page<AgentEntity> result = repository.selectPage(page, wrapper);
 ```
 
+## 管理员后台接口开发规范
+
+### 后端分页接口标准
+
+#### 1. 请求参数类设计
+**继承基础分页类**：
+```java
+// 基础分页类
+public class Page {
+    private Integer page = 1;      // 页码，默认1
+    private Integer pageSize = 15; // 每页大小，默认15
+}
+
+// 具体查询请求类
+public class QueryUserRequest extends Page {
+    private String keyword;  // 搜索关键词
+    
+    // getters and setters
+}
+```
+
+#### 2. 控制器层标准
+```java
+@RestController
+@RequestMapping("/admin/users")
+public class AdminUserController {
+    
+    private final UserAppService userAppService;
+    
+    /** 分页获取用户列表
+     * 
+     * @param queryUserRequest 查询参数
+     * @return 用户分页列表 */
+    @GetMapping
+    public Result<Page<UserDTO>> getUsers(QueryUserRequest queryUserRequest) {
+        return Result.success(userAppService.getUsers(queryUserRequest));
+    }
+}
+```
+
+#### 3. 领域服务分页查询标准
+```java
+/** 分页查询用户列表
+ * 
+ * @param queryUserRequest 查询条件
+ * @return 用户分页数据 */
+public Page<UserEntity> getUsers(QueryUserRequest queryUserRequest) {
+    LambdaQueryWrapper<UserEntity> wrapper = Wrappers.<UserEntity>lambdaQuery();
+    
+    // 关键词搜索：支持多字段模糊查询
+    if (queryUserRequest.getKeyword() != null && !queryUserRequest.getKeyword().trim().isEmpty()) {
+        String keyword = queryUserRequest.getKeyword().trim();
+        wrapper.and(w -> w.like(UserEntity::getNickname, keyword)
+                .or().like(UserEntity::getEmail, keyword)
+                .or().like(UserEntity::getPhone, keyword));
+    }
+    
+    // 按创建时间倒序排列
+    wrapper.orderByDesc(UserEntity::getCreatedAt);
+    
+    // 分页查询
+    Page<UserEntity> page = new Page<>(queryUserRequest.getPage(), queryUserRequest.getPageSize());
+    return userRepository.selectPage(page, wrapper);
+}
+```
+
+#### 4. 应用服务层数据转换标准
+```java
+/** 分页获取用户列表
+ * 
+ * @param queryUserRequest 查询条件
+ * @return 用户分页数据 */
+public Page<UserDTO> getUsers(QueryUserRequest queryUserRequest) {
+    Page<UserEntity> userPage = userDomainService.getUsers(queryUserRequest);
+    
+    // 转换为DTO
+    List<UserDTO> userDTOList = userPage.getRecords().stream()
+            .map(UserAssembler::toDTO)
+            .toList();
+    
+    // 创建返回的分页对象
+    Page<UserDTO> resultPage = new Page<>(
+            userPage.getCurrent(),
+            userPage.getSize(),
+            userPage.getTotal()
+    );
+    resultPage.setRecords(userDTOList);
+    return resultPage;
+}
+```
+
+### 前端分页接口标准
+
+#### 1. API服务层设计
+```typescript
+// 接口定义
+export interface GetUsersParams {
+  keyword?: string;  // 搜索关键词
+  page?: number;     // 页码
+  pageSize?: number; // 每页大小
+}
+
+export interface PageResponse<T> {
+  records: T[];      // 数据记录
+  total: number;     // 总记录数
+  size: number;      // 每页大小
+  current: number;   // 当前页码
+  pages: number;     // 总页数
+}
+
+// API服务类
+export class AdminUserService {
+  static async getUsers(params?: GetUsersParams): Promise<ApiResponse<PageResponse<User>>> {
+    try {
+      return await httpClient.get(API_ENDPOINTS.ADMIN_USERS, { params });
+    } catch (error) {
+      return {
+        code: 500,
+        message: "获取用户列表失败",
+        data: { records: [], total: 0, size: 15, current: 1, pages: 0 },
+        timestamp: Date.now()
+      };
+    }
+  }
+}
+```
+
+#### 2. 页面组件分页逻辑标准
+```typescript
+// 状态管理
+const [pageData, setPageData] = useState<PageResponse<User>>({
+  records: [],
+  total: 0,
+  size: 15,
+  current: 1,
+  pages: 0
+});
+
+// 加载数据方法
+const loadUsers = async (page: number = 1, keyword?: string) => {
+  setLoading(true);
+  try {
+    const response = await getUsersWithToast({
+      page,
+      pageSize: 15,
+      keyword: keyword?.trim() || undefined
+    });
+
+    if (response.code === 200) {
+      setPageData(response.data);
+      setUsers(response.data.records || []);
+    }
+  } catch (error) {
+    // 错误处理
+  } finally {
+    setLoading(false);
+  }
+};
+
+// 搜索防抖处理
+useEffect(() => {
+  const timeoutId = setTimeout(() => {
+    loadUsers(1, searchQuery);
+  }, 500); // 防抖500ms
+
+  return () => clearTimeout(timeoutId);
+}, [searchQuery]);
+```
+
+#### 3. 分页组件使用标准
+```typescript
+// 分页点击处理
+const handlePageChange = (page: number) => {
+  if (page < 1 || page > pageData.pages) return;
+  loadUsers(page, searchQuery);
+};
+
+// 分页组件
+{pageData.pages > 1 && (
+  <Pagination>
+    <PaginationContent>
+      <PaginationItem>
+        <PaginationPrevious 
+          onClick={() => handlePageChange(pageData.current - 1)}
+          className={pageData.current <= 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+        />
+      </PaginationItem>
+      
+      {generatePageNumbers().map((page, index) => (
+        <PaginationItem key={index}>
+          {page === '...' ? (
+            <PaginationEllipsis />
+          ) : (
+            <PaginationLink
+              onClick={() => handlePageChange(page as number)}
+              isActive={page === pageData.current}
+              className="cursor-pointer"
+            >
+              {page}
+            </PaginationLink>
+          )}
+        </PaginationItem>
+      ))}
+      
+      <PaginationItem>
+        <PaginationNext 
+          onClick={() => handlePageChange(pageData.current + 1)}
+          className={pageData.current >= pageData.pages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+        />
+      </PaginationItem>
+    </PaginationContent>
+  </Pagination>
+)}
+```
+
+### 分页查询最佳实践
+
+#### 1. 后端查询优化
+- **多字段搜索**：使用`wrapper.and()`组合多个`like`条件
+- **排序规则**：默认按创建时间倒序(`orderByDesc`)
+- **分页参数**：页码从1开始，默认每页15条
+- **性能优化**：对搜索字段建立索引
+
+#### 2. 前端交互优化
+- **搜索防抖**：500ms延迟避免频繁请求
+- **加载状态**：显示loading状态和空数据提示
+- **错误处理**：使用Toast提示用户错误信息
+- **分页智能**：≤7页显示全部，>7页显示省略号
+
+#### 3. 数据展示规范
+- **移除Mock数据**：完全使用真实API
+- **字段映射**：根据实际数据库结构调整显示字段
+- **时间格式化**：使用`toLocaleString('zh-CN')`本地化显示
+- **条件渲染**：可选字段使用条件渲染
+
 ## Common Patterns
 
 ### API Response Pattern
