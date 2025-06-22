@@ -75,6 +75,9 @@ export const API_ENDPOINTS = {
   GET_TOOL_LATEST_VERSION: (toolId: string) => `/tools/${toolId}/latest`, // 获取工具最新版本
   UPDATE_TOOL_VERSION_STATUS: (toolId: string, version: string) => `/tools/user/${toolId}/${version}/status`, // 修改工具版本发布状态
   PUBLISH_TOOL_TO_MARKET: "/tools/market", // 上架工具到市场
+  
+  // 管理员相关
+  ADMIN_USERS: "/admin/users", // 管理员获取用户列表
 }
 
 // 构建完整的API URL

@@ -1,5 +1,7 @@
 package org.xhy.application.user.dto;
 
+import java.time.LocalDateTime;
+
 public class UserDTO {
 
     private String id;
@@ -9,6 +11,16 @@ public class UserDTO {
     private String email;
 
     private String phone;
+
+    private String githubId;
+
+    private String githubLogin;
+
+    private String avatarUrl;
+
+    private LocalDateTime createdAt;
+
+    private LocalDateTime updatedAt;
 
     public String getId() {
         return id;
@@ -40,5 +52,45 @@ public class UserDTO {
 
     public void setPhone(String phone) {
         this.phone = phone;
+    }
+
+    public String getGithubId() {
+        return githubId;
+    }
+
+    public void setGithubId(String githubId) {
+        this.githubId = githubId;
+    }
+
+    public String getGithubLogin() {
+        return githubLogin;
+    }
+
+    public void setGithubLogin(String githubLogin) {
+        this.githubLogin = githubLogin;
+    }
+
+    public String getAvatarUrl() {
+        return avatarUrl;
+    }
+
+    public void setAvatarUrl(String avatarUrl) {
+        this.avatarUrl = avatarUrl;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
     }
 }
