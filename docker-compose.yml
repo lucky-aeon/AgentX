@@ -46,9 +46,9 @@ services:
     networks:
       - agentx-network
 
-  # API网关服务
+  # API网关服务  
   api-gateway:
-    image: ghcr.io/xhy/agentx-2/api-gateway:latest
+    image: ghcr.io/lucky-aeon/api-premium-gateway:latest
     container_name: agentx-api-gateway
     ports:
       - "8081:8081"
@@ -68,7 +68,10 @@ services:
 
   # AgentX后端服务
   agentx-backend:
-    image: ghcr.io/xhy/agentx-2/backend:latest
+    image: agentx-backend:prod
+    build:
+      context: ./AgentX
+      dockerfile: Dockerfile
     container_name: agentx-backend
     ports:
       - "8080:8080"
@@ -94,7 +97,10 @@ services:
 
   # AgentX前端服务
   agentx-frontend:
-    image: ghcr.io/xhy/agentx-2/frontend:latest
+    image: agentx-frontend:prod
+    build:
+      context: ./agentx-frontend-plus
+      dockerfile: Dockerfile
     container_name: agentx-frontend
     ports:
       - "3000:3000"
@@ -108,7 +114,7 @@ services:
       - agentx-network
     restart: unless-stopped
 
-  # MCP网关服务
+  # MCP网关服务  
   mcp-gateway:
     image: ghcr.io/lucky-aeon/mcp-gateway:latest
     container_name: agentx-mcp-gateway
