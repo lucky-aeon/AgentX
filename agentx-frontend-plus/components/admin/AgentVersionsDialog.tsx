@@ -12,6 +12,19 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { CheckCircle, XCircle, Clock, Download } from "lucide-react";
 import { httpClient } from "@/lib/http-client";
+import { useToast } from "@/hooks/use-toast";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 // Agent版本信息接口
 interface AgentVersion {
@@ -35,6 +48,10 @@ interface AgentVersionsDialogProps {
 export function AgentVersionsDialog({ open, onOpenChange, agentId, agentName }: AgentVersionsDialogProps) {
   const [versions, setVersions] = useState<AgentVersion[]>([]);
   const [loading, setLoading] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
+  const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
+  const [selectedVersionId, setSelectedVersionId] = useState<string | null>(null);
+  const { toast } = useToast();
 
   // 获取版本状态标签
   const getStatusBadge = (status: number) => {
@@ -75,12 +92,50 @@ export function AgentVersionsDialog({ open, onOpenChange, agentId, agentName }: 
       const url = `/admin/agents/versions/${versionId}/status?status=${status}${reason ? `&reason=${encodeURIComponent(reason)}` : ''}`;
       const response = await httpClient.post(url);
       if (response.code === 200) {
+        toast({
+          title: "操作成功",
+          description: status === 2 ? "版本已通过审核" : status === 3 ? "版本已拒绝" : "版本已下架"
+        });
         // 重新加载版本列表
         loadVersions();
+      } else {
+        toast({
+          variant: "destructive",
+          title: "操作失败",
+          description: response.message || "未知错误"
+        });
       }
     } catch (error) {
       console.error('审核版本失败:', error);
+      toast({
+        variant: "destructive",
+        title: "操作失败",
+        description: "网络连接异常，请稍后重试"
+      });
     }
+  };
+
+  // 处理拒绝操作
+  const handleReject = () => {
+    if (!selectedVersionId) return;
+    if (!rejectReason.trim()) {
+      toast({
+        variant: "destructive",
+        title: "请输入拒绝原因"
+      });
+      return;
+    }
+    handleReviewVersion(selectedVersionId, 3, rejectReason);
+    setIsRejectDialogOpen(false);
+    setRejectReason("");
+    setSelectedVersionId(null);
+  };
+
+  // 打开拒绝对话框
+  const openRejectDialog = (versionId: string) => {
+    setSelectedVersionId(versionId);
+    setRejectReason("");
+    setIsRejectDialogOpen(true);
   };
 
   useEffect(() => {
@@ -144,7 +199,6 @@ export function AgentVersionsDialog({ open, onOpenChange, agentId, agentName }: 
                   <TableHead>版本号</TableHead>
                   <TableHead>审核状态</TableHead>
                   <TableHead>提交时间</TableHead>
-                  <TableHead>处理时间</TableHead>
                   <TableHead>拒绝原因</TableHead>
                   <TableHead className="w-40">审核操作</TableHead>
                 </TableRow>
@@ -157,11 +211,6 @@ export function AgentVersionsDialog({ open, onOpenChange, agentId, agentName }: 
                     </TableCell>
                     <TableCell>
                       {getStatusBadge(version.publishStatus)}
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm">
-                        {version.publishedAt ? new Date(version.publishedAt).toLocaleString() : '-'}
-                      </div>
                     </TableCell>
                     <TableCell>
                       <div className="text-sm">
@@ -190,12 +239,7 @@ export function AgentVersionsDialog({ open, onOpenChange, agentId, agentName }: 
                               variant="outline"
                               size="sm"
                               className="text-red-600 border-red-600 hover:bg-red-50"
-                              onClick={() => {
-                                const reason = prompt('请输入拒绝原因:');
-                                if (reason) {
-                                  handleReviewVersion(version.id, 3, reason);
-                                }
-                              }}
+                              onClick={() => openRejectDialog(version.id)}
                             >
                               <XCircle className="w-3 h-3 mr-1" />
                               拒绝
@@ -222,6 +266,36 @@ export function AgentVersionsDialog({ open, onOpenChange, agentId, agentName }: 
           )}
         </div>
       </DialogContent>
+      
+      {/* 拒绝原因对话框 */}
+      <AlertDialog open={isRejectDialogOpen} onOpenChange={setIsRejectDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>拒绝版本审核</AlertDialogTitle>
+            <AlertDialogDescription>
+              请输入拒绝该版本的详细原因，这将帮助用户了解需要改进的地方。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-4">
+            <Textarea
+              placeholder="请详细说明拒绝原因..."
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              className="min-h-[100px]"
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setIsRejectDialogOpen(false);
+              setRejectReason("");
+              setSelectedVersionId(null);
+            }}>取消</AlertDialogCancel>
+            <AlertDialogAction onClick={handleReject} className="bg-red-600 hover:bg-red-700">
+              确认拒绝
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }
