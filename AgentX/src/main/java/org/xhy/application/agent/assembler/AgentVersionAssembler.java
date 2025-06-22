@@ -1,5 +1,6 @@
 package org.xhy.application.agent.assembler;
 
+import org.springframework.beans.BeanUtils;
 import org.xhy.application.agent.dto.AgentVersionDTO;
 import org.xhy.domain.agent.model.AgentEntity;
 import org.xhy.domain.agent.model.AgentVersionEntity;
@@ -33,26 +34,7 @@ public class AgentVersionAssembler {
         }
 
         AgentVersionDTO dto = new AgentVersionDTO();
-        dto.setId(entity.getId());
-        dto.setName(entity.getName());
-        dto.setDescription(entity.getDescription());
-        dto.setAvatar(entity.getAvatar());
-        dto.setAgentId(entity.getAgentId());
-        dto.setVersionNumber(entity.getVersionNumber());
-        dto.setSystemPrompt(entity.getSystemPrompt());
-        dto.setWelcomeMessage(entity.getWelcomeMessage());
-        dto.setToolIds(entity.getToolIds());
-        dto.setKnowledgeBaseIds(entity.getKnowledgeBaseIds());
-        dto.setChangeLog(entity.getChangeLog());
-
-        dto.setPublishedAt(entity.getPublishedAt());
-        dto.setPublishStatus(entity.getPublishStatus());
-        dto.setRejectReason(entity.getRejectReason());
-        dto.setReviewTime(entity.getReviewTime());
-        dto.setUserId(entity.getUserId());
-        dto.setCreatedAt(entity.getCreatedAt());
-        dto.setUpdatedAt(entity.getUpdatedAt());
-
+        BeanUtils.copyProperties(entity, dto);
         return dto;
     }
 
