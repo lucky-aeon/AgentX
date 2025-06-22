@@ -21,7 +21,8 @@
       "Bash(git push:*)",
       "Bash(git gc:*)",
       "Bash(npm run lint)",
-      "Bash(npm run dev:*)"
+      "Bash(npm run dev:*)",
+      "Bash(pkill:*)"
     ],
     "deny": []
   }
