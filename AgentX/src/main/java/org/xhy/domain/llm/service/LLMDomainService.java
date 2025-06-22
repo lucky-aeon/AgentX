@@ -361,4 +361,52 @@ public class LLMDomainService {
         Wrapper<ModelEntity> wrapper = Wrappers.<ModelEntity>lambdaQuery().eq(ModelEntity::getStatus, true);
         return modelRepository.selectList(wrapper);
     }
+
+    /** 获取服务商下的所有模型（包括禁用的）- 用于管理员功能
+     * @param providerId 服务商ID
+     * @param userId 用户ID  
+     * @return 所有模型列表 */
+    public List<ModelEntity> getAllModelList(String providerId, String userId) {
+        Wrapper<ModelEntity> wrapper = Wrappers.<ModelEntity>lambdaQuery()
+                .eq(ModelEntity::getProviderId, providerId)
+                .eq(ModelEntity::getUserId, userId);
+        return modelRepository.selectList(wrapper);
+    }
+
+    /** 构建包含所有模型的服务商聚合根 - 用于管理员功能
+     * @param providers 服务商列表
+     * @return 服务商聚合根列表 */
+    private List<ProviderAggregate> buildProviderAggregatesWithAllModels(List<ProviderEntity> providers) {
+        if (providers.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        // 获取所有服务商ID
+        List<String> providerIds = providers.stream().map(ProviderEntity::getId).collect(Collectors.toList());
+
+        // 批量查询所有模型（不过滤状态）
+        Wrapper<ModelEntity> modelWrapper = Wrappers.<ModelEntity>lambdaQuery()
+                .in(ModelEntity::getProviderId, providerIds);
+        List<ModelEntity> allModels = modelRepository.selectList(modelWrapper);
+
+        // 按服务商分组
+        Map<String, List<ModelEntity>> modelMap = allModels.stream()
+                .collect(Collectors.groupingBy(ModelEntity::getProviderId));
+
+        // 构建聚合根
+        return providers.stream().map(provider -> {
+            List<ModelEntity> models = modelMap.getOrDefault(provider.getId(), new ArrayList<>());
+            return new ProviderAggregate(provider, models);
+        }).collect(Collectors.toList());
+    }
+
+    /** 获取官方服务商（包含所有模型）- 用于管理员功能
+     * @return 官方服务商聚合根列表 */
+    public List<ProviderAggregate> getOfficialProvidersWithAllModels() {
+        Wrapper<ProviderEntity> wrapper = Wrappers.<ProviderEntity>lambdaQuery()
+                .eq(ProviderEntity::getIsOfficial, true);
+        List<ProviderEntity> providers = providerRepository.selectList(wrapper);
+
+        return buildProviderAggregatesWithAllModels(providers);
+    }
 }
