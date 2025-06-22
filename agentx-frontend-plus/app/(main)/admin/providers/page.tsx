@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { toast } from "@/hooks/use-toast";
 import { 
   Search, 
   Plus, 
@@ -26,278 +27,372 @@ import {
   Copy,
   EyeOff
 } from "lucide-react";
-
-interface Provider {
-  id: string;
-  name: string;
-  displayName: string;
-  type: "llm" | "embedding" | "tts" | "stt" | "image";
-  status: "active" | "inactive" | "error";
-  apiUrl: string;
-  apiKey: string;
-  modelsCount: number;
-  requestsCount: number;
-  lastHealthCheck: string;
-  createdAt: string;
-  updatedAt: string;
-  description: string;
-}
-
-interface Model {
-  id: string;
-  name: string;
-  displayName: string;
-  providerId: string;
-  providerName: string;
-  type: "text" | "embedding" | "image" | "tts" | "stt";
-  status: "active" | "inactive";
-  maxTokens: number;
-  inputCost: number;
-  outputCost: number;
-  createdAt: string;
-  updatedAt: string;
-}
+import { 
+  AdminProviderService,
+  Provider,
+  Model,
+  ProviderProtocol,
+  ModelType,
+  CreateProviderRequest,
+  UpdateProviderRequest,
+  CreateModelRequest,
+  UpdateModelRequest,
+  getProtocolText,
+  getModelTypeText,
+  getProtocolConfig
+} from "@/lib/admin-provider-service";
 
 export default function ProvidersPage() {
   const [providers, setProviders] = useState<Provider[]>([]);
   const [models, setModels] = useState<Model[]>([]);
+  const [protocols, setProtocols] = useState<ProviderProtocol[]>([]);
+  const [modelTypes, setModelTypes] = useState<ModelType[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedProvider, setSelectedProvider] = useState<Provider | null>(null);
   const [modelSearchQuery, setModelSearchQuery] = useState("");
+  // 服务商相关状态
   const [isAddProviderOpen, setIsAddProviderOpen] = useState(false);
+  const [isEditProviderOpen, setIsEditProviderOpen] = useState(false);
+  const [editingProvider, setEditingProvider] = useState<Provider | null>(null);
+  const [newProvider, setNewProvider] = useState<CreateProviderRequest>({
+    protocol: ProviderProtocol.OPENAI,
+    name: "",
+    description: "",
+    config: { apiKey: "", baseUrl: "" }
+  });
+  
+  // 模型相关状态
   const [isAddModelOpen, setIsAddModelOpen] = useState(false);
+  const [isEditModelOpen, setIsEditModelOpen] = useState(false);
+  const [editingModel, setEditingModel] = useState<Model | null>(null);
+  const [newModel, setNewModel] = useState<CreateModelRequest>({
+    providerId: "",
+    modelId: "",
+    name: "",
+    description: "",
+    type: ModelType.CHAT,
+    modelEndpoint: "",
+    config: {}
+  });
+  
+  // 其他状态
   const [showApiKey, setShowApiKey] = useState(false);
 
-  // 模拟数据加载
+  // 数据加载
   useEffect(() => {
-    const mockProviders: Provider[] = [
-      {
-        id: "1",
-        name: "openai",
-        displayName: "OpenAI",
-        type: "llm",
-        status: "active",
-        apiUrl: "https://api.openai.com/v1",
-        apiKey: "sk-proj-1234567890abcdef",
-        modelsCount: 12,
-        requestsCount: 15420,
-        lastHealthCheck: "2024-01-21 10:30:00",
-        createdAt: "2024-01-01",
-        updatedAt: "2024-01-21",
-        description: "OpenAI官方API服务，提供GPT系列模型",
-      },
-      {
-        id: "2",
-        name: "anthropic",
-        displayName: "Anthropic",
-        type: "llm",
-        status: "active",
-        apiUrl: "https://api.anthropic.com/v1",
-        apiKey: "sk-ant-api03-1234567890abcdef",
-        modelsCount: 5,
-        requestsCount: 8924,
-        lastHealthCheck: "2024-01-21 10:25:00",
-        createdAt: "2024-01-05",
-        updatedAt: "2024-01-20",
-        description: "Anthropic Claude API服务，提供Claude系列模型",
-      },
-      {
-        id: "3",
-        name: "azure-openai",
-        displayName: "Azure OpenAI",
-        type: "llm",
-        status: "active",
-        apiUrl: "https://your-resource.openai.azure.com/",
-        apiKey: "1234567890abcdef1234567890abcdef",
-        modelsCount: 8,
-        requestsCount: 3456,
-        lastHealthCheck: "2024-01-21 10:20:00",
-        createdAt: "2024-01-10",
-        updatedAt: "2024-01-19",
-        description: "微软Azure平台上的OpenAI服务",
-      },
-      {
-        id: "4",
-        name: "google-vertex",
-        displayName: "Google Vertex AI",
-        type: "llm",
-        status: "inactive",
-        apiUrl: "https://us-central1-aiplatform.googleapis.com/v1",
-        apiKey: "ya29.1234567890abcdef",
-        modelsCount: 6,
-        requestsCount: 0,
-        lastHealthCheck: "2024-01-18 15:30:00",
-        createdAt: "2024-01-12",
-        updatedAt: "2024-01-18",
-        description: "Google Vertex AI服务，提供PaLM等模型",
-      },
-      {
-        id: "5",
-        name: "huggingface",
-        displayName: "Hugging Face",
-        type: "embedding",
-        status: "error",
-        apiUrl: "https://api-inference.huggingface.co/",
-        apiKey: "hf_1234567890abcdef",
-        modelsCount: 25,
-        requestsCount: 1234,
-        lastHealthCheck: "2024-01-21 09:45:00",
-        createdAt: "2024-01-15",
-        updatedAt: "2024-01-21",
-        description: "Hugging Face推理API，提供大量开源模型",
-      },
-      {
-        id: "6",
-        name: "elevenlabs",
-        displayName: "ElevenLabs",
-        type: "tts",
-        status: "active",
-        apiUrl: "https://api.elevenlabs.io/v1",
-        apiKey: "el_1234567890abcdef",
-        modelsCount: 15,
-        requestsCount: 892,
-        lastHealthCheck: "2024-01-21 10:15:00",
-        createdAt: "2024-01-08",
-        updatedAt: "2024-01-20",
-        description: "ElevenLabs语音合成服务，提供高质量TTS",
-      },
-    ];
-
-    const mockModels: Model[] = [
-      {
-        id: "1",
-        name: "gpt-4",
-        displayName: "GPT-4",
-        providerId: "1",
-        providerName: "OpenAI",
-        type: "text",
-        status: "active",
-        maxTokens: 8192,
-        inputCost: 0.03,
-        outputCost: 0.06,
-        createdAt: "2024-01-01",
-        updatedAt: "2024-01-20",
-      },
-      {
-        id: "2",
-        name: "gpt-3.5-turbo",
-        displayName: "GPT-3.5 Turbo",
-        providerId: "1",
-        providerName: "OpenAI",
-        type: "text",
-        status: "active",
-        maxTokens: 4096,
-        inputCost: 0.001,
-        outputCost: 0.002,
-        createdAt: "2024-01-01",
-        updatedAt: "2024-01-15",
-      },
-      {
-        id: "3",
-        name: "claude-3-opus",
-        displayName: "Claude 3 Opus",
-        providerId: "2",
-        providerName: "Anthropic",
-        type: "text",
-        status: "active",
-        maxTokens: 200000,
-        inputCost: 0.015,
-        outputCost: 0.075,
-        createdAt: "2024-01-05",
-        updatedAt: "2024-01-18",
-      },
-      {
-        id: "4",
-        name: "text-embedding-ada-002",
-        displayName: "Text Embedding Ada 002",
-        providerId: "1",
-        providerName: "OpenAI",
-        type: "embedding",
-        status: "active",
-        maxTokens: 8191,
-        inputCost: 0.0001,
-        outputCost: 0,
-        createdAt: "2024-01-01",
-        updatedAt: "2024-01-10",
-      },
-      {
-        id: "5",
-        name: "claude-3-sonnet",
-        displayName: "Claude 3 Sonnet",
-        providerId: "2",
-        providerName: "Anthropic",
-        type: "text",
-        status: "active",
-        maxTokens: 200000,
-        inputCost: 0.003,
-        outputCost: 0.015,
-        createdAt: "2024-01-05",
-        updatedAt: "2024-01-18",
-      },
-    ];
-
-    setTimeout(() => {
-      setProviders(mockProviders);
-      setModels(mockModels);
-      setLoading(false);
-    }, 1000);
+    loadData();
   }, []);
 
-  const getStatusBadge = (status: Provider["status"]) => {
-    switch (status) {
-      case "active":
-        return <Badge variant="default" className="bg-green-100 text-green-800">正常</Badge>;
-      case "inactive":
-        return <Badge variant="secondary">未激活</Badge>;
-      case "error":
-        return <Badge variant="destructive">错误</Badge>;
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const [providersRes, protocolsRes, modelTypesRes] = await Promise.all([
+        AdminProviderService.getProviders(),
+        AdminProviderService.getProviderProtocols(),
+        AdminProviderService.getModelTypes()
+      ]);
+
+      if (providersRes.code === 200) {
+        setProviders(providersRes.data);
+      } else {
+        toast({ title: "错误", description: providersRes.message, variant: "destructive" });
+      }
+
+      if (protocolsRes.code === 200) {
+        setProtocols(protocolsRes.data);
+      }
+
+      if (modelTypesRes.code === 200) {
+        setModelTypes(modelTypesRes.data);
+      }
+    } catch (error) {
+      toast({ title: "错误", description: "加载数据失败", variant: "destructive" });
+    } finally {
+      setLoading(false);
     }
   };
 
-  const getTypeBadge = (type: Provider["type"]) => {
-    const typeMap = {
-      llm: { label: "大语言模型", color: "bg-blue-100 text-blue-800" },
-      embedding: { label: "向量嵌入", color: "bg-purple-100 text-purple-800" },
-      tts: { label: "语音合成", color: "bg-green-100 text-green-800" },
-      stt: { label: "语音识别", color: "bg-yellow-100 text-yellow-800" },
-      image: { label: "图像生成", color: "bg-pink-100 text-pink-800" },
+  const loadModels = async (providerId?: string) => {
+    try {
+      const modelsRes = await AdminProviderService.getModels(providerId);
+      if (modelsRes.code === 200) {
+        setModels(modelsRes.data);
+      } else {
+        toast({ title: "错误", description: modelsRes.message, variant: "destructive" });
+      }
+    } catch (error) {
+      toast({ title: "错误", description: "加载模型失败", variant: "destructive" });
+    }
+  };
+
+  const handleCreateProvider = async () => {
+    if (!newProvider.name || !newProvider.config.apiKey) {
+      toast({ title: "错误", description: "请填写必要信息", variant: "destructive" });
+      return;
+    }
+
+    try {
+      const response = await AdminProviderService.createProvider(newProvider);
+      if (response.code === 200) {
+        toast({ title: "成功", description: "服务商创建成功" });
+        loadData();
+        setIsAddProviderOpen(false);
+        setNewProvider({
+          protocol: ProviderProtocol.OPENAI,
+          name: "",
+          description: "",
+          config: { apiKey: "", baseUrl: "" }
+        });
+      } else {
+        toast({ title: "错误", description: response.message, variant: "destructive" });
+      }
+    } catch (error) {
+      toast({ title: "错误", description: "创建服务商失败", variant: "destructive" });
+    }
+  };
+
+  const handleDeleteProvider = (providerId: string) => {
+    toast({
+      title: "确认删除",
+      description: "确定要删除此服务商吗？此操作不可撤销。",
+      action: (
+        <Button
+          variant="destructive"
+          size="sm"
+          onClick={async () => {
+            try {
+              const response = await AdminProviderService.deleteProvider(providerId);
+              if (response.code === 200) {
+                toast({ title: "成功", description: "服务商删除成功" });
+                loadData();
+                if (selectedProvider?.id === providerId) {
+                  setSelectedProvider(null);
+                }
+              } else {
+                toast({ title: "错误", description: response.message, variant: "destructive" });
+              }
+            } catch (error) {
+              toast({ title: "错误", description: "删除服务商失败", variant: "destructive" });
+            }
+          }}
+        >
+          确认删除
+        </Button>
+      ),
+    });
+  };
+
+  const handleToggleProviderStatus = async (providerId: string) => {
+    try {
+      const response = await AdminProviderService.toggleProviderStatus(providerId);
+      if (response.code === 200) {
+        toast({ title: "成功", description: "状态切换成功" });
+        loadData();
+        if (selectedProvider?.id === providerId) {
+          const updatedProvider = providers.find(p => p.id === providerId);
+          if (updatedProvider) {
+            setSelectedProvider({ ...updatedProvider, status: !updatedProvider.status });
+          }
+        }
+      } else {
+        toast({ title: "错误", description: response.message, variant: "destructive" });
+      }
+    } catch (error) {
+      toast({ title: "错误", description: "状态切换失败", variant: "destructive" });
+    }
+  };
+
+  const handleCreateModel = async () => {
+    if (!newModel.providerId || !newModel.modelId || !newModel.name) {
+      toast({ title: "错误", description: "请填写必要信息", variant: "destructive" });
+      return;
+    }
+
+    try {
+      const response = await AdminProviderService.createModel(newModel);
+      if (response.code === 200) {
+        toast({ title: "成功", description: "模型创建成功" });
+        loadModels(selectedProvider?.id);
+        setIsAddModelOpen(false);
+        setNewModel({
+          providerId: "",
+          modelId: "",
+          name: "",
+          description: "",
+          type: ModelType.CHAT,
+          modelEndpoint: "",
+          config: {}
+        });
+      } else {
+        toast({ title: "错误", description: response.message, variant: "destructive" });
+      }
+    } catch (error) {
+      toast({ title: "错误", description: "创建模型失败", variant: "destructive" });
+    }
+  };
+
+  const handleDeleteModel = (modelId: string) => {
+    toast({
+      title: "确认删除",
+      description: "确定要删除此模型吗？此操作不可撤销。",
+      action: (
+        <Button
+          variant="destructive"
+          size="sm"
+          onClick={async () => {
+            try {
+              const response = await AdminProviderService.deleteModel(modelId);
+              if (response.code === 200) {
+                toast({ title: "成功", description: "模型删除成功" });
+                loadModels(selectedProvider?.id);
+              } else {
+                toast({ title: "错误", description: response.message, variant: "destructive" });
+              }
+            } catch (error) {
+              toast({ title: "错误", description: "删除模型失败", variant: "destructive" });
+            }
+          }}
+        >
+          确认删除
+        </Button>
+      ),
+    });
+  };
+
+  const handleToggleModelStatus = async (modelId: string) => {
+    try {
+      const response = await AdminProviderService.toggleModelStatus(modelId);
+      if (response.code === 200) {
+        toast({ title: "成功", description: "模型状态切换成功" });
+        loadModels(selectedProvider?.id);
+      } else {
+        toast({ title: "错误", description: response.message, variant: "destructive" });
+      }
+    } catch (error) {
+      toast({ title: "错误", description: "模型状态切换失败", variant: "destructive" });
+    }
+  };
+
+  const handleEditModel = (model: Model) => {
+    setEditingModel(model);
+    setIsEditModelOpen(true);
+  };
+
+  const handleUpdateModel = async () => {
+    if (!editingModel || !editingModel.modelId || !editingModel.name) {
+      toast({ title: "错误", description: "请填写必要信息", variant: "destructive" });
+      return;
+    }
+
+    try {
+      const updateRequest: UpdateModelRequest = {
+        id: editingModel.id,
+        modelId: editingModel.modelId,
+        name: editingModel.name,
+        description: editingModel.description,
+        modelEndpoint: editingModel.modelEndpoint
+      };
+
+      const response = await AdminProviderService.updateModel(updateRequest);
+      if (response.code === 200) {
+        toast({ title: "成功", description: "模型更新成功" });
+        loadModels(selectedProvider?.id);
+        setIsEditModelOpen(false);
+        setEditingModel(null);
+      } else {
+        toast({ title: "错误", description: response.message, variant: "destructive" });
+      }
+    } catch (error) {
+      toast({ title: "错误", description: "更新模型失败", variant: "destructive" });
+    }
+  };
+
+  const handleUpdateProvider = async () => {
+    if (!editingProvider || !editingProvider.name || !editingProvider.config.apiKey) {
+      toast({ title: "错误", description: "请填写必要信息", variant: "destructive" });
+      return;
+    }
+
+    try {
+      const updateRequest: UpdateProviderRequest = {
+        id: editingProvider.id,
+        protocol: editingProvider.protocol,
+        name: editingProvider.name,
+        description: editingProvider.description,
+        config: editingProvider.config
+      };
+
+      const response = await AdminProviderService.updateProvider(updateRequest);
+      if (response.code === 200) {
+        toast({ title: "成功", description: "服务商更新成功" });
+        loadData();
+        setIsEditProviderOpen(false);
+        setEditingProvider(null);
+        // 如果正在查看该服务商详情，更新详情数据
+        if (selectedProvider?.id === editingProvider.id) {
+          setSelectedProvider(response.data);
+        }
+      } else {
+        toast({ title: "错误", description: response.message, variant: "destructive" });
+      }
+    } catch (error) {
+      toast({ title: "错误", description: "更新服务商失败", variant: "destructive" });
+    }
+  };
+
+  useEffect(() => {
+    if (selectedProvider) {
+      loadModels(selectedProvider.id);
+    }
+  }, [selectedProvider]);
+
+  useEffect(() => {
+    if (isAddModelOpen && selectedProvider) {
+      setNewModel(prev => ({ ...prev, providerId: selectedProvider.id }));
+    }
+  }, [isAddModelOpen, selectedProvider]);
+
+  const getStatusBadge = (status: boolean) => {
+    return status ? 
+      <Badge variant="default" className="bg-green-100 text-green-800">正常</Badge> :
+      <Badge variant="secondary">未激活</Badge>;
+  };
+
+  const getProtocolBadge = (protocol: ProviderProtocol) => {
+    const protocolMap = {
+      [ProviderProtocol.OPENAI]: { label: "OpenAI", color: "bg-blue-100 text-blue-800" },
+      [ProviderProtocol.ANTHROPIC]: { label: "Anthropic", color: "bg-purple-100 text-purple-800" },
     };
-    const config = typeMap[type];
+    const config = protocolMap[protocol] || { label: protocol, color: "bg-gray-100 text-gray-800" };
     return <Badge variant="outline" className={config.color}>{config.label}</Badge>;
   };
 
-  const getModelStatusBadge = (status: Model["status"]) => {
-    switch (status) {
-      case "active":
-        return <Badge variant="default" className="bg-green-100 text-green-800">启用</Badge>;
-      case "inactive":
-        return <Badge variant="secondary">禁用</Badge>;
-    }
+  const getModelStatusBadge = (status: boolean) => {
+    return status ?
+      <Badge variant="default" className="bg-green-100 text-green-800">启用</Badge> :
+      <Badge variant="secondary">禁用</Badge>;
   };
 
-  const getModelTypeBadge = (type: Model["type"]) => {
+  const getModelTypeBadge = (type: ModelType) => {
     const typeMap = {
-      text: { label: "文本生成", color: "bg-blue-100 text-blue-800" },
-      embedding: { label: "向量嵌入", color: "bg-purple-100 text-purple-800" },
-      image: { label: "图像生成", color: "bg-pink-100 text-pink-800" },
-      tts: { label: "语音合成", color: "bg-green-100 text-green-800" },
-      stt: { label: "语音识别", color: "bg-yellow-100 text-yellow-800" },
+      [ModelType.CHAT]: { label: "对话模型", color: "bg-blue-100 text-blue-800" },
+      [ModelType.EMBEDDING]: { label: "嵌入模型", color: "bg-purple-100 text-purple-800" },
+      [ModelType.IMAGE]: { label: "图像模型", color: "bg-pink-100 text-pink-800" },
     };
-    const config = typeMap[type];
+    const config = typeMap[type] || { label: type, color: "bg-gray-100 text-gray-800" };
     return <Badge variant="outline" className={config.color}>{config.label}</Badge>;
   };
 
   const filteredProviders = providers.filter(provider =>
     provider.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    provider.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    provider.description.toLowerCase().includes(searchQuery.toLowerCase())
+    (provider.description && provider.description.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   const providerModels = models.filter(model => 
     model.providerId === selectedProvider?.id &&
     (model.name.toLowerCase().includes(modelSearchQuery.toLowerCase()) ||
-     model.displayName.toLowerCase().includes(modelSearchQuery.toLowerCase()))
+     model.modelId.toLowerCase().includes(modelSearchQuery.toLowerCase()))
   );
 
   const copyToClipboard = (text: string) => {
@@ -338,8 +433,8 @@ export default function ProvidersPage() {
               </AvatarFallback>
             </Avatar>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">{selectedProvider.displayName}</h1>
-              <p className="text-gray-600">{selectedProvider.description}</p>
+              <h1 className="text-2xl font-bold text-gray-900">{selectedProvider.name}</h1>
+              <p className="text-gray-600">{selectedProvider.description || "无描述"}</p>
             </div>
           </div>
         </div>
@@ -356,9 +451,9 @@ export default function ProvidersPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Label className="text-sm font-medium text-gray-700">类型</Label>
+                  <Label className="text-sm font-medium text-gray-700">协议</Label>
                   <div className="mt-1">
-                    {getTypeBadge(selectedProvider.type)}
+                    {getProtocolBadge(selectedProvider.protocol)}
                   </div>
                 </div>
                 
@@ -373,14 +468,14 @@ export default function ProvidersPage() {
                   <Label className="text-sm font-medium text-gray-700">API地址</Label>
                   <div className="mt-1 flex items-center space-x-2">
                     <Input 
-                      value={selectedProvider.apiUrl} 
+                      value={selectedProvider.config.baseUrl || "默认地址"} 
                       readOnly 
                       className="text-sm"
                     />
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => copyToClipboard(selectedProvider.apiUrl)}
+                      onClick={() => copyToClipboard(selectedProvider.config.baseUrl || "")}
                     >
                       <Copy className="w-4 h-4" />
                     </Button>
@@ -392,7 +487,7 @@ export default function ProvidersPage() {
                   <div className="mt-1 flex items-center space-x-2">
                     <Input 
                       type={showApiKey ? "text" : "password"}
-                      value={showApiKey ? selectedProvider.apiKey : maskApiKey(selectedProvider.apiKey)}
+                      value={showApiKey ? selectedProvider.config.apiKey : maskApiKey(selectedProvider.config.apiKey)}
                       readOnly 
                       className="text-sm"
                     />
@@ -406,7 +501,7 @@ export default function ProvidersPage() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => copyToClipboard(selectedProvider.apiKey)}
+                      onClick={() => copyToClipboard(selectedProvider.config.apiKey)}
                     >
                       <Copy className="w-4 h-4" />
                     </Button>
@@ -414,20 +509,39 @@ export default function ProvidersPage() {
                 </div>
 
                 <div>
-                  <Label className="text-sm font-medium text-gray-700">最后检查</Label>
+                  <Label className="text-sm font-medium text-gray-700">创建时间</Label>
                   <div className="mt-1 text-sm text-gray-600">
-                    {selectedProvider.lastHealthCheck}
+                    {new Date(selectedProvider.createdAt).toLocaleString()}
                   </div>
                 </div>
 
                 <div className="pt-4 space-y-2">
-                  <Button variant="outline" className="w-full">
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={() => handleToggleProviderStatus(selectedProvider.id)}
+                  >
                     <Zap className="w-4 h-4 mr-2" />
-                    测试连接
+                    {selectedProvider.status ? "禁用" : "启用"}
                   </Button>
-                  <Button variant="outline" className="w-full">
+                  <Button 
+                    variant="outline" 
+                    className="w-full" 
+                    onClick={() => {
+                      setEditingProvider(selectedProvider);
+                      setIsEditProviderOpen(true);
+                    }}
+                  >
                     <Edit className="w-4 h-4 mr-2" />
                     编辑配置
+                  </Button>
+                  <Button 
+                    variant="destructive" 
+                    className="w-full"
+                    onClick={() => handleDeleteProvider(selectedProvider.id)}
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    删除
                   </Button>
                 </div>
               </CardContent>
@@ -452,48 +566,71 @@ export default function ProvidersPage() {
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-[500px]">
                       <DialogHeader>
-                        <DialogTitle>为 {selectedProvider.displayName} 添加模型</DialogTitle>
+                        <DialogTitle>为 {selectedProvider.name} 添加模型</DialogTitle>
                       </DialogHeader>
                       <div className="grid gap-4 py-4">
                         <div className="grid grid-cols-4 items-center gap-4">
-                          <Label htmlFor="modelName" className="text-right">模型名称</Label>
-                          <Input id="modelName" placeholder="例如: gpt-4" className="col-span-3" />
+                          <Label htmlFor="modelId" className="text-right">模型ID</Label>
+                          <Input 
+                            id="modelId" 
+                            placeholder="例如: gpt-4" 
+                            className="col-span-3" 
+                            value={newModel.modelId}
+                            onChange={(e) => setNewModel(prev => ({ ...prev, modelId: e.target.value }))}
+                          />
                         </div>
                         <div className="grid grid-cols-4 items-center gap-4">
-                          <Label htmlFor="modelDisplayName" className="text-right">显示名称</Label>
-                          <Input id="modelDisplayName" placeholder="例如: GPT-4" className="col-span-3" />
+                          <Label htmlFor="modelName" className="text-right">显示名称</Label>
+                          <Input 
+                            id="modelName" 
+                            placeholder="例如: GPT-4" 
+                            className="col-span-3" 
+                            value={newModel.name}
+                            onChange={(e) => setNewModel(prev => ({ ...prev, name: e.target.value }))}
+                          />
                         </div>
                         <div className="grid grid-cols-4 items-center gap-4">
                           <Label htmlFor="modelType" className="text-right">模型类型</Label>
-                          <Select>
+                          <Select 
+                            value={newModel.type} 
+                            onValueChange={(value) => setNewModel(prev => ({ ...prev, type: value as ModelType }))}
+                          >
                             <SelectTrigger className="col-span-3">
                               <SelectValue placeholder="选择类型" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="text">文本生成</SelectItem>
-                              <SelectItem value="embedding">向量嵌入</SelectItem>
-                              <SelectItem value="image">图像生成</SelectItem>
-                              <SelectItem value="tts">语音合成</SelectItem>
-                              <SelectItem value="stt">语音识别</SelectItem>
+                              {modelTypes.map(type => (
+                                <SelectItem key={type} value={type}>
+                                  {getModelTypeText(type)}
+                                </SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                         </div>
                         <div className="grid grid-cols-4 items-center gap-4">
-                          <Label htmlFor="maxTokens" className="text-right">最大Token</Label>
-                          <Input id="maxTokens" placeholder="8192" className="col-span-3" />
+                          <Label htmlFor="modelEndpoint" className="text-right">部署名称</Label>
+                          <Input 
+                            id="modelEndpoint" 
+                            placeholder="例如: gpt-4-deployment" 
+                            className="col-span-3" 
+                            value={newModel.modelEndpoint}
+                            onChange={(e) => setNewModel(prev => ({ ...prev, modelEndpoint: e.target.value }))}
+                          />
                         </div>
                         <div className="grid grid-cols-4 items-center gap-4">
-                          <Label htmlFor="inputCost" className="text-right">输入费用</Label>
-                          <Input id="inputCost" placeholder="0.03" className="col-span-3" />
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                          <Label htmlFor="outputCost" className="text-right">输出费用</Label>
-                          <Input id="outputCost" placeholder="0.06" className="col-span-3" />
+                          <Label htmlFor="modelDescription" className="text-right">描述</Label>
+                          <Textarea 
+                            id="modelDescription" 
+                            placeholder="模型描述" 
+                            className="col-span-3" 
+                            value={newModel.description}
+                            onChange={(e) => setNewModel(prev => ({ ...prev, description: e.target.value }))}
+                          />
                         </div>
                       </div>
                       <div className="flex justify-end space-x-2">
                         <Button variant="outline" onClick={() => setIsAddModelOpen(false)}>取消</Button>
-                        <Button onClick={() => setIsAddModelOpen(false)}>添加</Button>
+                        <Button onClick={handleCreateModel}>添加</Button>
                       </div>
                     </DialogContent>
                   </Dialog>
@@ -520,8 +657,7 @@ export default function ProvidersPage() {
                       <TableHead>模型信息</TableHead>
                       <TableHead>类型</TableHead>
                       <TableHead>状态</TableHead>
-                      <TableHead>最大Token</TableHead>
-                      <TableHead>费用(千Token)</TableHead>
+                      <TableHead>创建时间</TableHead>
                       <TableHead>操作</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -534,8 +670,14 @@ export default function ProvidersPage() {
                               <Bot className="w-4 h-4 text-blue-600" />
                             </div>
                             <div>
-                              <div className="font-medium">{model.displayName}</div>
-                              <div className="text-sm text-gray-500">{model.name}</div>
+                              <div className="font-medium">{model.name}</div>
+                              <div className="text-sm text-gray-500">{model.modelId}</div>
+                              {model.modelEndpoint && (
+                                <div className="text-xs text-blue-600">部署: {model.modelEndpoint}</div>
+                              )}
+                              {model.description && (
+                                <div className="text-xs text-gray-400">{model.description}</div>
+                              )}
                             </div>
                           </div>
                         </TableCell>
@@ -546,22 +688,33 @@ export default function ProvidersPage() {
                           {getModelStatusBadge(model.status)}
                         </TableCell>
                         <TableCell>
-                          <div className="text-sm">{model.maxTokens.toLocaleString()}</div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="text-sm">
-                            <div>输入: ${model.inputCost}</div>
-                            {model.outputCost > 0 && (
-                              <div>输出: ${model.outputCost}</div>
-                            )}
-                          </div>
+                          <div className="text-sm">{new Date(model.createdAt).toLocaleDateString()}</div>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center space-x-2">
-                            <Button variant="ghost" size="icon" title="编辑">
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              title="编辑"
+                              onClick={() => handleEditModel(model)}
+                            >
                               <Edit className="w-4 h-4" />
                             </Button>
-                            <Button variant="ghost" size="icon" className="text-red-600" title="删除">
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              title={model.status ? "禁用" : "启用"}
+                              onClick={() => handleToggleModelStatus(model.id)}
+                            >
+                              <Zap className="w-4 h-4" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="text-red-600" 
+                              title="删除"
+                              onClick={() => handleDeleteModel(model.id)}
+                            >
                               <Trash2 className="w-4 h-4" />
                             </Button>
                           </div>
@@ -574,6 +727,144 @@ export default function ProvidersPage() {
             </Card>
           </div>
         </div>
+
+        {/* 服务商详情页面中的编辑对话框 */}
+        <Dialog open={isEditProviderOpen} onOpenChange={setIsEditProviderOpen}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>编辑服务商 {editingProvider?.name || ""}</DialogTitle>
+            </DialogHeader>
+            {editingProvider && (
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="editProviderName" className="text-right">名称</Label>
+                  <Input 
+                    id="editProviderName" 
+                    placeholder="例如: openai" 
+                    className="col-span-3" 
+                    value={editingProvider.name}
+                    onChange={(e) => setEditingProvider(prev => prev ? ({ ...prev, name: e.target.value }) : null)}
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="editProviderProtocol" className="text-right">协议</Label>
+                  <Select 
+                    value={editingProvider.protocol} 
+                    onValueChange={(value) => setEditingProvider(prev => prev ? ({ ...prev, protocol: value as ProviderProtocol }) : null)}
+                  >
+                    <SelectTrigger className="col-span-3">
+                      <SelectValue placeholder="选择协议" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {protocols.map(protocol => (
+                        <SelectItem key={protocol} value={protocol}>
+                          {getProtocolText(protocol)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="editApiKey" className="text-right">API Key</Label>
+                  <Input 
+                    id="editApiKey" 
+                    placeholder="sk-..." 
+                    className="col-span-3" 
+                    value={editingProvider.config.apiKey}
+                    onChange={(e) => setEditingProvider(prev => prev ? ({ 
+                      ...prev, 
+                      config: { ...prev.config, apiKey: e.target.value }
+                    }) : null)}
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="editBaseUrl" className="text-right">基础URL</Label>
+                  <Input 
+                    id="editBaseUrl" 
+                    placeholder="可选，例如: https://api.openai.com/v1" 
+                    className="col-span-3" 
+                    value={editingProvider.config.baseUrl || ""}
+                    onChange={(e) => setEditingProvider(prev => prev ? ({ 
+                      ...prev, 
+                      config: { ...prev.config, baseUrl: e.target.value }
+                    }) : null)}
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="editDescription" className="text-right">描述</Label>
+                  <Textarea 
+                    id="editDescription" 
+                    placeholder="服务商描述" 
+                    className="col-span-3" 
+                    value={editingProvider.description || ""}
+                    onChange={(e) => setEditingProvider(prev => prev ? ({ ...prev, description: e.target.value }) : null)}
+                  />
+                </div>
+              </div>
+            )}
+            <div className="flex justify-end space-x-2">
+              <Button variant="outline" onClick={() => setIsEditProviderOpen(false)}>取消</Button>
+              <Button onClick={handleUpdateProvider}>保存</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* 模型编辑对话框 */}
+        <Dialog open={isEditModelOpen} onOpenChange={setIsEditModelOpen}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>编辑模型 {editingModel?.name || ""}</DialogTitle>
+            </DialogHeader>
+            {editingModel && (
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="editModelId" className="text-right">模型ID</Label>
+                  <Input 
+                    id="editModelId" 
+                    placeholder="例如: gpt-4" 
+                    className="col-span-3" 
+                    value={editingModel.modelId}
+                    onChange={(e) => setEditingModel(prev => prev ? ({ ...prev, modelId: e.target.value }) : null)}
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="editModelName" className="text-right">显示名称</Label>
+                  <Input 
+                    id="editModelName" 
+                    placeholder="例如: GPT-4" 
+                    className="col-span-3" 
+                    value={editingModel.name}
+                    onChange={(e) => setEditingModel(prev => prev ? ({ ...prev, name: e.target.value }) : null)}
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="editModelEndpoint" className="text-right">部署名称</Label>
+                  <Input 
+                    id="editModelEndpoint" 
+                    placeholder="例如: gpt-4-deployment" 
+                    className="col-span-3" 
+                    value={editingModel.modelEndpoint || ""}
+                    onChange={(e) => setEditingModel(prev => prev ? ({ ...prev, modelEndpoint: e.target.value }) : null)}
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="editModelDescription" className="text-right">描述</Label>
+                  <Textarea 
+                    id="editModelDescription" 
+                    placeholder="模型描述" 
+                    className="col-span-3" 
+                    value={editingModel.description}
+                    onChange={(e) => setEditingModel(prev => prev ? ({ ...prev, description: e.target.value }) : null)}
+                  />
+                </div>
+              </div>
+            )}
+            <div className="flex justify-end space-x-2">
+              <Button variant="outline" onClick={() => setIsEditModelOpen(false)}>取消</Button>
+              <Button onClick={handleUpdateModel}>保存</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     );
   }
@@ -601,43 +892,72 @@ export default function ProvidersPage() {
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="providerName" className="text-right">名称</Label>
-                <Input id="providerName" placeholder="例如: openai" className="col-span-3" />
+                <Input 
+                  id="providerName" 
+                  placeholder="例如: openai" 
+                  className="col-span-3" 
+                  value={newProvider.name}
+                  onChange={(e) => setNewProvider(prev => ({ ...prev, name: e.target.value }))}
+                />
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="providerDisplayName" className="text-right">显示名称</Label>
-                <Input id="providerDisplayName" placeholder="例如: OpenAI" className="col-span-3" />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="providerType" className="text-right">类型</Label>
-                <Select>
+                <Label htmlFor="providerProtocol" className="text-right">协议</Label>
+                <Select 
+                  value={newProvider.protocol} 
+                  onValueChange={(value) => setNewProvider(prev => ({ ...prev, protocol: value as ProviderProtocol }))}
+                >
                   <SelectTrigger className="col-span-3">
-                    <SelectValue placeholder="选择服务商类型" />
+                    <SelectValue placeholder="选择协议" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="llm">大语言模型</SelectItem>
-                    <SelectItem value="embedding">向量嵌入</SelectItem>
-                    <SelectItem value="tts">语音合成</SelectItem>
-                    <SelectItem value="stt">语音识别</SelectItem>
-                    <SelectItem value="image">图像生成</SelectItem>
+                    {protocols.map(protocol => (
+                      <SelectItem key={protocol} value={protocol}>
+                        {getProtocolText(protocol)}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="apiUrl" className="text-right">API地址</Label>
-                <Input id="apiUrl" placeholder="https://api.example.com/v1" className="col-span-3" />
+                <Label htmlFor="apiKey" className="text-right">API Key</Label>
+                <Input 
+                  id="apiKey" 
+                  placeholder="sk-..." 
+                  className="col-span-3" 
+                  value={newProvider.config.apiKey}
+                  onChange={(e) => setNewProvider(prev => ({ 
+                    ...prev, 
+                    config: { ...prev.config, apiKey: e.target.value }
+                  }))}
+                />
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="apiKey" className="text-right">API Key</Label>
-                <Input id="apiKey" placeholder="sk-..." className="col-span-3" />
+                <Label htmlFor="baseUrl" className="text-right">基础URL</Label>
+                <Input 
+                  id="baseUrl" 
+                  placeholder="可选，例如: https://api.openai.com/v1" 
+                  className="col-span-3" 
+                  value={newProvider.config.baseUrl}
+                  onChange={(e) => setNewProvider(prev => ({ 
+                    ...prev, 
+                    config: { ...prev.config, baseUrl: e.target.value }
+                  }))}
+                />
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="description" className="text-right">描述</Label>
-                <Textarea id="description" placeholder="服务商描述" className="col-span-3" />
+                <Textarea 
+                  id="description" 
+                  placeholder="服务商描述" 
+                  className="col-span-3" 
+                  value={newProvider.description}
+                  onChange={(e) => setNewProvider(prev => ({ ...prev, description: e.target.value }))}
+                />
               </div>
             </div>
             <div className="flex justify-end space-x-2">
               <Button variant="outline" onClick={() => setIsAddProviderOpen(false)}>取消</Button>
-              <Button onClick={() => setIsAddProviderOpen(false)}>添加</Button>
+              <Button onClick={handleCreateProvider}>添加</Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -676,8 +996,8 @@ export default function ProvidersPage() {
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <CardTitle className="text-lg">{provider.displayName}</CardTitle>
-                    <p className="text-sm text-gray-500">{provider.name}</p>
+                    <CardTitle className="text-lg">{provider.name}</CardTitle>
+                    <p className="text-sm text-gray-500">{getProtocolText(provider.protocol)}</p>
                   </div>
                 </div>
                 {getStatusBadge(provider.status)}
@@ -686,19 +1006,19 @@ export default function ProvidersPage() {
             <CardContent>
               <div className="space-y-3">
                 <p className="text-sm text-gray-600 line-clamp-2">
-                  {provider.description}
+                  {provider.description || "无描述"}
                 </p>
                 
                 <div className="flex items-center justify-between">
-                  {getTypeBadge(provider.type)}
+                  {getProtocolBadge(provider.protocol)}
                   <div className="text-sm text-gray-500">
-                    {provider.modelsCount} 个模型
+                    {provider.models?.length || 0} 个模型
                   </div>
                 </div>
 
                 <div className="flex items-center justify-between text-sm text-gray-500">
-                  <span>请求数: {provider.requestsCount.toLocaleString()}</span>
-                  <span>最后检查: {provider.lastHealthCheck.split(' ')[1]}</span>
+                  <span>官方服务商</span>
+                  <span>创建于: {new Date(provider.createdAt).toLocaleDateString()}</span>
                 </div>
               </div>
             </CardContent>
