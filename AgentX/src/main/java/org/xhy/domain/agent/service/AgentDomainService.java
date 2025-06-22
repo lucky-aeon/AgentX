@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,7 +13,14 @@ import org.xhy.domain.agent.model.*;
 import org.xhy.domain.agent.repository.AgentRepository;
 import org.xhy.domain.agent.repository.AgentVersionRepository;
 import org.xhy.domain.agent.repository.AgentWorkspaceRepository;
+import org.xhy.domain.user.repository.UserRepository;
+import org.xhy.domain.user.model.UserEntity;
 import org.xhy.infrastructure.exception.BusinessException;
+import org.xhy.application.agent.dto.AgentWithUserDTO;
+import org.xhy.application.agent.dto.AgentVersionDTO;
+import org.xhy.application.agent.dto.AgentStatisticsDTO;
+import org.xhy.application.agent.assembler.AgentVersionAssembler;
+import org.xhy.interfaces.dto.agent.request.QueryAgentRequest;
 
 import java.util.*;
 import java.util.function.Function;
@@ -25,12 +33,14 @@ public class AgentDomainService {
     private final AgentRepository agentRepository;
     private final AgentVersionRepository agentVersionRepository;
     private final AgentWorkspaceRepository agentWorkspaceRepository;
+    private final UserRepository userRepository;
 
     public AgentDomainService(AgentRepository agentRepository, AgentVersionRepository agentVersionRepository,
-            AgentWorkspaceRepository agentWorkspaceRepository) {
+            AgentWorkspaceRepository agentWorkspaceRepository, UserRepository userRepository) {
         this.agentRepository = agentRepository;
         this.agentVersionRepository = agentVersionRepository;
         this.agentWorkspaceRepository = agentWorkspaceRepository;
+        this.userRepository = userRepository;
     }
 
     /** 创建新Agent */
@@ -208,7 +218,13 @@ public class AgentDomainService {
     public List<AgentVersionEntity> getAgentVersions(String agentId, String userId) {
         // 查询Agent
         AgentEntity agent = agentRepository.selectById(agentId);
-        if (agent == null || !agent.getUserId().equals(userId)) {
+        if (agent == null) {
+            throw new BusinessException("Agent不存在");
+        }
+
+        // 如果userId不为空，需要检查权限（普通用户只能访问自己的Agent版本）
+        // 如果userId为空，表示管理员访问，跳过权限检查
+        if (userId != null && !agent.getUserId().equals(userId)) {
             throw new BusinessException("Agent不存在或无权访问");
         }
 
@@ -361,5 +377,151 @@ public class AgentDomainService {
         } catch (NumberFormatException e) {
             throw new BusinessException("版本号格式错误，必须是数字: " + e.getMessage());
         }
+    }
+
+    /** 分页查询Agent列表
+     * 
+     * @param queryAgentRequest 查询条件
+     * @return Agent分页数据 */
+    public Page<AgentEntity> getAgents(QueryAgentRequest queryAgentRequest) {
+        LambdaQueryWrapper<AgentEntity> wrapper = Wrappers.<AgentEntity>lambdaQuery();
+
+        // 关键词搜索：Agent名称、描述
+        if (queryAgentRequest.getKeyword() != null && !queryAgentRequest.getKeyword().trim().isEmpty()) {
+            String keyword = queryAgentRequest.getKeyword().trim();
+            wrapper.and(w -> w.like(AgentEntity::getName, keyword).or().like(AgentEntity::getDescription, keyword));
+        }
+
+        // 状态筛选
+        if (queryAgentRequest.getEnabled() != null) {
+            wrapper.eq(AgentEntity::getEnabled, queryAgentRequest.getEnabled());
+        }
+
+        // 按创建时间倒序排列
+        wrapper.orderByDesc(AgentEntity::getCreatedAt);
+
+        // 分页查询
+        long current = queryAgentRequest.getPage() != null ? queryAgentRequest.getPage().longValue() : 1L;
+        long size = queryAgentRequest.getPageSize() != null ? queryAgentRequest.getPageSize().longValue() : 15L;
+        Page<AgentEntity> page = new Page<>(current, size);
+        return agentRepository.selectPage(page, wrapper);
+    }
+
+    /** 获取带用户信息的Agent分页数据
+     * 
+     * @param agentPage Agent分页数据
+     * @return 包含用户信息的Agent分页数据 */
+    public Page<AgentWithUserDTO> getAgentsWithUserInfo(Page<AgentEntity> agentPage) {
+        if (agentPage.getRecords().isEmpty()) {
+            Page<AgentWithUserDTO> result = new Page<>();
+            result.setCurrent(agentPage.getCurrent());
+            result.setSize(agentPage.getSize());
+            result.setTotal(agentPage.getTotal());
+            result.setRecords(new ArrayList<>());
+            return result;
+        }
+
+        // 获取所有用户ID
+        List<String> userIds = agentPage.getRecords().stream().map(AgentEntity::getUserId).distinct()
+                .collect(Collectors.toList());
+
+        // 批量查询用户信息
+        List<UserEntity> users = userRepository.selectBatchIds(userIds);
+        Map<String, UserEntity> userMap = users.stream()
+                .collect(Collectors.toMap(UserEntity::getId, Function.identity()));
+
+        // 获取所有Agent的版本信息
+        List<String> agentIds = agentPage.getRecords().stream().map(AgentEntity::getId).collect(Collectors.toList());
+        Map<String, List<AgentVersionEntity>> versionMap = getVersionsForAgents(agentIds);
+
+        // 组装结果
+        List<AgentWithUserDTO> records = agentPage.getRecords().stream().map(agent -> convertToAgentWithUserDTO(agent,
+                userMap.get(agent.getUserId()), versionMap.get(agent.getId()))).collect(Collectors.toList());
+
+        Page<AgentWithUserDTO> result = new Page<>();
+        result.setCurrent(agentPage.getCurrent());
+        result.setSize(agentPage.getSize());
+        result.setTotal(agentPage.getTotal());
+        result.setRecords(records);
+        return result;
+    }
+
+    /** 批量获取Agent的版本信息 */
+    private Map<String, List<AgentVersionEntity>> getVersionsForAgents(List<String> agentIds) {
+        if (agentIds.isEmpty()) {
+            return new HashMap<>();
+        }
+
+        LambdaQueryWrapper<AgentVersionEntity> wrapper = Wrappers.<AgentVersionEntity>lambdaQuery()
+                .in(AgentVersionEntity::getAgentId, agentIds).orderByDesc(AgentVersionEntity::getCreatedAt);
+
+        List<AgentVersionEntity> allVersions = agentVersionRepository.selectList(wrapper);
+
+        return allVersions.stream().collect(Collectors.groupingBy(AgentVersionEntity::getAgentId));
+    }
+
+    /** 转换AgentEntity为AgentWithUserDTO */
+    private AgentWithUserDTO convertToAgentWithUserDTO(AgentEntity agent, UserEntity user,
+            List<AgentVersionEntity> versions) {
+        AgentWithUserDTO dto = new AgentWithUserDTO();
+        dto.setId(agent.getId());
+        dto.setName(agent.getName());
+        dto.setAvatar(agent.getAvatar());
+        dto.setDescription(agent.getDescription());
+        dto.setSystemPrompt(agent.getSystemPrompt());
+        dto.setWelcomeMessage(agent.getWelcomeMessage());
+        dto.setToolIds(agent.getToolIds());
+        dto.setKnowledgeBaseIds(agent.getKnowledgeBaseIds());
+        dto.setPublishedVersion(agent.getPublishedVersion());
+        dto.setEnabled(agent.getEnabled());
+        dto.setUserId(agent.getUserId());
+        dto.setToolPresetParams(agent.getToolPresetParams());
+        dto.setCreatedAt(agent.getCreatedAt());
+        dto.setUpdatedAt(agent.getUpdatedAt());
+        dto.setMultiModal(agent.getMultiModal());
+
+        // 设置用户信息
+        if (user != null) {
+            dto.setUserNickname(user.getNickname());
+            dto.setUserEmail(user.getEmail());
+            dto.setUserAvatarUrl(user.getAvatarUrl());
+        }
+
+        // 设置版本信息
+        if (versions != null && !versions.isEmpty()) {
+            List<AgentVersionDTO> versionDTOs = AgentVersionAssembler.toDTOs(versions);
+            dto.setVersions(versionDTOs);
+        }
+
+        return dto;
+    }
+
+    /** 获取Agent统计信息 */
+    public AgentStatisticsDTO getAgentStatistics() {
+        AgentStatisticsDTO statistics = new AgentStatisticsDTO();
+
+        // 总Agent数量
+        long totalAgents = agentRepository.selectCount(null);
+        statistics.setTotalAgents(totalAgents);
+
+        // 启用的Agent数量
+        LambdaQueryWrapper<AgentEntity> enabledWrapper = Wrappers.<AgentEntity>lambdaQuery().eq(AgentEntity::getEnabled,
+                true);
+        long enabledAgents = agentRepository.selectCount(enabledWrapper);
+        statistics.setEnabledAgents(enabledAgents);
+
+        // 禁用的Agent数量
+        LambdaQueryWrapper<AgentEntity> disabledWrapper = Wrappers.<AgentEntity>lambdaQuery()
+                .eq(AgentEntity::getEnabled, false);
+        long disabledAgents = agentRepository.selectCount(disabledWrapper);
+        statistics.setDisabledAgents(disabledAgents);
+
+        // 待审核版本数量（状态为REVIEWING的版本）
+        LambdaQueryWrapper<AgentVersionEntity> pendingWrapper = Wrappers.<AgentVersionEntity>lambdaQuery()
+                .eq(AgentVersionEntity::getPublishStatus, PublishStatus.REVIEWING.getCode());
+        long pendingVersions = agentVersionRepository.selectCount(pendingWrapper);
+        statistics.setPendingVersions(pendingVersions);
+
+        return statistics;
     }
 }

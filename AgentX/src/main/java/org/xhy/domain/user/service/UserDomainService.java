@@ -160,18 +160,17 @@ public class UserDomainService {
      * @return 用户分页数据 */
     public Page<UserEntity> getUsers(QueryUserRequest queryUserRequest) {
         LambdaQueryWrapper<UserEntity> wrapper = Wrappers.<UserEntity>lambdaQuery();
-        
+
         // 关键词搜索：昵称、邮箱、手机号
         if (queryUserRequest.getKeyword() != null && !queryUserRequest.getKeyword().trim().isEmpty()) {
             String keyword = queryUserRequest.getKeyword().trim();
-            wrapper.and(w -> w.like(UserEntity::getNickname, keyword)
-                    .or().like(UserEntity::getEmail, keyword)
-                    .or().like(UserEntity::getPhone, keyword));
+            wrapper.and(w -> w.like(UserEntity::getNickname, keyword).or().like(UserEntity::getEmail, keyword).or()
+                    .like(UserEntity::getPhone, keyword));
         }
-        
+
         // 按创建时间倒序排列
         wrapper.orderByDesc(UserEntity::getCreatedAt);
-        
+
         // 分页查询
         Page<UserEntity> page = new Page<>(queryUserRequest.getPage(), queryUserRequest.getPageSize());
         return userRepository.selectPage(page, wrapper);
