@@ -133,6 +133,7 @@ setup_with_compose.bat   # Windows
   - `existsXxx()`: Returns boolean
   - `checkXxxExists()`: Throws exception if not found
 - **Entity Operations**: Use `Operator.ADMIN` for admin operations, check `operator.needCheckUserId()`
+- **Assembler Pattern**: Always use `BeanUtils.copyProperties()` for Entity/DTO conversions to avoid field omissions
 
 ### Controller Layer Standards
 - **Annotation Usage**: `@RestController`, `@RequestMapping` for base path
@@ -204,6 +205,57 @@ public class ExampleAppService {
 - **Custom Queries**: Use `@Select`, `@Update`, `@Delete` for complex SQL
 - **Permission Checks**: Use `checkedUpdate()`, `checkedDelete()` methods
 - **Naming**: Repository interface in domain layer, mapper XML in infrastructure
+
+### Assembler Layer Standards
+- **Purpose**: Handle all conversions between Entities, DTOs, and Request objects
+- **Location**: Place assemblers in `application/{domain}/assembler/` directory
+- **BeanUtils Usage**: ALWAYS use `BeanUtils.copyProperties()` for field copying to prevent omissions
+- **Null Checking**: Always check for null inputs before conversion
+- **Static Methods**: Use static methods for conversion operations
+- **Naming Convention**: 
+  - `toDTO(Entity entity)`: Convert Entity to DTO
+  - `toEntity(Request request)`: Convert Request to Entity
+  - `toDTOs(List<Entity> entities)`: Convert Entity list to DTO list
+
+#### Assembler Method Format:
+```java
+public class ExampleAssembler {
+    
+    /** Convert Entity to DTO using BeanUtils */
+    public static ExampleDTO toDTO(ExampleEntity entity) {
+        if (entity == null) {
+            return null;
+        }
+        ExampleDTO dto = new ExampleDTO();
+        BeanUtils.copyProperties(entity, dto);
+        return dto;
+    }
+    
+    /** Convert Request to Entity with additional processing */
+    public static ExampleEntity toEntity(CreateExampleRequest request, String userId) {
+        ExampleEntity entity = new ExampleEntity();
+        BeanUtils.copyProperties(request, entity);
+        entity.setUserId(userId);
+        // Set additional fields as needed
+        return entity;
+    }
+    
+    /** Convert Entity list to DTO list */
+    public static List<ExampleDTO> toDTOs(List<ExampleEntity> entities) {
+        if (entities == null || entities.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return entities.stream().map(ExampleAssembler::toDTO).collect(Collectors.toList());
+    }
+}
+```
+
+#### Benefits of BeanUtils.copyProperties():
+- **Completeness**: Automatically copies all matching fields by name
+- **Maintainability**: No need to update assembler when adding new fields
+- **Error Prevention**: Eliminates manual field mapping errors
+- **Performance**: Efficient reflection-based copying
+- **Type Safety**: Maintains compile-time type checking
 
 ### Frontend TypeScript Standards
 - **File Organization**: Pages in `app/`, components in `components/`, services in `lib/`
