@@ -1,12 +1,12 @@
 package org.xhy.application.agent.dto;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.ArrayList;
 
-/** Agent数据传输对象，用于表示层和应用层之间传递数据 */
-public class AgentDTO {
+/** Agent数据传输对象（包含用户信息），用于管理员页面显示 */
+public class AgentWithUserDTO {
 
     /** Agent唯一ID */
     private String id;
@@ -44,6 +44,12 @@ public class AgentDTO {
     /** 创建者用户昵称 */
     private String userNickname;
 
+    /** 创建者邮箱 */
+    private String userEmail;
+
+    /** 创建者头像 */
+    private String userAvatarUrl;
+
     private Map<String, Map<String, Map<String, String>>> toolPresetParams;
 
     /** 创建时间 */
@@ -55,11 +61,8 @@ public class AgentDTO {
     /** 是否支持多模态 */
     private Boolean multiModal;
 
-    /** 无参构造函数 */
-    public AgentDTO() {
-        this.toolIds = new ArrayList<>();
-        this.knowledgeBaseIds = new ArrayList<>();
-    }
+    /** Agent的版本列表 */
+    private List<AgentVersionDTO> versions = new ArrayList<>();
 
     // Getter和Setter方法
     public String getId() {
@@ -150,6 +153,30 @@ public class AgentDTO {
         this.userId = userId;
     }
 
+    public String getUserNickname() {
+        return userNickname;
+    }
+
+    public void setUserNickname(String userNickname) {
+        this.userNickname = userNickname;
+    }
+
+    public String getUserEmail() {
+        return userEmail;
+    }
+
+    public void setUserEmail(String userEmail) {
+        this.userEmail = userEmail;
+    }
+
+    public String getUserAvatarUrl() {
+        return userAvatarUrl;
+    }
+
+    public void setUserAvatarUrl(String userAvatarUrl) {
+        this.userAvatarUrl = userAvatarUrl;
+    }
+
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
@@ -166,12 +193,12 @@ public class AgentDTO {
         this.updatedAt = updatedAt;
     }
 
-    public void setToolPresetParams(Map<String, Map<String, Map<String, String>>> toolPresetParams) {
-        this.toolPresetParams = toolPresetParams;
-    }
-
     public Map<String, Map<String, Map<String, String>>> getToolPresetParams() {
         return toolPresetParams;
+    }
+
+    public void setToolPresetParams(Map<String, Map<String, Map<String, String>>> toolPresetParams) {
+        this.toolPresetParams = toolPresetParams;
     }
 
     public Boolean getMultiModal() {
@@ -182,11 +209,11 @@ public class AgentDTO {
         this.multiModal = multiModal;
     }
 
-    public String getUserNickname() {
-        return userNickname;
+    public List<AgentVersionDTO> getVersions() {
+        return versions;
     }
 
-    public void setUserNickname(String userNickname) {
-        this.userNickname = userNickname;
+    public void setVersions(List<AgentVersionDTO> versions) {
+        this.versions = versions;
     }
 }

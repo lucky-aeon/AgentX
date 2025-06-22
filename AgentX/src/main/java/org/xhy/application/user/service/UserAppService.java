@@ -38,18 +38,12 @@ public class UserAppService {
      * @return 用户分页数据 */
     public Page<UserDTO> getUsers(QueryUserRequest queryUserRequest) {
         Page<UserEntity> userPage = userDomainService.getUsers(queryUserRequest);
-        
+
         // 转换为DTO
-        List<UserDTO> userDTOList = userPage.getRecords().stream()
-                .map(UserAssembler::toDTO)
-                .toList();
-        
+        List<UserDTO> userDTOList = userPage.getRecords().stream().map(UserAssembler::toDTO).toList();
+
         // 创建返回的分页对象
-        Page<UserDTO> resultPage = new Page<>(
-                userPage.getCurrent(),
-                userPage.getSize(),
-                userPage.getTotal()
-        );
+        Page<UserDTO> resultPage = new Page<>(userPage.getCurrent(), userPage.getSize(), userPage.getTotal());
         resultPage.setRecords(userDTOList);
         return resultPage;
     }

@@ -1,5 +1,6 @@
 package org.xhy.application.agent.assembler;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.beans.BeanUtils;
 import org.xhy.domain.agent.model.AgentEntity;
 
@@ -77,5 +78,15 @@ public class AgentAssembler {
         AgentEntity agentEntity = new AgentEntity();
         agentEntity.setName(searchAgentsRequest.getName());
         return agentEntity;
+    }
+
+    /** 将Entity分页对象转换为DTO分页对象 */
+    public static Page<AgentDTO> toPageDTO(Page<AgentEntity> page) {
+        Page<AgentDTO> dtoPage = new Page<>();
+        dtoPage.setCurrent(page.getCurrent());
+        dtoPage.setSize(page.getSize());
+        dtoPage.setTotal(page.getTotal());
+        dtoPage.setRecords(toDTOs(page.getRecords()));
+        return dtoPage;
     }
 }

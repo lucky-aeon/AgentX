@@ -1,11 +1,14 @@
 package org.xhy.application.agent.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.xhy.application.agent.assembler.AgentAssembler;
 import org.xhy.application.agent.assembler.AgentVersionAssembler;
 import org.xhy.application.agent.dto.AgentDTO;
+import org.xhy.application.agent.dto.AgentWithUserDTO;
+import org.xhy.application.agent.dto.AgentStatisticsDTO;
 import org.xhy.domain.agent.model.AgentEntity;
 import org.xhy.application.agent.dto.AgentVersionDTO;
 import org.xhy.domain.agent.model.AgentVersionEntity;
@@ -183,5 +186,21 @@ public class AgentAppService {
     public List<AgentVersionDTO> getVersionsByStatus(PublishStatus status) {
         List<AgentVersionEntity> versionsByStatus = agentServiceDomainService.getVersionsByStatus(status);
         return AgentVersionAssembler.toDTOs(versionsByStatus);
+    }
+
+    /** 分页查询Agent列表（管理员使用，包含用户信息）
+     * 
+     * @param queryAgentRequest 查询条件
+     * @return Agent分页数据（包含用户信息） */
+    public Page<AgentWithUserDTO> getAgents(QueryAgentRequest queryAgentRequest) {
+        Page<AgentEntity> page = agentServiceDomainService.getAgents(queryAgentRequest);
+        return agentServiceDomainService.getAgentsWithUserInfo(page);
+    }
+
+    /** 获取Agent统计信息
+     * 
+     * @return Agent统计数据 */
+    public AgentStatisticsDTO getAgentStatistics() {
+        return agentServiceDomainService.getAgentStatistics();
     }
 }
