@@ -47,6 +47,11 @@ public class AgentVersionAssembler {
 
         dto.setPublishedAt(entity.getPublishedAt());
         dto.setPublishStatus(entity.getPublishStatus());
+        dto.setRejectReason(entity.getRejectReason());
+        dto.setReviewTime(entity.getReviewTime());
+        dto.setUserId(entity.getUserId());
+        dto.setCreatedAt(entity.getCreatedAt());
+        dto.setUpdatedAt(entity.getUpdatedAt());
 
         return dto;
     }
