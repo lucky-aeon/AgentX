@@ -53,7 +53,7 @@ public class SsoAppService {
         }
 
         if (existingUser != null) {
-            // 用户已存在，更新用户信息
+            // 用户已存在，更新用户信息和登录平台
             updateUserFromSso(existingUser, ssoUserInfo);
             return existingUser;
         } else {
@@ -83,6 +83,13 @@ public class SsoAppService {
             }
         }
 
+        // 更新登录平台
+        String currentPlatform = ssoUserInfo.getProvider().getCode();
+        if (!currentPlatform.equals(user.getLoginPlatform())) {
+            user.setLoginPlatform(currentPlatform);
+            needUpdate = true;
+        }
+
         if (needUpdate) {
             userDomainService.updateUserInfo(user);
         }
@@ -104,6 +111,9 @@ public class SsoAppService {
                 userEntity.setGithubLogin(ssoUserInfo.getDesc().substring("GitHub用户: ".length()));
             }
         }
+
+        // 设置登录平台
+        userEntity.setLoginPlatform(ssoUserInfo.getProvider().getCode());
 
         // SSO用户生成一个随机密码并加密（用户无法知道这个密码，只能通过SSO登录）
         String randomPassword = "SSO_" + UUID.randomUUID().toString().replace("-", "");

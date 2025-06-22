@@ -171,6 +171,7 @@ CREATE TABLE users (
                              phone varchar(11),
                              password varchar NOT NULL,
                              is_admin BOOLEAN DEFAULT FALSE,
+                             login_platform varchar(50),
                              created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                              updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                              deleted_at TIMESTAMP,

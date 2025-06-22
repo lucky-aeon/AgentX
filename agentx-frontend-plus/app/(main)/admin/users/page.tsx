@@ -81,6 +81,23 @@ export default function UsersPage() {
     return new Date(dateString).toLocaleString('zh-CN');
   };
 
+  const formatPlatform = (platform?: string) => {
+    const platformMap: { [key: string]: { name: string; color: string } } = {
+      normal: { name: '普通登录', color: 'bg-gray-100 text-gray-800' },
+      github: { name: 'GitHub', color: 'bg-gray-900 text-white' },
+      community: { name: '敲鸭', color: 'bg-blue-100 text-blue-800' },
+      google: { name: 'Google', color: 'bg-red-100 text-red-800' },
+      wechat: { name: '微信', color: 'bg-green-100 text-green-800' }
+    };
+    
+    const platformInfo = platformMap[platform || 'normal'] || platformMap.normal;
+    return (
+      <Badge className={platformInfo.color}>
+        {platformInfo.name}
+      </Badge>
+    );
+  };
+
   // 处理分页点击
   const handlePageChange = (page: number) => {
     if (page < 1 || page > pageData.pages) return;
@@ -170,6 +187,7 @@ export default function UsersPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>用户信息</TableHead>
+                <TableHead>登录平台</TableHead>
                 <TableHead>GitHub信息</TableHead>
                 <TableHead>注册时间</TableHead>
                 <TableHead>更新时间</TableHead>
@@ -195,6 +213,9 @@ export default function UsersPage() {
                         )}
                       </div>
                     </div>
+                  </TableCell>
+                  <TableCell>
+                    {formatPlatform(user.loginPlatform)}
                   </TableCell>
                   <TableCell>
                     {user.githubLogin ? (
