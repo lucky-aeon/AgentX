@@ -86,6 +86,9 @@ docker-compose logs -f agentx
 
 ## ⚙️ 配置参数说明
 
+### 前端配置
+- `NEXT_PUBLIC_API_BASE_URL`: 前端访问后端API的地址（如：http://your-domain.com:8088/api）
+
 ### 数据库配置
 - `DB_HOST`: 数据库主机地址（设置此项启用外部数据库模式）
 - `DB_PORT`: 数据库端口（默认：5432）
