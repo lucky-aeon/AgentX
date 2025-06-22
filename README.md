@@ -51,7 +51,85 @@ AgentX 是一个基于大模型 (LLM) 和多能力平台 (MCP) 的智能 Agent �
   * **macOS**: 完全支持
   * **Windows**: 完全支持（Windows 10/11 + WSL2 或原生支持）
 
-### 🐳 一键启动（推荐）
+### 🐳 All-in-One Docker 部署（最简单）
+
+**🎯 真正的一键部署**：前端 + 后端 + 数据库，一个容器搞定！
+
+#### 🚀 快速启动（使用内置数据库）
+```bash
+# 克隆仓库
+git clone https://github.com/lucky-aeon/AgentX.git
+cd AgentX
+
+# 构建并启动All-in-One容器
+docker build -f Dockerfile.allinone -t agentx:latest .
+docker run -d --name agentx -p 3000:3000 -p 8088:8088 agentx:latest
+
+# 查看启动日志
+docker logs agentx -f
+```
+
+#### 📁 使用配置文件部署（推荐生产环境）
+```bash
+# 1. 准备配置文件
+cp config-templates/production.env ./agentx.env
+vim ./agentx.env  # 编辑配置
+
+# 2. 启动容器
+docker run -d \
+  --name agentx-prod \
+  -p 3000:3000 \
+  -p 8088:8088 \
+  -v $(pwd)/agentx.env:/app/config/agentx.env:ro \
+  agentx:latest
+```
+
+#### 🔗 外部数据库模式
+```bash
+# 1. 创建Docker网络
+docker network create agentx-network
+
+# 2. 启动PostgreSQL（如果需要）
+docker run -d \
+  --name postgres-db \
+  --network agentx-network \
+  -e POSTGRES_DB=agentx \
+  -e POSTGRES_USER=agentx_user \
+  -e POSTGRES_PASSWORD=your_password \
+  -p 5432:5432 \
+  postgres:15
+
+# 3. 配置外部数据库
+cp config-templates/external-database.env ./agentx.env
+# 编辑 agentx.env，设置 DB_HOST=postgres-db
+
+# 4. 启动AgentX容器
+docker run -d \
+  --name agentx-external \
+  --network agentx-network \
+  -p 3000:3000 \
+  -p 8088:8088 \
+  -v $(pwd)/agentx.env:/app/config/agentx.env:ro \
+  agentx:latest
+```
+
+#### 📋 访问地址
+- **前端界面**: http://localhost:3000
+- **后端API**: http://localhost:8088/api/health
+- **管理后台**: http://localhost:3000/admin
+
+#### 🔐 默认账号
+| 角色 | 邮箱 | 密码 |
+|------|------|------|
+| 管理员 | admin@agentx.ai | admin123 |
+| 测试用户 | test@agentx.ai | test123 |
+
+#### 📖 详细配置说明
+查看 [config-templates/README.md](config-templates/README.md) 获取完整的配置选项和部署指南。
+
+---
+
+### 🐳 开发模式部署
 
 #### 🔥 开发模式
 
@@ -91,23 +169,14 @@ bin\start-dev.bat
 bin\start.bat
 ```
 
-### 📋 服务访问地址
+### 📋 开发模式服务地址
 
-启动成功后，您可以通过以下地址访问服务：
+开发模式启动成功后，您可以通过以下地址访问服务：
 
 - **前端应用**: http://localhost:3000
-- **后端API**: http://localhost:8080
+- **后端API**: http://localhost:8080  
 - **API网关**: http://localhost:8081
 - **数据库连接**: localhost:5432
-
-### 🔐 默认登录账号
-
-系统会自动创建以下默认账号：
-
-| 角色 | 邮箱 | 密码 |
-|------|------|------|
-| 管理员 | admin@agentx.ai | admin123 |
-| 测试用户 | test@agentx.ai | test123 |
 
 ⚠️ **安全提示**：首次登录后请立即修改默认密码，生产环境请删除测试账号。
 
