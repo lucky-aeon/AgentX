@@ -55,33 +55,39 @@ AgentX 是一个基于大模型 (LLM) 和多能力平台 (MCP) 的智能 Agent �
 
 **🎯 真正的一键部署**：前端 + 后端 + 数据库，一个容器搞定！
 
-#### 🚀 快速启动（使用内置数据库）
+#### 🚀 快速启动（使用预构建镜像）
 ```bash
-# 克隆仓库
-git clone https://github.com/lucky-aeon/AgentX.git
-cd AgentX
-
-# 构建并启动All-in-One容器
-docker build -f Dockerfile.allinone -t agentx:latest .
-docker run -d --name agentx -p 3000:3000 -p 8088:8088 agentx:latest
+# 直接拉取并启动（最快方式）
+docker pull ghcr.io/lucky-aeon/agentx:latest
+docker run -d --name agentx -p 3000:3000 -p 8088:8088 ghcr.io/lucky-aeon/agentx:latest
 
 # 查看启动日志
 docker logs agentx -f
 ```
 
+#### 🔨 本地构建启动
+```bash
+# 克隆仓库并构建
+git clone https://github.com/lucky-aeon/AgentX.git
+cd AgentX
+docker build -f Dockerfile.allinone -t agentx:latest .
+docker run -d --name agentx -p 3000:3000 -p 8088:8088 agentx:latest
+```
+
 #### 📁 使用配置文件部署（推荐生产环境）
 ```bash
-# 1. 准备配置文件
-cp config-templates/production.env ./agentx.env
+# 1. 获取配置文件模板
+curl -O https://raw.githubusercontent.com/lucky-aeon/AgentX/main/config-templates/production.env
+mv production.env agentx.env
 vim ./agentx.env  # 编辑配置
 
-# 2. 启动容器
+# 2. 启动容器（使用预构建镜像）
 docker run -d \
   --name agentx-prod \
   -p 3000:3000 \
   -p 8088:8088 \
   -v $(pwd)/agentx.env:/app/config/agentx.env:ro \
-  agentx:latest
+  ghcr.io/lucky-aeon/agentx:latest
 ```
 
 #### 🔗 外部数据库模式
@@ -100,7 +106,8 @@ docker run -d \
   postgres:15
 
 # 3. 配置外部数据库
-cp config-templates/external-database.env ./agentx.env
+curl -O https://raw.githubusercontent.com/lucky-aeon/AgentX/main/config-templates/external-database.env
+mv external-database.env agentx.env
 # 编辑 agentx.env，设置 DB_HOST=postgres-db
 
 # 4. 启动AgentX容器
@@ -110,7 +117,7 @@ docker run -d \
   -p 3000:3000 \
   -p 8088:8088 \
   -v $(pwd)/agentx.env:/app/config/agentx.env:ro \
-  agentx:latest
+  ghcr.io/lucky-aeon/agentx:latest
 ```
 
 #### 📋 访问地址
