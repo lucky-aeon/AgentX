@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,7 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Plus, Edit, Trash2, Eye, CheckCircle, XCircle, Bot, RefreshCw } from "lucide-react";
-import { AdminAgentService, Agent, GetAgentsParams, PageResponse, AgentStatistics } from "@/lib/admin-agent-service";
+import { useMemo, useCallback } from "react";
+import { AdminAgentService, Agent, GetAgentsParams, PageResponse, AgentStatistics, AgentVersion } from "@/lib/admin-agent-service";
 import { useToast } from "@/hooks/use-toast";
 import { AgentVersionsDialog } from "@/components/admin/AgentVersionsDialog";
 
@@ -17,6 +18,13 @@ export default function AgentsPage() {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const searchTimeoutRef = useRef<NodeJS.Timeout>();
+  
+  // 初始化时同步searchInput和searchQuery
+  useEffect(() => {
+    setSearchInput(searchQuery);
+  }, []);
   const [statusFilter, setStatusFilter] = useState<boolean | undefined>(undefined);
   const [pagination, setPagination] = useState({
     current: 1,
@@ -36,18 +44,19 @@ export default function AgentsPage() {
   });
   const { toast } = useToast();
 
+  // 使用useMemo优化搜索参数
+  const searchParams = useMemo(() => ({
+    keyword: searchQuery || undefined,
+    enabled: statusFilter,
+    page: currentPage,
+    pageSize: pageSize
+  }), [searchQuery, statusFilter, currentPage, pageSize]);
+
   // 加载Agent数据
-  const loadAgents = async () => {
+  const loadAgents = useCallback(async () => {
     try {
       setLoading(true);
-      const params: GetAgentsParams = {
-        keyword: searchQuery || undefined,
-        enabled: statusFilter,
-        page: currentPage,
-        pageSize: pageSize
-      };
-      
-      const response = await AdminAgentService.getAgents(params);
+      const response = await AdminAgentService.getAgents(searchParams);
       
       if (response.code === 200 && response.data) {
         setAgents(response.data.records);
@@ -74,10 +83,10 @@ export default function AgentsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [searchParams, toast]);
 
   // 加载统计数据
-  const loadStatistics = async () => {
+  const loadStatistics = useCallback(async () => {
     try {
       const response = await AdminAgentService.getAgentStatistics();
       if (response.code === 200 && response.data) {
@@ -86,13 +95,35 @@ export default function AgentsPage() {
     } catch (error) {
       console.error('加载统计数据失败:', error);
     }
-  };
+  }, []);
+
+  // 处理搜索输入的防抖动
+  useEffect(() => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    
+    searchTimeoutRef.current = setTimeout(() => {
+      setSearchQuery(searchInput);
+      setCurrentPage(1);
+    }, 500);
+
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [searchInput]);
 
   // 初始加载和依赖更新时重新加载  
   useEffect(() => {
     loadAgents();
+  }, [loadAgents]);
+
+  // 只在组件挂载时加载统计数据
+  useEffect(() => {
     loadStatistics();
-  }, [searchQuery, statusFilter, currentPage, pageSize]);
+  }, [loadStatistics]);
 
   const getStatusBadge = (enabled: boolean) => {
     return enabled ? (
@@ -157,20 +188,18 @@ export default function AgentsPage() {
     }
   };
 
-  // 处理搜索输入延迟
-  const handleSearchChange = (value: string) => {
-    setSearchQuery(value);
-    // 重置到第一页
-    setCurrentPage(1);
-  };
+  // 使用useCallback优化搜索处理函数
+  const handleSearchInputChange = useCallback((value: string) => {
+    setSearchInput(value);
+  }, []);
 
-  // 处理状态筛选
-  const handleStatusFilter = (value: string) => {
+  // 使用useCallback优化状态筛选处理函数
+  const handleStatusFilter = useCallback((value: string) => {
     const enabled = value === "enabled" ? true : value === "disabled" ? false : undefined;
     setStatusFilter(enabled);
     // 重置到第一页
     setCurrentPage(1);
-  };
+  }, []);
 
   // 打开版本管理Dialog
   const handleViewVersions = (agent: Agent) => {
@@ -240,8 +269,8 @@ export default function AgentsPage() {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <Input
                 placeholder="搜索Agent名称、描述..."
-                value={searchQuery}
-                onChange={(e) => handleSearchChange(e.target.value)}
+                value={searchInput}
+                onChange={(e) => handleSearchInputChange(e.target.value)}
                 className="pl-10"
               />
             </div>
@@ -255,7 +284,7 @@ export default function AgentsPage() {
                 <SelectItem value="disabled">禁用</SelectItem>
               </SelectContent>
             </Select>
-            <Button variant="outline" onClick={loadAgents} disabled={loading}>
+            <Button variant="outline" onClick={() => loadAgents()} disabled={loading}>
               <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
               刷新
             </Button>
@@ -360,14 +389,6 @@ export default function AgentsPage() {
                         onClick={() => handleViewVersions(agent)}
                       >
                         <Eye className="w-4 h-4" />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className={agent.enabled ? "text-red-600" : "text-green-600"} 
-                        title={agent.enabled ? "禁用" : "启用"}
-                      >
-                        {agent.enabled ? <XCircle className="w-4 h-4" /> : <CheckCircle className="w-4 h-4" />}
                       </Button>
                     </div>
                   </TableCell>
