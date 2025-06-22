@@ -69,6 +69,10 @@ public class UserDomainService {
         // 生成昵称
         String nickname = generateNickname();
         userEntity.setNickname(nickname);
+
+        // 设置普通登录平台
+        userEntity.setLoginPlatform("normal");
+
         userRepository.checkInsert(userEntity);
         UserSettingsEntity userSettingsEntity = new UserSettingsEntity();
         userSettingsEntity.setUserId(userEntity.getId());

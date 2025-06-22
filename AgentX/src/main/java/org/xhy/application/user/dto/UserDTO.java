@@ -18,6 +18,8 @@ public class UserDTO {
 
     private String avatarUrl;
 
+    private String loginPlatform;
+
     private Boolean isAdmin;
 
     private LocalDateTime createdAt;
@@ -78,6 +80,14 @@ public class UserDTO {
 
     public void setAvatarUrl(String avatarUrl) {
         this.avatarUrl = avatarUrl;
+    }
+
+    public String getLoginPlatform() {
+        return loginPlatform;
+    }
+
+    public void setLoginPlatform(String loginPlatform) {
+        this.loginPlatform = loginPlatform;
     }
 
     public Boolean getIsAdmin() {
