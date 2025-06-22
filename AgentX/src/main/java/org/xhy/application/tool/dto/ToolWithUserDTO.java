@@ -11,7 +11,7 @@ import java.util.Map;
 
 /** 包含用户信息的工具DTO，用于管理员界面 */
 public class ToolWithUserDTO {
-    
+
     private String id;
     private String name;
     private String icon;
@@ -33,7 +33,7 @@ public class ToolWithUserDTO {
     private String rejectReason;
     private ToolStatus failedStepStatus;
     private String mcpServerName;
-    
+
     // 用户信息字段
     private String userNickname;
     private String userEmail;

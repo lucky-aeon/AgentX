@@ -50,7 +50,7 @@ public class AdminToolAppService {
         // 保存工具
         ToolEntity createdTool = toolDomainService.createTool(entity);
         String toolId = createdTool.getId();
-        
+
         logger.info("官方工具创建成功: toolId={}", toolId);
         return toolId;
     }

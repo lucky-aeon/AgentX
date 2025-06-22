@@ -101,9 +101,7 @@ public class AdminLLMAppService {
      * @return 官方服务商列表 */
     public List<ProviderDTO> getOfficialProviders(String userId, Integer page, Integer pageSize) {
         // 查询官方服务商并转换为DTO（管理员需要看到所有模型，包括禁用的）
-        return llmDomainService.getOfficialProvidersWithAllModels()
-                .stream()
-                .map(ProviderAssembler::toDTO)
+        return llmDomainService.getOfficialProvidersWithAllModels().stream().map(ProviderAssembler::toDTO)
                 .collect(Collectors.toList());
     }
 
@@ -135,14 +133,14 @@ public class AdminLLMAppService {
      * @param page 页码
      * @param pageSize 每页大小
      * @return 官方模型列表 */
-    public List<ModelDTO> getOfficialModels(String userId, String providerId, ModelType modelType, Integer page, Integer pageSize) {
+    public List<ModelDTO> getOfficialModels(String userId, String providerId, ModelType modelType, Integer page,
+            Integer pageSize) {
         // 查询官方模型，显示所有状态的模型（不过滤状态）
         return llmDomainService.getOfficialProvidersWithAllModels().stream()
                 .flatMap(provider -> provider.getModels().stream()
                         .filter(model -> modelType == null || model.getType() == modelType) // 按类型过滤
                         .filter(model -> providerId == null || provider.getId().equals(providerId))) // 按服务商过滤
-                .map(ModelAssembler::toDTO)
-                .collect(Collectors.toList());
+                .map(ModelAssembler::toDTO).collect(Collectors.toList());
     }
 
     /** 切换模型状态
