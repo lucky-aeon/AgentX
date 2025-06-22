@@ -3,11 +3,13 @@ package org.xhy.application.tool.assembler;
 import org.springframework.beans.BeanUtils;
 import org.xhy.application.tool.dto.ToolDTO;
 import org.xhy.application.tool.dto.ToolVersionDTO;
+import org.xhy.application.tool.dto.ToolWithUserDTO;
 import org.xhy.domain.tool.constant.ToolStatus;
 import org.xhy.domain.tool.constant.ToolType;
 import org.xhy.domain.tool.model.ToolEntity;
 import org.xhy.domain.tool.model.ToolVersionEntity;
 import org.xhy.domain.tool.model.UserToolEntity;
+import org.xhy.domain.user.model.UserEntity;
 import org.xhy.infrastructure.utils.JsonUtils;
 import org.xhy.interfaces.dto.tool.request.CreateToolRequest;
 import org.xhy.interfaces.dto.tool.request.UpdateToolRequest;
@@ -73,6 +75,40 @@ public class ToolAssembler {
         ToolVersionDTO toolVersionDTO = new ToolVersionDTO();
         BeanUtils.copyProperties(userToolEntity, toolVersionDTO);
         return toolVersionDTO;
+    }
+
+    /** 将工具实体转换为包含用户信息的DTO
+     *
+     * @param entity 工具实体
+     * @param user 用户实体
+     * @return 包含用户信息的工具DTO */
+    public static ToolWithUserDTO toToolWithUserDTO(ToolEntity entity, UserEntity user) {
+        if (entity == null) {
+            return null;
+        }
+
+        ToolWithUserDTO dto = new ToolWithUserDTO();
+        BeanUtils.copyProperties(entity, dto);
+
+        // 设置用户信息
+        if (user != null) {
+            dto.setUserNickname(user.getNickname());
+            dto.setUserEmail(user.getEmail());
+            dto.setUserAvatarUrl(user.getAvatarUrl());
+        }
+
+        return dto;
+    }
+
+    /** 将工具实体列表转换为包含用户信息的DTO列表
+     *
+     * @param entities 工具实体列表
+     * @return 包含用户信息的工具DTO列表 */
+    public static List<ToolWithUserDTO> toToolWithUserDTOs(List<ToolEntity> entities) {
+        if (entities == null || entities.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return entities.stream().map(entity -> toToolWithUserDTO(entity, null)).collect(Collectors.toList());
     }
 
 }

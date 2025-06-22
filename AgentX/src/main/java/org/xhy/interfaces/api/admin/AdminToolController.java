@@ -1,13 +1,16 @@
 package org.xhy.interfaces.api.admin;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.xhy.application.admin.tool.service.AdminToolAppService;
-import org.xhy.application.agent.dto.AgentVersionDTO;
-import org.xhy.application.agent.service.AgentAppService;
-import org.xhy.domain.agent.constant.PublishStatus;
+import org.xhy.application.tool.dto.ToolWithUserDTO;
+import org.xhy.application.tool.dto.ToolStatisticsDTO;
 import org.xhy.domain.tool.constant.ToolStatus;
+import org.xhy.infrastructure.auth.UserContext;
 import org.xhy.interfaces.api.common.Result;
-import org.xhy.interfaces.dto.agent.request.ReviewAgentVersionRequest;
+import org.xhy.interfaces.dto.tool.request.CreateToolRequest;
+import org.xhy.interfaces.dto.tool.request.QueryToolRequest;
 
 import java.util.List;
 
@@ -20,6 +23,34 @@ public class AdminToolController {
 
     public AdminToolController(AdminToolAppService adminToolAppService) {
         this.adminToolAppService = adminToolAppService;
+    }
+
+    /** 分页获取工具列表
+     * 
+     * @param queryToolRequest 查询参数
+     * @return 工具分页列表 */
+    @GetMapping
+    public Result<Page<ToolWithUserDTO>> getTools(QueryToolRequest queryToolRequest) {
+        return Result.success(adminToolAppService.getTools(queryToolRequest));
+    }
+
+    /** 获取工具统计信息
+     * 
+     * @return 工具统计数据 */
+    @GetMapping("/statistics")
+    public Result<ToolStatisticsDTO> getToolStatistics() {
+        return Result.success(adminToolAppService.getToolStatistics());
+    }
+
+    /** 创建官方工具
+     * 
+     * @param request 工具创建请求
+     * @return 创建结果 */
+    @PostMapping("/official")
+    public Result<String> createOfficialTool(@RequestBody @Validated CreateToolRequest request) {
+        String userId = UserContext.getCurrentUserId();
+        String toolId = adminToolAppService.createOfficialTool(request, userId);
+        return Result.success(toolId);
     }
 
     /** 修改工具的状态

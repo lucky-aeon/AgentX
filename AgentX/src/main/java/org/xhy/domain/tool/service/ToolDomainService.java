@@ -3,7 +3,9 @@ package org.xhy.domain.tool.service;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,6 +16,12 @@ import org.xhy.domain.tool.model.UserToolEntity;
 import org.xhy.domain.tool.repository.ToolRepository;
 import org.xhy.domain.tool.repository.ToolVersionRepository;
 import org.xhy.domain.tool.repository.UserToolRepository;
+import org.xhy.domain.user.repository.UserRepository;
+import org.xhy.domain.user.model.UserEntity;
+import org.xhy.application.tool.dto.ToolWithUserDTO;
+import org.xhy.application.tool.dto.ToolStatisticsDTO;
+import org.xhy.application.tool.assembler.ToolAssembler;
+import org.xhy.interfaces.dto.tool.request.QueryToolRequest;
 import org.xhy.infrastructure.exception.BusinessException;
 
 import java.util.ArrayList;
@@ -31,13 +39,15 @@ public class ToolDomainService {
     private final ToolVersionRepository toolVersionRepository;
     private final ToolStateDomainService toolStateService;
     private final UserToolRepository userToolRepository;
+    private final UserRepository userRepository;
 
     public ToolDomainService(ToolRepository toolRepository, ToolVersionRepository toolVersionRepository,
-            ToolStateDomainService toolStateService, UserToolRepository userToolRepository) {
+            ToolStateDomainService toolStateService, UserToolRepository userToolRepository, UserRepository userRepository) {
         this.toolRepository = toolRepository;
         this.toolVersionRepository = toolVersionRepository;
         this.toolStateService = toolStateService;
         this.userToolRepository = userToolRepository;
+        this.userRepository = userRepository;
     }
 
     /** 创建工具
@@ -180,5 +190,120 @@ public class ToolDomainService {
             return new ArrayList<>();
         }
         return toolRepository.selectByIds(toolIds);
+    }
+
+    /** 分页查询工具列表
+     * 
+     * @param queryToolRequest 查询条件
+     * @return 工具分页数据 */
+    public Page<ToolEntity> getTools(QueryToolRequest queryToolRequest) {
+        LambdaQueryWrapper<ToolEntity> wrapper = Wrappers.<ToolEntity>lambdaQuery();
+
+        // 关键词搜索：工具名称、描述
+        if (queryToolRequest.getKeyword() != null && !queryToolRequest.getKeyword().trim().isEmpty()) {
+            String keyword = queryToolRequest.getKeyword().trim();
+            wrapper.and(w -> w.like(ToolEntity::getName, keyword).or().like(ToolEntity::getDescription, keyword));
+        }
+
+        // 兼容原有字段
+        if (queryToolRequest.getToolName() != null && !queryToolRequest.getToolName().trim().isEmpty()) {
+            wrapper.like(ToolEntity::getName, queryToolRequest.getToolName().trim());
+        }
+
+        // 状态筛选
+        if (queryToolRequest.getStatus() != null) {
+            wrapper.eq(ToolEntity::getStatus, queryToolRequest.getStatus());
+        }
+
+        // 是否官方工具筛选
+        if (queryToolRequest.getIsOffice() != null) {
+            wrapper.eq(ToolEntity::getIsOffice, queryToolRequest.getIsOffice());
+        }
+
+        // 按创建时间倒序排列
+        wrapper.orderByDesc(ToolEntity::getCreatedAt);
+
+        // 分页查询
+        long current = queryToolRequest.getPage() != null ? queryToolRequest.getPage().longValue() : 1L;
+        long size = queryToolRequest.getPageSize() != null ? queryToolRequest.getPageSize().longValue() : 15L;
+        Page<ToolEntity> page = new Page<>(current, size);
+        return toolRepository.selectPage(page, wrapper);
+    }
+
+    /** 获取带用户信息的工具分页数据
+     * 
+     * @param toolPage 工具分页数据
+     * @return 包含用户信息的工具分页数据 */
+    public Page<ToolWithUserDTO> getToolsWithUserInfo(Page<ToolEntity> toolPage) {
+        if (toolPage.getRecords().isEmpty()) {
+            Page<ToolWithUserDTO> result = new Page<>();
+            result.setCurrent(toolPage.getCurrent());
+            result.setSize(toolPage.getSize());
+            result.setTotal(toolPage.getTotal());
+            result.setRecords(new ArrayList<>());
+            return result;
+        }
+
+        // 获取所有用户ID
+        List<String> userIds = toolPage.getRecords().stream().map(ToolEntity::getUserId).distinct()
+                .collect(Collectors.toList());
+
+        // 批量查询用户信息
+        List<UserEntity> users = userRepository.selectBatchIds(userIds);
+        Map<String, UserEntity> userMap = users.stream()
+                .collect(Collectors.toMap(UserEntity::getId, Function.identity()));
+
+        // 组装结果
+        List<ToolWithUserDTO> records = toolPage.getRecords().stream()
+                .map(tool -> ToolAssembler.toToolWithUserDTO(tool, userMap.get(tool.getUserId())))
+                .collect(Collectors.toList());
+
+        Page<ToolWithUserDTO> result = new Page<>();
+        result.setCurrent(toolPage.getCurrent());
+        result.setSize(toolPage.getSize());
+        result.setTotal(toolPage.getTotal());
+        result.setRecords(records);
+        return result;
+    }
+
+    /** 获取工具统计信息 */
+    public ToolStatisticsDTO getToolStatistics() {
+        ToolStatisticsDTO statistics = new ToolStatisticsDTO();
+
+        // 总工具数量
+        long totalTools = toolRepository.selectCount(null);
+        statistics.setTotalTools(totalTools);
+
+        // 待审核工具数量（WAITING_REVIEW状态）
+        LambdaQueryWrapper<ToolEntity> pendingWrapper = Wrappers.<ToolEntity>lambdaQuery()
+                .eq(ToolEntity::getStatus, ToolStatus.WAITING_REVIEW);
+        long pendingReviewTools = toolRepository.selectCount(pendingWrapper);
+        statistics.setPendingReviewTools(pendingReviewTools);
+
+        // 人工审核工具数量（MANUAL_REVIEW状态）
+        LambdaQueryWrapper<ToolEntity> manualWrapper = Wrappers.<ToolEntity>lambdaQuery()
+                .eq(ToolEntity::getStatus, ToolStatus.MANUAL_REVIEW);
+        long manualReviewTools = toolRepository.selectCount(manualWrapper);
+        statistics.setManualReviewTools(manualReviewTools);
+
+        // 已通过工具数量（APPROVED状态）
+        LambdaQueryWrapper<ToolEntity> approvedWrapper = Wrappers.<ToolEntity>lambdaQuery()
+                .eq(ToolEntity::getStatus, ToolStatus.APPROVED);
+        long approvedTools = toolRepository.selectCount(approvedWrapper);
+        statistics.setApprovedTools(approvedTools);
+
+        // 审核失败工具数量（FAILED状态）
+        LambdaQueryWrapper<ToolEntity> failedWrapper = Wrappers.<ToolEntity>lambdaQuery()
+                .eq(ToolEntity::getStatus, ToolStatus.FAILED);
+        long failedTools = toolRepository.selectCount(failedWrapper);
+        statistics.setFailedTools(failedTools);
+
+        // 官方工具数量
+        LambdaQueryWrapper<ToolEntity> officialWrapper = Wrappers.<ToolEntity>lambdaQuery()
+                .eq(ToolEntity::getIsOffice, true);
+        long officialTools = toolRepository.selectCount(officialWrapper);
+        statistics.setOfficialTools(officialTools);
+
+        return statistics;
     }
 }
