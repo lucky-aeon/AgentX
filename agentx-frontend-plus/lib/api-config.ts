@@ -78,6 +78,8 @@ export const API_ENDPOINTS = {
   
   // 管理员相关
   ADMIN_USERS: "/admin/users", // 管理员获取用户列表
+  ADMIN_AGENTS: "/admin/agents", // 管理员获取Agent列表
+  ADMIN_AGENT_STATISTICS: "/admin/agents/statistics", // 管理员获取Agent统计
 }
 
 // 构建完整的API URL
