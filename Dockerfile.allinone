@@ -47,18 +47,54 @@ COPY --from=backend-builder /app/target/*.jar /app/backend.jar
 
 # 创建数据库初始化脚本
 RUN mkdir -p /docker-entrypoint-initdb.d && \
-    echo "CREATE DATABASE agentx;" > /docker-entrypoint-initdb.d/01-init.sql && \
-    echo "GRANT ALL PRIVILEGES ON DATABASE agentx TO agentx_user;" >> /docker-entrypoint-initdb.d/01-init.sql
+    printf '-- 创建用户\nCREATE USER agentx_user WITH PASSWORD '\''agentx_pass'\'';\nCREATE USER gateway_user WITH PASSWORD '\''gateway_pass'\'';\n\n-- 创建数据库\nCREATE DATABASE agentx OWNER agentx_user;\nCREATE DATABASE api_gateway OWNER gateway_user;\n\n-- 授权\nGRANT ALL PRIVILEGES ON DATABASE agentx TO agentx_user;\nGRANT ALL PRIVILEGES ON DATABASE api_gateway TO gateway_user;\n' > /docker-entrypoint-initdb.d/01-init.sql
 
-# 创建应用配置文件
+# 创建AgentX应用配置文件
 RUN printf 'server:\n  port: 8080\n  servlet:\n    context-path: /api\n\nspring:\n  application:\n    name: AgentX\n  datasource:\n    driver-class-name: org.postgresql.Driver\n    url: jdbc:postgresql://localhost:5432/agentx\n    username: agentx_user\n    password: agentx_pass\n  jpa:\n    hibernate:\n      ddl-auto: update\n    show-sql: false\n\nmcp:\n  gateway:\n    api-key: 123456\n    base-url: http://localhost:8005\n\nhigh-availability:\n  enabled: false\n\nlogging:\n  level:\n    root: info\n    org.xhy: debug\n' > /app/application-allinone.yml
+
+# 创建API网关配置文件
+RUN printf 'server:\n  port: 8081\n\nspring:\n  application:\n    name: API-Premium-Gateway\n  datasource:\n    driver-class-name: org.postgresql.Driver\n    url: jdbc:postgresql://localhost:5432/api_gateway\n    username: gateway_user\n    password: gateway_pass\n  jpa:\n    hibernate:\n      ddl-auto: update\n    show-sql: false\n\nlogging:\n  level:\n    root: info\n' > /app/application-gateway.yml
 
 # 创建 supervisor 配置
 RUN mkdir -p /etc/supervisor/conf.d && \
-    printf '[supervisord]\nnodaemon=true\nuser=root\nlogfile=/var/log/supervisor/supervisord.log\npidfile=/var/run/supervisord.pid\n\n[program:postgres]\ncommand=/usr/local/bin/docker-entrypoint.sh postgres\nuser=postgres\nautostart=true\nautorestart=true\nstdout_logfile=/var/log/postgres.log\nstderr_logfile=/var/log/postgres.log\nenvironment=POSTGRES_DB="agentx",POSTGRES_USER="agentx_user",POSTGRES_PASSWORD="agentx_pass"\n\n[program:backend]\ncommand=java -jar /app/backend.jar --spring.config.additional-location=file:/app/application-allinone.yml\ndirectory=/app\nuser=root\nautostart=true\nautorestart=true\nstdout_logfile=/var/log/backend.log\nstderr_logfile=/var/log/backend.log\n\n[program:frontend]\ncommand=node server.js\ndirectory=/app/frontend\nuser=root\nautostart=true\nautorestart=true\nstdout_logfile=/var/log/frontend.log\nstderr_logfile=/var/log/frontend.log\nenvironment=PORT="3000",HOSTNAME="0.0.0.0"\n' > /etc/supervisor/conf.d/agentx.conf
+    cat > /etc/supervisor/conf.d/supervisord.conf << 'EOF'
+[supervisord]
+nodaemon=true
+user=root
+logfile=/var/log/supervisor/supervisord.log
+pidfile=/var/run/supervisord.pid
+
+[program:postgres]
+command=/usr/local/bin/docker-entrypoint.sh postgres
+user=postgres
+autostart=true
+autorestart=true
+stdout_logfile=/var/log/postgres.log
+stderr_logfile=/var/log/postgres.log
+environment=POSTGRES_DB="postgres",POSTGRES_USER="postgres",POSTGRES_PASSWORD="postgres"
+
+[program:backend]
+command=java -jar /app/backend.jar --spring.config.additional-location=file:/app/application-allinone.yml
+directory=/app
+user=root
+autostart=true
+autorestart=true
+stdout_logfile=/var/log/backend.log
+stderr_logfile=/var/log/backend.log
+
+[program:frontend]
+command=node server.js
+directory=/app/frontend
+user=root
+autostart=true
+autorestart=true
+stdout_logfile=/var/log/frontend.log
+stderr_logfile=/var/log/frontend.log
+environment=PORT="3000",HOSTNAME="0.0.0.0"
+EOF
 
 # 创建启动脚本
-RUN printf '#!/bin/bash\n\necho "🚀 Starting AgentX All-in-One System"\necho "====================================="\n\n# 初始化 PostgreSQL 数据目录\nif [ ! -d "$PGDATA" ]; then\n    echo "🔧 Initializing PostgreSQL database..."\n    mkdir -p "$PGDATA"\n    chown postgres:postgres "$PGDATA"\n    su - postgres -c "initdb -D $PGDATA"\nfi\n\n# 创建日志目录\nmkdir -p /var/log/supervisor\n\necho "🎯 Starting all services with supervisor..."\n\n# 启动 supervisor\nexec /usr/bin/supervisord -c /etc/supervisor/conf.d/agentx.conf\n' > /app/start-agentx.sh
+RUN printf '#!/bin/bash\n\necho "🚀 Starting AgentX All-in-One System"\necho "====================================="\n\n# 初始化 PostgreSQL 数据目录\nif [ ! -d "$PGDATA" ]; then\n    echo "🔧 Initializing PostgreSQL database..."\n    mkdir -p "$PGDATA"\n    chown postgres:postgres "$PGDATA"\n    su - postgres -c "initdb -D $PGDATA"\nfi\n\n# 创建日志目录\nmkdir -p /var/log/supervisor\n\necho "🎯 Starting all services with supervisor..."\n\n# 启动 supervisor\nexec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf\n' > /app/start-agentx.sh
 
 RUN chmod +x /app/start-agentx.sh
 
