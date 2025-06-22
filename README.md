@@ -77,7 +77,7 @@ docker run -d --name agentx -p 3000:3000 -p 8088:8088 agentx:latest
 #### 📁 使用配置文件部署（推荐生产环境）
 ```bash
 # 1. 获取配置文件模板
-curl -O https://raw.githubusercontent.com/lucky-aeon/AgentX/main/config-templates/production.env
+curl -O https://raw.githubusercontent.com/lucky-aeon/AgentX/master/config-templates/production.env
 mv production.env agentx.env
 vim ./agentx.env  # 编辑配置
 
@@ -106,7 +106,7 @@ docker run -d \
   postgres:15
 
 # 3. 配置外部数据库
-curl -O https://raw.githubusercontent.com/lucky-aeon/AgentX/main/config-templates/external-database.env
+curl -O https://raw.githubusercontent.com/lucky-aeon/AgentX/master/config-templates/external-database.env
 mv external-database.env agentx.env
 # 编辑 agentx.env，设置 DB_HOST=postgres-db
 
