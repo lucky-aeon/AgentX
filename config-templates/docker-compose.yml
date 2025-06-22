@@ -1,0 +1,38 @@
+# AgentX Docker Compose 部署示例
+version: '3.8'
+
+services:
+  agentx:
+    image: agentx-production:latest
+    container_name: agentx-app
+    ports:
+      - "3000:3000"    # 前端端口
+      - "8088:8088"    # 后端API端口
+    volumes:
+      # 挂载配置文件目录
+      - ./agentx-config:/app/config:ro
+      # 可选：挂载日志目录
+      - ./logs:/app/logs
+      # 可选：如果使用内置数据库，持久化数据
+      - agentx-data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000", "&&", "curl", "-f", "http://localhost:8088/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+    environment:
+      # 可选：通过环境变量覆盖配置文件中的值
+      - TZ=Asia/Shanghai
+
+volumes:
+  agentx-data:
+    name: agentx-postgresql-data
+
+# 使用说明：
+# 1. 创建配置目录：mkdir -p ./agentx-config
+# 2. 复制配置文件：cp config-templates/production.env ./agentx-config/agentx.env
+# 3. 编辑配置文件：vim ./agentx-config/agentx.env
+# 4. 启动服务：docker-compose up -d
+# 5. 查看日志：docker-compose logs -f agentx
