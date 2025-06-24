@@ -5,14 +5,8 @@ function getDefaultApiUrl(): string {
     return process.env.NEXT_PUBLIC_API_BASE_URL;
   }
   
-  // 在浏览器环境中，使用当前域名 + 8088端口
-  if (typeof window !== 'undefined') {
-    const protocol = window.location.protocol;
-    const hostname = window.location.hostname;
-    return `${protocol}//${hostname}:8088/api`;
-  }
-  
-  // 服务端渲染时的默认值
+
+  // 没有环境变量使用本机
   return "http://localhost:8088/api";
 }
 
