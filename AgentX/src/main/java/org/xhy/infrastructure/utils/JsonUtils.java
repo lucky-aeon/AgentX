@@ -1,5 +1,6 @@
 package org.xhy.infrastructure.utils;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -11,6 +12,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 /** JSON工具类，用于处理JSON转换 */
 public class JsonUtils {
@@ -40,7 +42,10 @@ public class JsonUtils {
         }
 
         try {
-            return objectMapper.writeValueAsString(obj);
+            System.out.println("JsonUtils Debug - toJsonString input: " + obj + " (type: " + obj.getClass() + ")");
+            String result = objectMapper.writeValueAsString(obj);
+            System.out.println("JsonUtils Debug - toJsonString result: " + result);
+            return result;
         } catch (Exception e) {
             log.error("JSON序列化失败: {}, 错误: {}", obj.getClass().getSimpleName(), e.getMessage(), e);
             return "{}";
@@ -83,6 +88,28 @@ public class JsonUtils {
         } catch (Exception e) {
             log.error("JSON数组反序列化失败: {}", e.getMessage(), e);
             return Collections.emptyList();
+        }
+    }
+
+    /** 将JSON字符串转换为Map<String, Object>
+     *
+     * @param json JSON字符串
+     * @return 转换后的Map，失败返回null */
+    public static Map<String, Object> parseMap(String json) {
+        if (json == null || json.isEmpty()) {
+            System.out.println("JsonUtils Debug - parseMap input is null or empty");
+            return null;
+        }
+
+        try {
+            System.out.println("JsonUtils Debug - parseMap input: " + json);
+            Map<String, Object> result = objectMapper.readValue(json, new TypeReference<Map<String, Object>>() {});
+            System.out.println("JsonUtils Debug - parseMap result: " + result);
+            return result;
+        } catch (Exception e) {
+            log.error("JSON Map反序列化失败: {}", e.getMessage(), e);
+            System.out.println("JsonUtils Debug - parseMap failed for input: " + json + ", error: " + e.getMessage());
+            return null;
         }
     }
 }

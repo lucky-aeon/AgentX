@@ -70,11 +70,6 @@ oauth:
     client-secret: ${GITHUB_CLIENT_SECRET}
     redirect-uri: ${GITHUB_REDIRECT_URI:https://xxx/oauth/github/callback}
 
-github:
-  target:
-    username: ${GITHUB_TARGET_USERNAME:lucky-aeon}
-    repo-name: ${GITHUB_TARGET_REPO_NAME:agent-mcp-community}
-    token: ${GITHUB_TARGET_TOKEN:}
 mcp:
   gateway:
     api-key: 123456
@@ -82,7 +77,7 @@ mcp:
 
 # 高可用网关配置
 high-availability:
-  enabled: true # 是否启用高可用功能
+  enabled: false # 是否启用高可用功能
   gateway-url: ${HIGH_AVAILABILITY_GATEWAY_URL:http://localhost:8081} # 高可用网关地址
   api-key: ${HIGH_AVAILABILITY_API_KEY:default-api-key-1234567890} # API密钥
   connect-timeout: 30000 # 连接超时时间(毫秒)
@@ -105,11 +100,3 @@ s3:
   path-style-access: ${S3_PATH_STYLE_ACCESS:false}
   # 文件访问URL前缀
   url-prefix: ${S3_URL_PREFIX:}
-
-# SSO配置
-sso:
-  community:
-    base-url: ${SSO_COMMUNITY_BASE_URL:http://localhost:8080}
-    app-key: ${SSO_COMMUNITY_APP_KEY:}
-    app-secret: ${SSO_COMMUNITY_APP_SECRET:}
-    callback-url: ${SSO_COMMUNITY_CALLBACK_URL:http://localhost:3000/sso/community/callback}

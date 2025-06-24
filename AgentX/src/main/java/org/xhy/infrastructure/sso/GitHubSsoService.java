@@ -33,16 +33,19 @@ public class GitHubSsoService implements SsoService {
     private static final Logger logger = LoggerFactory.getLogger(GitHubSsoService.class);
 
     private final GitHubOAuthProperties githubProperties;
+    private final SsoConfigProvider ssoConfigProvider;
 
-    public GitHubSsoService(GitHubOAuthProperties githubProperties) {
+    public GitHubSsoService(GitHubOAuthProperties githubProperties, SsoConfigProvider ssoConfigProvider) {
         this.githubProperties = githubProperties;
+        this.ssoConfigProvider = ssoConfigProvider;
     }
 
     @Override
     public String getLoginUrl(String redirectUrl) {
-        String callbackUrl = redirectUrl != null ? redirectUrl : githubProperties.getRedirectUri();
-        return githubProperties.getAuthorizeUrl() + "?client_id=" + githubProperties.getClientId() + "&redirect_uri="
-                + callbackUrl + "&scope=user:email";
+        SsoConfigProvider.GitHubSsoConfig config = getEffectiveConfig();
+        String callbackUrl = redirectUrl != null ? redirectUrl : config.getRedirectUri();
+        return config.getAuthorizeUrl() + "?client_id=" + config.getClientId() + "&redirect_uri=" + callbackUrl
+                + "&scope=user:email";
     }
 
     @Override
@@ -83,8 +86,9 @@ public class GitHubSsoService implements SsoService {
     }
 
     private GitHubTokenResponse getAccessToken(String code) {
+        SsoConfigProvider.GitHubSsoConfig config = getEffectiveConfig();
         try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
-            HttpPost httpPost = new HttpPost(githubProperties.getTokenUrl());
+            HttpPost httpPost = new HttpPost(config.getTokenUrl());
 
             // 设置请求头
             httpPost.setHeader(HttpHeaders.ACCEPT, "application/json");
@@ -92,10 +96,10 @@ public class GitHubSsoService implements SsoService {
 
             // 设置请求参数
             Map<String, String> params = new HashMap<>();
-            params.put("client_id", githubProperties.getClientId());
-            params.put("client_secret", githubProperties.getClientSecret());
+            params.put("client_id", config.getClientId());
+            params.put("client_secret", config.getClientSecret());
             params.put("code", code);
-            params.put("redirect_uri", githubProperties.getRedirectUri());
+            params.put("redirect_uri", config.getRedirectUri());
 
             String paramJson = JSON.toJSONString(params);
             httpPost.setEntity(new StringEntity(paramJson, StandardCharsets.UTF_8));
@@ -115,8 +119,9 @@ public class GitHubSsoService implements SsoService {
     }
 
     private GitHubUserInfo getGitHubUserInfo(String accessToken) {
+        SsoConfigProvider.GitHubSsoConfig config = getEffectiveConfig();
         try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
-            HttpGet httpGet = new HttpGet(githubProperties.getUserInfoUrl());
+            HttpGet httpGet = new HttpGet(config.getUserInfoUrl());
 
             // 设置请求头
             httpGet.setHeader(HttpHeaders.ACCEPT, "application/json");
@@ -137,8 +142,9 @@ public class GitHubSsoService implements SsoService {
     }
 
     private String getPrimaryEmail(String accessToken) {
+        SsoConfigProvider.GitHubSsoConfig config = getEffectiveConfig();
         try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
-            HttpGet httpGet = new HttpGet(githubProperties.getUserEmailUrl());
+            HttpGet httpGet = new HttpGet(config.getUserEmailUrl());
 
             // 设置请求头
             httpGet.setHeader(HttpHeaders.ACCEPT, "application/json");
@@ -160,5 +166,29 @@ public class GitHubSsoService implements SsoService {
             logger.error("获取GitHub用户邮箱失败", e);
         }
         return null;
+    }
+
+    /** 获取有效的配置（数据库优先，配置文件回退）
+     * 
+     * @return 有效的GitHub配置 */
+    private SsoConfigProvider.GitHubSsoConfig getEffectiveConfig() {
+        SsoConfigProvider.GitHubSsoConfig dbConfig = ssoConfigProvider.getGitHubConfig();
+
+        // 如果数据库配置完整，使用数据库配置
+        if (dbConfig.getClientId() != null && dbConfig.getClientSecret() != null) {
+            return dbConfig;
+        }
+
+        // 否则回退到配置文件配置
+        SsoConfigProvider.GitHubSsoConfig fileConfig = new SsoConfigProvider.GitHubSsoConfig();
+        fileConfig.setClientId(githubProperties.getClientId());
+        fileConfig.setClientSecret(githubProperties.getClientSecret());
+        fileConfig.setRedirectUri(githubProperties.getRedirectUri());
+        fileConfig.setAuthorizeUrl(githubProperties.getAuthorizeUrl());
+        fileConfig.setTokenUrl(githubProperties.getTokenUrl());
+        fileConfig.setUserInfoUrl(githubProperties.getUserInfoUrl());
+        fileConfig.setUserEmailUrl(githubProperties.getUserEmailUrl());
+
+        return fileConfig;
     }
 }

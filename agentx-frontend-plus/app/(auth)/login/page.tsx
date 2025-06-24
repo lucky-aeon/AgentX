@@ -12,6 +12,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { loginApi, getSsoLoginUrlApi } from "@/lib/api-services"
 import { setCookie } from "@/lib/utils"
+import { getAuthConfigWithToast } from "@/lib/auth-config-service"
+import type { AuthConfig } from "@/lib/types/auth-config"
+import { AUTH_FEATURE_KEY } from "@/lib/types/auth-config"
 
 // GitHub 图标组件
 const GitHubIcon = ({ className }: { className?: string }) => (
@@ -51,6 +54,26 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [githubLoading, setGithubLoading] = useState(false)
   const [qiaoyaLoading, setQiaoyaLoading] = useState(false)
+  const [authConfig, setAuthConfig] = useState<AuthConfig | null>(null)
+  const [configLoading, setConfigLoading] = useState(true)
+
+  // 加载认证配置
+  useEffect(() => {
+    async function fetchAuthConfig() {
+      try {
+        const response = await getAuthConfigWithToast()
+        if (response.code === 200) {
+          setAuthConfig(response.data)
+        }
+      } catch (error) {
+        console.error("获取认证配置失败:", error)
+      } finally {
+        setConfigLoading(false)
+      }
+    }
+
+    fetchAuthConfig()
+  }, [])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -137,6 +160,44 @@ export default function LoginPage() {
     }
   }
 
+  // 配置加载中
+  if (configLoading) {
+    return (
+      <div className="container max-w-[400px] py-10 h-screen flex flex-col justify-center">
+        <div className="mb-8 space-y-2 text-center">
+          <div className="h-8 bg-gray-200 rounded animate-pulse"></div>
+          <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+        </div>
+        <div className="space-y-4">
+          <div className="h-20 bg-gray-200 rounded animate-pulse"></div>
+          <div className="h-20 bg-gray-200 rounded animate-pulse"></div>
+          <div className="h-10 bg-gray-200 rounded animate-pulse"></div>
+        </div>
+      </div>
+    )
+  }
+
+  // 检查是否有可用的登录方式
+  const availableLoginMethods = authConfig?.loginMethods || {}
+  const hasNormalLogin = availableLoginMethods[AUTH_FEATURE_KEY.NORMAL_LOGIN]?.enabled
+  const hasGitHubLogin = availableLoginMethods[AUTH_FEATURE_KEY.GITHUB_LOGIN]?.enabled
+  const hasCommunityLogin = availableLoginMethods[AUTH_FEATURE_KEY.COMMUNITY_LOGIN]?.enabled
+  const hasSsoLogin = hasGitHubLogin || hasCommunityLogin
+
+  // 如果没有可用的登录方式
+  if (!hasNormalLogin && !hasSsoLogin) {
+    return (
+      <div className="container max-w-[400px] py-10 h-screen flex flex-col justify-center">
+        <div className="text-center space-y-4">
+          <h1 className="text-2xl font-semibold tracking-tight">暂时无法登录</h1>
+          <p className="text-sm text-muted-foreground">
+            系统暂时关闭了所有登录方式，请稍后再试或联系管理员。
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <>
       <div className="container max-w-[400px] py-10 h-screen flex flex-col justify-center">
@@ -144,39 +205,49 @@ export default function LoginPage() {
           <h1 className="text-2xl font-semibold tracking-tight">登录</h1>
           <p className="text-sm text-muted-foreground">欢迎回来！请输入您的账号信息。</p>
         </div>
-        <form onSubmit={handleSubmit}>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="account">
-                账号 <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="account"
-                name="account"
-                type="text"
-                placeholder="请输入账号/邮箱/手机号"
-                value={formData.account}
-                onChange={handleChange}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">
-                密码 <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                placeholder="请输入密码"
-                value={formData.password}
-                onChange={handleChange}
-                required
-              />
-            </div>
-            <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90" disabled={loading}>
-              {loading ? "登录中..." : "登录"}
-            </Button>
+
+        <div className="space-y-4">
+          {/* 普通登录表单 */}
+          {hasNormalLogin && (
+            <form onSubmit={handleSubmit}>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="account">
+                    账号 <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="account"
+                    name="account"
+                    type="text"
+                    placeholder="请输入账号/邮箱/手机号"
+                    value={formData.account}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password">
+                    密码 <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="password"
+                    name="password"
+                    type="password"
+                    placeholder="请输入密码"
+                    value={formData.password}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
+                <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90" disabled={loading}>
+                  {loading ? "登录中..." : "登录"}
+                </Button>
+              </div>
+            </form>
+          )}
+
+          {/* SSO登录分隔线 */}
+          {hasNormalLogin && hasSsoLogin && (
             <div className="relative my-4">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-300"></div>
@@ -185,55 +256,75 @@ export default function LoginPage() {
                 <span className="px-2 bg-background text-muted-foreground">或者</span>
               </div>
             </div>
+          )}
+
+          {/* SSO登录按钮 */}
+          {hasSsoLogin && (
             <div className="space-y-2">
-              <Button 
-                type="button" 
-                variant="outline" 
-                className="w-full flex items-center justify-center gap-2"
-                onClick={handleQiaoyaLogin}
-                disabled={qiaoyaLoading}
-              >
-                {qiaoyaLoading ? (
-                  <>正在跳转到敲鸭...</>
-                ) : (
-                  <>
-                    <QiaoyaLogo className="h-5 w-5" />
-                    <span>使用敲鸭登录</span>
-                  </>
-                )}
-              </Button>
-              <Button 
-                type="button" 
-                variant="outline" 
-                className="w-full flex items-center justify-center gap-2"
-                onClick={handleGitHubLogin}
-                disabled={githubLoading}
-              >
-                {githubLoading ? (
-                  <>正在跳转到 GitHub...</>
-                ) : (
-                  <>
-                    <GitHubIcon className="h-5 w-5" />
-                    <span>使用 GitHub 登录</span>
-                  </>
-                )}
-              </Button>
+              {/* 敲鸭登录 */}
+              {hasCommunityLogin && (
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  className="w-full flex items-center justify-center gap-2"
+                  onClick={handleQiaoyaLogin}
+                  disabled={qiaoyaLoading}
+                >
+                  {qiaoyaLoading ? (
+                    <>正在跳转到敲鸭...</>
+                  ) : (
+                    <>
+                      <QiaoyaLogo className="h-5 w-5" />
+                      <span>{availableLoginMethods[AUTH_FEATURE_KEY.COMMUNITY_LOGIN]?.name || "使用敲鸭登录"}</span>
+                    </>
+                  )}
+                </Button>
+              )}
+
+              {/* GitHub登录 */}
+              {hasGitHubLogin && (
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  className="w-full flex items-center justify-center gap-2"
+                  onClick={handleGitHubLogin}
+                  disabled={githubLoading}
+                >
+                  {githubLoading ? (
+                    <>正在跳转到 GitHub...</>
+                  ) : (
+                    <>
+                      <GitHubIcon className="h-5 w-5" />
+                      <span>{availableLoginMethods[AUTH_FEATURE_KEY.GITHUB_LOGIN]?.name || "使用 GitHub 登录"}</span>
+                    </>
+                  )}
+                </Button>
+              )}
             </div>
-            <div className="flex justify-between text-sm text-muted-foreground mb-2 mt-2">
-              <div>
-                还没有账号？{" "}
-                <Link href="/register" className="text-primary hover:underline">
-                  立即注册
-                </Link>
-              </div>
+          )}
+
+          {/* 底部链接 */}
+          <div className="flex justify-between text-sm text-muted-foreground mb-2 mt-2">
+            <div>
+              {authConfig?.registerEnabled && (
+                <>
+                  还没有账号？{" "}
+                  <Link href="/register" className="text-primary hover:underline">
+                    立即注册
+                  </Link>
+                </>
+              )}
+            </div>
+            {/* 只有普通登录启用时才显示忘记密码 */}
+            {hasNormalLogin && (
               <div>
                 <Link href="/reset-password" className="text-primary hover:underline">
                   忘记密码
                 </Link>
               </div>
-            </div>
+            )}
           </div>
-        </form>
+        </div>
       </div>
       <Toaster />
     </>
