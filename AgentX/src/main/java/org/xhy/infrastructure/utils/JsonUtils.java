@@ -103,7 +103,8 @@ public class JsonUtils {
 
         try {
             System.out.println("JsonUtils Debug - parseMap input: " + json);
-            Map<String, Object> result = objectMapper.readValue(json, new TypeReference<Map<String, Object>>() {});
+            Map<String, Object> result = objectMapper.readValue(json, new TypeReference<Map<String, Object>>() {
+            });
             System.out.println("JsonUtils Debug - parseMap result: " + result);
             return result;
         } catch (Exception e) {

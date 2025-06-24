@@ -37,7 +37,7 @@ public class LoginAppService {
         if (!authSettingDomainService.isFeatureEnabled(AuthFeatureKey.NORMAL_LOGIN)) {
             throw new BusinessException("普通登录已禁用");
         }
-        
+
         UserEntity userEntity = userDomainService.login(loginRequest.getAccount(), loginRequest.getPassword());
         return JwtUtils.generateToken(userEntity.getId());
     }
@@ -47,7 +47,7 @@ public class LoginAppService {
         if (!authSettingDomainService.isFeatureEnabled(AuthFeatureKey.USER_REGISTER)) {
             throw new BusinessException("用户注册已禁用");
         }
-        
+
         // 如果是邮箱注册，需要验证码
         if (StringUtils.hasText(registerRequest.getEmail()) && !StringUtils.hasText(registerRequest.getPhone())) {
             if (!StringUtils.hasText(registerRequest.getCode())) {
@@ -70,7 +70,7 @@ public class LoginAppService {
         if (!authSettingDomainService.isFeatureEnabled(AuthFeatureKey.USER_REGISTER)) {
             throw new BusinessException("用户注册已禁用");
         }
-        
+
         // 检查邮箱是否已存在
         userDomainService.checkAccountExist(email);
 
@@ -85,7 +85,7 @@ public class LoginAppService {
         if (!authSettingDomainService.isFeatureEnabled(AuthFeatureKey.NORMAL_LOGIN)) {
             throw new BusinessException("普通登录已禁用，无法重置密码");
         }
-        
+
         // 检查邮箱是否存在，不存在则抛出异常
         UserEntity user = userDomainService.findUserByAccount(email);
         if (user == null) {
@@ -114,7 +114,7 @@ public class LoginAppService {
         if (!authSettingDomainService.isFeatureEnabled(AuthFeatureKey.NORMAL_LOGIN)) {
             throw new BusinessException("普通登录已禁用，无法重置密码");
         }
-        
+
         // 验证重置密码验证码
         boolean isValid = verifyResetPasswordCode(email, code);
         if (!isValid) {
