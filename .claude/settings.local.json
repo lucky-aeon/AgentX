@@ -23,7 +23,13 @@
       "Bash(npm run lint)",
       "Bash(npm run dev:*)",
       "Bash(pkill:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(git fetch:*)",
+      "Bash(git merge-base:*)",
+      "Bash(git reset)",
+      "Bash(git reset:*)",
+      "Bash(bash:*)",
+      "Bash(git merge:*)"
     ],
     "deny": []
   }

@@ -1,5 +1,23 @@
+// 智能默认API地址检测
+function getDefaultApiUrl(): string {
+  // 如果明确配置了环境变量，使用配置值
+  if (process.env.NEXT_PUBLIC_API_BASE_URL) {
+    return process.env.NEXT_PUBLIC_API_BASE_URL;
+  }
+  
+  // 在浏览器环境中，使用当前域名 + 8088端口
+  if (typeof window !== 'undefined') {
+    const protocol = window.location.protocol;
+    const hostname = window.location.hostname;
+    return `${protocol}//${hostname}:8088/api`;
+  }
+  
+  // 服务端渲染时的默认值
+  return "http://localhost:8088/api";
+}
+
 export const API_CONFIG = {
-  BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8088/api",
+  BASE_URL: getDefaultApiUrl(),
   CURRENT_USER_ID: "1", // 当前用户ID
 }
 
