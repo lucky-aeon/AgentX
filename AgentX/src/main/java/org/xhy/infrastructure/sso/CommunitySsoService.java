@@ -30,36 +30,42 @@ public class CommunitySsoService implements SsoService {
     private String callbackUrl;
 
     private final RestTemplate restTemplate;
+    private final SsoConfigProvider ssoConfigProvider;
 
-    public CommunitySsoService(RestTemplate restTemplate) {
+    public CommunitySsoService(RestTemplate restTemplate, SsoConfigProvider ssoConfigProvider) {
         this.restTemplate = restTemplate;
+        this.ssoConfigProvider = ssoConfigProvider;
     }
 
     @Override
     public String getLoginUrl(String redirectUrl) {
-        if (baseUrl.isEmpty() || appKey.isEmpty()) {
+        SsoConfigProvider.CommunitySsoConfig config = getEffectiveConfig();
+        if (config.getBaseUrl() == null || config.getBaseUrl().isEmpty() || config.getAppKey() == null
+                || config.getAppKey().isEmpty()) {
             throw new BusinessException("Community SSO未配置");
         }
 
-        return String.format("%s/sso/login?app_key=%s&redirect_url=%s", baseUrl, appKey,
-                redirectUrl != null ? redirectUrl : callbackUrl);
+        return String.format("%s/sso/login?app_key=%s&redirect_url=%s", config.getBaseUrl(), config.getAppKey(),
+                redirectUrl != null ? redirectUrl : config.getCallbackUrl());
     }
 
     @Override
     public SsoUserInfo getUserInfo(String authCode) {
-        if (baseUrl.isEmpty() || appKey.isEmpty() || appSecret.isEmpty()) {
+        SsoConfigProvider.CommunitySsoConfig config = getEffectiveConfig();
+        if (config.getBaseUrl() == null || config.getBaseUrl().isEmpty() || config.getAppKey() == null
+                || config.getAppKey().isEmpty() || config.getAppSecret() == null || config.getAppSecret().isEmpty()) {
             throw new BusinessException("Community SSO未配置");
         }
 
         try {
-            String url = baseUrl + "/sso/token";
+            String url = config.getBaseUrl() + "/sso/token";
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
 
             Map<String, String> request = new HashMap<>();
-            request.put("app_key", appKey);
-            request.put("app_secret", appSecret);
+            request.put("app_key", config.getAppKey());
+            request.put("app_secret", config.getAppSecret());
             request.put("auth_code", authCode);
 
             HttpEntity<Map<String, String>> entity = new HttpEntity<>(request, headers);
@@ -86,5 +92,26 @@ public class CommunitySsoService implements SsoService {
     @Override
     public SsoProvider getProvider() {
         return SsoProvider.COMMUNITY;
+    }
+
+    /** 获取有效的配置（数据库优先，配置文件回退）
+     * 
+     * @return 有效的Community配置 */
+    private SsoConfigProvider.CommunitySsoConfig getEffectiveConfig() {
+        SsoConfigProvider.CommunitySsoConfig dbConfig = ssoConfigProvider.getCommunityConfig();
+
+        // 如果数据库配置完整，使用数据库配置
+        if (dbConfig.getBaseUrl() != null && dbConfig.getAppKey() != null && dbConfig.getAppSecret() != null) {
+            return dbConfig;
+        }
+
+        // 否则回退到配置文件配置
+        SsoConfigProvider.CommunitySsoConfig fileConfig = new SsoConfigProvider.CommunitySsoConfig();
+        fileConfig.setBaseUrl(baseUrl);
+        fileConfig.setAppKey(appKey);
+        fileConfig.setAppSecret(appSecret);
+        fileConfig.setCallbackUrl(callbackUrl);
+
+        return fileConfig;
     }
 }

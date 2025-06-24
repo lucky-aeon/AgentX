@@ -2,6 +2,8 @@ package org.xhy.application.user.service;
 
 import org.springframework.stereotype.Service;
 import org.xhy.application.user.assembler.UserAssembler;
+import org.xhy.domain.auth.constant.AuthFeatureKey;
+import org.xhy.domain.auth.service.AuthSettingDomainService;
 import org.xhy.domain.user.model.UserEntity;
 import org.xhy.domain.user.service.UserDomainService;
 import org.xhy.infrastructure.email.EmailService;
@@ -20,20 +22,32 @@ public class LoginAppService {
     private final UserDomainService userDomainService;
     private final EmailService emailService;
     private final VerificationCodeService verificationCodeService;
+    private final AuthSettingDomainService authSettingDomainService;
 
     public LoginAppService(UserDomainService userDomainService, EmailService emailService,
-            VerificationCodeService verificationCodeService) {
+            VerificationCodeService verificationCodeService, AuthSettingDomainService authSettingDomainService) {
         this.userDomainService = userDomainService;
         this.emailService = emailService;
         this.verificationCodeService = verificationCodeService;
+        this.authSettingDomainService = authSettingDomainService;
     }
 
     public String login(LoginRequest loginRequest) {
+        // 检查普通登录是否启用
+        if (!authSettingDomainService.isFeatureEnabled(AuthFeatureKey.NORMAL_LOGIN)) {
+            throw new BusinessException("普通登录已禁用");
+        }
+
         UserEntity userEntity = userDomainService.login(loginRequest.getAccount(), loginRequest.getPassword());
         return JwtUtils.generateToken(userEntity.getId());
     }
 
     public void register(RegisterRequest registerRequest) {
+        // 检查用户注册是否启用
+        if (!authSettingDomainService.isFeatureEnabled(AuthFeatureKey.USER_REGISTER)) {
+            throw new BusinessException("用户注册已禁用");
+        }
+
         // 如果是邮箱注册，需要验证码
         if (StringUtils.hasText(registerRequest.getEmail()) && !StringUtils.hasText(registerRequest.getPhone())) {
             if (!StringUtils.hasText(registerRequest.getCode())) {
@@ -52,6 +66,11 @@ public class LoginAppService {
 
     /** 发送注册邮箱验证码 */
     public void sendEmailVerificationCode(String email, String captchaUuid, String captchaCode, String ip) {
+        // 检查用户注册是否启用
+        if (!authSettingDomainService.isFeatureEnabled(AuthFeatureKey.USER_REGISTER)) {
+            throw new BusinessException("用户注册已禁用");
+        }
+
         // 检查邮箱是否已存在
         userDomainService.checkAccountExist(email);
 
@@ -62,6 +81,11 @@ public class LoginAppService {
 
     /** 发送重置密码邮箱验证码 */
     public void sendResetPasswordCode(String email, String captchaUuid, String captchaCode, String ip) {
+        // 检查普通登录是否启用
+        if (!authSettingDomainService.isFeatureEnabled(AuthFeatureKey.NORMAL_LOGIN)) {
+            throw new BusinessException("普通登录已禁用，无法重置密码");
+        }
+
         // 检查邮箱是否存在，不存在则抛出异常
         UserEntity user = userDomainService.findUserByAccount(email);
         if (user == null) {
@@ -86,6 +110,11 @@ public class LoginAppService {
 
     /** 重置密码 */
     public void resetPassword(String email, String newPassword, String code) {
+        // 检查普通登录是否启用
+        if (!authSettingDomainService.isFeatureEnabled(AuthFeatureKey.NORMAL_LOGIN)) {
+            throw new BusinessException("普通登录已禁用，无法重置密码");
+        }
+
         // 验证重置密码验证码
         boolean isValid = verifyResetPasswordCode(email, code);
         if (!isValid) {

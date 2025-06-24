@@ -24,6 +24,7 @@ import jakarta.annotation.PostConstruct;
 import org.xhy.infrastructure.llm.protocol.enums.ProviderProtocol;
 
 import java.util.List;
+import java.util.Map;
 
 /** MyBatis类型处理器配置类 用于手动注册类型处理器 */
 @Configuration
@@ -57,6 +58,7 @@ public class MyBatisTypeHandlerConfig {
         typeHandlerRegistry.register(RepeatConfig.class, new RepeatConfigConverter());
         typeHandlerRegistry.register(ScheduleTaskStatus.class, new ScheduledTaskStatusConverter());
         typeHandlerRegistry.register(UserSettingsConfig.class, new UserSettingsConfigConverter());
+        typeHandlerRegistry.register(Map.class, new MapConverter());
 
         log.info("手动注册类型处理器：ProviderConfigConverter");
 

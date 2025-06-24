@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { registerApi, sendEmailCodeApi, verifyEmailCodeApi, getCaptchaApi } from "@/lib/api-services"
+import { getAuthConfigWithToast } from "@/lib/auth-config-service"
+import type { AuthConfig } from "@/lib/types/auth-config"
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -33,12 +35,34 @@ export default function RegisterPage() {
   const [verifying, setVerifying] = useState(false)
   const [codeVerified, setCodeVerified] = useState(false)
   const [sendingCode, setSendingCode] = useState(false)
+  const [authConfig, setAuthConfig] = useState<AuthConfig | null>(null)
+  const [configLoading, setConfigLoading] = useState(true)
+
+  // 加载认证配置
+  useEffect(() => {
+    async function fetchAuthConfig() {
+      try {
+        const response = await getAuthConfigWithToast()
+        if (response.code === 200) {
+          setAuthConfig(response.data)
+        }
+      } catch (error) {
+        console.error("获取认证配置失败:", error)
+      } finally {
+        setConfigLoading(false)
+      }
+    }
+
+    fetchAuthConfig()
+  }, [])
 
   // 页面初始化时获取验证码
   useEffect(() => {
-    fetchCaptcha()
+    if (!configLoading && authConfig?.registerEnabled) {
+      fetchCaptcha()
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [configLoading, authConfig?.registerEnabled])
   
   // 倒计时逻辑
   useEffect(() => {
@@ -241,6 +265,44 @@ export default function RegisterPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  // 配置加载中
+  if (configLoading) {
+    return (
+      <div className="container max-w-[400px] py-10 h-screen flex flex-col justify-center">
+        <div className="mb-8 space-y-2 text-center">
+          <div className="h-8 bg-gray-200 rounded animate-pulse"></div>
+          <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+        </div>
+        <div className="space-y-4">
+          <div className="h-20 bg-gray-200 rounded animate-pulse"></div>
+          <div className="h-20 bg-gray-200 rounded animate-pulse"></div>
+          <div className="h-10 bg-gray-200 rounded animate-pulse"></div>
+        </div>
+      </div>
+    )
+  }
+
+  // 注册功能未启用
+  if (!authConfig?.registerEnabled) {
+    return (
+      <div className="container max-w-[400px] py-10 h-screen flex flex-col justify-center">
+        <div className="text-center space-y-4">
+          <h1 className="text-2xl font-semibold tracking-tight">暂停注册</h1>
+          <p className="text-sm text-muted-foreground">
+            系统暂时关闭了用户注册功能，请稍后再试或联系管理员。
+          </p>
+          <div className="pt-4">
+            <Link href="/login">
+              <Button variant="outline" className="w-full">
+                返回登录
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (

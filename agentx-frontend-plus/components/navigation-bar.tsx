@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { Database, FileText, Home, Menu, Search, Settings, PenToolIcon as Tool, UploadCloud, LogOut, Wrench } from "lucide-react"
@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { deleteCookie } from "@/lib/utils"
+import { getUserInfoWithToast, type UserInfo } from "@/lib/user-service"
 
 const navItems = [
   {
@@ -47,6 +48,30 @@ export function NavigationBar() {
   const pathname = usePathname()
   const router = useRouter()
   const [open, setOpen] = useState(false)
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  // 获取用户信息
+  useEffect(() => {
+    async function fetchUserInfo() {
+      try {
+        setLoading(true)
+        const response = await getUserInfoWithToast()
+        
+        if (response.code === 200) {
+          setUserInfo(response.data)
+        } else {
+          console.error("获取用户信息失败:", response.message)
+        }
+      } catch (error) {
+        console.error("获取用户信息错误:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchUserInfo()
+  }, [])
 
   // Check if current path matches the menu item's href
   const isActiveRoute = (href: string) => {
@@ -54,6 +79,12 @@ export function NavigationBar() {
       return true // Main page also counts as explore
     }
     return pathname === href || pathname.startsWith(`${href}/`)
+  }
+
+  // 获取用户头像首字母
+  const getUserAvatarFallback = () => {
+    if (!userInfo?.nickname) return "U"
+    return userInfo.nickname.charAt(0).toUpperCase()
   }
 
   const handleLogout = () => {
@@ -136,7 +167,9 @@ export function NavigationBar() {
                 <Button variant="ghost" size="icon" className="rounded-full">
                   <Avatar className="h-8 w-8">
                     <AvatarImage src="/placeholder.svg?height=32&width=32" alt="User" />
-                    <AvatarFallback>X</AvatarFallback>
+                    <AvatarFallback>
+                      {loading ? "..." : getUserAvatarFallback()}
+                    </AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
@@ -144,10 +177,19 @@ export function NavigationBar() {
                 <DropdownMenuLabel className="flex items-center gap-2">
                   <Avatar className="h-8 w-8">
                     <AvatarImage src="/placeholder.svg?height=32&width=32" alt="User" />
-                    <AvatarFallback>X</AvatarFallback>
+                    <AvatarFallback>
+                      {loading ? "..." : getUserAvatarFallback()}
+                    </AvatarFallback>
                   </Avatar>
                   <div>
-                    <div className="font-medium">xhy</div>
+                    <div className="font-medium">
+                      {loading ? "加载中..." : (userInfo?.nickname || "未知用户")}
+                    </div>
+                    {userInfo?.email && (
+                      <div className="text-sm text-muted-foreground">
+                        {userInfo.email}
+                      </div>
+                    )}
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />

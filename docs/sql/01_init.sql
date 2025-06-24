@@ -529,3 +529,38 @@ COMMENT ON COLUMN api_keys.expires_at IS '过期时间';
 COMMENT ON COLUMN api_keys.created_at IS '创建时间';
 COMMENT ON COLUMN api_keys.updated_at IS '更新时间';
 COMMENT ON COLUMN api_keys.deleted_at IS '逻辑删除时间';
+
+-- 认证配置表
+CREATE TABLE auth_settings (
+    id VARCHAR(36) PRIMARY KEY,
+    feature_type VARCHAR(50) NOT NULL,
+    feature_key VARCHAR(100) NOT NULL UNIQUE,
+    feature_name VARCHAR(100) NOT NULL,
+    enabled BOOLEAN DEFAULT TRUE,
+    config_data JSONB,
+    display_order INTEGER DEFAULT 0,
+    description TEXT,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP
+);
+
+COMMENT ON TABLE auth_settings IS '认证配置表，管理登录方式和注册功能的开关';
+COMMENT ON COLUMN auth_settings.id IS '配置记录唯一ID';
+COMMENT ON COLUMN auth_settings.feature_type IS '功能类型：LOGIN-登录功能，REGISTER-注册功能';
+COMMENT ON COLUMN auth_settings.feature_key IS '功能键：NORMAL_LOGIN, GITHUB_LOGIN, COMMUNITY_LOGIN, USER_REGISTER等';
+COMMENT ON COLUMN auth_settings.feature_name IS '功能显示名称';
+COMMENT ON COLUMN auth_settings.enabled IS '是否启用该功能';
+COMMENT ON COLUMN auth_settings.config_data IS '功能配置数据，JSON格式，存储SSO配置等';
+COMMENT ON COLUMN auth_settings.display_order IS '显示顺序';
+COMMENT ON COLUMN auth_settings.description IS '功能描述';
+COMMENT ON COLUMN auth_settings.created_at IS '创建时间';
+COMMENT ON COLUMN auth_settings.updated_at IS '更新时间';
+COMMENT ON COLUMN auth_settings.deleted_at IS '逻辑删除时间';
+
+-- 初始化认证配置数据
+INSERT INTO auth_settings (id, feature_type, feature_key, feature_name, enabled, display_order, description) VALUES
+('auth-normal-login', 'LOGIN', 'NORMAL_LOGIN', '普通登录', TRUE, 1, '邮箱/手机号密码登录'),
+('auth-github-login', 'LOGIN', 'GITHUB_LOGIN', 'GitHub登录', TRUE, 2, 'GitHub OAuth登录'),
+('auth-community-login', 'LOGIN', 'COMMUNITY_LOGIN', '敲鸭登录', TRUE, 3, '敲鸭社区OAuth登录'),
+('auth-user-register', 'REGISTER', 'USER_REGISTER', '用户注册', TRUE, 1, '允许新用户注册账号');
