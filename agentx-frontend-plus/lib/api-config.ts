@@ -1,16 +1,19 @@
 // API地址配置 - 智能适配本地开发和生产环境
 function getDefaultApiUrl(): string {
-  // 1. 如果明确配置了环境变量，优先使用
-  if (process.env.NEXT_PUBLIC_API_BASE_URL) {
-    return process.env.NEXT_PUBLIC_API_BASE_URL;
+  // 客户端环境智能检测
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    
+    // 本地环境：直接访问后端8088端口（无nginx）
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.')) {
+      return 'http://localhost:8088/api';
+    }
+    
+    // 服务器环境：使用相对路径，通过nginx代理到8088
+    return '/api';
   }
   
-  // 2. 开发环境：直接访问后端（无nginx）
-  if (process.env.NODE_ENV === 'development') {
-    return 'https://agent.xhyovo.cn/api';
-  }
-  
-  // 3. 生产环境：使用相对路径，通过nginx代理
+  // 服务端渲染时的默认值（通常是相对路径）
   return '/api';
 }
 
