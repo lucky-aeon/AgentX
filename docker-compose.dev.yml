@@ -113,7 +113,7 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=development
-      - NEXT_PUBLIC_API_URL=http://localhost:8080
+      - NEXT_PUBLIC_API_BASE_URL=http://localhost:8080/api
       - NEXT_PUBLIC_GATEWAY_URL=http://localhost:8081
     depends_on:
       - agentx-backend
