@@ -1,13 +1,17 @@
-// 智能默认API地址检测
+// API地址配置 - 智能适配本地开发和生产环境
 function getDefaultApiUrl(): string {
-  // 如果明确配置了环境变量，使用配置值
+  // 1. 如果明确配置了环境变量，优先使用
   if (process.env.NEXT_PUBLIC_API_BASE_URL) {
     return process.env.NEXT_PUBLIC_API_BASE_URL;
   }
   
-
-  // 没有环境变量使用本机
-  return "http://localhost:8088/api";
+  // 2. 开发环境：直接访问后端（无nginx）
+  if (process.env.NODE_ENV === 'development') {
+    return 'https://agent.xhyovo.cn/api';
+  }
+  
+  // 3. 生产环境：使用相对路径，通过nginx代理
+  return '/api';
 }
 
 export const API_CONFIG = {
