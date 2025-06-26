@@ -34,7 +34,8 @@
       "Bash(docker logs:*)",
       "Bash(docker exec:*)",
       "Bash(git log:*)",
-      "Bash(mkdir:*)"
+      "Bash(mkdir:*)",
+      "Bash(git pull:*)"
     ],
     "deny": []
   }
