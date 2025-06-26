@@ -13,7 +13,7 @@ import { API_ENDPOINTS } from "@/lib/api-config"
 // 获取用户的API密钥列表
 export async function getUserApiKeys(params?: GetUserApiKeysParams): Promise<ApiResponse<ApiKeyResponse[]>> {
   try {
-    console.log("Fetching user API keys", params)
+    console.log("Fetching user API keys with params:", params)
     
     const response = await httpClient.get<ApiResponse<ApiKeyResponse[]>>(
       API_ENDPOINTS.API_KEYS,

@@ -6,9 +6,11 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import org.xhy.domain.apikey.model.ApiKeyEntity;
 import org.xhy.domain.apikey.repository.ApiKeyRepository;
 import org.xhy.infrastructure.exception.BusinessException;
+import org.xhy.interfaces.dto.apikey.request.QueryApiKeyRequest;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -80,11 +82,40 @@ public class ApiKeyDomainService {
     /** 获取用户的API密钥列表
      *
      * @param userId 用户ID
+     * @param queryRequest 查询条件
+     * @return API密钥列表 */
+    public List<ApiKeyEntity> getUserApiKeys(String userId, QueryApiKeyRequest queryRequest) {
+        LambdaQueryWrapper<ApiKeyEntity> wrapper = Wrappers.<ApiKeyEntity>lambdaQuery()
+                .eq(ApiKeyEntity::getUserId, userId);
+        
+        // 添加查询条件
+        if (queryRequest != null) {
+            // 名称模糊查询
+            if (StringUtils.hasText(queryRequest.getName())) {
+                wrapper.like(ApiKeyEntity::getName, queryRequest.getName().trim());
+            }
+            
+            // 状态筛选
+            if (queryRequest.getStatus() != null) {
+                wrapper.eq(ApiKeyEntity::getStatus, queryRequest.getStatus());
+            }
+            
+            // Agent ID 筛选
+            if (StringUtils.hasText(queryRequest.getAgentId())) {
+                wrapper.eq(ApiKeyEntity::getAgentId, queryRequest.getAgentId());
+            }
+        }
+        
+        wrapper.orderByDesc(ApiKeyEntity::getCreatedAt);
+        return apiKeyRepository.selectList(wrapper);
+    }
+
+    /** 获取用户的API密钥列表（无查询条件，保持向后兼容）
+     *
+     * @param userId 用户ID
      * @return API密钥列表 */
     public List<ApiKeyEntity> getUserApiKeys(String userId) {
-        LambdaQueryWrapper<ApiKeyEntity> wrapper = Wrappers.<ApiKeyEntity>lambdaQuery()
-                .eq(ApiKeyEntity::getUserId, userId).orderByDesc(ApiKeyEntity::getCreatedAt);
-        return apiKeyRepository.selectList(wrapper);
+        return getUserApiKeys(userId, null);
     }
 
     /** 获取Agent的API密钥列表

@@ -32,7 +32,9 @@
       "Bash(git merge:*)",
       "Bash(echo:*)",
       "Bash(docker logs:*)",
-      "Bash(docker exec:*)"
+      "Bash(docker exec:*)",
+      "Bash(git log:*)",
+      "Bash(mkdir:*)"
     ],
     "deny": []
   }

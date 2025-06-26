@@ -144,9 +144,6 @@ class HttpClient {
       const query = Object.entries(params)
         .filter(([_, value]) => value !== undefined && value !== null)
         .map(([key, value]) => {
-          if (typeof value === "boolean") {
-            return value ? key : null;
-          }
           return `${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
         })
         .filter(Boolean)
@@ -170,6 +167,7 @@ class HttpClient {
 
     // 构建完整URL
     const url = this.buildUrl(endpoint, processedConfig.params);
+    console.log("HTTP Request URL:", url, "Params:", processedConfig.params);
 
     try {
       // 处理超时
