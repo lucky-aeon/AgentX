@@ -339,7 +339,7 @@ public class ToolDomainService {
      * @return 是否修改了技术字段 */
     private boolean hasTechnicalFieldsChanged(ToolEntity newTool, ToolEntity oldTool) {
         return Stream
-                .of(() -> !Objects.equals(newTool.getUploadUrl(), oldTool.getUploadUrl()),
+                .<Supplier<Boolean>>of(() -> !Objects.equals(newTool.getUploadUrl(), oldTool.getUploadUrl()),
                         () -> !Objects.equals(newTool.getInstallCommand(), oldTool.getInstallCommand()),
                         () -> !Objects.equals(newTool.getToolType(), oldTool.getToolType()),
                         () -> !Objects.equals(newTool.getUploadType(), oldTool.getUploadType()))
@@ -352,7 +352,7 @@ public class ToolDomainService {
      * @param oldTool 原工具信息
      * @return 是否修改了基本信息字段 */
     private boolean hasBasicFieldsChanged(ToolEntity newTool, ToolEntity oldTool) {
-        return Stream.of(() -> !Objects.equals(newTool.getName(), oldTool.getName()),
+        return Stream.<Supplier<Boolean>>of(() -> !Objects.equals(newTool.getName(), oldTool.getName()),
                 () -> !Objects.equals(newTool.getDescription(), oldTool.getDescription()),
                 () -> !Objects.equals(newTool.getIcon(), oldTool.getIcon()),
                 () -> !Objects.equals(newTool.getSubtitle(), oldTool.getSubtitle()),
