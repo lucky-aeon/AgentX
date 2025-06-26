@@ -6,8 +6,10 @@ import org.xhy.application.user.assembler.UserAssembler;
 import org.xhy.application.user.dto.UserDTO;
 import org.xhy.domain.user.model.UserEntity;
 import org.xhy.domain.user.service.UserDomainService;
+import org.xhy.interfaces.dto.user.request.ChangePasswordRequest;
 import org.xhy.interfaces.dto.user.request.QueryUserRequest;
 import org.xhy.interfaces.dto.user.request.UserUpdateRequest;
+import org.xhy.infrastructure.exception.BusinessException;
 
 import java.util.List;
 
@@ -30,6 +32,20 @@ public class UserAppService {
     public void updateUserInfo(UserUpdateRequest userUpdateRequest, String userId) {
         UserEntity user = UserAssembler.toEntity(userUpdateRequest, userId);
         userDomainService.updateUserInfo(user);
+    }
+
+    /** 修改用户密码
+     * 
+     * @param request 修改密码请求
+     * @param userId 用户ID */
+    public void changePassword(ChangePasswordRequest request, String userId) {
+        // 验证确认密码
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            throw new BusinessException("新密码和确认密码不一致");
+        }
+
+        // 调用领域服务修改密码
+        userDomainService.changePassword(userId, request.getCurrentPassword(), request.getNewPassword());
     }
 
     /** 分页获取用户列表
