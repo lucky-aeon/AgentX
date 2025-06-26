@@ -1,204 +1,267 @@
 "use client"
 
-import { useState } from "react"
-import { Copy, EyeOff, Key, Plus, Trash } from "lucide-react"
-import { Metadata } from "next"
-import { redirect } from "next/navigation"
+import { useState, useEffect } from "react"
+import { Plus, Key, ExternalLink } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { toast } from "@/hooks/use-toast"
 
-// Mock data for API keys
-const apiKeys = [
-  { id: "1", name: "开发环境", prefix: "ak_dev_", created: "2024-01-15", lastUsed: "2024-03-18" },
-  { id: "2", name: "生产环境", prefix: "ak_prod_", created: "2024-02-10", lastUsed: "2024-03-20" },
-  { id: "3", name: "测试环境", prefix: "ak_test_", created: "2024-03-05", lastUsed: "2024-03-15" },
-]
+// API服务
+import {
+  getUserApiKeysWithToast,
+  createApiKeyWithToast,
+  deleteApiKeyWithToast,
+  updateApiKeyStatusWithToast,
+  resetApiKeyWithToast
+} from "@/lib/api-key-service"
+import { getWorkspaceAgents } from "@/lib/api-services"
+
+// 类型定义
+import { ApiKeyResponse, CreateApiKeyRequest, UpdateApiKeyStatusRequest } from "@/types/api-key"
+import type { Agent } from "@/types/agent"
+
+// 组件
+import { ApiKeyList } from "@/components/api-keys/api-key-list"
+import { CreateApiKeyDialog } from "@/components/api-keys/create-api-key-dialog"
+import { DeleteApiKeyDialog } from "@/components/api-keys/delete-api-key-dialog"
+import { ApiKeyFilters } from "@/components/api-keys/api-key-filters"
 
 export default function ApiKeysPage() {
-  const [newKeyName, setNewKeyName] = useState("")
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [newKey, setNewKey] = useState<string | null>(null)
+  // 状态管理
+  const [apiKeys, setApiKeys] = useState<ApiKeyResponse[]>([])
+  const [agents, setAgents] = useState<Agent[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  
+  // 搜索和筛选
+  const [searchQuery, setSearchQuery] = useState("")
+  const [statusFilter, setStatusFilter] = useState<boolean | "ALL">("ALL")
+  const [agentFilter, setAgentFilter] = useState<string>("ALL")
+  
+  // 对话框状态
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [keyToDelete, setKeyToDelete] = useState<ApiKeyResponse | null>(null)
+  
+  // 操作状态
+  const [operatingKeyId, setOperatingKeyId] = useState<string | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
-  const handleCreateKey = () => {
-    // 模拟创建新密钥
-    const mockKey = `ak_${Math.random().toString(36).substring(2, 10)}_${Math.random().toString(36).substring(2, 15)}`
-    setNewKey(mockKey)
-    toast({
-      title: "API 密钥已创建",
-      description: "请保存您的 API 密钥，它只会显示一次。",
-    })
+  // 获取Agent列表
+  useEffect(() => {
+    async function fetchAgents() {
+      try {
+        const response = await getWorkspaceAgents()
+        if (response.code === 200) {
+          setAgents(response.data)
+        }
+      } catch (error) {
+        console.error("获取Agent列表失败:", error)
+      }
+    }
+    fetchAgents()
+  }, [])
+
+  // 获取API密钥列表
+  const fetchApiKeys = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      
+      const params = {
+        name: searchQuery || undefined,
+        status: statusFilter !== "ALL" ? statusFilter : undefined,
+        agentId: agentFilter !== "ALL" ? agentFilter : undefined,
+      }
+      
+      const response = await getUserApiKeysWithToast(params)
+      if (response.code === 200) {
+        setApiKeys(response.data)
+      } else {
+        setError(response.message)
+      }
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "未知错误")
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const handleCopyKey = () => {
-    if (newKey) {
-      navigator.clipboard.writeText(newKey)
-      toast({
-        title: "已复制到剪贴板",
-        description: "API 密钥已复制到剪贴板。",
-      })
+  useEffect(() => {
+    fetchApiKeys()
+  }, [searchQuery, statusFilter, agentFilter])
+
+  // 创建API密钥
+  const handleCreateKey = async (agentId: string, name: string): Promise<ApiKeyResponse | null> => {
+    try {
+      const params: CreateApiKeyRequest = { agentId, name }
+      const response = await createApiKeyWithToast(params)
+      
+      if (response.code === 200) {
+        setApiKeys(prev => [response.data, ...prev])
+        return response.data
+      }
+      return null
+    } catch (error) {
+      console.error("创建API密钥失败:", error)
+      return null
     }
+  }
+
+  // 删除API密钥
+  const handleDeleteKey = async () => {
+    if (!keyToDelete) return
+
+    try {
+      setIsDeleting(true)
+      const response = await deleteApiKeyWithToast(keyToDelete.id)
+      if (response.code === 200) {
+        setApiKeys(prev => prev.filter(key => key.id !== keyToDelete.id))
+        setIsDeleteDialogOpen(false)
+        setKeyToDelete(null)
+      }
+    } catch (error) {
+      console.error("删除API密钥失败:", error)
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  // 切换API密钥状态
+  const handleToggleStatus = async (apiKey: ApiKeyResponse) => {
+    try {
+      setOperatingKeyId(apiKey.id)
+      const newStatus = !apiKey.status
+      
+      const request: UpdateApiKeyStatusRequest = { status: newStatus }
+      const response = await updateApiKeyStatusWithToast(apiKey.id, request)
+      
+      if (response.code === 200) {
+        setApiKeys(prev => prev.map(key => 
+          key.id === apiKey.id ? { ...key, status: newStatus } : key
+        ))
+      }
+    } catch (error) {
+      console.error("切换API密钥状态失败:", error)
+    } finally {
+      setOperatingKeyId(null)
+    }
+  }
+
+  // 重置API密钥
+  const handleResetKey = async (apiKey: ApiKeyResponse) => {
+    try {
+      setOperatingKeyId(apiKey.id)
+      const response = await resetApiKeyWithToast(apiKey.id)
+      
+      if (response.code === 200) {
+        setApiKeys(prev => prev.map(key => 
+          key.id === apiKey.id ? response.data : key
+        ))
+      }
+    } catch (error) {
+      console.error("重置API密钥失败:", error)
+    } finally {
+      setOperatingKeyId(null)
+    }
+  }
+
+  // 打开删除对话框
+  const openDeleteDialog = (apiKey: ApiKeyResponse) => {
+    setKeyToDelete(apiKey)
+    setIsDeleteDialogOpen(true)
   }
 
   return (
     <div className="container py-6">
+      {/* 页面头部 */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">API 密钥管理</h1>
+          <p className="text-muted-foreground">创建和管理您所有 Agent 的 API 访问密钥</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            onClick={() => window.open('https://nz6d48w48i.apifox.cn', '_blank')}
+          >
+            <ExternalLink className="mr-2 h-4 w-4" />
+            API 文档
+          </Button>
+          <Button onClick={() => setIsCreateDialogOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            创建新密钥
+          </Button>
+        </div>
+      </div>
+
+      {/* 搜索和筛选工具栏 */}
       <div className="mb-6">
-        <h1 className="text-3xl font-bold tracking-tight">API 密钥管理</h1>
-        <p className="text-muted-foreground">创建和管理您的 API 密钥</p>
+        <ApiKeyFilters
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          statusFilter={statusFilter}
+          onStatusFilterChange={setStatusFilter}
+          agentFilter={agentFilter}
+          onAgentFilterChange={setAgentFilter}
+          agents={agents}
+          onRefresh={fetchApiKeys}
+          loading={loading}
+        />
       </div>
 
-      <div className="grid gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>API 密钥</CardTitle>
-            <CardDescription>管理您的 API 访问密钥</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>名称</TableHead>
-                  <TableHead>密钥前缀</TableHead>
-                  <TableHead>创建日期</TableHead>
-                  <TableHead>最后使用</TableHead>
-                  <TableHead className="text-right">操作</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {apiKeys.map((key) => (
-                  <TableRow key={key.id}>
-                    <TableCell className="font-medium">{key.name}</TableCell>
-                    <TableCell>{key.prefix}••••••••</TableCell>
-                    <TableCell>{key.created}</TableCell>
-                    <TableCell>{key.lastUsed}</TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="icon">
-                        <Trash className="h-4 w-4" />
-                        <span className="sr-only">删除</span>
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-          <CardFooter>
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  创建新密钥
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>创建 API 密钥</DialogTitle>
-                  <DialogDescription>创建一个新的 API 密钥以访问 AgentX API。</DialogDescription>
-                </DialogHeader>
-                {!newKey ? (
-                  <div className="space-y-4 py-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="key-name">密钥名称</Label>
-                      <Input
-                        id="key-name"
-                        placeholder="例如：开发环境"
-                        value={newKeyName}
-                        onChange={(e) => setNewKeyName(e.target.value)}
-                      />
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      <p>注意事项：</p>
-                      <ul className="list-disc list-inside">
-                        <li>API 密钥只会显示一次，请妥善保存</li>
-                        <li>密钥具有完全访问权限，请确保其安全</li>
-                        <li>不要在客户端代码中使用 API 密钥</li>
-                      </ul>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-4 py-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="new-key">您的新 API 密钥</Label>
-                      <div className="flex items-center gap-2">
-                        <Input id="new-key" value={newKey} readOnly className="font-mono" />
-                        <Button variant="outline" size="icon" onClick={handleCopyKey}>
-                          <Copy className="h-4 w-4" />
-                          <span className="sr-only">复制</span>
-                        </Button>
-                      </div>
-                      <p className="text-sm text-muted-foreground flex items-center gap-1">
-                        <EyeOff className="h-3 w-3" />
-                        此密钥只会显示一次，请立即复制并安全存储
-                      </p>
-                    </div>
-                  </div>
-                )}
-                <DialogFooter>
-                  {!newKey ? (
-                    <Button onClick={handleCreateKey}>创建密钥</Button>
-                  ) : (
-                    <Button onClick={() => setIsDialogOpen(false)}>完成</Button>
-                  )}
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          </CardFooter>
-        </Card>
+      {/* API密钥列表 */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>API 密钥列表</CardTitle>
+          <CardDescription>管理您的 API 访问密钥</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {error ? (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">{error}</p>
+              <Button variant="outline" className="mt-2" onClick={fetchApiKeys}>
+                重试
+              </Button>
+            </div>
+          ) : apiKeys.length === 0 && !loading ? (
+            <div className="text-center py-8">
+              <Key className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+              <p className="text-muted-foreground">暂无API密钥</p>
+              <Button className="mt-2" onClick={() => setIsCreateDialogOpen(true)}>
+                创建第一个密钥
+              </Button>
+            </div>
+          ) : (
+            <ApiKeyList
+              apiKeys={apiKeys}
+              loading={loading}
+              onToggleStatus={handleToggleStatus}
+              onResetKey={handleResetKey}
+              onDeleteKey={openDeleteDialog}
+              operatingKeyId={operatingKeyId}
+            />
+          )}
+        </CardContent>
+      </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>API 使用指南</CardTitle>
-            <CardDescription>了解如何使用 API 密钥</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <h3 className="font-medium mb-2">身份验证</h3>
-              <div className="bg-muted p-3 rounded-md">
-                <pre className="text-sm overflow-x-auto">
-                  <code>
-                    {`curl -X POST https://api.agentx.plus/v1/chat \\
-  -H "Authorization: Bearer YOUR_API_KEY" \\
-  -H "Content-Type: application/json" \\
-  -d '{"messages": [{"role": "user", "content": "Hello!"}]}'`}
-                  </code>
-                </pre>
-              </div>
-            </div>
-            <div>
-              <h3 className="font-medium mb-2">速率限制</h3>
-              <p className="text-sm text-muted-foreground">
-                根据您的订阅计划，API 请求有不同的速率限制。专业版计划每分钟最多可发送 60 个请求。
-              </p>
-            </div>
-            <div>
-              <h3 className="font-medium mb-2">了解更多</h3>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" className="gap-2">
-                  <Key className="h-4 w-4" />
-                  API 文档
-                </Button>
-                <Button variant="outline" className="gap-2">
-                  示例代码
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      {/* 创建API密钥对话框 */}
+      <CreateApiKeyDialog
+        open={isCreateDialogOpen}
+        onOpenChange={setIsCreateDialogOpen}
+        agents={agents}
+        onCreateKey={handleCreateKey}
+      />
+
+      {/* 删除确认对话框 */}
+      <DeleteApiKeyDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        apiKey={keyToDelete}
+        onConfirm={handleDeleteKey}
+        loading={isDeleting}
+      />
     </div>
   )
 }
-
