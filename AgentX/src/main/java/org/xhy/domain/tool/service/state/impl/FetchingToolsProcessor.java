@@ -94,7 +94,7 @@ public class FetchingToolsProcessor implements ToolStateProcessor {
             } catch (Exception e) {
                 lastException = e;
                 logger.warn("第 {} 次获取工具 {} 列表失败: {}", currentAttempt, toolName, e.getMessage());
-                
+
                 if (currentAttempt < maxAttempts) {
                     try {
                         // 重试间隔递增: 第1次失败后等待1秒，第2次失败后等待2秒

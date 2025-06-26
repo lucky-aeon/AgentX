@@ -28,12 +28,27 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /** 工具领域服务 */
 @Service
 public class ToolDomainService {
+
+    /** 技术验证阶段状态 */
+    private static final Set<ToolStatus> TECHNICAL_VALIDATION_STATUSES = Set.of(ToolStatus.WAITING_REVIEW,
+            ToolStatus.GITHUB_URL_VALIDATE, ToolStatus.DEPLOYING, ToolStatus.FETCHING_TOOLS);
+
+    /** 审核流程中状态 */
+    private static final Set<ToolStatus> IN_REVIEW_PROCESS_STATUSES = Set.of(ToolStatus.WAITING_REVIEW,
+            ToolStatus.GITHUB_URL_VALIDATE, ToolStatus.DEPLOYING, ToolStatus.FETCHING_TOOLS, ToolStatus.MANUAL_REVIEW);
+
+    /** 终态状态 */
+    private static final Set<ToolStatus> FINAL_STATUSES = Set.of(ToolStatus.APPROVED, ToolStatus.FAILED);
 
     private final ToolRepository toolRepository;
     private final ToolVersionRepository toolVersionRepository;
@@ -97,35 +112,44 @@ public class ToolDomainService {
     }
 
     public ToolEntity updateTool(ToolEntity toolEntity) {
-        /** 修改 name/description/icon/labels只触发人工审核状态 修改 upload_url/upload_command触发整个状态扭转 */
-        // 获取原工具信息
+        // 1. 获取原工具信息并验证
         ToolEntity oldTool = toolRepository.selectById(toolEntity.getId());
-        if (oldTool == null) {
-            throw new BusinessException("工具不存在: " + toolEntity.getId());
+        validateToolExists(oldTool);
+
+        // 2. 检查是否在审核流程中
+        if (IN_REVIEW_PROCESS_STATUSES.contains(oldTool.getStatus())) {
+            throw new BusinessException("工具审核中，不允许修改");
         }
 
-        // 检查是否修改了URL或安装命令
-        boolean needStateTransition = false;
-        if ((toolEntity.getUploadUrl() != null && !toolEntity.getUploadUrl().equals(oldTool.getUploadUrl()))
-                || (toolEntity.getInstallCommand() != null
-                        && !toolEntity.getInstallCommand().equals(oldTool.getInstallCommand()))) {
-            needStateTransition = true;
-            String mcpServerName = this.getMcpServerName(toolEntity);
-            toolEntity.setMcpServerName(mcpServerName);
+        // 3. 判断修改类型
+        boolean modifiedTechnicalFields = hasTechnicalFieldsChanged(toolEntity, oldTool);
+        boolean modifiedBasicFields = hasBasicFieldsChanged(toolEntity, oldTool);
+
+        if (!modifiedTechnicalFields && !modifiedBasicFields) {
+            throw new BusinessException("未检测到任何修改");
+        }
+
+        // 4. 根据修改类型设置状态
+        if (modifiedTechnicalFields) {
+            // 修改了技术字段：重新完整审核
             toolEntity.setStatus(ToolStatus.WAITING_REVIEW);
+            toolEntity.setFailedStepStatus(null);
+            toolEntity.setRejectReason(null);
+            String mcpServerName = getMcpServerName(toolEntity);
+            toolEntity.setMcpServerName(mcpServerName);
         } else {
-            // 只修改了信息，设置为人工审核状态
-            toolEntity.setStatus(ToolStatus.MANUAL_REVIEW);
+            // 只修改了基本信息
+            handleBasicFieldsModification(toolEntity, oldTool);
         }
 
-        // 更新工具
+        // 5. 更新数据库
         LambdaUpdateWrapper<ToolEntity> wrapper = Wrappers.<ToolEntity>lambdaUpdate()
                 .eq(ToolEntity::getId, toolEntity.getId())
                 .eq(toolEntity.needCheckUserId(), ToolEntity::getUserId, toolEntity.getUserId());
         toolRepository.update(toolEntity, wrapper);
 
-        // 如果需要状态流转，提交到状态流转服务
-        if (needStateTransition) {
+        // 6. 如果需要状态流转，提交处理
+        if (shouldSubmitForProcessing(toolEntity.getStatus())) {
             toolStateService.submitToolForProcessing(toolEntity);
         }
 
@@ -306,5 +330,74 @@ public class ToolDomainService {
         statistics.setOfficialTools(officialTools);
 
         return statistics;
+    }
+
+    /** 检查是否修改了关键技术字段
+     * 
+     * @param newTool 新工具信息
+     * @param oldTool 原工具信息
+     * @return 是否修改了技术字段 */
+    private boolean hasTechnicalFieldsChanged(ToolEntity newTool, ToolEntity oldTool) {
+        return Stream
+                .of(() -> !Objects.equals(newTool.getUploadUrl(), oldTool.getUploadUrl()),
+                        () -> !Objects.equals(newTool.getInstallCommand(), oldTool.getInstallCommand()),
+                        () -> !Objects.equals(newTool.getToolType(), oldTool.getToolType()),
+                        () -> !Objects.equals(newTool.getUploadType(), oldTool.getUploadType()))
+                .anyMatch(Supplier::get);
+    }
+
+    /** 检查是否修改了基本信息字段
+     * 
+     * @param newTool 新工具信息
+     * @param oldTool 原工具信息
+     * @return 是否修改了基本信息字段 */
+    private boolean hasBasicFieldsChanged(ToolEntity newTool, ToolEntity oldTool) {
+        return Stream.of(() -> !Objects.equals(newTool.getName(), oldTool.getName()),
+                () -> !Objects.equals(newTool.getDescription(), oldTool.getDescription()),
+                () -> !Objects.equals(newTool.getIcon(), oldTool.getIcon()),
+                () -> !Objects.equals(newTool.getSubtitle(), oldTool.getSubtitle()),
+                () -> !Objects.equals(newTool.getLabels(), oldTool.getLabels())).anyMatch(Supplier::get);
+    }
+
+    /** 处理基本信息字段修改的状态设置
+     * 
+     * @param toolEntity 要更新的工具实体
+     * @param oldTool 原工具信息 */
+    private void handleBasicFieldsModification(ToolEntity toolEntity, ToolEntity oldTool) {
+        if (oldTool.getStatus() == ToolStatus.APPROVED) {
+            // 已通过的工具修改基本信息：只需人工审核
+            toolEntity.setStatus(ToolStatus.MANUAL_REVIEW);
+        } else if (oldTool.getStatus() == ToolStatus.FAILED) {
+            if (TECHNICAL_VALIDATION_STATUSES.contains(oldTool.getFailedStepStatus())) {
+                // 技术验证失败：从失败步骤重新开始
+                toolEntity.setStatus(oldTool.getFailedStepStatus());
+                // 保留失败信息
+                toolEntity.setFailedStepStatus(oldTool.getFailedStepStatus());
+                toolEntity.setRejectReason(oldTool.getRejectReason());
+            } else {
+                // 人工审核失败：可以直接人工审核
+                toolEntity.setStatus(ToolStatus.MANUAL_REVIEW);
+                toolEntity.setFailedStepStatus(null);
+                toolEntity.setRejectReason(null);
+            }
+        }
+    }
+
+    /** 判断是否需要提交状态流转处理
+     * 
+     * @param status 当前状态
+     * @return 是否需要提交处理 */
+    private boolean shouldSubmitForProcessing(ToolStatus status) {
+        return status == ToolStatus.WAITING_REVIEW || TECHNICAL_VALIDATION_STATUSES.contains(status);
+    }
+
+    /** 验证工具是否存在
+     * 
+     * @param tool 工具实体
+     * @throws BusinessException 工具不存在时抛出 */
+    private void validateToolExists(ToolEntity tool) {
+        if (tool == null) {
+            throw new BusinessException("工具不存在");
+        }
     }
 }
