@@ -1,6 +1,7 @@
 package org.xhy.interfaces.api.admin;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.xhy.application.admin.tool.service.AdminToolAppService;
@@ -66,6 +67,32 @@ public class AdminToolController {
         }
         adminToolAppService.updateToolStatus(toolId, status, reason);
         return Result.success();
+    }
+
+    /** 更新工具全局状态
+     * 
+     * @param toolId 工具ID
+     * @param request 更新请求
+     * @return 操作结果 */
+    @PutMapping("/{toolId}/global-status")
+    public Result updateGlobalStatus(@PathVariable String toolId, 
+                                   @RequestBody @Validated UpdateGlobalStatusRequest request) {
+        adminToolAppService.updateToolGlobalStatus(toolId, request.getIsGlobal());
+        return Result.success();
+    }
+
+    /** 更新全局状态请求 */
+    public static class UpdateGlobalStatusRequest {
+        @NotNull(message = "全局状态不可为空")
+        private Boolean isGlobal;
+
+        public Boolean getIsGlobal() {
+            return isGlobal;
+        }
+
+        public void setIsGlobal(Boolean isGlobal) {
+            this.isGlobal = isGlobal;
+        }
     }
 
 }

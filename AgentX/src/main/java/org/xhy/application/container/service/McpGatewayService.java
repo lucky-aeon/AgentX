@@ -236,10 +236,30 @@ public class McpGatewayService {
 
     /** 工具配置 */
     public static class ToolConfig {
+        private String toolId;
         private String name;
         private String version;
         private String type;
+        private String mcpServerName;
         private Map<String, Object> config;
+
+        public ToolConfig() {
+        }
+
+        public ToolConfig(String toolId, String name, String mcpServerName) {
+            this.toolId = toolId;
+            this.name = name;
+            this.mcpServerName = mcpServerName;
+            this.type = "MCP";
+        }
+
+        public String getToolId() {
+            return toolId;
+        }
+
+        public void setToolId(String toolId) {
+            this.toolId = toolId;
+        }
 
         public String getName() {
             return name;
@@ -265,6 +285,14 @@ public class McpGatewayService {
             this.type = type;
         }
 
+        public String getMcpServerName() {
+            return mcpServerName;
+        }
+
+        public void setMcpServerName(String mcpServerName) {
+            this.mcpServerName = mcpServerName;
+        }
+
         public Map<String, Object> getConfig() {
             return config;
         }
@@ -280,6 +308,7 @@ public class McpGatewayService {
         private String version;
         private String status;
         private String message;
+        private String mcpServerName;
 
         public String getName() {
             return name;
@@ -311,6 +340,14 @@ public class McpGatewayService {
 
         public void setMessage(String message) {
             this.message = message;
+        }
+
+        public String getMcpServerName() {
+            return mcpServerName;
+        }
+
+        public void setMcpServerName(String mcpServerName) {
+            this.mcpServerName = mcpServerName;
         }
     }
 

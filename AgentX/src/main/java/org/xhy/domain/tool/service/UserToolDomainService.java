@@ -91,4 +91,21 @@ public class UserToolDomainService {
         });
         return userToolEntities;
     }
+
+    /** 根据工具ID列表获取用户安装的工具
+     * 
+     * @param userId 用户ID
+     * @param toolIds 工具ID列表
+     * @return 用户安装的工具列表 */
+    public List<UserToolEntity> getUserToolsByIds(String userId, List<String> toolIds) {
+        if (toolIds == null || toolIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        LambdaQueryWrapper<UserToolEntity> wrapper = Wrappers.<UserToolEntity>lambdaQuery()
+                .eq(UserToolEntity::getUserId, userId)
+                .in(UserToolEntity::getToolId, toolIds);
+
+        return userToolRepository.selectList(wrapper);
+    }
 }

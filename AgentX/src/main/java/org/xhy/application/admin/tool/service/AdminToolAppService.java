@@ -98,4 +98,24 @@ public class AdminToolAppService {
     public ToolStatisticsDTO getToolStatistics() {
         return toolDomainService.getToolStatistics();
     }
+
+    /** 更新工具全局状态
+     * 
+     * @param toolId 工具ID
+     * @param isGlobal 是否为全局工具 */
+    @Transactional
+    public void updateToolGlobalStatus(String toolId, Boolean isGlobal) {
+        logger.info("更新工具全局状态: toolId={}, isGlobal={}", toolId, isGlobal);
+
+        // 检查工具是否存在
+        ToolEntity tool = toolDomainService.getTool(toolId);
+        if (tool == null) {
+            throw new BusinessException("工具不存在: " + toolId);
+        }
+
+        // 使用专门的方法更新全局状态，不触发审核流程
+        toolDomainService.updateToolGlobalStatus(toolId, isGlobal);
+
+        logger.info("工具全局状态更新成功: toolId={}, isGlobal={}", toolId, isGlobal);
+    }
 }

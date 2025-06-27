@@ -9,6 +9,9 @@ import org.xhy.application.container.dto.ContainerDTO;
 import org.xhy.infrastructure.exception.BusinessException;
 
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /** 容器集成应用服务 - 用于对话Agent流程 */
 @Service
@@ -137,21 +140,28 @@ public class ContainerIntegrationAppService {
     /** 检查工具是否需要部署到用户容器
      * 
      * @param userId 用户ID
-     * @param requiredTools 需要的工具列表
+     * @param requiredToolConfigs 需要的工具配置列表
      * @return 需要部署的工具配置 */
     public List<McpGatewayService.ToolConfig> checkToolsNeedDeployment(String userId, 
-                                                                       List<String> requiredTools) {
+                                                                       List<McpGatewayService.ToolConfig> requiredToolConfigs) {
         try {
             List<McpGatewayService.ToolStatus> deployedTools = getUserContainerToolsStatus(userId);
             
-            // 这里应该实现具体的逻辑来判断哪些工具需要部署
-            // 为简化，这里返回空列表，实际应该根据部署状态进行比较
+            // 获取已部署工具的MCP服务器名称集合
+            Set<String> deployedMcpServerNames = deployedTools.stream()
+                    .map(McpGatewayService.ToolStatus::getMcpServerName)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toSet());
             
-            logger.info("检查工具部署状态: 用户={}, 需要={}, 已部署={}", 
-                       userId, requiredTools.size(), deployedTools.size());
+            // 筛选出需要部署的工具（未部署的工具）
+            List<McpGatewayService.ToolConfig> toolsToDeployList = requiredToolConfigs.stream()
+                    .filter(toolConfig -> !deployedMcpServerNames.contains(toolConfig.getMcpServerName()))
+                    .collect(Collectors.toList());
             
-            // TODO: 实现具体的工具对比逻辑
-            return List.of();
+            logger.info("检查工具部署状态: 用户={}, 需要={}, 已部署={}, 待部署={}", 
+                       userId, requiredToolConfigs.size(), deployedTools.size(), toolsToDeployList.size());
+            
+            return toolsToDeployList;
 
         } catch (Exception e) {
             logger.error("检查工具部署状态失败: {}", userId, e);

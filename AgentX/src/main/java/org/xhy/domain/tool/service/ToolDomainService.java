@@ -307,4 +307,16 @@ public class ToolDomainService {
 
         return statistics;
     }
+
+    /** 仅更新工具全局状态，不触发审核流程
+     * 
+     * @param toolId 工具ID
+     * @param isGlobal 是否为全局工具 */
+    public void updateToolGlobalStatus(String toolId, Boolean isGlobal) {
+        LambdaUpdateWrapper<ToolEntity> wrapper = Wrappers.<ToolEntity>lambdaUpdate()
+                .eq(ToolEntity::getId, toolId)
+                .set(ToolEntity::getIsGlobal, isGlobal);
+        
+        toolRepository.checkedUpdate(wrapper);
+    }
 }

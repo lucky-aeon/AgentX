@@ -33,6 +33,7 @@ public class ToolWithUserDTO {
     private String rejectReason;
     private ToolStatus failedStepStatus;
     private String mcpServerName;
+    private Boolean isGlobal;
 
     // 用户信息字段
     private String userNickname;
@@ -229,5 +230,13 @@ public class ToolWithUserDTO {
 
     public void setUserAvatarUrl(String userAvatarUrl) {
         this.userAvatarUrl = userAvatarUrl;
+    }
+
+    public Boolean getIsGlobal() {
+        return isGlobal;
+    }
+
+    public void setIsGlobal(Boolean isGlobal) {
+        this.isGlobal = isGlobal;
     }
 }

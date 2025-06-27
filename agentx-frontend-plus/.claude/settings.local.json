@@ -8,7 +8,10 @@
       "Bash(find:*)",
       "Bash(mvn:*)",
       "Bash(mv:*)",
-      "Bash(rg:*)"
+      "Bash(rg:*)",
+      "Bash(../AgentX/mvnw clean compile:*)",
+      "Bash(../AgentX/./mvnw clean compile)",
+      "Bash(npm run lint:*)"
     ],
     "deny": []
   }
