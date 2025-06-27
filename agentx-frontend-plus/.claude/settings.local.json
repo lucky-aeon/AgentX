@@ -11,7 +11,9 @@
       "Bash(rg:*)",
       "Bash(../AgentX/mvnw clean compile:*)",
       "Bash(../AgentX/./mvnw clean compile)",
-      "Bash(npm run lint:*)"
+      "Bash(npm run lint:*)",
+      "Bash(ls:*)",
+      "Bash(sh -c:*)"
     ],
     "deny": []
   }

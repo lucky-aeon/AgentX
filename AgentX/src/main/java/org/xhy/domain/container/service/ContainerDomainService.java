@@ -1,6 +1,7 @@
 package org.xhy.domain.container.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.stereotype.Service;
@@ -12,6 +13,7 @@ import org.xhy.domain.container.repository.ContainerRepository;
 import org.xhy.infrastructure.entity.Operator;
 import org.xhy.infrastructure.exception.BusinessException;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Random;
 
@@ -56,6 +58,7 @@ public class ContainerDomainService {
         container.setInternalPort(internalPort);
         container.setExternalPort(externalPort);
         container.setVolumePath(volumePath);
+        container.setLastAccessedAt(LocalDateTime.now()); // 设置初始访问时间
 
         containerRepository.insert(container);
         return container;
@@ -83,6 +86,7 @@ public class ContainerDomainService {
         container.setImage(image);
         container.setInternalPort(internalPort);
         container.setExternalPort(externalPort);
+        container.setLastAccessedAt(LocalDateTime.now()); // 设置初始访问时间
 
         containerRepository.insert(container);
         return container;
@@ -211,6 +215,18 @@ public class ContainerDomainService {
         containerRepository.deleteById(containerId);
     }
 
+    /** 更新容器最后访问时间
+     * 
+     * @param containerId 容器ID */
+    @Transactional
+    public void updateContainerLastAccessed(String containerId) {
+        LambdaUpdateWrapper<ContainerEntity> updateWrapper = Wrappers.<ContainerEntity>lambdaUpdate()
+                .eq(ContainerEntity::getId, containerId)
+                .set(ContainerEntity::getLastAccessedAt, LocalDateTime.now());
+        
+        containerRepository.update(null, updateWrapper);
+    }
+
     /** 分页查询容器
      * 
      * @param page 分页参数
@@ -230,6 +246,48 @@ public class ContainerDomainService {
      * @return 运行中的容器列表 */
     public List<ContainerEntity> getMonitoringContainers() {
         return containerRepository.findByStatus(ContainerStatus.RUNNING);
+    }
+
+    /** 根据状态获取容器列表
+     * 
+     * @param status 容器状态
+     * @return 容器列表 */
+    public List<ContainerEntity> getContainersByStatus(ContainerStatus status) {
+        return containerRepository.findByStatus(status);
+    }
+
+    /** 获取所有活跃容器（非已删除状态）
+     * 
+     * @return 活跃容器列表 */
+    public List<ContainerEntity> getAllActiveContainers() {
+        LambdaQueryWrapper<ContainerEntity> wrapper = Wrappers.<ContainerEntity>lambdaQuery()
+                .ne(ContainerEntity::getStatus, ContainerStatus.DELETED)
+                .orderByAsc(ContainerEntity::getLastAccessedAt);
+        return containerRepository.selectList(wrapper);
+    }
+
+    /** 获取需要暂停的容器（运行中且1天未访问）
+     * 
+     * @return 需要暂停的容器列表 */
+    public List<ContainerEntity> getContainersNeedingSuspension() {
+        LocalDateTime oneDayAgo = LocalDateTime.now().minusDays(1);
+        LambdaQueryWrapper<ContainerEntity> wrapper = Wrappers.<ContainerEntity>lambdaQuery()
+                .eq(ContainerEntity::getStatus, ContainerStatus.RUNNING)
+                .lt(ContainerEntity::getLastAccessedAt, oneDayAgo)
+                .orderByAsc(ContainerEntity::getLastAccessedAt);
+        return containerRepository.selectList(wrapper);
+    }
+
+    /** 获取需要删除的容器（5天未访问）
+     * 
+     * @return 需要删除的容器列表 */
+    public List<ContainerEntity> getContainersNeedingDeletion() {
+        LocalDateTime fiveDaysAgo = LocalDateTime.now().minusDays(5);
+        LambdaQueryWrapper<ContainerEntity> wrapper = Wrappers.<ContainerEntity>lambdaQuery()
+                .ne(ContainerEntity::getStatus, ContainerStatus.DELETED)
+                .lt(ContainerEntity::getLastAccessedAt, fiveDaysAgo)
+                .orderByAsc(ContainerEntity::getLastAccessedAt);
+        return containerRepository.selectList(wrapper);
     }
 
     /** 分配外部端口

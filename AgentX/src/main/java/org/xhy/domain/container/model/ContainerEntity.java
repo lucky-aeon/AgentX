@@ -11,6 +11,8 @@ import org.xhy.infrastructure.converter.ContainerTypeConverter;
 import org.xhy.infrastructure.entity.BaseEntity;
 import org.xhy.infrastructure.entity.Operator;
 
+import java.time.LocalDateTime;
+
 /** 容器实体 */
 @TableName("user_containers")
 public class ContainerEntity extends BaseEntity {
@@ -48,6 +50,8 @@ public class ContainerEntity extends BaseEntity {
     private String containerConfig;
     /** 错误信息 */
     private String errorMessage;
+    /** 最后访问时间 */
+    private LocalDateTime lastAccessedAt;
 
     public String getId() {
         return id;
@@ -177,6 +181,14 @@ public class ContainerEntity extends BaseEntity {
         this.errorMessage = errorMessage;
     }
 
+    public LocalDateTime getLastAccessedAt() {
+        return lastAccessedAt;
+    }
+
+    public void setLastAccessedAt(LocalDateTime lastAccessedAt) {
+        this.lastAccessedAt = lastAccessedAt;
+    }
+
     /** 检查容器是否正在运行 */
     public boolean isRunning() {
         return ContainerStatus.RUNNING.equals(this.status);
@@ -188,6 +200,17 @@ public class ContainerEntity extends BaseEntity {
                !ContainerStatus.DELETING.equals(this.status) && 
                !ContainerStatus.DELETED.equals(this.status);
     }
+
+    /** 检查容器是否已暂停 */
+    public boolean isSuspended() {
+        return ContainerStatus.SUSPENDED.equals(this.status);
+    }
+
+    /** 更新最后访问时间 */
+    public void updateLastAccessedAt() {
+        this.lastAccessedAt = LocalDateTime.now();
+    }
+
 
     /** 标记容器为错误状态 */
     public void markError(String errorMessage) {

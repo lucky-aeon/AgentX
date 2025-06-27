@@ -25,19 +25,6 @@ CREATE TABLE container_templates (
     deleted_at TIMESTAMP NULL
 );
 
--- 创建索引
-CREATE INDEX idx_container_templates_type ON container_templates(type);
-CREATE INDEX idx_container_templates_enabled ON container_templates(enabled);
-CREATE INDEX idx_container_templates_is_default ON container_templates(is_default);
-CREATE INDEX idx_container_templates_created_by ON container_templates(created_by);
-CREATE INDEX idx_container_templates_sort_order ON container_templates(sort_order);
-CREATE INDEX idx_container_templates_created_at ON container_templates(created_at);
-
--- 创建复合索引：类型+启用状态+默认状态
-CREATE INDEX idx_container_templates_type_enabled_default ON container_templates(type, enabled, is_default);
-
--- 确保每个类型只有一个默认模板
-CREATE UNIQUE INDEX idx_container_templates_unique_default ON container_templates(type) WHERE is_default = true;
 
 -- 添加表注释
 COMMENT ON TABLE container_templates IS '容器模板表';

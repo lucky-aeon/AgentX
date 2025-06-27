@@ -161,6 +161,10 @@ public class ContainerAppService {
      * @return 容器信息，可能为null */
     public ContainerDTO getUserContainer(String userId) {
         ContainerEntity container = containerDomainService.getUserContainer(userId);
+        if (container != null) {
+            // 更新最后访问时间
+            updateContainerLastAccessed(container);
+        }
         return container != null ? ContainerAssembler.toDTO(container) : null;
     }
 
@@ -174,6 +178,9 @@ public class ContainerAppService {
         if (container == null) {
             return new ContainerHealthStatus(false, "用户容器不存在", null);
         }
+
+        // 更新最后访问时间
+        updateContainerLastAccessed(container);
 
         if (!container.isOperatable()) {
             return new ContainerHealthStatus(false, "容器状态异常: " + container.getStatus().getDescription(), 
@@ -385,6 +392,59 @@ public class ContainerAppService {
     /** 根据ID获取容器 */
     private ContainerEntity getContainerById(String containerId) {
         return containerDomainService.getContainerById(containerId);
+    }
+
+    /** 更新容器最后访问时间
+     * 
+     * @param container 容器实体 */
+    @Transactional
+    public void updateContainerLastAccessed(ContainerEntity container) {
+        try {
+            // 如果容器是暂停状态，先恢复运行
+            if (container.isSuspended()) {
+                resumeSuspendedContainer(container);
+            }
+            
+            // 更新最后访问时间
+            containerDomainService.updateContainerLastAccessed(container.getId());
+            logger.debug("更新容器最后访问时间: {}", container.getName());
+            
+        } catch (Exception e) {
+            logger.warn("更新容器访问时间失败: {}", container.getName(), e);
+        }
+    }
+
+    /** 恢复暂停的容器
+     * 
+     * @param container 暂停的容器 */
+    private void resumeSuspendedContainer(ContainerEntity container) {
+        try {
+            logger.info("恢复暂停的容器: {}", container.getName());
+            
+            // 启动Docker容器
+            if (container.getDockerContainerId() != null) {
+                dockerService.startContainer(container.getDockerContainerId());
+            }
+            
+            // 更新容器状态为运行中
+            containerDomainService.updateContainerStatus(
+                container.getId(), 
+                ContainerStatus.RUNNING, 
+                Operator.ADMIN, 
+                null
+            );
+            
+            logger.info("容器恢复成功: {}", container.getName());
+            
+        } catch (Exception e) {
+            logger.error("恢复容器失败: {}", container.getName(), e);
+            containerDomainService.markContainerError(
+                container.getId(), 
+                "恢复失败: " + e.getMessage(), 
+                Operator.ADMIN
+            );
+            throw new BusinessException("容器恢复失败");
+        }
     }
 
     /** 容器健康状态检查结果 */

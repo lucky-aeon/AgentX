@@ -115,7 +115,8 @@ export default function ContainersPage() {
       3: { color: 'bg-gray-100 text-gray-800', text: '已停止' },
       4: { color: 'bg-red-100 text-red-800', text: '错误状态' },
       5: { color: 'bg-orange-100 text-orange-800', text: '删除中' },
-      6: { color: 'bg-gray-100 text-gray-500', text: '已删除' }
+      6: { color: 'bg-gray-100 text-gray-500', text: '已删除' },
+      7: { color: 'bg-purple-100 text-purple-800', text: '已暂停' }
     };
     
     // 如果是字符串状态，转换为对应的数字代码
@@ -127,7 +128,8 @@ export default function ContainersPage() {
         'STOPPED': 3,
         'ERROR': 4,
         'DELETING': 5,
-        'DELETED': 6
+        'DELETED': 6,
+        'SUSPENDED': 7
       };
       statusCode = stringToCodeMap[status] || 1; // 默认为创建中
     }

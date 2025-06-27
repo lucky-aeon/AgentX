@@ -161,7 +161,8 @@ export const CONTAINER_STATUSES = {
   STOPPED: { code: 3, description: "已停止" },
   ERROR: { code: 4, description: "错误状态" },
   DELETING: { code: 5, description: "删除中" },
-  DELETED: { code: 6, description: "已删除" }
+  DELETED: { code: 6, description: "已删除" },
+  SUSPENDED: { code: 7, description: "已暂停" }
 };
 
 export const CONTAINER_TYPES = {

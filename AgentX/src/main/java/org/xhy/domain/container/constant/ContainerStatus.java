@@ -13,7 +13,9 @@ public enum ContainerStatus {
     /** 删除中 */
     DELETING(5, "删除中"),
     /** 已删除 */
-    DELETED(6, "已删除");
+    DELETED(6, "已删除"),
+    /** 已暂停 */
+    SUSPENDED(7, "已暂停");
 
     private final Integer code;
     private final String description;
