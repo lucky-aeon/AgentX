@@ -27,7 +27,7 @@ import java.util.List;
 public class ContainerAppService {
 
     private static final Logger logger = LoggerFactory.getLogger(ContainerAppService.class);
-    private static final String USER_VOLUME_BASE_PATH = "/docker/users";
+    private static final String USER_VOLUME_BASE_PATH = System.getProperty("user.dir") + "/docker-volumes/users";
 
     private final ContainerDomainService containerDomainService;
     private final ContainerTemplateDomainService templateDomainService;
@@ -327,7 +327,17 @@ public class ContainerAppService {
         if (!directory.exists()) {
             boolean created = directory.mkdirs();
             if (!created) {
-                throw new BusinessException("创建用户数据目录失败: " + volumePath);
+                logger.warn("无法创建用户数据目录: {}，尝试使用临时目录", volumePath);
+                // 如果无法创建指定目录，使用临时目录
+                String tempVolumePath = System.getProperty("java.io.tmpdir") + "/agentx-docker-volumes/users/" + userId;
+                File tempDirectory = new File(tempVolumePath);
+                if (!tempDirectory.exists()) {
+                    boolean tempCreated = tempDirectory.mkdirs();
+                    if (!tempCreated) {
+                        throw new BusinessException("创建用户数据目录失败: " + tempVolumePath);
+                    }
+                }
+                return tempVolumePath;
             }
         }
         

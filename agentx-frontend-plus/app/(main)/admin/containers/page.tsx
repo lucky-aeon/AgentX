@@ -118,7 +118,21 @@ export default function ContainersPage() {
       6: { color: 'bg-gray-100 text-gray-500', text: '已删除' }
     };
     
-    const statusInfo = statusMap[status?.code] || statusMap[4];
+    // 如果是字符串状态，转换为对应的数字代码
+    let statusCode = status?.code;
+    if (typeof status === 'string') {
+      const stringToCodeMap: { [key: string]: number } = {
+        'CREATING': 1,
+        'RUNNING': 2,
+        'STOPPED': 3,
+        'ERROR': 4,
+        'DELETING': 5,
+        'DELETED': 6
+      };
+      statusCode = stringToCodeMap[status] || 1; // 默认为创建中
+    }
+    
+    const statusInfo = statusMap[statusCode] || statusMap[1]; // 默认为创建中，而不是错误状态
     return (
       <Badge className={statusInfo.color}>
         {statusInfo.text}

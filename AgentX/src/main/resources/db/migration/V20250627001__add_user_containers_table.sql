@@ -21,16 +21,6 @@ CREATE TABLE user_containers (
     deleted_at TIMESTAMP NULL
 );
 
--- 创建索引
-CREATE INDEX idx_user_containers_user_id ON user_containers(user_id);
-CREATE INDEX idx_user_containers_type ON user_containers(type);
-CREATE INDEX idx_user_containers_status ON user_containers(status);
-CREATE INDEX idx_user_containers_docker_id ON user_containers(docker_container_id);
-CREATE UNIQUE INDEX idx_user_containers_external_port ON user_containers(external_port) WHERE external_port IS NOT NULL;
-CREATE INDEX idx_user_containers_created_at ON user_containers(created_at);
-
--- 为用户容器添加唯一约束（每个用户只能有一个用户容器）
-CREATE UNIQUE INDEX idx_user_containers_user_type ON user_containers(user_id, type) WHERE type = 1;
 
 -- 添加表注释
 COMMENT ON TABLE user_containers IS '用户容器表';
