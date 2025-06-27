@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:github.com)",
+      "Bash(grep:*)",
+      "Bash(rm:*)",
+      "Bash(mvn clean compile:*)",
+      "Bash(find:*)",
+      "Bash(mvn:*)",
+      "Bash(mv:*)",
+      "Bash(rg:*)"
+    ],
+    "deny": []
+  }
+}

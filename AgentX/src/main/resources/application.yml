@@ -36,6 +36,7 @@ spring:
 mybatis-plus:
   mapper-locations: classpath*:/mapper/**/*.xml
   type-aliases-package: org.xhy.domain
+  type-handlers-package: org.xhy.infrastructure.converter
   configuration:
     map-underscore-to-camel-case: true
     cache-enabled: false
