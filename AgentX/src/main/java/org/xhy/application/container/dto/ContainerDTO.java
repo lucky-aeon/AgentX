@@ -10,6 +10,7 @@ public class ContainerDTO {
     private String id;
     private String name;
     private String userId;
+    private String userNickname;
     private ContainerType type;
     private ContainerStatus status;
     private String dockerContainerId;
@@ -21,6 +22,7 @@ public class ContainerDTO {
     private Double memoryUsage;
     private String volumePath;
     private String errorMessage;
+    private LocalDateTime lastAccessedAt;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -46,6 +48,14 @@ public class ContainerDTO {
 
     public void setUserId(String userId) {
         this.userId = userId;
+    }
+
+    public String getUserNickname() {
+        return userNickname;
+    }
+
+    public void setUserNickname(String userNickname) {
+        this.userNickname = userNickname;
     }
 
     public ContainerType getType() {
@@ -134,6 +144,14 @@ public class ContainerDTO {
 
     public void setErrorMessage(String errorMessage) {
         this.errorMessage = errorMessage;
+    }
+
+    public LocalDateTime getLastAccessedAt() {
+        return lastAccessedAt;
+    }
+
+    public void setLastAccessedAt(LocalDateTime lastAccessedAt) {
+        this.lastAccessedAt = lastAccessedAt;
     }
 
     public LocalDateTime getCreatedAt() {

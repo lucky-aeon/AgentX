@@ -475,6 +475,7 @@ export default function ContainersPage() {
                 <TableHead>状态</TableHead>
                 <TableHead>端口映射</TableHead>
                 <TableHead>资源使用率</TableHead>
+                <TableHead>最后使用</TableHead>
                 <TableHead>创建时间</TableHead>
                 <TableHead>操作</TableHead>
               </TableRow>
@@ -487,7 +488,12 @@ export default function ContainersPage() {
                       <div className="font-medium">{container.name}</div>
                       <div className="text-sm text-gray-500">{container.image}</div>
                       {container.userId && (
-                        <div className="text-xs text-gray-400">用户: {container.userId.substring(0, 8)}...</div>
+                        <div className="text-xs text-gray-400">
+                          用户: {container.userNickname || container.userId.substring(0, 8) + '...'}
+                          {container.userNickname && (
+                            <span className="ml-1 text-gray-500">({container.userId.substring(0, 8)}...)</span>
+                          )}
+                        </div>
                       )}
                       {container.errorMessage && (
                         <div className="text-xs text-red-500 mt-1">{container.errorMessage}</div>
@@ -521,6 +527,17 @@ export default function ContainersPage() {
                       )}
                       {(!container.cpuUsage && !container.memoryUsage) && (
                         <div className="text-gray-400">-</div>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="text-sm">
+                      {container.lastAccessedAt ? (
+                        <span className="text-blue-600">
+                          {formatDate(container.lastAccessedAt)}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400">从未使用</span>
                       )}
                     </div>
                   </TableCell>

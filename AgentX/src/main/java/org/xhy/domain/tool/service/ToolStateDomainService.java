@@ -4,7 +4,6 @@ import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.xhy.domain.tool.constant.ToolStatus;
 import org.xhy.domain.tool.model.ToolEntity;
 import org.xhy.domain.tool.repository.ToolRepository;
@@ -112,7 +111,6 @@ public class ToolStateDomainService {
      * @param tool 要处理的工具。
      * @param approved 审核结果，true表示批准，false表示拒绝。
      * @return 返回审核后的工具ID，方便调用方进行后续处理 */
-    @Transactional // 确保状态更新和可能的后续操作在事务中
     public String manualReviewComplete(ToolEntity tool, boolean approved) {
         if (tool == null) {
             throw new BusinessException("工具不存在");

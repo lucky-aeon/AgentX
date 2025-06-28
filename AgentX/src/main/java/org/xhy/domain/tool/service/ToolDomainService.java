@@ -8,7 +8,6 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.xhy.domain.tool.constant.ToolStatus;
 import org.xhy.domain.tool.model.ToolEntity;
 import org.xhy.domain.tool.model.ToolVersionEntity;
@@ -55,7 +54,6 @@ public class ToolDomainService {
      *
      * @param toolEntity 工具实体
      * @return 创建后的工具实体 */
-    @Transactional
     public ToolEntity createTool(ToolEntity toolEntity) {
         // 设置初始状态
         toolEntity.setStatus(ToolStatus.WAITING_REVIEW);
@@ -132,7 +130,6 @@ public class ToolDomainService {
         return toolEntity;
     }
 
-    @Transactional
     public void deleteTool(String toolId, String userId) {
 
         // 删除工具

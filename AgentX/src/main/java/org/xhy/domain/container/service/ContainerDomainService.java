@@ -5,7 +5,6 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.xhy.domain.container.constant.ContainerStatus;
 import org.xhy.domain.container.constant.ContainerType;
 import org.xhy.domain.container.model.ContainerEntity;
@@ -36,7 +35,6 @@ public class ContainerDomainService {
      * @param internalPort 内部端口
      * @param volumePath 数据卷路径
      * @return 容器实体 */
-    @Transactional
     public ContainerEntity createUserContainer(String userId, String containerName, 
                                              String image, Integer internalPort, String volumePath) {
         // 检查用户是否已有容器
@@ -71,7 +69,6 @@ public class ContainerDomainService {
      * @param image 镜像名称
      * @param internalPort 内部端口
      * @return 容器实体 */
-    @Transactional
     public ContainerEntity createReviewContainer(String userId, String containerName, 
                                                 String image, Integer internalPort) {
         // 分配外部端口
@@ -127,7 +124,6 @@ public class ContainerDomainService {
      * @param status 新状态
      * @param operator 操作者
      * @param dockerContainerId Docker容器ID（可选） */
-    @Transactional
     public void updateContainerStatus(String containerId, ContainerStatus status, 
                                     Operator operator, String dockerContainerId) {
         ContainerEntity container = containerRepository.selectById(containerId);
@@ -148,7 +144,6 @@ public class ContainerDomainService {
      * @param containerId 容器ID
      * @param ipAddress IP地址
      * @param operator 操作者 */
-    @Transactional
     public void updateContainerIpAddress(String containerId, String ipAddress, Operator operator) {
         ContainerEntity container = containerRepository.selectById(containerId);
         if (container == null) {
@@ -159,12 +154,25 @@ public class ContainerDomainService {
         containerRepository.updateById(container);
     }
 
+    /** 更新容器最后访问时间
+     * 
+     * @param containerId 容器ID
+     * @param lastAccessedAt 最后访问时间 */
+    public void updateLastAccessTime(String containerId, LocalDateTime lastAccessedAt) {
+        ContainerEntity container = containerRepository.selectById(containerId);
+        if (container == null) {
+            throw new BusinessException("容器不存在");
+        }
+
+        container.setLastAccessedAt(lastAccessedAt);
+        containerRepository.updateById(container);
+    }
+
     /** 更新容器资源使用率
      * 
      * @param containerId 容器ID
      * @param cpuUsage CPU使用率
      * @param memoryUsage 内存使用率 */
-    @Transactional
     public void updateResourceUsage(String containerId, Double cpuUsage, Double memoryUsage) {
         ContainerEntity container = containerRepository.selectById(containerId);
         if (container == null) {
@@ -180,7 +188,6 @@ public class ContainerDomainService {
      * @param containerId 容器ID
      * @param errorMessage 错误信息
      * @param operator 操作者 */
-    @Transactional
     public void markContainerError(String containerId, String errorMessage, Operator operator) {
         ContainerEntity container = containerRepository.selectById(containerId);
         if (container == null) {
@@ -195,7 +202,6 @@ public class ContainerDomainService {
      * 
      * @param containerId 容器ID
      * @param operator 操作者 */
-    @Transactional
     public void deleteContainer(String containerId, Operator operator) {
         ContainerEntity container = containerRepository.selectById(containerId);
         if (container == null) {
@@ -210,7 +216,6 @@ public class ContainerDomainService {
     /** 物理删除容器记录
      * 
      * @param containerId 容器ID */
-    @Transactional
     public void physicalDeleteContainer(String containerId) {
         containerRepository.deleteById(containerId);
     }
@@ -218,7 +223,6 @@ public class ContainerDomainService {
     /** 更新容器最后访问时间
      * 
      * @param containerId 容器ID */
-    @Transactional
     public void updateContainerLastAccessed(String containerId) {
         LambdaUpdateWrapper<ContainerEntity> updateWrapper = Wrappers.<ContainerEntity>lambdaUpdate()
                 .eq(ContainerEntity::getId, containerId)

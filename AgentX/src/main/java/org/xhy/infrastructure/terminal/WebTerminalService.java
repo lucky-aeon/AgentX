@@ -9,9 +9,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
+import org.xhy.domain.container.constant.ContainerStatus;
 import org.xhy.domain.container.model.ContainerEntity;
 import org.xhy.domain.container.service.ContainerDomainService;
 import org.xhy.infrastructure.docker.DockerService;
+import org.xhy.infrastructure.entity.Operator;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -66,6 +68,18 @@ public class WebTerminalService {
                 try {
                     dockerService.startContainer(dockerContainerId);
                     sendMessage(webSocketSession, "容器启动成功\r\n");
+                    
+                    // 更新数据库中的容器状态
+                    try {
+                        containerDomainService.updateContainerStatus(containerId, 
+                            ContainerStatus.RUNNING, 
+                            Operator.ADMIN, 
+                            dockerContainerId);
+                        logger.info("已同步更新数据库中容器状态: {} -> RUNNING", containerId);
+                    } catch (Exception updateException) {
+                        logger.warn("更新数据库容器状态失败，但容器已成功启动: {}", containerId, updateException);
+                    }
+                    
                     // 等待容器完全启动
                     Thread.sleep(2000);
                 } catch (Exception e) {
@@ -79,6 +93,15 @@ public class WebTerminalService {
             if (!dockerService.canExecuteCommands(dockerContainerId)) {
                 sendMessage(webSocketSession, "错误: 容器启动后仍无法连接\r\n");
                 return false;
+            }
+
+            // 更新容器最后访问时间
+            try {
+                containerEntity.updateLastAccessedAt();
+                containerDomainService.updateLastAccessTime(containerId, containerEntity.getLastAccessedAt());
+                logger.info("已更新容器最后访问时间: {}", containerId);
+            } catch (Exception e) {
+                logger.warn("更新容器最后访问时间失败: {}", containerId, e);
             }
 
             // 创建终端会话（使用Docker容器ID）

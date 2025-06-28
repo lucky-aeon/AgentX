@@ -2,7 +2,6 @@ package org.xhy.domain.container.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.xhy.domain.container.model.ContainerTemplateEntity;
 import org.xhy.domain.container.repository.ContainerTemplateRepository;
 import org.xhy.infrastructure.entity.Operator;
@@ -28,7 +27,6 @@ public class ContainerTemplateDomainService {
      * @param template 模板实体
      * @param operator 操作者
      * @return 创建的模板 */
-    @Transactional
     public ContainerTemplateEntity createTemplate(ContainerTemplateEntity template, Operator operator) {
         // 验证模板有效性
         if (!template.isValid()) {
@@ -63,7 +61,6 @@ public class ContainerTemplateDomainService {
      * @param updates 更新内容
      * @param operator 操作者
      * @return 更新后的模板 */
-    @Transactional
     public ContainerTemplateEntity updateTemplate(String templateId, ContainerTemplateEntity updates, 
                                                  Operator operator) {
         ContainerTemplateEntity existingTemplate = templateRepository.selectById(templateId);
@@ -99,7 +96,6 @@ public class ContainerTemplateDomainService {
      * 
      * @param templateId 模板ID
      * @param operator 操作者 */
-    @Transactional
     public void deleteTemplate(String templateId, Operator operator) {
         ContainerTemplateEntity template = templateRepository.selectById(templateId);
         if (template == null) {
@@ -117,7 +113,6 @@ public class ContainerTemplateDomainService {
      * @param templateId 模板ID
      * @param enabled 是否启用
      * @param operator 操作者 */
-    @Transactional
     public void toggleTemplateStatus(String templateId, boolean enabled, Operator operator) {
         ContainerTemplateEntity template = templateRepository.selectById(templateId);
         if (template == null) {
@@ -138,7 +133,6 @@ public class ContainerTemplateDomainService {
      * 
      * @param templateId 模板ID
      * @param operator 操作者 */
-    @Transactional
     public void setDefaultTemplate(String templateId, Operator operator) {
         ContainerTemplateEntity template = templateRepository.selectById(templateId);
         if (template == null) {

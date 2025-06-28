@@ -13,6 +13,8 @@ import org.xhy.domain.container.model.ContainerTemplate;
 import org.xhy.domain.container.model.ContainerTemplateEntity;
 import org.xhy.domain.container.service.ContainerDomainService;
 import org.xhy.domain.container.service.ContainerTemplateDomainService;
+import org.xhy.domain.user.service.UserDomainService;
+import org.xhy.domain.user.model.UserEntity;
 import org.xhy.infrastructure.docker.DockerService;
 import org.xhy.infrastructure.entity.Operator;
 import org.xhy.infrastructure.exception.BusinessException;
@@ -31,13 +33,16 @@ public class ContainerAppService {
 
     private final ContainerDomainService containerDomainService;
     private final ContainerTemplateDomainService templateDomainService;
+    private final UserDomainService userDomainService;
     private final DockerService dockerService;
 
     public ContainerAppService(ContainerDomainService containerDomainService, 
                              ContainerTemplateDomainService templateDomainService,
+                             UserDomainService userDomainService,
                              DockerService dockerService) {
         this.containerDomainService = containerDomainService;
         this.templateDomainService = templateDomainService;
+        this.userDomainService = userDomainService;
         this.dockerService = dockerService;
     }
 
@@ -288,7 +293,34 @@ public class ContainerAppService {
     public Page<ContainerDTO> getContainersPage(Page<ContainerEntity> page, String keyword, 
                                                ContainerStatus status, ContainerType type) {
         Page<ContainerEntity> entityPage = containerDomainService.getContainersPage(page, keyword, status, type);
-        return ContainerAssembler.toDTOPage(entityPage);
+        
+        // 转换为DTO并添加用户昵称信息
+        Page<ContainerDTO> dtoPage = new Page<>(
+                entityPage.getCurrent(),
+                entityPage.getSize(),
+                entityPage.getTotal()
+        );
+        
+        List<ContainerDTO> dtoList = entityPage.getRecords().stream()
+                .map(entity -> {
+                    ContainerDTO dto = ContainerAssembler.toDTO(entity);
+                    // 获取用户昵称
+                    if (entity.getUserId() != null) {
+                        try {
+                            UserEntity user = userDomainService.getUserInfo(entity.getUserId());
+                            if (user != null && user.getNickname() != null) {
+                                dto.setUserNickname(user.getNickname());
+                            }
+                        } catch (Exception e) {
+                            logger.warn("获取用户昵称失败, userId: {}", entity.getUserId(), e);
+                        }
+                    }
+                    return dto;
+                })
+                .collect(java.util.stream.Collectors.toList());
+        
+        dtoPage.setRecords(dtoList);
+        return dtoPage;
     }
 
     /** 获取容器统计信息

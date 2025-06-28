@@ -6,6 +6,7 @@ export interface Container {
   id: string;
   name: string;
   userId: string;
+  userNickname?: string;
   type: ContainerType;
   status: ContainerStatus;
   dockerContainerId?: string;
@@ -17,6 +18,7 @@ export interface Container {
   memoryUsage?: number;
   volumePath?: string;
   errorMessage?: string;
+  lastAccessedAt?: string;
   createdAt: string;
   updatedAt: string;
 }
