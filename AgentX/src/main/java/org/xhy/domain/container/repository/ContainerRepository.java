@@ -49,10 +49,8 @@ public interface ContainerRepository extends MyBatisPlusExtRepository<ContainerE
      * @param status 容器状态
      * @param type 容器类型
      * @return 分页结果 */
-    Page<ContainerEntity> selectPageWithConditions(Page<ContainerEntity> page, 
-                                                  String keyword, 
-                                                  ContainerStatus status, 
-                                                  ContainerType type);
+    Page<ContainerEntity> selectPageWithConditions(Page<ContainerEntity> page, String keyword, ContainerStatus status,
+            ContainerType type);
 
     /** 检查端口是否被占用
      * 

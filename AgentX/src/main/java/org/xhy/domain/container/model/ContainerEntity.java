@@ -196,9 +196,8 @@ public class ContainerEntity extends BaseEntity {
 
     /** 检查容器是否可以操作 */
     public boolean isOperatable() {
-        return this.status != null && 
-               !ContainerStatus.DELETING.equals(this.status) && 
-               !ContainerStatus.DELETED.equals(this.status);
+        return this.status != null && !ContainerStatus.DELETING.equals(this.status)
+                && !ContainerStatus.DELETED.equals(this.status);
     }
 
     /** 检查容器是否已暂停 */
@@ -210,7 +209,6 @@ public class ContainerEntity extends BaseEntity {
     public void updateLastAccessedAt() {
         this.lastAccessedAt = LocalDateTime.now();
     }
-
 
     /** 标记容器为错误状态 */
     public void markError(String errorMessage) {

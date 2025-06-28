@@ -8,15 +8,12 @@ import org.xhy.domain.tool.constant.ToolStatus;
 import org.xhy.domain.tool.model.ToolEntity;
 import org.xhy.domain.tool.repository.ToolRepository;
 import org.xhy.domain.tool.service.state.ToolStateProcessor;
-import org.xhy.domain.tool.service.state.impl.DeployingProcessor;
-import org.xhy.domain.tool.service.state.impl.FetchingToolsProcessor;
 import org.xhy.domain.tool.service.state.impl.GithubUrlValidateProcessor;
 import org.xhy.domain.tool.service.state.impl.ManualReviewProcessor;
 import org.xhy.domain.tool.service.state.impl.PublishingProcessor;
 import org.xhy.domain.tool.service.state.impl.WaitingReviewProcessor;
 import org.xhy.infrastructure.exception.BusinessException;
 import org.xhy.infrastructure.github.GitHubService;
-import org.xhy.infrastructure.mcp_gateway.MCPGatewayService;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -33,7 +30,6 @@ public class ToolStateDomainService {
 
     private final ToolRepository toolRepository;
     private final GitHubService gitHubService;
-    private final MCPGatewayService mcpGatewayService;
 
     private final Map<ToolStatus, ToolStateProcessor> processorMap = new HashMap<>();
     private final ExecutorService executorService;
@@ -42,11 +38,9 @@ public class ToolStateDomainService {
      * 
      * @param toolRepository 工具仓库，用于数据持久化。
      * @param gitHubService GitHub服务，用于与GitHub API交互。 */
-    public ToolStateDomainService(ToolRepository toolRepository, GitHubService gitHubService,
-            MCPGatewayService mcpGatewayService) {
+    public ToolStateDomainService(ToolRepository toolRepository, GitHubService gitHubService) {
         this.toolRepository = toolRepository;
         this.gitHubService = gitHubService;
-        this.mcpGatewayService = mcpGatewayService;
 
         // 创建具有无限队列的固定大小线程池用于异步处理状态转换
         this.executorService = new ThreadPoolExecutor(5, // 核心线程数
@@ -68,9 +62,7 @@ public class ToolStateDomainService {
         // 注册基础状态处理器
         registerProcessor(new WaitingReviewProcessor());
         registerProcessor(new GithubUrlValidateProcessor(gitHubService));
-        // 移除或保留 DeployingProcessor 和 FetchingToolsProcessor 取决于它们是否还在流程中
-        registerProcessor(new DeployingProcessor(mcpGatewayService));
-        registerProcessor(new FetchingToolsProcessor(mcpGatewayService));
+        // DeployingProcessor 和 FetchingToolsProcessor 移到应用层处理
 
         // 移除手动审核状态直接关联PublishingProcessor的注册
         // registerProcessor(ToolStatus.MANUAL_REVIEW,new
@@ -133,6 +125,32 @@ public class ToolStateDomainService {
         }
 
         return toolId;
+    }
+
+    /** 转换工具状态（供应用层调用）
+     * 
+     * @param tool 工具实体
+     * @param targetStatus 目标状态 */
+    public void transitionToStatus(ToolEntity tool, ToolStatus targetStatus) {
+        if (tool == null) {
+            throw new BusinessException("工具不存在");
+        }
+
+        ToolStatus currentStatus = tool.getStatus();
+        if (currentStatus == targetStatus) {
+            logger.debug("工具ID: {} 状态已经是 {}，无需转换。", tool.getId(), targetStatus);
+            return;
+        }
+
+        logger.info("工具ID: {} 状态从 {} 转换为 {}。", tool.getId(), currentStatus, targetStatus);
+        tool.setStatus(targetStatus);
+        toolRepository.updateById(tool);
+
+        // 继续处理新状态（如果有对应的处理器）
+        ToolStateProcessor processor = processorMap.get(targetStatus);
+        if (processor != null) {
+            submitToolForProcessing(tool);
+        }
     }
 
     /** 核心状态处理逻辑。 此方法在executorService的线程中异步执行。

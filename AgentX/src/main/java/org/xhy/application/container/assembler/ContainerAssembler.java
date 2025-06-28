@@ -20,7 +20,7 @@ public class ContainerAssembler {
         if (entity == null) {
             return null;
         }
-        
+
         ContainerDTO dto = new ContainerDTO();
         BeanUtils.copyProperties(entity, dto);
         return dto;
@@ -34,10 +34,8 @@ public class ContainerAssembler {
         if (entities == null || entities.isEmpty()) {
             return Collections.emptyList();
         }
-        
-        return entities.stream()
-                .map(ContainerAssembler::toDTO)
-                .collect(Collectors.toList());
+
+        return entities.stream().map(ContainerAssembler::toDTO).collect(Collectors.toList());
     }
 
     /** 将容器实体分页转换为DTO分页
@@ -45,15 +43,11 @@ public class ContainerAssembler {
      * @param entityPage 容器实体分页
      * @return 容器DTO分页 */
     public static Page<ContainerDTO> toDTOPage(Page<ContainerEntity> entityPage) {
-        Page<ContainerDTO> dtoPage = new Page<>(
-                entityPage.getCurrent(),
-                entityPage.getSize(),
-                entityPage.getTotal()
-        );
-        
+        Page<ContainerDTO> dtoPage = new Page<>(entityPage.getCurrent(), entityPage.getSize(), entityPage.getTotal());
+
         List<ContainerDTO> dtoList = toDTOs(entityPage.getRecords());
         dtoPage.setRecords(dtoList);
-        
+
         return dtoPage;
     }
 }

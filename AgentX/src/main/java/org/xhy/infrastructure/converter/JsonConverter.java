@@ -57,9 +57,10 @@ public class JsonConverter extends BaseTypeHandler<Object> {
         if (json == null || json.trim().isEmpty()) {
             return null;
         }
-        
+
         try {
-            return objectMapper.readValue(json, new TypeReference<Object>() {});
+            return objectMapper.readValue(json, new TypeReference<Object>() {
+            });
         } catch (JsonProcessingException e) {
             logger.error("JSON反序列化失败: {}", json, e);
             return null;

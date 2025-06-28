@@ -13,16 +13,16 @@ public class ContainerConfig {
 
     /** Docker连接配置 */
     private String dockerHost = "unix:///var/run/docker.sock";
-    
+
     /** 用户数据卷基础路径 */
     private String userVolumeBasePath = "/docker/users";
-    
+
     /** 默认MCP网关镜像 */
     private String defaultMcpGatewayImage = "ghcr.io/lucky-aeon/mcp-gateway:latest";
-    
+
     /** 容器监控间隔（毫秒） */
     private long monitorInterval = 300000; // 5分钟
-    
+
     /** 资源使用率更新间隔（毫秒） */
     private long statsUpdateInterval = 120000; // 2分钟
 

@@ -23,11 +23,11 @@ public class ContainerTemplateAssembler {
         if (request == null) {
             return null;
         }
-        
+
         ContainerTemplateEntity entity = new ContainerTemplateEntity();
         BeanUtils.copyProperties(request, entity);
         entity.setCreatedBy(userId);
-        
+
         return entity;
     }
 
@@ -39,10 +39,10 @@ public class ContainerTemplateAssembler {
         if (request == null) {
             return null;
         }
-        
+
         ContainerTemplateEntity entity = new ContainerTemplateEntity();
         BeanUtils.copyProperties(request, entity);
-        
+
         return entity;
     }
 
@@ -54,13 +54,13 @@ public class ContainerTemplateAssembler {
         if (entity == null) {
             return null;
         }
-        
+
         ContainerTemplateDTO dto = new ContainerTemplateDTO();
         BeanUtils.copyProperties(entity, dto);
-        
+
         // 设置完整镜像名称
         dto.setFullImageName(entity.getFullImageName());
-        
+
         return dto;
     }
 
@@ -72,10 +72,8 @@ public class ContainerTemplateAssembler {
         if (entities == null || entities.isEmpty()) {
             return Collections.emptyList();
         }
-        
-        return entities.stream()
-                .map(ContainerTemplateAssembler::toDTO)
-                .collect(Collectors.toList());
+
+        return entities.stream().map(ContainerTemplateAssembler::toDTO).collect(Collectors.toList());
     }
 
     /** 将实体分页结果转换为DTO分页结果
@@ -86,16 +84,13 @@ public class ContainerTemplateAssembler {
         if (entityPage == null) {
             return null;
         }
-        
-        Page<ContainerTemplateDTO> dtoPage = new Page<>(
-                entityPage.getCurrent(),
-                entityPage.getSize(),
-                entityPage.getTotal()
-        );
-        
+
+        Page<ContainerTemplateDTO> dtoPage = new Page<>(entityPage.getCurrent(), entityPage.getSize(),
+                entityPage.getTotal());
+
         List<ContainerTemplateDTO> dtoList = toDTOs(entityPage.getRecords());
         dtoPage.setRecords(dtoList);
-        
+
         return dtoPage;
     }
 }

@@ -33,16 +33,11 @@ public class DockerService {
     public void init() {
         try {
             DefaultDockerClientConfig config = DefaultDockerClientConfig.createDefaultConfigBuilder()
-                    .withDockerHost("unix:///var/run/docker.sock")
-                    .build();
+                    .withDockerHost("unix:///var/run/docker.sock").build();
 
-            ApacheDockerHttpClient httpClient = new ApacheDockerHttpClient.Builder()
-                    .dockerHost(config.getDockerHost())
-                    .sslConfig(config.getSSLConfig())
-                    .maxConnections(100)
-                    .connectionTimeout(Duration.ofSeconds(30))
-                    .responseTimeout(Duration.ofSeconds(45))
-                    .build();
+            ApacheDockerHttpClient httpClient = new ApacheDockerHttpClient.Builder().dockerHost(config.getDockerHost())
+                    .sslConfig(config.getSSLConfig()).maxConnections(100).connectionTimeout(Duration.ofSeconds(30))
+                    .responseTimeout(Duration.ofSeconds(45)).build();
 
             dockerClient = DockerClientImpl.getInstance(config, httpClient);
 
@@ -73,8 +68,8 @@ public class DockerService {
      * @param volumePath 数据卷路径
      * @param userId 用户ID
      * @return Docker容器ID */
-    public String createAndStartContainer(String containerName, ContainerTemplate template, 
-                                        Integer externalPort, String volumePath, String userId) {
+    public String createAndStartContainer(String containerName, ContainerTemplate template, Integer externalPort,
+            String volumePath, String userId) {
         try {
             // 首先拉取镜像
             pullImageIfNotExists(template.getImage());
@@ -93,16 +88,10 @@ public class DockerService {
 
             // 创建容器
             CreateContainerResponse container = dockerClient.createContainerCmd(template.getImage())
-                    .withName(containerName)
-                    .withExposedPorts(exposedPort)
-                    .withPortBindings(portBindings)
-                    .withEnv(envVars)
-                    .withBinds(bind)
-                    .withRestartPolicy(RestartPolicy.unlessStoppedRestart())
+                    .withName(containerName).withExposedPorts(exposedPort).withPortBindings(portBindings)
+                    .withEnv(envVars).withBinds(bind).withRestartPolicy(RestartPolicy.unlessStoppedRestart())
                     .withNetworkMode(template.getNetworkMode())
-                    .withHostConfig(HostConfig.newHostConfig()
-                            .withPortBindings(portBindings)
-                            .withBinds(bind)
+                    .withHostConfig(HostConfig.newHostConfig().withPortBindings(portBindings).withBinds(bind)
                             .withMemory(template.getMemoryLimit() * 1024L * 1024L) // MB to bytes
                             .withCpuQuota(Math.round(template.getCpuLimit() * 100000L)) // CPU限制
                             .withRestartPolicy(RestartPolicy.unlessStoppedRestart()))
@@ -128,8 +117,7 @@ public class DockerService {
      * @param containerId Docker容器ID */
     public void stopContainer(String containerId) {
         try {
-            dockerClient.stopContainerCmd(containerId)
-                    .withTimeout(10) // 10秒超时
+            dockerClient.stopContainerCmd(containerId).withTimeout(10) // 10秒超时
                     .exec();
             logger.info("容器已停止: {}", containerId);
         } catch (DockerException e) {
@@ -166,9 +154,7 @@ public class DockerService {
                 }
             }
 
-            dockerClient.removeContainerCmd(containerId)
-                    .withForce(force)
-                    .exec();
+            dockerClient.removeContainerCmd(containerId).withForce(force).exec();
             logger.info("容器已删除: {}", containerId);
         } catch (DockerException e) {
             logger.error("删除容器失败: {}", containerId, e);
@@ -183,13 +169,13 @@ public class DockerService {
     public ContainerInfo getContainerInfo(String containerId) {
         try {
             InspectContainerResponse response = dockerClient.inspectContainerCmd(containerId).exec();
-            
+
             ContainerInfo info = new ContainerInfo();
             info.setContainerId(containerId);
             info.setName(response.getName());
             info.setState(response.getState());
             info.setNetworkSettings(response.getNetworkSettings());
-            
+
             return info;
         } catch (DockerException e) {
             logger.error("获取容器信息失败: {}", containerId, e);
@@ -233,37 +219,35 @@ public class DockerService {
             // 使用同步方式获取统计信息
             final Statistics[] result = new Statistics[1];
             try {
-                dockerClient.statsCmd(containerId)
-                        .withNoStream(true)
+                dockerClient.statsCmd(containerId).withNoStream(true)
                         .exec(new com.github.dockerjava.api.async.ResultCallback.Adapter<Statistics>() {
                             @Override
                             public void onNext(Statistics stats) {
                                 result[0] = stats;
                             }
-                        })
-                        .awaitCompletion();
+                        }).awaitCompletion();
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 throw new BusinessException("获取容器统计信息被中断");
             }
-            
+
             Statistics stats = result[0];
 
             ContainerStats containerStats = new ContainerStats();
             containerStats.setContainerId(containerId);
-            
+
             // 计算CPU使用率
             if (stats.getCpuStats() != null && stats.getPreCpuStats() != null) {
                 double cpuUsage = calculateCpuUsage(stats);
                 containerStats.setCpuUsage(cpuUsage);
             }
-            
+
             // 计算内存使用率
             if (stats.getMemoryStats() != null) {
                 double memoryUsage = calculateMemoryUsage(stats);
                 containerStats.setMemoryUsage(memoryUsage);
             }
-            
+
             return containerStats;
         } catch (DockerException e) {
             logger.error("获取容器统计信息失败: {}", containerId, e);
@@ -275,16 +259,12 @@ public class DockerService {
     private void pullImageIfNotExists(String image) {
         try {
             // 检查镜像是否存在
-            List<Image> images = dockerClient.listImagesCmd()
-                    .withImageNameFilter(image)
-                    .exec();
-            
+            List<Image> images = dockerClient.listImagesCmd().withImageNameFilter(image).exec();
+
             if (images.isEmpty()) {
                 logger.info("镜像不存在，开始拉取: {}", image);
                 try {
-                    dockerClient.pullImageCmd(image)
-                            .exec(new CustomPullImageResultCallback())
-                            .awaitCompletion();
+                    dockerClient.pullImageCmd(image).exec(new CustomPullImageResultCallback()).awaitCompletion();
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     throw new BusinessException("镜像拉取被中断");
@@ -300,37 +280,35 @@ public class DockerService {
     /** 构建环境变量数组 */
     private String[] buildEnvironmentVariables(ContainerTemplate template, String userId) {
         Map<String, String> envMap = new HashMap<>();
-        
+
         // 添加模板中的环境变量
         if (template.getEnvironment() != null) {
             envMap.putAll(template.getEnvironment());
         }
-        
+
         // 添加用户相关的环境变量
         envMap.put("USER_ID", userId);
         envMap.put("TZ", "Asia/Shanghai");
-        
-        return envMap.entrySet().stream()
-                .map(entry -> entry.getKey() + "=" + entry.getValue())
-                .toArray(String[]::new);
+
+        return envMap.entrySet().stream().map(entry -> entry.getKey() + "=" + entry.getValue()).toArray(String[]::new);
     }
 
     /** 计算CPU使用率 */
     private double calculateCpuUsage(Statistics stats) {
         CpuStatsConfig cpuStats = stats.getCpuStats();
         CpuStatsConfig preCpuStats = stats.getPreCpuStats();
-        
+
         if (cpuStats == null || preCpuStats == null) {
             return 0.0;
         }
-        
+
         Long cpuDelta = cpuStats.getCpuUsage().getTotalUsage() - preCpuStats.getCpuUsage().getTotalUsage();
         Long systemDelta = cpuStats.getSystemCpuUsage() - preCpuStats.getSystemCpuUsage();
-        
+
         if (systemDelta > 0 && cpuDelta > 0) {
             return (double) cpuDelta / systemDelta * cpuStats.getOnlineCpus() * 100.0;
         }
-        
+
         return 0.0;
     }
 
@@ -340,7 +318,7 @@ public class DockerService {
         if (memoryStats == null || memoryStats.getLimit() == null || memoryStats.getUsage() == null) {
             return 0.0;
         }
-        
+
         return (double) memoryStats.getUsage() / memoryStats.getLimit() * 100.0;
     }
 
@@ -393,13 +371,9 @@ public class DockerService {
     public String getContainerLogs(String containerId, Integer lines, boolean follow) {
         try {
             StringBuilder logs = new StringBuilder();
-            
-            dockerClient.logContainerCmd(containerId)
-                    .withStdOut(true)
-                    .withStdErr(true)
-                    .withTimestamps(true)
-                    .withTail(lines)
-                    .withFollowStream(follow)
+
+            dockerClient.logContainerCmd(containerId).withStdOut(true).withStdErr(true).withTimestamps(true)
+                    .withTail(lines).withFollowStream(follow)
                     .exec(new com.github.dockerjava.api.async.ResultCallback.Adapter<Frame>() {
                         @Override
                         public void onNext(Frame frame) {
@@ -408,7 +382,7 @@ public class DockerService {
                             }
                         }
                     }).awaitCompletion();
-                    
+
             return logs.toString();
         } catch (Exception e) {
             logger.error("获取容器日志失败: {}", containerId, e);
@@ -423,25 +397,20 @@ public class DockerService {
      * @return 执行结果 */
     public String executeCommand(String containerId, String[] command) {
         try {
-            String execId = dockerClient.execCreateCmd(containerId)
-                    .withAttachStdout(true)
-                    .withAttachStderr(true)
-                    .withCmd(command)
-                    .exec()
-                    .getId();
+            String execId = dockerClient.execCreateCmd(containerId).withAttachStdout(true).withAttachStderr(true)
+                    .withCmd(command).exec().getId();
 
             StringBuilder output = new StringBuilder();
-            
-            dockerClient.execStartCmd(execId)
-                    .exec(new com.github.dockerjava.api.async.ResultCallback.Adapter<Frame>() {
-                        @Override
-                        public void onNext(Frame frame) {
-                            if (frame != null && frame.getPayload() != null) {
-                                output.append(new String(frame.getPayload()));
-                            }
-                        }
-                    }).awaitCompletion();
-                    
+
+            dockerClient.execStartCmd(execId).exec(new com.github.dockerjava.api.async.ResultCallback.Adapter<Frame>() {
+                @Override
+                public void onNext(Frame frame) {
+                    if (frame != null && frame.getPayload() != null) {
+                        output.append(new String(frame.getPayload()));
+                    }
+                }
+            }).awaitCompletion();
+
             return output.toString();
         } catch (Exception e) {
             logger.error("容器命令执行失败: {} -> {}", containerId, String.join(" ", command), e);

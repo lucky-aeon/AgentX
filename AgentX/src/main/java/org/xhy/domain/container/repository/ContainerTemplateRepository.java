@@ -46,10 +46,8 @@ public interface ContainerTemplateRepository extends MyBatisPlusExtRepository<Co
      * @param type 模板类型
      * @param enabled 是否启用
      * @return 分页结果 */
-    Page<ContainerTemplateEntity> selectPageWithConditions(Page<ContainerTemplateEntity> page, 
-                                                          String keyword, 
-                                                          String type, 
-                                                          Boolean enabled);
+    Page<ContainerTemplateEntity> selectPageWithConditions(Page<ContainerTemplateEntity> page, String keyword,
+            String type, Boolean enabled);
 
     /** 根据创建者查找模板
      * 

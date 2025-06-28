@@ -90,7 +90,7 @@ public class AdminContainerTemplateController {
      * @return 更新后的模板信息 */
     @PutMapping("/{templateId}")
     public Result<ContainerTemplateDTO> updateTemplate(@PathVariable String templateId,
-                                                      @RequestBody @Validated UpdateContainerTemplateRequest request) {
+            @RequestBody @Validated UpdateContainerTemplateRequest request) {
         ContainerTemplateDTO template = templateAppService.adminUpdateTemplate(templateId, request);
         return Result.success(template);
     }
@@ -111,8 +111,7 @@ public class AdminContainerTemplateController {
      * @param enabled 是否启用
      * @return 操作结果 */
     @PutMapping("/{templateId}/status")
-    public Result<Void> toggleTemplateStatus(@PathVariable String templateId, 
-                                            @RequestParam Boolean enabled) {
+    public Result<Void> toggleTemplateStatus(@PathVariable String templateId, @RequestParam Boolean enabled) {
         templateAppService.adminToggleTemplateStatus(templateId, enabled);
         return Result.success();
     }

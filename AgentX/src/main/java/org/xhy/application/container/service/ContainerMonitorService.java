@@ -25,8 +25,7 @@ public class ContainerMonitorService {
         this.dockerService = dockerService;
     }
 
-    /** 定期检查容器状态
-     * 每5分钟执行一次 */
+    /** 定期检查容器状态 每5分钟执行一次 */
     @Scheduled(fixedRate = 300000) // 5分钟
     public void checkContainerStatus() {
         try {
@@ -43,8 +42,7 @@ public class ContainerMonitorService {
         }
     }
 
-    /** 更新容器资源使用率
-     * 每2分钟执行一次 */
+    /** 更新容器资源使用率 每2分钟执行一次 */
     @Scheduled(fixedRate = 120000) // 2分钟
     public void updateContainerStats() {
         try {
@@ -71,8 +69,7 @@ public class ContainerMonitorService {
             // 检查Docker容器是否存在
             if (!dockerService.containerExists(container.getDockerContainerId())) {
                 logger.warn("Docker容器不存在: {}", container.getDockerContainerId());
-                containerDomainService.markContainerError(
-                        container.getId(), "Docker容器不存在", null);
+                containerDomainService.markContainerError(container.getId(), "Docker容器不存在", null);
                 return;
             }
 
@@ -82,10 +79,8 @@ public class ContainerMonitorService {
 
             // 如果状态不一致，更新数据库中的状态
             if (!expectedStatus.equals(container.getStatus())) {
-                logger.info("容器状态不一致，更新: {} {} -> {}", 
-                           container.getName(), container.getStatus(), expectedStatus);
-                containerDomainService.updateContainerStatus(
-                        container.getId(), expectedStatus, null, null);
+                logger.info("容器状态不一致，更新: {} {} -> {}", container.getName(), container.getStatus(), expectedStatus);
+                containerDomainService.updateContainerStatus(container.getId(), expectedStatus, null, null);
             }
 
         } catch (Exception e) {
@@ -102,8 +97,8 @@ public class ContainerMonitorService {
 
             DockerService.ContainerStats stats = dockerService.getContainerStats(container.getDockerContainerId());
             if (stats != null) {
-                containerDomainService.updateResourceUsage(
-                        container.getId(), stats.getCpuUsage(), stats.getMemoryUsage());
+                containerDomainService.updateResourceUsage(container.getId(), stats.getCpuUsage(),
+                        stats.getMemoryUsage());
             }
 
         } catch (Exception e) {
@@ -114,17 +109,17 @@ public class ContainerMonitorService {
     /** 将Docker状态映射到容器状态 */
     private ContainerStatus mapDockerStatusToContainerStatus(String dockerStatus) {
         switch (dockerStatus.toLowerCase()) {
-            case "running":
+            case "running" :
                 return ContainerStatus.RUNNING;
-            case "exited":
-            case "stopped":
+            case "exited" :
+            case "stopped" :
                 return ContainerStatus.STOPPED;
-            case "created":
+            case "created" :
                 return ContainerStatus.CREATING;
-            case "dead":
-            case "removing":
+            case "dead" :
+            case "removing" :
                 return ContainerStatus.ERROR;
-            default:
+            default :
                 return ContainerStatus.ERROR;
         }
     }

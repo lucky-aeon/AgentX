@@ -244,10 +244,8 @@ public class ContainerTemplateEntity extends BaseEntity {
 
     /** 验证模板配置是否有效 */
     public boolean isValid() {
-        return name != null && !name.trim().isEmpty() 
-            && image != null && !image.trim().isEmpty()
-            && internalPort != null && internalPort > 0 && internalPort <= 65535
-            && cpuLimit != null && cpuLimit > 0
-            && memoryLimit != null && memoryLimit > 0;
+        return name != null && !name.trim().isEmpty() && image != null && !image.trim().isEmpty()
+                && internalPort != null && internalPort > 0 && internalPort <= 65535 && cpuLimit != null && cpuLimit > 0
+                && memoryLimit != null && memoryLimit > 0;
     }
 }

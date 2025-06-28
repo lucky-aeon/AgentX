@@ -10,6 +10,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.stereotype.Service;
 import org.xhy.domain.tool.constant.ToolStatus;
 import org.xhy.domain.tool.model.ToolEntity;
+import org.xhy.domain.tool.model.ToolOperationResult;
 import org.xhy.domain.tool.model.ToolVersionEntity;
 import org.xhy.domain.tool.model.UserToolEntity;
 import org.xhy.domain.tool.repository.ToolRepository;
@@ -36,16 +37,13 @@ public class ToolDomainService {
 
     private final ToolRepository toolRepository;
     private final ToolVersionRepository toolVersionRepository;
-    private final ToolStateDomainService toolStateService;
     private final UserToolRepository userToolRepository;
     private final UserRepository userRepository;
 
     public ToolDomainService(ToolRepository toolRepository, ToolVersionRepository toolVersionRepository,
-            ToolStateDomainService toolStateService, UserToolRepository userToolRepository,
-            UserRepository userRepository) {
+            UserToolRepository userToolRepository, UserRepository userRepository) {
         this.toolRepository = toolRepository;
         this.toolVersionRepository = toolVersionRepository;
-        this.toolStateService = toolStateService;
         this.userToolRepository = userToolRepository;
         this.userRepository = userRepository;
     }
@@ -53,8 +51,8 @@ public class ToolDomainService {
     /** 创建工具
      *
      * @param toolEntity 工具实体
-     * @return 创建后的工具实体 */
-    public ToolEntity createTool(ToolEntity toolEntity) {
+     * @return 工具操作结果 */
+    public ToolOperationResult createTool(ToolEntity toolEntity) {
         // 设置初始状态
         toolEntity.setStatus(ToolStatus.WAITING_REVIEW);
 
@@ -64,10 +62,8 @@ public class ToolDomainService {
         // 保存工具
         toolRepository.checkInsert(toolEntity);
 
-        // 提交到状态流转服务进行处理
-        toolStateService.submitToolForProcessing(toolEntity);
-
-        return toolEntity;
+        // 返回需要状态转换的结果
+        return ToolOperationResult.withTransition(toolEntity);
     }
 
     public ToolEntity getTool(String toolId, String userId) {
@@ -94,7 +90,7 @@ public class ToolDomainService {
         return toolRepository.selectById(toolId);
     }
 
-    public ToolEntity updateTool(ToolEntity toolEntity) {
+    public ToolOperationResult updateTool(ToolEntity toolEntity) {
         /** 修改 name/description/icon/labels只触发人工审核状态 修改 upload_url/upload_command触发整个状态扭转 */
         // 获取原工具信息
         ToolEntity oldTool = toolRepository.selectById(toolEntity.getId());
@@ -122,12 +118,8 @@ public class ToolDomainService {
                 .eq(toolEntity.needCheckUserId(), ToolEntity::getUserId, toolEntity.getUserId());
         toolRepository.update(toolEntity, wrapper);
 
-        // 如果需要状态流转，提交到状态流转服务
-        if (needStateTransition) {
-            toolStateService.submitToolForProcessing(toolEntity);
-        }
-
-        return toolEntity;
+        // 返回操作结果
+        return ToolOperationResult.of(toolEntity, needStateTransition);
     }
 
     public void deleteTool(String toolId, String userId) {
@@ -310,10 +302,24 @@ public class ToolDomainService {
      * @param toolId 工具ID
      * @param isGlobal 是否为全局工具 */
     public void updateToolGlobalStatus(String toolId, Boolean isGlobal) {
-        LambdaUpdateWrapper<ToolEntity> wrapper = Wrappers.<ToolEntity>lambdaUpdate()
-                .eq(ToolEntity::getId, toolId)
+        LambdaUpdateWrapper<ToolEntity> wrapper = Wrappers.<ToolEntity>lambdaUpdate().eq(ToolEntity::getId, toolId)
                 .set(ToolEntity::getIsGlobal, isGlobal);
-        
+
         toolRepository.checkedUpdate(wrapper);
+    }
+
+    /** 根据MCP服务器名称获取工具
+     * 
+     * @param serverName MCP服务器名称
+     * @return 工具实体，如果不存在返回null */
+    public ToolEntity getToolByServerName(String serverName) {
+        if (serverName == null || serverName.trim().isEmpty()) {
+            return null;
+        }
+
+        LambdaQueryWrapper<ToolEntity> wrapper = Wrappers.<ToolEntity>lambdaQuery()
+                .eq(ToolEntity::getMcpServerName, serverName).eq(ToolEntity::getStatus, ToolStatus.APPROVED); // 只查询已审核通过的工具
+
+        return toolRepository.selectOne(wrapper);
     }
 }

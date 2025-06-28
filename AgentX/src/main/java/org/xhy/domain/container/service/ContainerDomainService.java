@@ -35,8 +35,8 @@ public class ContainerDomainService {
      * @param internalPort 内部端口
      * @param volumePath 数据卷路径
      * @return 容器实体 */
-    public ContainerEntity createUserContainer(String userId, String containerName, 
-                                             String image, Integer internalPort, String volumePath) {
+    public ContainerEntity createUserContainer(String userId, String containerName, String image, Integer internalPort,
+            String volumePath) {
         // 检查用户是否已有容器
         ContainerEntity existingContainer = containerRepository.findByUserIdAndType(userId, ContainerType.USER);
         if (existingContainer != null && existingContainer.isOperatable()) {
@@ -69,8 +69,8 @@ public class ContainerDomainService {
      * @param image 镜像名称
      * @param internalPort 内部端口
      * @return 容器实体 */
-    public ContainerEntity createReviewContainer(String userId, String containerName, 
-                                                String image, Integer internalPort) {
+    public ContainerEntity createReviewContainer(String userId, String containerName, String image,
+            Integer internalPort) {
         // 分配外部端口
         Integer externalPort = allocateExternalPort();
 
@@ -93,7 +93,7 @@ public class ContainerDomainService {
      * 
      * @param userId 用户ID
      * @return 用户容器，可能为null */
-    public ContainerEntity getUserContainer(String userId) {
+    public ContainerEntity findUserContainer(String userId) {
         return containerRepository.findByUserIdAndType(userId, ContainerType.USER);
     }
 
@@ -114,7 +114,7 @@ public class ContainerDomainService {
      * @param userId 用户ID
      * @return 是否有运行中的容器 */
     public boolean hasRunningContainer(String userId) {
-        ContainerEntity container = getUserContainer(userId);
+        ContainerEntity container = findUserContainer(userId);
         return container != null && container.isRunning();
     }
 
@@ -124,8 +124,8 @@ public class ContainerDomainService {
      * @param status 新状态
      * @param operator 操作者
      * @param dockerContainerId Docker容器ID（可选） */
-    public void updateContainerStatus(String containerId, ContainerStatus status, 
-                                    Operator operator, String dockerContainerId) {
+    public void updateContainerStatus(String containerId, ContainerStatus status, Operator operator,
+            String dockerContainerId) {
         ContainerEntity container = containerRepository.selectById(containerId);
         if (container == null) {
             throw new BusinessException("容器不存在");
@@ -225,9 +225,8 @@ public class ContainerDomainService {
      * @param containerId 容器ID */
     public void updateContainerLastAccessed(String containerId) {
         LambdaUpdateWrapper<ContainerEntity> updateWrapper = Wrappers.<ContainerEntity>lambdaUpdate()
-                .eq(ContainerEntity::getId, containerId)
-                .set(ContainerEntity::getLastAccessedAt, LocalDateTime.now());
-        
+                .eq(ContainerEntity::getId, containerId).set(ContainerEntity::getLastAccessedAt, LocalDateTime.now());
+
         containerRepository.update(null, updateWrapper);
     }
 
@@ -238,10 +237,8 @@ public class ContainerDomainService {
      * @param status 容器状态
      * @param type 容器类型
      * @return 分页结果 */
-    public Page<ContainerEntity> getContainersPage(Page<ContainerEntity> page, 
-                                                  String keyword, 
-                                                  ContainerStatus status, 
-                                                  ContainerType type) {
+    public Page<ContainerEntity> getContainersPage(Page<ContainerEntity> page, String keyword, ContainerStatus status,
+            ContainerType type) {
         return containerRepository.selectPageWithConditions(page, keyword, status, type);
     }
 
@@ -265,8 +262,7 @@ public class ContainerDomainService {
      * @return 活跃容器列表 */
     public List<ContainerEntity> getAllActiveContainers() {
         LambdaQueryWrapper<ContainerEntity> wrapper = Wrappers.<ContainerEntity>lambdaQuery()
-                .ne(ContainerEntity::getStatus, ContainerStatus.DELETED)
-                .orderByAsc(ContainerEntity::getLastAccessedAt);
+                .ne(ContainerEntity::getStatus, ContainerStatus.DELETED).orderByAsc(ContainerEntity::getLastAccessedAt);
         return containerRepository.selectList(wrapper);
     }
 
@@ -277,8 +273,7 @@ public class ContainerDomainService {
         LocalDateTime oneDayAgo = LocalDateTime.now().minusDays(1);
         LambdaQueryWrapper<ContainerEntity> wrapper = Wrappers.<ContainerEntity>lambdaQuery()
                 .eq(ContainerEntity::getStatus, ContainerStatus.RUNNING)
-                .lt(ContainerEntity::getLastAccessedAt, oneDayAgo)
-                .orderByAsc(ContainerEntity::getLastAccessedAt);
+                .lt(ContainerEntity::getLastAccessedAt, oneDayAgo).orderByAsc(ContainerEntity::getLastAccessedAt);
         return containerRepository.selectList(wrapper);
     }
 
@@ -289,8 +284,7 @@ public class ContainerDomainService {
         LocalDateTime fiveDaysAgo = LocalDateTime.now().minusDays(5);
         LambdaQueryWrapper<ContainerEntity> wrapper = Wrappers.<ContainerEntity>lambdaQuery()
                 .ne(ContainerEntity::getStatus, ContainerStatus.DELETED)
-                .lt(ContainerEntity::getLastAccessedAt, fiveDaysAgo)
-                .orderByAsc(ContainerEntity::getLastAccessedAt);
+                .lt(ContainerEntity::getLastAccessedAt, fiveDaysAgo).orderByAsc(ContainerEntity::getLastAccessedAt);
         return containerRepository.selectList(wrapper);
     }
 
@@ -315,7 +309,7 @@ public class ContainerDomainService {
     public ContainerStatistics getStatistics() {
         long totalContainers = containerRepository.selectCount(null);
         long runningContainers = containerRepository.countRunningContainers();
-        
+
         return new ContainerStatistics(totalContainers, runningContainers);
     }
 

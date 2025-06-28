@@ -37,7 +37,7 @@ public class ContainerTemplateAppService {
     public ContainerTemplateDTO createTemplate(CreateContainerTemplateRequest request, String userId) {
         ContainerTemplateEntity template = ContainerTemplateAssembler.toEntity(request, userId);
         ContainerTemplateEntity createdTemplate = templateDomainService.createTemplate(template, Operator.USER);
-        
+
         logger.info("用户{}创建容器模板: {}", userId, createdTemplate.getName());
         return ContainerTemplateAssembler.toDTO(createdTemplate);
     }
@@ -49,12 +49,12 @@ public class ContainerTemplateAppService {
      * @param userId 操作用户ID
      * @return 更新后的模板信息 */
     @Transactional
-    public ContainerTemplateDTO updateTemplate(String templateId, UpdateContainerTemplateRequest request, 
-                                             String userId) {
+    public ContainerTemplateDTO updateTemplate(String templateId, UpdateContainerTemplateRequest request,
+            String userId) {
         ContainerTemplateEntity updates = ContainerTemplateAssembler.toEntity(request);
-        ContainerTemplateEntity updatedTemplate = templateDomainService.updateTemplate(
-                templateId, updates, Operator.USER);
-        
+        ContainerTemplateEntity updatedTemplate = templateDomainService.updateTemplate(templateId, updates,
+                Operator.USER);
+
         logger.info("用户{}更新容器模板: {}", userId, updatedTemplate.getName());
         return ContainerTemplateAssembler.toDTO(updatedTemplate);
     }
@@ -136,12 +136,11 @@ public class ContainerTemplateAppService {
      * @param queryRequest 查询条件
      * @return 分页结果 */
     public Page<ContainerTemplateDTO> getTemplatesPage(QueryContainerTemplateRequest queryRequest) {
-        Page<ContainerTemplateEntity> page = new Page<>(
-                queryRequest.getPage(), queryRequest.getPageSize());
-        
-        Page<ContainerTemplateEntity> entityPage = templateDomainService.getTemplatesPage(
-                page, queryRequest.getKeyword(), queryRequest.getType(), queryRequest.getEnabled());
-        
+        Page<ContainerTemplateEntity> page = new Page<>(queryRequest.getPage(), queryRequest.getPageSize());
+
+        Page<ContainerTemplateEntity> entityPage = templateDomainService.getTemplatesPage(page,
+                queryRequest.getKeyword(), queryRequest.getType(), queryRequest.getEnabled());
+
         return ContainerTemplateAssembler.toDTOPage(entityPage);
     }
 
@@ -162,7 +161,7 @@ public class ContainerTemplateAppService {
     public ContainerTemplateDTO adminCreateTemplate(CreateContainerTemplateRequest request) {
         ContainerTemplateEntity template = ContainerTemplateAssembler.toEntity(request, "ADMIN");
         ContainerTemplateEntity createdTemplate = templateDomainService.createTemplate(template, Operator.ADMIN);
-        
+
         logger.info("管理员创建容器模板: {}", createdTemplate.getName());
         return ContainerTemplateAssembler.toDTO(createdTemplate);
     }
@@ -175,9 +174,9 @@ public class ContainerTemplateAppService {
     @Transactional
     public ContainerTemplateDTO adminUpdateTemplate(String templateId, UpdateContainerTemplateRequest request) {
         ContainerTemplateEntity updates = ContainerTemplateAssembler.toEntity(request);
-        ContainerTemplateEntity updatedTemplate = templateDomainService.updateTemplate(
-                templateId, updates, Operator.ADMIN);
-        
+        ContainerTemplateEntity updatedTemplate = templateDomainService.updateTemplate(templateId, updates,
+                Operator.ADMIN);
+
         logger.info("管理员更新容器模板: {}", updatedTemplate.getName());
         return ContainerTemplateAssembler.toDTO(updatedTemplate);
     }

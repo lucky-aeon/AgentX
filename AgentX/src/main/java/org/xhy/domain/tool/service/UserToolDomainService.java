@@ -103,8 +103,7 @@ public class UserToolDomainService {
         }
 
         LambdaQueryWrapper<UserToolEntity> wrapper = Wrappers.<UserToolEntity>lambdaQuery()
-                .eq(UserToolEntity::getUserId, userId)
-                .in(UserToolEntity::getToolId, toolIds);
+                .eq(UserToolEntity::getUserId, userId).in(UserToolEntity::getToolId, toolIds);
 
         return userToolRepository.selectList(wrapper);
     }

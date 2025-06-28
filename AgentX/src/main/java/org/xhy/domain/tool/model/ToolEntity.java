@@ -246,6 +246,16 @@ public class ToolEntity extends BaseEntity {
         this.isGlobal = isGlobal;
     }
 
+    /** 是否为全局工具 */
+    public boolean isGlobal() {
+        return Boolean.TRUE.equals(this.isGlobal);
+    }
+
+    /** 是否需要用户容器 */
+    public boolean requiresUserContainer() {
+        return !isGlobal();
+    }
+
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();

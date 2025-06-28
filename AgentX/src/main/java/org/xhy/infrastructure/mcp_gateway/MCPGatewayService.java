@@ -57,7 +57,22 @@ public class MCPGatewayService {
         logger.info("MCP Gateway服务已初始化，基础URL: {}", properties.getBaseUrl());
     }
 
-    public String getSSEUrl(String mcpServerName) {
+    /** 构建用户容器SSE URL（纯技术方法）
+     * 
+     * @param mcpServerName 工具服务名称
+     * @param containerIp 容器IP地址
+     * @param containerPort 容器端口
+     * @return 用户容器SSE URL */
+    public String buildUserContainerUrl(String mcpServerName, String containerIp, Integer containerPort) {
+        String containerBaseUrl = "http://" + containerIp + ":" + containerPort;
+        return containerBaseUrl + "/" + mcpServerName + "/sse/sse?api_key=" + properties.getApiKey();
+    }
+
+    /** 构建全局工具SSE URL（纯技术方法）
+     * 
+     * @param mcpServerName 工具服务名称
+     * @return 全局工具SSE URL */
+    public String buildGlobalSSEUrl(String mcpServerName) {
         return properties.getBaseUrl() + "/" + mcpServerName + "/sse/sse?api_key=" + properties.getApiKey();
     }
 
@@ -68,36 +83,47 @@ public class MCPGatewayService {
      * @throws BusinessException 如果API调用失败 */
     public boolean deployTool(String installCommand) {
         String url = properties.getBaseUrl() + "/deploy";
+        return deployToolToUrl(installCommand, url);
+    }
 
+    /** 部署工具到用户容器（方法重载）
+     * 
+     * @param installCommand 安装命令
+     * @param containerIp 容器IP地址
+     * @param containerPort 容器端口
+     * @return 部署成功返回true，否则抛出异常
+     * @throws BusinessException 如果API调用失败 */
+    public boolean deployTool(String installCommand, String containerIp, Integer containerPort) {
+        String url = "http://" + containerIp + ":" + containerPort + "/deploy";
+        return deployToolToUrl(installCommand, url);
+    }
+
+    /** 部署工具到指定URL的通用方法 */
+    private boolean deployToolToUrl(String installCommand, String url) {
         try (CloseableHttpClient httpClient = createHttpClient()) {
             HttpPost httpPost = new HttpPost(url);
             httpPost.setHeader("Content-Type", "application/json");
             httpPost.setHeader("Authorization", "Bearer " + properties.getApiKey());
-
             httpPost.setEntity(new StringEntity(installCommand, "UTF-8"));
 
-            logger.info("发送部署请求到MCP Gateway: {}", url);
+            logger.info("发送部署请求到: {}", url);
             try (CloseableHttpResponse response = httpClient.execute(httpPost)) {
                 int statusCode = response.getStatusLine().getStatusCode();
                 HttpEntity entity = response.getEntity();
                 String responseBody = entity != null ? EntityUtils.toString(entity) : null;
 
                 if (statusCode >= 200 && statusCode < 300 && responseBody != null) {
-                    // 解析响应JSON
                     Map result = JsonUtils.parseObject(responseBody, Map.class);
-                    logger.info("MCP Gateway部署响应: {}", result);
-
-                    // 检查状态是否为success
+                    logger.info("部署响应: {}", result);
                     return result.containsKey("status") && "success".equals(result.get("status"));
                 } else {
-                    String errorMsg = String.format("MCP Gateway部署失败，状态码: %d，响应: %s", statusCode, responseBody);
+                    String errorMsg = String.format("工具部署失败，状态码: %d，响应: %s", statusCode, responseBody);
                     logger.error(errorMsg);
                     throw new BusinessException(errorMsg);
                 }
             }
         } catch (IOException e) {
-            logger.error("调用MCP Gateway API失败", e);
-            throw new BusinessException("调用MCP Gateway API失败: " + e.getMessage(), e);
+            throw new BusinessException("调用部署API失败: " + e.getMessage(), e);
         }
     }
 

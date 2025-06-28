@@ -5,7 +5,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.xhy.application.container.assembler.ContainerAssembler;
 import org.xhy.application.container.dto.ContainerDTO;
-import org.xhy.interfaces.dto.container.request.CreateContainerRequest;
 import org.xhy.domain.container.constant.ContainerStatus;
 import org.xhy.domain.container.constant.ContainerType;
 import org.xhy.domain.container.model.ContainerEntity;
@@ -36,10 +35,9 @@ public class ContainerAppService {
     private final UserDomainService userDomainService;
     private final DockerService dockerService;
 
-    public ContainerAppService(ContainerDomainService containerDomainService, 
-                             ContainerTemplateDomainService templateDomainService,
-                             UserDomainService userDomainService,
-                             DockerService dockerService) {
+    public ContainerAppService(ContainerDomainService containerDomainService,
+            ContainerTemplateDomainService templateDomainService, UserDomainService userDomainService,
+            DockerService dockerService) {
         this.containerDomainService = containerDomainService;
         this.templateDomainService = templateDomainService;
         this.userDomainService = userDomainService;
@@ -52,125 +50,74 @@ public class ContainerAppService {
      * @return 容器信息 */
     @Transactional
     public ContainerDTO createUserContainer(String userId) {
-        // 检查用户是否已有容器
-        ContainerEntity existingContainer = containerDomainService.getUserContainer(userId);
-        if (existingContainer != null && existingContainer.isOperatable()) {
-            return ContainerAssembler.toDTO(existingContainer);
-        }
 
         // 获取MCP网关模板（即用户容器模板）
         ContainerTemplateEntity templateEntity = templateDomainService.getMcpGatewayTemplate();
         ContainerTemplate template = templateEntity.toContainerTemplate();
-        
+
         // 生成容器名称
         String containerName = "mcp-gateway-user-" + userId.substring(0, 8);
-        
+
         // 创建用户数据卷目录
         String volumePath = createUserVolumeDirectory(userId);
-        
+
         // 创建容器实体
-        ContainerEntity container = containerDomainService.createUserContainer(
-                userId, containerName, template.getImage(), template.getInternalPort(), volumePath);
+        ContainerEntity container = containerDomainService.createUserContainer(userId, containerName,
+                template.getImage(), template.getInternalPort(), volumePath);
 
         // 异步创建Docker容器
-        createDockerContainerAsync(container, template);
+        createDockerContainer(container, template);
 
         return ContainerAssembler.toDTO(container);
     }
 
-    /** 创建审核容器
-     * 
-     * @param request 创建请求
-     * @param userId 操作用户ID
-     * @return 容器信息 */
-    @Transactional
-    public ContainerDTO createReviewContainer(CreateContainerRequest request, String userId) {
-        // 使用MCP网关模板
-        ContainerTemplateEntity templateEntity = templateDomainService.getMcpGatewayTemplate();
-        ContainerTemplate template = templateEntity.toContainerTemplate();
-        
-        // 生成容器名称
-        String containerName = "mcp-gateway-review-" + System.currentTimeMillis();
-        
-        // 创建审核容器实体
-        ContainerEntity container = containerDomainService.createReviewContainer(
-                userId, containerName, template.getImage(), template.getInternalPort());
-
-        // 异步创建Docker容器
-        createDockerContainerAsync(container, template);
-
-        return ContainerAssembler.toDTO(container);
-    }
-
-    /** 使用指定模板为用户创建容器
+    /** 获取用户容器（自动创建和启动）
      * 
      * @param userId 用户ID
-     * @param templateId 模板ID
-     * @return 容器信息 */
+     * @return 容器信息，保证返回可用容器 */
     @Transactional
-    public ContainerDTO createUserContainerWithTemplate(String userId, String templateId) {
-        // 检查用户是否已有容器
-        ContainerEntity existingContainer = containerDomainService.getUserContainer(userId);
-        if (existingContainer != null && existingContainer.isOperatable()) {
-            return ContainerAssembler.toDTO(existingContainer);
-        }
-
-        // 获取指定模板
-        ContainerTemplateEntity templateEntity = templateDomainService.getTemplateById(templateId);
-        ContainerTemplate template = templateEntity.toContainerTemplate();
-        
-        // 生成容器名称
-        String containerName = "mcp-gateway-user-" + userId.substring(0, 8);
-        
-        // 创建用户数据卷目录
-        String volumePath = createUserVolumeDirectory(userId);
-        
-        // 创建容器实体
-        ContainerEntity container = containerDomainService.createUserContainer(
-                userId, containerName, template.getImage(), template.getInternalPort(), volumePath);
-
-        // 异步创建Docker容器
-        createDockerContainerAsync(container, template);
-
-        return ContainerAssembler.toDTO(container);
-    }
-
-    /** 使用指定模板创建审核容器
-     * 
-     * @param request 创建请求
-     * @param userId 操作用户ID
-     * @param templateId 模板ID
-     * @return 容器信息 */
-    @Transactional
-    public ContainerDTO createReviewContainerWithTemplate(CreateContainerRequest request, String userId, String templateId) {
-        // 获取指定模板
-        ContainerTemplateEntity templateEntity = templateDomainService.getTemplateById(templateId);
-        ContainerTemplate template = templateEntity.toContainerTemplate();
-        
-        // 生成容器名称
-        String containerName = "mcp-gateway-review-" + System.currentTimeMillis();
-        
-        // 创建审核容器实体
-        ContainerEntity container = containerDomainService.createReviewContainer(
-                userId, containerName, template.getImage(), template.getInternalPort());
-
-        // 异步创建Docker容器
-        createDockerContainerAsync(container, template);
-
-        return ContainerAssembler.toDTO(container);
-    }
-
-    /** 获取用户容器
-     * 
-     * @param userId 用户ID
-     * @return 容器信息，可能为null */
     public ContainerDTO getUserContainer(String userId) {
-        ContainerEntity container = containerDomainService.getUserContainer(userId);
-        if (container != null) {
-            // 更新最后访问时间
-            updateContainerLastAccessed(container);
+        ContainerEntity container = containerDomainService.findUserContainer(userId);
+
+        if (container == null) {
+            // 1. 容器不存在，自动创建
+            logger.info("用户容器不存在，自动创建: userId={}", userId);
+            return createUserContainer(userId);
         }
-        return container != null ? ContainerAssembler.toDTO(container) : null;
+
+        // 2. 检查容器健康状态
+        if (!isContainerHealthy(container)) {
+            logger.info("用户容器不健康，尝试启动: userId={}, status={}", userId, container.getStatus());
+            try {
+                // 启动容器
+                startContainer(container.getId());
+                // 重新获取最新状态
+                container = containerDomainService.findUserContainer(userId);
+            } catch (Exception e) {
+                logger.error("启动用户容器失败: userId={}, containerId={}", userId, container.getId(), e);
+                throw new BusinessException("用户容器启动失败: " + e.getMessage());
+            }
+        }
+
+        // 3. 更新最后访问时间
+        updateContainerLastAccessed(container);
+
+        return ContainerAssembler.toDTO(container);
+    }
+
+    /** 检查容器是否健康 */
+    private boolean isContainerHealthy(ContainerEntity container) {
+        if (container == null) {
+            return false;
+        }
+
+        // 检查容器状态是否为运行中
+        boolean isRunning = ContainerStatus.RUNNING.equals(container.getStatus());
+
+        // 检查必要的网络信息是否存在
+        boolean hasNetworkInfo = container.getIpAddress() != null && container.getExternalPort() != null;
+
+        return isRunning && hasNetworkInfo;
     }
 
     /** 检查用户容器状态
@@ -178,8 +125,8 @@ public class ContainerAppService {
      * @param userId 用户ID
      * @return 容器状态检查结果 */
     public ContainerHealthStatus checkUserContainerHealth(String userId) {
-        ContainerEntity container = containerDomainService.getUserContainer(userId);
-        
+        ContainerEntity container = containerDomainService.findUserContainer(userId);
+
         if (container == null) {
             return new ContainerHealthStatus(false, "用户容器不存在", null);
         }
@@ -188,8 +135,8 @@ public class ContainerAppService {
         updateContainerLastAccessed(container);
 
         if (!container.isOperatable()) {
-            return new ContainerHealthStatus(false, "容器状态异常: " + container.getStatus().getDescription(), 
-                                           ContainerAssembler.toDTO(container));
+            return new ContainerHealthStatus(false, "容器状态异常: " + container.getStatus().getDescription(),
+                    ContainerAssembler.toDTO(container));
         }
 
         // 检查Docker容器状态
@@ -197,13 +144,12 @@ public class ContainerAppService {
             try {
                 String dockerStatus = dockerService.getContainerStatus(container.getDockerContainerId());
                 if (!"running".equals(dockerStatus)) {
-                    return new ContainerHealthStatus(false, "Docker容器未运行: " + dockerStatus, 
-                                                   ContainerAssembler.toDTO(container));
+                    return new ContainerHealthStatus(false, "Docker容器未运行: " + dockerStatus,
+                            ContainerAssembler.toDTO(container));
                 }
             } catch (Exception e) {
                 logger.error("检查Docker容器状态失败: {}", container.getDockerContainerId(), e);
-                return new ContainerHealthStatus(false, "Docker容器检查失败", 
-                                               ContainerAssembler.toDTO(container));
+                return new ContainerHealthStatus(false, "Docker容器检查失败", ContainerAssembler.toDTO(container));
             }
         }
 
@@ -212,73 +158,70 @@ public class ContainerAppService {
 
     /** 启动容器
      * 
-     * @param containerId 容器ID
-     * @param operator 操作者 */
+     * @param containerId 容器ID */
     @Transactional
-    public void startContainer(String containerId, Operator operator) {
+    public void startContainer(String containerId) {
         ContainerEntity container = getContainerById(containerId);
-        
+
         if (container.getDockerContainerId() == null) {
             throw new BusinessException("容器未完成初始化，无法启动");
         }
 
         try {
             dockerService.startContainer(container.getDockerContainerId());
-            containerDomainService.updateContainerStatus(containerId, ContainerStatus.RUNNING, operator, null);
+            containerDomainService.updateContainerStatus(containerId, ContainerStatus.RUNNING, Operator.ADMIN, null);
         } catch (Exception e) {
             logger.error("启动容器失败: {}", containerId, e);
-            containerDomainService.markContainerError(containerId, "启动失败: " + e.getMessage(), operator);
+            containerDomainService.markContainerError(containerId, "启动失败: " + e.getMessage(), Operator.ADMIN);
             throw new BusinessException("启动容器失败");
         }
     }
 
     /** 停止容器
      * 
-     * @param containerId 容器ID
-     * @param operator 操作者 */
+     * @param containerId 容器ID */
     @Transactional
-    public void stopContainer(String containerId, Operator operator) {
+    public void stopContainer(String containerId) {
         ContainerEntity container = getContainerById(containerId);
-        
+
         if (container.getDockerContainerId() == null) {
             throw new BusinessException("容器未完成初始化，无法停止");
         }
 
         try {
             dockerService.stopContainer(container.getDockerContainerId());
-            containerDomainService.updateContainerStatus(containerId, ContainerStatus.STOPPED, operator, null);
+            containerDomainService.updateContainerStatus(containerId, ContainerStatus.STOPPED, Operator.ADMIN, null);
         } catch (Exception e) {
             logger.error("停止容器失败: {}", containerId, e);
-            containerDomainService.markContainerError(containerId, "停止失败: " + e.getMessage(), operator);
+            containerDomainService.markContainerError(containerId, "停止失败: " + e.getMessage(), Operator.ADMIN);
             throw new BusinessException("停止容器失败");
         }
     }
 
     /** 删除容器
      * 
-     * @param containerId 容器ID
-     * @param operator 操作者 */
+     * @param containerId 容器ID */
     @Transactional
-    public void deleteContainer(String containerId, Operator operator) {
+    public void deleteContainer(String containerId) {
         ContainerEntity container = getContainerById(containerId);
-        
+
         try {
             // 删除Docker容器
             if (container.getDockerContainerId() != null) {
                 dockerService.removeContainer(container.getDockerContainerId(), true);
             }
-            
+
             // 删除用户数据卷目录（仅审核容器）
             if (ContainerType.REVIEW.equals(container.getType()) && container.getVolumePath() != null) {
                 deleteVolumeDirectory(container.getVolumePath());
             }
-            
+
             // 物理删除容器记录
             containerDomainService.physicalDeleteContainer(containerId);
-            
+
         } catch (Exception e) {
             logger.error("删除容器失败: {}", containerId, e);
-            containerDomainService.markContainerError(containerId, "删除失败: " + e.getMessage(), operator);
+            containerDomainService.markContainerError(containerId, "删除失败: " + e.getMessage(), Operator.ADMIN);
             throw new BusinessException("删除容器失败");
         }
     }
@@ -290,35 +233,29 @@ public class ContainerAppService {
      * @param status 容器状态
      * @param type 容器类型
      * @return 分页结果 */
-    public Page<ContainerDTO> getContainersPage(Page<ContainerEntity> page, String keyword, 
-                                               ContainerStatus status, ContainerType type) {
+    public Page<ContainerDTO> getContainersPage(Page<ContainerEntity> page, String keyword, ContainerStatus status,
+            ContainerType type) {
         Page<ContainerEntity> entityPage = containerDomainService.getContainersPage(page, keyword, status, type);
-        
+
         // 转换为DTO并添加用户昵称信息
-        Page<ContainerDTO> dtoPage = new Page<>(
-                entityPage.getCurrent(),
-                entityPage.getSize(),
-                entityPage.getTotal()
-        );
-        
-        List<ContainerDTO> dtoList = entityPage.getRecords().stream()
-                .map(entity -> {
-                    ContainerDTO dto = ContainerAssembler.toDTO(entity);
-                    // 获取用户昵称
-                    if (entity.getUserId() != null) {
-                        try {
-                            UserEntity user = userDomainService.getUserInfo(entity.getUserId());
-                            if (user != null && user.getNickname() != null) {
-                                dto.setUserNickname(user.getNickname());
-                            }
-                        } catch (Exception e) {
-                            logger.warn("获取用户昵称失败, userId: {}", entity.getUserId(), e);
-                        }
+        Page<ContainerDTO> dtoPage = new Page<>(entityPage.getCurrent(), entityPage.getSize(), entityPage.getTotal());
+
+        List<ContainerDTO> dtoList = entityPage.getRecords().stream().map(entity -> {
+            ContainerDTO dto = ContainerAssembler.toDTO(entity);
+            // 获取用户昵称
+            if (entity.getUserId() != null) {
+                try {
+                    UserEntity user = userDomainService.getUserInfo(entity.getUserId());
+                    if (user != null && user.getNickname() != null) {
+                        dto.setUserNickname(user.getNickname());
                     }
-                    return dto;
-                })
-                .collect(java.util.stream.Collectors.toList());
-        
+                } catch (Exception e) {
+                    logger.warn("获取用户昵称失败, userId: {}", entity.getUserId(), e);
+                }
+            }
+            return dto;
+        }).collect(java.util.stream.Collectors.toList());
+
         dtoPage.setRecords(dtoList);
         return dtoPage;
     }
@@ -337,7 +274,7 @@ public class ContainerAppService {
      * @return 日志内容 */
     public String getContainerLogs(String containerId, Integer lines) {
         ContainerEntity container = getContainerById(containerId);
-        
+
         if (container.getDockerContainerId() == null) {
             throw new BusinessException("容器未完成初始化，无法获取日志");
         }
@@ -359,7 +296,7 @@ public class ContainerAppService {
      * @return 执行结果 */
     public String executeContainerCommand(String containerId, String command) {
         ContainerEntity container = getContainerById(containerId);
-        
+
         if (container.getDockerContainerId() == null) {
             throw new BusinessException("容器未完成初始化，无法执行命令");
         }
@@ -411,17 +348,17 @@ public class ContainerAppService {
         try {
             // 检查MCP网关进程
             String processCheck = executeContainerCommand(containerId, "ps aux | grep -v grep | grep mcp");
-            
+
             // 检查端口占用
             String portCheck = executeContainerCommand(containerId, "netstat -tuln | grep :8080");
-            
+
             // 检查服务健康状态
-            String healthCheck = executeContainerCommand(containerId, "curl -s http://localhost:8080/health || echo 'Health check failed'");
-            
-            return "=== MCP网关进程 ===\n" + processCheck + 
-                   "\n\n=== 端口占用 ===\n" + portCheck +
-                   "\n\n=== 健康检查 ===\n" + healthCheck;
-                   
+            String healthCheck = executeContainerCommand(containerId,
+                    "curl -s http://localhost:8080/health || echo 'Health check failed'");
+
+            return "=== MCP网关进程 ===\n" + processCheck + "\n\n=== 端口占用 ===\n" + portCheck + "\n\n=== 健康检查 ===\n"
+                    + healthCheck;
+
         } catch (Exception e) {
             logger.error("检查MCP网关状态失败: {}", containerId, e);
             return "检查MCP网关状态失败: " + e.getMessage();
@@ -429,38 +366,33 @@ public class ContainerAppService {
     }
 
     /** 异步创建Docker容器 */
-    private void createDockerContainerAsync(ContainerEntity container, ContainerTemplate template) {
-        // 在实际应用中，这里应该使用异步任务队列
-        // 为了简化，这里使用新线程模拟异步处理
-        new Thread(() -> {
-            try {
-                String dockerContainerId = dockerService.createAndStartContainer(
-                        container.getName(), template, container.getExternalPort(), 
-                        container.getVolumePath(), container.getUserId());
+    private void createDockerContainer(ContainerEntity container, ContainerTemplate template) {
+        try {
+            String dockerContainerId = dockerService.createAndStartContainer(container.getName(), template,
+                    container.getExternalPort(), container.getVolumePath(), container.getUserId());
 
-                // 获取容器IP地址
-                DockerService.ContainerInfo containerInfo = dockerService.getContainerInfo(dockerContainerId);
-                String ipAddress = extractIpAddress(containerInfo);
+            // 获取容器IP地址
+            DockerService.ContainerInfo containerInfo = dockerService.getContainerInfo(dockerContainerId);
+            String ipAddress = extractIpAddress(containerInfo);
 
-                // 更新容器状态
-                containerDomainService.updateContainerStatus(container.getId(), ContainerStatus.RUNNING, 
-                                                           Operator.ADMIN, dockerContainerId);
-                containerDomainService.updateContainerIpAddress(container.getId(), ipAddress, Operator.ADMIN);
+            // 更新容器状态
+            containerDomainService.updateContainerStatus(container.getId(), ContainerStatus.RUNNING, Operator.ADMIN,
+                    dockerContainerId);
+            containerDomainService.updateContainerIpAddress(container.getId(), ipAddress, Operator.ADMIN);
 
-                logger.info("容器创建成功: {} -> {}", container.getName(), dockerContainerId);
+            logger.info("容器创建成功: {} -> {}", container.getName(), dockerContainerId);
 
-            } catch (Exception e) {
-                logger.error("容器创建失败: {}", container.getName(), e);
-                containerDomainService.markContainerError(container.getId(), e.getMessage(), Operator.ADMIN);
-            }
-        }).start();
+        } catch (Exception e) {
+            logger.error("容器创建失败: {}", container.getName(), e);
+            containerDomainService.markContainerError(container.getId(), e.getMessage(), Operator.ADMIN);
+        }
     }
 
     /** 创建用户数据卷目录 */
     private String createUserVolumeDirectory(String userId) {
         String volumePath = USER_VOLUME_BASE_PATH + "/" + userId;
         File directory = new File(volumePath);
-        
+
         if (!directory.exists()) {
             boolean created = directory.mkdirs();
             if (!created) {
@@ -477,7 +409,7 @@ public class ContainerAppService {
                 return tempVolumePath;
             }
         }
-        
+
         return volumePath;
     }
 
@@ -508,13 +440,10 @@ public class ContainerAppService {
 
     /** 提取容器IP地址 */
     private String extractIpAddress(DockerService.ContainerInfo containerInfo) {
-        if (containerInfo.getNetworkSettings() != null && 
-            containerInfo.getNetworkSettings().getNetworks() != null) {
-            
-            return containerInfo.getNetworkSettings().getNetworks().values().stream()
-                    .findFirst()
-                    .map(network -> network.getIpAddress())
-                    .orElse(null);
+        if (containerInfo.getNetworkSettings() != null && containerInfo.getNetworkSettings().getNetworks() != null) {
+
+            return containerInfo.getNetworkSettings().getNetworks().values().stream().findFirst()
+                    .map(network -> network.getIpAddress()).orElse(null);
         }
         return null;
     }
@@ -532,17 +461,17 @@ public class ContainerAppService {
         if (command == null || command.trim().isEmpty()) {
             throw new BusinessException("命令不能为空");
         }
-        
+
         // 简单的命令解析，支持基本的shell命令
         // 对于复杂命令，可以使用更完善的解析器
         command = command.trim();
-        
+
         // 如果命令包含管道、重定向等，使用sh -c执行
-        if (command.contains("|") || command.contains("&&") || command.contains("||") || 
-            command.contains(">") || command.contains("<")) {
+        if (command.contains("|") || command.contains("&&") || command.contains("||") || command.contains(">")
+                || command.contains("<")) {
             return new String[]{"sh", "-c", command};
         }
-        
+
         // 简单命令直接分割
         return command.split("\\s+");
     }
@@ -557,11 +486,11 @@ public class ContainerAppService {
             if (container.isSuspended()) {
                 resumeSuspendedContainer(container);
             }
-            
+
             // 更新最后访问时间
             containerDomainService.updateContainerLastAccessed(container.getId());
             logger.debug("更新容器最后访问时间: {}", container.getName());
-            
+
         } catch (Exception e) {
             logger.warn("更新容器访问时间失败: {}", container.getName(), e);
         }
@@ -573,29 +502,21 @@ public class ContainerAppService {
     private void resumeSuspendedContainer(ContainerEntity container) {
         try {
             logger.info("恢复暂停的容器: {}", container.getName());
-            
+
             // 启动Docker容器
             if (container.getDockerContainerId() != null) {
                 dockerService.startContainer(container.getDockerContainerId());
             }
-            
+
             // 更新容器状态为运行中
-            containerDomainService.updateContainerStatus(
-                container.getId(), 
-                ContainerStatus.RUNNING, 
-                Operator.ADMIN, 
-                null
-            );
-            
+            containerDomainService.updateContainerStatus(container.getId(), ContainerStatus.RUNNING, Operator.ADMIN,
+                    null);
+
             logger.info("容器恢复成功: {}", container.getName());
-            
+
         } catch (Exception e) {
             logger.error("恢复容器失败: {}", container.getName(), e);
-            containerDomainService.markContainerError(
-                container.getId(), 
-                "恢复失败: " + e.getMessage(), 
-                Operator.ADMIN
-            );
+            containerDomainService.markContainerError(container.getId(), "恢复失败: " + e.getMessage(), Operator.ADMIN);
             throw new BusinessException("容器恢复失败");
         }
     }

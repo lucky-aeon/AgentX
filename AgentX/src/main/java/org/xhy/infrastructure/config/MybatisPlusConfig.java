@@ -18,9 +18,7 @@ public class MybatisPlusConfig implements MetaObjectHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(MybatisPlusConfig.class);
 
-    /**
-     * 添加分页插件
-     */
+    /** 添加分页插件 */
     @Bean
     public MybatisPlusInterceptor mybatisPlusInterceptor() {
         MybatisPlusInterceptor interceptor = new MybatisPlusInterceptor();

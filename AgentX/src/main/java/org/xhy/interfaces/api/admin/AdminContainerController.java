@@ -8,7 +8,6 @@ import org.xhy.application.container.service.ContainerAppService;
 import org.xhy.domain.container.model.ContainerEntity;
 import org.xhy.domain.container.service.ContainerDomainService;
 import org.xhy.infrastructure.auth.UserContext;
-import org.xhy.infrastructure.entity.Operator;
 import org.xhy.interfaces.api.common.Result;
 import org.xhy.interfaces.dto.container.request.CreateContainerRequest;
 import org.xhy.interfaces.dto.container.request.QueryContainerRequest;
@@ -32,8 +31,8 @@ public class AdminContainerController {
     @GetMapping
     public Result<Page<ContainerDTO>> getContainers(QueryContainerRequest queryRequest) {
         Page<ContainerEntity> page = new Page<>(queryRequest.getPage(), queryRequest.getPageSize());
-        Page<ContainerDTO> result = containerAppService.getContainersPage(
-                page, queryRequest.getKeyword(), queryRequest.getStatus(), queryRequest.getType());
+        Page<ContainerDTO> result = containerAppService.getContainersPage(page, queryRequest.getKeyword(),
+                queryRequest.getStatus(), queryRequest.getType());
         return Result.success(result);
     }
 
@@ -49,44 +48,13 @@ public class AdminContainerController {
         return Result.success(response);
     }
 
-    /** 创建审核容器
-     * 
-     * @param request 容器创建请求
-     * @return 创建结果 */
-    @PostMapping("/review")
-    public Result<ContainerDTO> createReviewContainer(@RequestBody @Validated CreateContainerRequest request) {
-        String userId = UserContext.getCurrentUserId();
-        ContainerDTO container = containerAppService.createReviewContainer(request, userId);
-        return Result.success(container);
-    }
-
-    /** 启动容器
-     * 
-     * @param containerId 容器ID
-     * @return 操作结果 */
-    @PostMapping("/{containerId}/start")
-    public Result<Void> startContainer(@PathVariable String containerId) {
-        containerAppService.startContainer(containerId, Operator.ADMIN);
-        return Result.success();
-    }
-
-    /** 停止容器
-     * 
-     * @param containerId 容器ID
-     * @return 操作结果 */
-    @PostMapping("/{containerId}/stop")
-    public Result<Void> stopContainer(@PathVariable String containerId) {
-        containerAppService.stopContainer(containerId, Operator.ADMIN);
-        return Result.success();
-    }
-
     /** 删除容器
      * 
      * @param containerId 容器ID
      * @return 操作结果 */
     @DeleteMapping("/{containerId}")
     public Result<Void> deleteContainer(@PathVariable String containerId) {
-        containerAppService.deleteContainer(containerId, Operator.ADMIN);
+        containerAppService.deleteContainer(containerId);
         return Result.success();
     }
 
@@ -96,22 +64,10 @@ public class AdminContainerController {
      * @param lines 获取日志行数（可选，默认100行）
      * @return 容器日志 */
     @GetMapping("/{containerId}/logs")
-    public Result<String> getContainerLogs(@PathVariable String containerId, 
-                                         @RequestParam(required = false) Integer lines) {
+    public Result<String> getContainerLogs(@PathVariable String containerId,
+            @RequestParam(required = false) Integer lines) {
         String logs = containerAppService.getContainerLogs(containerId, lines);
         return Result.success(logs);
-    }
-
-    /** 在容器中执行命令
-     * 
-     * @param containerId 容器ID
-     * @param command 要执行的命令
-     * @return 命令执行结果 */
-    @PostMapping("/{containerId}/exec")
-    public Result<String> executeCommand(@PathVariable String containerId, 
-                                       @RequestParam String command) {
-        String result = containerAppService.executeContainerCommand(containerId, command);
-        return Result.success(result);
     }
 
     /** 获取容器系统信息

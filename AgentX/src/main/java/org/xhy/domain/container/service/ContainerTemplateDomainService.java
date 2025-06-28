@@ -61,17 +61,16 @@ public class ContainerTemplateDomainService {
      * @param updates 更新内容
      * @param operator 操作者
      * @return 更新后的模板 */
-    public ContainerTemplateEntity updateTemplate(String templateId, ContainerTemplateEntity updates, 
-                                                 Operator operator) {
+    public ContainerTemplateEntity updateTemplate(String templateId, ContainerTemplateEntity updates,
+            Operator operator) {
         ContainerTemplateEntity existingTemplate = templateRepository.selectById(templateId);
         if (existingTemplate == null) {
             throw new BusinessException("模板不存在");
         }
 
         // 检查模板名称冲突
-        if (updates.getName() != null && 
-            !updates.getName().equals(existingTemplate.getName()) &&
-            templateRepository.existsByName(updates.getName(), templateId)) {
+        if (updates.getName() != null && !updates.getName().equals(existingTemplate.getName())
+                && templateRepository.existsByName(updates.getName(), templateId)) {
             throw new BusinessException("模板名称已存在");
         }
 
@@ -120,7 +119,7 @@ public class ContainerTemplateDomainService {
         }
 
         template.setEnabled(enabled);
-        
+
         // 如果禁用的是默认模板，需要取消默认设置
         if (!enabled && Boolean.TRUE.equals(template.getIsDefault())) {
             template.setIsDefault(false);
@@ -203,8 +202,8 @@ public class ContainerTemplateDomainService {
      * @param type 模板类型
      * @param enabled 是否启用
      * @return 分页结果 */
-    public Page<ContainerTemplateEntity> getTemplatesPage(Page<ContainerTemplateEntity> page, 
-                                                         String keyword, String type, Boolean enabled) {
+    public Page<ContainerTemplateEntity> getTemplatesPage(Page<ContainerTemplateEntity> page, String keyword,
+            String type, Boolean enabled) {
         return templateRepository.selectPageWithConditions(page, keyword, type, enabled);
     }
 
@@ -212,7 +211,7 @@ public class ContainerTemplateDomainService {
     public TemplateStatistics getStatistics() {
         long totalTemplates = templateRepository.countTemplates();
         long enabledTemplates = templateRepository.countEnabledTemplates();
-        
+
         return new TemplateStatistics(totalTemplates, enabledTemplates);
     }
 

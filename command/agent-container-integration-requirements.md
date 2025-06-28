@@ -424,3 +424,1098 @@ public ChatResponse startConversation(ChatRequest request) {
 本需求文档详细描述了Agent平台与容器管理的业务集成方案。通过完善的容器管理、MCP网关开发和业务流程集成，将实现用户工具的自动化部署和管理，为用户提供便捷、稳定的Agent对话服务。
 
 **注意**：审核容器已在系统中默认配置，无需额外开发。全局工具概念暂不实现，后续根据业务需要再扩展。
+
+---
+
+# 详细技术实现方案
+
+## 基于现有代码的深度集成分析
+
+### 当前架构分析
+
+通过对现有代码的深入分析，发现系统已经具备了较为完整的基础架构：
+
+1. **Agent对话流程服务**：`AgentConversationFlowService.startAgentConversationFlow()` 已实现流程图的核心逻辑
+2. **容器集成服务**：`ContainerIntegrationAppService` 提供了容器操作的具体实现
+3. **工具管理器**：`AgentToolManager.createToolProvider()` 负责创建MCP工具提供者
+4. **MCP网关服务**：`MCPGatewayService.getSSEUrl()` 提供SSE连接URL
+
+### 核心问题识别
+
+**关键问题**：当前 `MCPGatewayService.getSSEUrl()` 方法固定使用yml配置的全局URL，无法根据工具类型和用户隔离需求动态选择连接地址。
+
+```java
+// 当前实现 - 存在的问题
+public String getSSEUrl(String mcpServerName) {
+    // 固定使用全局地址，无法支持用户隔离工具
+    return properties.getBaseUrl() + "/" + mcpServerName + "/sse/sse?api_key=" + properties.getApiKey();
+}
+```
+
+**业务逻辑要求**：
+- **全局工具**：继续使用yml配置的全局MCP Gateway URL
+- **用户隔离工具**：动态获取用户容器IP+Port，组装专属SSE URL
+- **容器依赖**：依赖现有容器，不自动创建（需要用户预先创建容器）
+- **架构原则**：遵循DDD分层架构，基础设施层依赖领域层
+
+**核心实现策略**：
+在创建MCP客户端时，根据工具的isGlobal字段判断连接策略，简单路由到相应的Gateway URL。
+
+## 详细实现方案
+
+### 1. MCPGatewayService 核心改造
+
+#### 1.1 简化的URL路由机制
+
+实际实现：遵循DDD架构原则，基础设施层依赖领域层，实现简洁的URL路由。
+
+```java
+@Service
+public class MCPGatewayService {
+    
+    private final MCPGatewayProperties properties;
+    private final ContainerDomainService containerDomainService;  // 领域层依赖 ✅
+    private final ToolDomainService toolDomainService;           // 领域层依赖 ✅
+    
+    public MCPGatewayService(MCPGatewayProperties properties, 
+                           ContainerDomainService containerDomainService,
+                           ToolDomainService toolDomainService) {
+        this.properties = properties;
+        this.containerDomainService = containerDomainService;
+        this.toolDomainService = toolDomainService;
+    }
+
+    /**
+     * 智能获取SSE URL：根据工具类型选择连接策略
+     * 
+     * @param mcpServerName 工具服务名称
+     * @param userId 用户ID（用户工具必需）
+     * @return 对应的SSE连接URL
+     */
+    public String getSSEUrl(String mcpServerName, String userId) {
+        // 1. 判断工具类型
+        boolean isGlobalTool = isGlobalTool(mcpServerName);
+        
+        if (isGlobalTool) {
+            // 全局工具：使用yml配置的全局Gateway
+            return buildGlobalSSEUrl(mcpServerName);
+        } else {
+            // 用户隔离工具：使用用户容器Gateway
+            if (userId == null || userId.trim().isEmpty()) {
+                throw new BusinessException("用户隔离工具需要提供用户ID: " + mcpServerName);
+            }
+            return buildUserContainerSSEUrl(mcpServerName, userId);
+        }
+    }
+    
+    /**
+     * 判断是否为全局工具
+     */
+    private boolean isGlobalTool(String mcpServerName) {
+        try {
+            ToolEntity tool = toolDomainService.getToolByServerName(mcpServerName);
+            return tool != null && tool.isGlobal();
+        } catch (Exception e) {
+            logger.warn("无法判断工具类型，默认为全局工具: {}", mcpServerName, e);
+            return true; // 默认为全局工具，确保向后兼容
+        }
+    }
+    
+    /**
+     * 构建全局工具SSE URL
+     */
+    private String buildGlobalSSEUrl(String mcpServerName) {
+        return properties.getBaseUrl() + "/" + mcpServerName + "/sse/sse?api_key=" + properties.getApiKey();
+    }
+    
+    /**
+     * 构建用户容器工具SSE URL（简化实现）
+     */
+    private String buildUserContainerSSEUrl(String mcpServerName, String userId) {
+        try {
+            logger.info("获取用户容器信息: userId={}, tool={}", userId, mcpServerName);
+            
+            // 1. 查询用户容器（不自动创建）
+            ContainerEntity containerInfo = getUserContainerEntity(userId);
+            
+            // 2. 验证容器状态
+            if (!isContainerHealthy(containerInfo)) {
+                throw new BusinessException("用户容器不可用：userId=" + userId + ", status=" + containerInfo.getStatus());
+            }
+            
+            // 3. 构建容器SSE URL
+            String containerBaseUrl = "http://" + containerInfo.getIpAddress() + ":" + containerInfo.getExternalPort();
+            String sseUrl = containerBaseUrl + "/" + mcpServerName + "/sse/sse?api_key=" + properties.getApiKey();
+            
+            // 4. 工具健康检查（TODO: 待实现）
+            validateToolInContainer(containerBaseUrl, mcpServerName);
+            
+            logger.info("用户容器工具连接就绪: userId={}, url={}", userId, maskSensitiveInfo(sseUrl));
+            return sseUrl;
+            
+        } catch (Exception e) {
+            logger.error("构建用户容器SSE URL失败: userId={}, tool={}", userId, mcpServerName, e);
+            throw new BusinessException("无法连接用户工具：" + e.getMessage());
+        }
+    }
+    
+    /**
+     * 获取用户容器实体（仅查询，不创建）
+     */
+    private ContainerEntity getUserContainerEntity(String userId) {
+        ContainerEntity userContainer = containerDomainService.getUserContainer(userId);
+        
+        if (userContainer == null) {
+            throw new BusinessException("用户容器不存在，请先在管理后台创建容器: userId=" + userId);
+        }
+        
+        return userContainer;
+    }
+    
+    /**
+     * 检查容器是否健康
+     */
+    private boolean isContainerHealthy(ContainerEntity container) {
+        if (container == null) {
+            return false;
+        }
+        
+        // 检查容器状态是否为运行中
+        boolean isRunning = ContainerStatus.RUNNING.equals(container.getStatus());
+        
+        // 检查必要的网络信息是否存在
+        boolean hasNetworkInfo = container.getIpAddress() != null && 
+                                container.getExternalPort() != null;
+        
+        return isRunning && hasNetworkInfo;
+    }
+    
+    /**
+     * 验证容器内工具状态（TODO: 待实现完整接口）
+     */
+    private void validateToolInContainer(String containerBaseUrl, String toolName) {
+        try {
+            String healthUrl = containerBaseUrl + "/mcp/tools/health?tool=" + toolName;
+            // TODO: 实现HTTP调用，验证工具是否在容器中正常运行
+            logger.debug("TODO: 验证容器内工具状态: url={}", healthUrl);
+        } catch (Exception e) {
+            logger.warn("容器内工具健康检查失败（当前忽略）: tool={}", toolName, e);
+            // 当前暂不抛出异常，等待接口实现后再启用
+        }
+    }
+    
+    /**
+     * 屏蔽敏感信息
+     */
+    private String maskSensitiveInfo(String url) {
+        if (url == null) return null;
+        return url.replaceAll("api_key=[^&]*", "api_key=***");
+    }
+    
+    /**
+     * 兼容性方法：保持向后兼容
+     */
+    public String getSSEUrl(String mcpServerName) {
+        return getSSEUrl(mcpServerName, null, true);
+    }
+}
+```
+
+#### 1.2 容器信息查询接口
+
+```java
+@Service  
+public class ContainerAppService {
+    
+    /**
+     * 获取用户容器详细信息
+     * 
+     * @param userId 用户ID
+     * @return 容器信息，如果容器不存在返回null
+     */
+    public ContainerInfo getUserContainerInfo(String userId) {
+        try {
+            // 1. 查询用户容器实体
+            ContainerEntity container = containerDomainService.getUserContainer(userId);
+            if (container == null) {
+                logger.info("用户容器不存在: userId={}", userId);
+                return null;
+            }
+            
+            // 2. 检查Docker容器状态
+            String dockerContainerId = container.getDockerContainerId();
+            if (dockerContainerId == null) {
+                logger.warn("用户容器Docker ID为空: userId={}, containerId={}", userId, container.getId());
+                return ContainerInfo.unhealthy("Docker容器ID为空");
+            }
+            
+            // 3. 检查Docker容器是否运行
+            boolean isRunning = dockerService.isContainerRunning(dockerContainerId);
+            if (!isRunning) {
+                logger.info("Docker容器未运行: userId={}, dockerId={}", userId, dockerContainerId);
+                return ContainerInfo.unhealthy("容器未运行");
+            }
+            
+            // 4. 检查容器网络连接
+            String ipAddress = container.getIpAddress();
+            Integer port = container.getExternalPort();
+            
+            if (ipAddress == null || port == null) {
+                logger.warn("容器网络信息不完整: userId={}, ip={}, port={}", userId, ipAddress, port);
+                return ContainerInfo.unhealthy("网络信息不完整");
+            }
+            
+            // 5. 检查MCP网关健康状态（可选）
+            boolean mcpHealthy = checkMcpGatewayHealth(ipAddress, port);
+            
+            return new ContainerInfo(
+                ipAddress, 
+                port, 
+                isRunning && mcpHealthy, 
+                container.getStatus(),
+                container.getId()
+            );
+            
+        } catch (Exception e) {
+            logger.error("获取用户容器信息失败: userId={}", userId, e);
+            return ContainerInfo.unhealthy("查询失败：" + e.getMessage());
+        }
+    }
+    
+    /**
+     * 检查MCP网关健康状态
+     */
+    private boolean checkMcpGatewayHealth(String ipAddress, Integer port) {
+        try {
+            String healthUrl = "http://" + ipAddress + ":" + port + "/mcp/health";
+            // 发送HTTP健康检查请求
+            // 这里可以使用HttpClient或RestTemplate实现
+            return mcpGatewayService.checkHealth(healthUrl);
+        } catch (Exception e) {
+            logger.debug("MCP网关健康检查失败: {}:{}", ipAddress, port, e);
+            return false; // 健康检查失败不影响容器基本可用性
+        }
+    }
+    
+    /**
+     * 容器信息数据传输对象
+     */
+    public static class ContainerInfo {
+        private final String ipAddress;
+        private final Integer port;
+        private final boolean healthy;
+        private final ContainerStatus status;
+        private final String containerId;
+        private final String message;
+        
+        public ContainerInfo(String ipAddress, Integer port, boolean healthy, 
+                           ContainerStatus status, String containerId) {
+            this.ipAddress = ipAddress;
+            this.port = port;
+            this.healthy = healthy;
+            this.status = status;
+            this.containerId = containerId;
+            this.message = healthy ? "容器健康" : "容器不健康";
+        }
+        
+        private ContainerInfo(String message) {
+            this.ipAddress = null;
+            this.port = null;
+            this.healthy = false;
+            this.status = null;
+            this.containerId = null;
+            this.message = message;
+        }
+        
+        public static ContainerInfo unhealthy(String reason) {
+            return new ContainerInfo(reason);
+        }
+        
+        public boolean isHealthy() {
+            return healthy && status == ContainerStatus.RUNNING;
+        }
+        
+        // getter方法...
+    }
+}
+```
+
+### 2. AgentToolManager 调用点简化
+
+#### 2.1 核心改造：传递用户上下文
+
+重点改造：在创建工具时传递用户ID，让MCPGatewayService自动处理URL路由。
+
+```java
+@Component
+public class AgentToolManager {
+    
+    private final MCPGatewayService mcpGatewayService;
+    
+    /**
+     * 创建工具提供者：支持全局/用户隔离工具自动识别
+     * 
+     * @param mcpServerNames 工具服务名列表
+     * @param toolPresetParams 工具预设参数
+     * @param userId 用户ID（关键参数：用于用户隔离工具）
+     * @return 工具提供者实例
+     */
+    public ToolProvider createToolProvider(List<String> mcpServerNames, 
+                                         Map<String, Map<String, Map<String, String>>> toolPresetParams,
+                                         String userId) {
+        if (mcpServerNames == null || mcpServerNames.isEmpty()) {
+            logger.info("没有工具需要创建");
+            return null;
+        }
+        
+        logger.info("开始创建工具提供者: 工具数量={}, userId={}", mcpServerNames.size(), userId);
+        
+        List<McpClient> successfulClients = new ArrayList<>();
+        List<String> failedTools = new ArrayList<>();
+        
+        // 逐个创建工具客户端（MCPGatewayService会自动处理容器准备）
+        for (String mcpServerName : mcpServerNames) {
+            try {
+                McpClient client = createSingleToolClient(mcpServerName, userId, toolPresetParams);
+                if (client != null) {
+                    successfulClients.add(client);
+                    logger.info("工具客户端创建成功: {}", mcpServerName);
+                } else {
+                    failedTools.add(mcpServerName);
+                    logger.warn("工具客户端创建失败: {}", mcpServerName);
+                }
+            } catch (Exception e) {
+                failedTools.add(mcpServerName);
+                logger.error("工具客户端创建异常: {}", mcpServerName, e);
+            }
+        }
+        
+        // 结果统计
+        logger.info("工具提供者创建完成 - 成功: {}, 失败: {}", successfulClients.size(), failedTools.size());
+        if (!failedTools.isEmpty()) {
+            logger.warn("失败的工具列表: {}", failedTools);
+        }
+        
+        if (successfulClients.isEmpty()) {
+            logger.error("所有工具客户端创建失败");
+            return null;
+        }
+        
+        return new McpToolProvider(successfulClients);
+    }
+    
+    /**
+     * 执行Agent对话流程准备
+     */
+    private ConversationFlowResult prepareAgentConversationFlow(String agentId, String userId) {
+        try {
+            return conversationFlowService.startAgentConversationFlow(agentId, userId);
+        } catch (Exception e) {
+            logger.error("Agent对话流程准备异常: agentId={}, userId={}", agentId, userId, e);
+            return new ConversationFlowResult(false, "流程准备异常：" + e.getMessage(), null, null);
+        }
+    }
+    
+    /**
+     * 创建单个工具客户端（核心改造：智能URL获取）
+     */
+    private McpClient createSingleToolClient(String mcpServerName, String userId, 
+                                           Map<String, Map<String, Map<String, String>>> toolPresetParams) {
+        try {
+            logger.debug("创建工具客户端: 工具={}, userId={}", mcpServerName, userId);
+            
+            // 关键改造：让MCPGatewayService自动处理工具类型判断和容器准备
+            String sseUrl = mcpGatewayService.getSSEUrl(mcpServerName, userId);
+            
+            logger.info("获取工具连接URL成功: 工具={}, URL={}", mcpServerName, maskUrl(sseUrl));
+            
+            // 创建HTTP传输层
+            McpTransport transport = new HttpMcpTransport.Builder()
+                .sseUrl(sseUrl)
+                .logRequests(true)
+                .logResponses(true)
+                .timeout(Duration.ofMinutes(30))
+                .build();
+            
+            // 创建MCP客户端
+            McpClient mcpClient = new DefaultMcpClient.Builder()
+                .transport(transport)
+                .build();
+            
+            // 设置预设参数
+            setPresetParameters(mcpClient, mcpServerName, toolPresetParams);
+            
+            return mcpClient;
+            
+        } catch (Exception e) {
+            logger.error("创建工具客户端失败: {}", mcpServerName, e);
+            throw new BusinessException("工具连接失败：" + mcpServerName + " - " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 设置工具预设参数
+     */
+    private void setPresetParameters(McpClient mcpClient, String mcpServerName, 
+                                   Map<String, Map<String, Map<String, String>>> toolPresetParams) {
+        if (toolPresetParams == null || !toolPresetParams.containsKey(mcpServerName)) {
+            return;
+        }
+        
+        try {
+            Map<String, Map<String, String>> serverParams = toolPresetParams.get(mcpServerName);
+            for (Map.Entry<String, Map<String, String>> entry : serverParams.entrySet()) {
+                String toolName = entry.getKey();
+                Map<String, String> params = entry.getValue();
+                
+                if (params != null && !params.isEmpty()) {
+                    mcpClient.setPresetParameters(toolName, 
+                        params.entrySet().stream()
+                            .map(p -> new PresetParameter(p.getKey(), p.getValue()))
+                            .collect(Collectors.toList())
+                    );
+                    
+                    logger.debug("设置工具预设参数: 服务={}, 工具={}, 参数数量={}", 
+                               mcpServerName, toolName, params.size());
+                }
+            }
+        } catch (Exception e) {
+            logger.warn("设置工具预设参数失败: {}", mcpServerName, e);
+        }
+    }
+    
+    /**
+     * 记录工具创建结果
+     */
+    private void logToolCreationResult(List<McpClient> successfulClients, List<String> failedTools) {
+        logger.info("工具提供者创建完成 - 成功: {}, 失败: {}", 
+                   successfulClients.size(), failedTools.size());
+        
+        if (!failedTools.isEmpty()) {
+            logger.warn("失败的工具列表: {}", failedTools);
+        }
+    }
+    
+    /**
+     * 屏蔽URL中的敏感信息
+     */
+    private String maskUrl(String url) {
+        if (url == null) return null;
+        return url.replaceAll("api_key=[^&]*", "api_key=***");
+    }
+    
+    /**
+     * 兼容性方法：保持向后兼容
+     */
+    public ToolProvider createToolProvider(List<String> mcpServerNames,
+                                         Map<String, Map<String, Map<String, String>>> toolPresetParams) {
+        logger.warn("使用兼容性方法创建工具提供者，无法支持用户隔离工具");
+        return createToolProvider(mcpServerNames, toolPresetParams, null, null);
+    }
+}
+```
+
+### 3. 对话服务集成点修改
+
+#### 3.1 关键修改：在AgentMessageHandler中传递用户ID
+
+现有的对话流程已经很完善，主要修改点是在创建工具提供者时传递用户上下文：
+
+```java
+// 修改 AgentMessageHandler.provideTools() 方法
+@Component
+public class AgentMessageHandler extends AbstractMessageHandler {
+    
+    private final AgentToolManager agentToolManager;
+    
+    @Override
+    protected ToolProvider provideTools(ChatContext chatContext) {
+        // 关键改造：传递用户ID给工具管理器
+        return agentToolManager.createToolProvider(
+            chatContext.getMcpServerNames(),
+            chatContext.getAgent().getToolPresetParams(),
+            chatContext.getUserId()  // 新增：传递用户ID
+        );
+    }
+}
+```
+
+#### 3.2 ConversationAppService调用点检查
+
+确保在创建ChatContext时包含用户ID：
+
+```java
+@Service 
+public class ConversationAppService {
+    
+    /**
+     * 准备对话环境时确保用户ID正确传递
+     */
+    private ChatContext prepareEnvironmentWithModel(String sessionId, String userId, ...) {
+        // ... 现有逻辑 ...
+        
+        ChatContext chatContext = new ChatContext();
+        chatContext.setUserId(userId);  // 确保用户ID被设置
+        chatContext.setMcpServerNames(mcpServerNames);
+        // ... 其他设置 ...
+        
+        return chatContext;
+    }
+}
+```
+
+### 4. 工具类型识别机制
+
+#### 4.1 ToolEntity 扩展
+
+```java
+@Entity
+@Table(name = "tools")
+public class ToolEntity extends BaseEntity {
+    
+    // 现有字段...
+    
+    /**
+     * 是否为全局工具
+     * true: 全局工具，部署在全局MCP Gateway，所有用户共享
+     * false: 用户隔离工具，需要部署到用户专属容器
+     */
+    @Column(name = "is_global", nullable = false)
+    private Boolean isGlobal = false;
+    
+    /**
+     * 工具服务名称（用于MCP连接）
+     */
+    @Column(name = "server_name", nullable = false)
+    private String serverName;
+    
+    public boolean isGlobal() {
+        return Boolean.TRUE.equals(this.isGlobal);
+    }
+    
+    public boolean requiresUserContainer() {
+        return !isGlobal();
+    }
+    
+    // getter/setter...
+}
+```
+
+#### 4.2 ToolDomainService 扩展
+
+```java
+@Service
+public class ToolDomainService {
+    
+    /**
+     * 根据服务名称获取工具实体
+     */
+    public ToolEntity getToolByServerName(String serverName) {
+        if (serverName == null || serverName.trim().isEmpty()) {
+            return null;
+        }
+        
+        LambdaQueryWrapper<ToolEntity> wrapper = Wrappers.<ToolEntity>lambdaQuery()
+            .eq(ToolEntity::getServerName, serverName)
+            .eq(ToolEntity::getEnabled, true);
+            
+        return toolRepository.selectOne(wrapper);
+    }
+    
+    /**
+     * 批量获取工具类型信息
+     */
+    public Map<String, Boolean> getToolGlobalStatus(List<String> serverNames) {
+        if (serverNames == null || serverNames.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        
+        LambdaQueryWrapper<ToolEntity> wrapper = Wrappers.<ToolEntity>lambdaQuery()
+            .in(ToolEntity::getServerName, serverNames)
+            .eq(ToolEntity::getEnabled, true)
+            .select(ToolEntity::getServerName, ToolEntity::getIsGlobal);
+            
+        List<ToolEntity> tools = toolRepository.selectList(wrapper);
+        
+        return tools.stream()
+            .collect(Collectors.toMap(
+                ToolEntity::getServerName,
+                ToolEntity::isGlobal
+            ));
+    }
+    
+    /**
+     * 获取Agent的用户隔离工具列表
+     */
+    public List<String> getAgentUserIsolatedTools(String agentId) {
+        List<String> allTools = getAgentToolNames(agentId);
+        Map<String, Boolean> toolGlobalStatus = getToolGlobalStatus(allTools);
+        
+        return allTools.stream()
+            .filter(toolName -> !toolGlobalStatus.getOrDefault(toolName, true))
+            .collect(Collectors.toList());
+    }
+}
+```
+
+### 5. 错误处理和容错机制
+
+#### 5.1 分层错误处理
+
+```java
+public class ContainerToolIntegrationException extends BusinessException {
+    
+    public enum ErrorType {
+        CONTAINER_NOT_FOUND("容器不存在"),
+        CONTAINER_UNHEALTHY("容器不健康"), 
+        TOOL_DEPLOYMENT_FAILED("工具部署失败"),
+        MCP_CONNECTION_FAILED("MCP连接失败"),
+        NETWORK_ERROR("网络错误");
+        
+        private final String description;
+        
+        ErrorType(String description) {
+            this.description = description;
+        }
+    }
+    
+    private final ErrorType errorType;
+    private final String userId;
+    private final String toolName;
+    
+    public ContainerToolIntegrationException(ErrorType errorType, String userId, String toolName, String message) {
+        super(String.format("[%s] 用户:%s, 工具:%s - %s", errorType.description, userId, toolName, message));
+        this.errorType = errorType;
+        this.userId = userId;
+        this.toolName = toolName;
+    }
+    
+    // getter方法...
+}
+```
+
+#### 5.2 智能重试机制
+
+```java
+@Component
+public class ContainerToolRetryHandler {
+    
+    private static final int MAX_RETRY_ATTEMPTS = 3;
+    private static final long RETRY_DELAY_MS = 2000;
+    
+    /**
+     * 带重试的容器操作
+     */
+    public <T> T executeWithRetry(String operation, Callable<T> callable) throws Exception {
+        Exception lastException = null;
+        
+        for (int attempt = 1; attempt <= MAX_RETRY_ATTEMPTS; attempt++) {
+            try {
+                return callable.call();
+            } catch (Exception e) {
+                lastException = e;
+                logger.warn("操作失败，尝试重试: 操作={}, 尝试次数={}/{}", operation, attempt, MAX_RETRY_ATTEMPTS, e);
+                
+                if (attempt < MAX_RETRY_ATTEMPTS) {
+                    Thread.sleep(RETRY_DELAY_MS * attempt); // 指数退避
+                }
+            }
+        }
+        
+        throw new BusinessException("操作失败，已重试" + MAX_RETRY_ATTEMPTS + "次: " + operation, lastException);
+    }
+}
+```
+
+### 6. 性能优化策略
+
+#### 6.1 容器信息缓存
+
+```java
+@Service
+public class ContainerInfoCacheService {
+    
+    private final Cache<String, ContainerInfo> containerInfoCache = 
+        Caffeine.newBuilder()
+            .maximumSize(1000)
+            .expireAfterWrite(5, TimeUnit.MINUTES)
+            .refreshAfterWrite(2, TimeUnit.MINUTES)
+            .build();
+    
+    /**
+     * 获取缓存的容器信息
+     */
+    public ContainerInfo getCachedContainerInfo(String userId) {
+        return containerInfoCache.get(userId, this::loadContainerInfo);
+    }
+    
+    /**
+     * 加载容器信息
+     */
+    private ContainerInfo loadContainerInfo(String userId) {
+        return containerAppService.getUserContainerInfo(userId);
+    }
+    
+    /**
+     * 清除用户缓存
+     */
+    public void evictCache(String userId) {
+        containerInfoCache.invalidate(userId);
+    }
+}
+```
+
+#### 6.2 MCP客户端连接池
+
+```java
+@Component
+public class McpClientPool {
+    
+    private final Map<String, McpClient> clientPool = new ConcurrentHashMap<>();
+    private final ReadWriteLock lock = new ReentrantReadWriteLock();
+    
+    /**
+     * 获取或创建MCP客户端
+     */
+    public McpClient getOrCreateClient(String cacheKey, Supplier<McpClient> clientFactory) {
+        // 读锁：快速路径
+        lock.readLock().lock();
+        try {
+            McpClient existing = clientPool.get(cacheKey);
+            if (existing != null) {
+                return existing;
+            }
+        } finally {
+            lock.readLock().unlock();
+        }
+        
+        // 写锁：创建客户端
+        lock.writeLock().lock();
+        try {
+            // 双重检查
+            McpClient existing = clientPool.get(cacheKey);
+            if (existing != null) {
+                return existing;
+            }
+            
+            McpClient newClient = clientFactory.get();
+            clientPool.put(cacheKey, newClient);
+            return newClient;
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+    
+    /**
+     * 清理无效客户端
+     */
+    @Scheduled(fixedRate = 300000) // 5分钟
+    public void cleanupInvalidClients() {
+        lock.writeLock().lock();
+        try {
+            clientPool.entrySet().removeIf(entry -> {
+                try {
+                    // 检查客户端是否仍然有效
+                    return !isClientValid(entry.getValue());
+                } catch (Exception e) {
+                    logger.warn("检查MCP客户端有效性失败: {}", entry.getKey(), e);
+                    return true; // 移除有问题的客户端
+                }
+            });
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+    
+    private boolean isClientValid(McpClient client) {
+        // 实现客户端有效性检查逻辑
+        return true;
+    }
+}
+```
+
+### 7. 监控和可观测性
+
+#### 7.1 关键指标监控
+
+```java
+@Component
+public class ContainerToolMetrics {
+    
+    private final MeterRegistry meterRegistry;
+    private final Counter toolCreationSuccessCounter;
+    private final Counter toolCreationFailureCounter;
+    private final Timer containerPrepareTimer;
+    
+    public ContainerToolMetrics(MeterRegistry meterRegistry) {
+        this.meterRegistry = meterRegistry;
+        this.toolCreationSuccessCounter = Counter.builder("tool.creation.success")
+            .description("Successful tool creations")
+            .register(meterRegistry);
+        this.toolCreationFailureCounter = Counter.builder("tool.creation.failure")
+            .description("Failed tool creations") 
+            .register(meterRegistry);
+        this.containerPrepareTimer = Timer.builder("container.prepare.duration")
+            .description("Container preparation time")
+            .register(meterRegistry);
+    }
+    
+    public void recordToolCreationSuccess(String toolType) {
+        toolCreationSuccessCounter.increment(Tags.of("type", toolType));
+    }
+    
+    public void recordToolCreationFailure(String toolType, String reason) {
+        toolCreationFailureCounter.increment(Tags.of("type", toolType, "reason", reason));
+    }
+    
+    public Timer.Sample startContainerPrepareTimer() {
+        return Timer.start(meterRegistry);
+    }
+}
+```
+
+#### 7.2 结构化日志
+
+```java
+@Component
+public class ContainerToolLogger {
+    
+    private static final Logger logger = LoggerFactory.getLogger(ContainerToolLogger.class);
+    
+    /**
+     * 记录容器准备开始
+     */
+    public void logContainerPrepareStart(String userId, String agentId, List<String> tools) {
+        MDC.put("userId", userId);
+        MDC.put("agentId", agentId);
+        MDC.put("operation", "container.prepare.start");
+        
+        logger.info("开始容器准备流程: 工具数量={}, 工具列表={}", tools.size(), tools);
+        
+        MDC.clear();
+    }
+    
+    /**
+     * 记录工具创建结果
+     */
+    public void logToolCreationResult(String userId, String toolName, boolean success, String reason) {
+        MDC.put("userId", userId);
+        MDC.put("toolName", toolName);
+        MDC.put("operation", "tool.creation.result");
+        MDC.put("success", String.valueOf(success));
+        
+        if (success) {
+            logger.info("工具创建成功");
+        } else {
+            logger.warn("工具创建失败: 原因={}", reason);
+        }
+        
+        MDC.clear();
+    }
+}
+```
+
+### 8. 测试策略
+
+#### 8.1 单元测试
+
+```java
+@ExtendWith(MockitoExtension.class)
+class MCPGatewayServiceTest {
+    
+    @Mock
+    private ContainerAppService containerAppService;
+    
+    @Mock 
+    private MCPGatewayProperties properties;
+    
+    @InjectMocks
+    private MCPGatewayService mcpGatewayService;
+    
+    @Test
+    void testGetSSEUrl_GlobalTool() {
+        // Given
+        when(properties.getBaseUrl()).thenReturn("http://global-gateway:8005");
+        when(properties.getApiKey()).thenReturn("test-key");
+        
+        // When
+        String result = mcpGatewayService.getSSEUrl("test-tool", "user123", true);
+        
+        // Then
+        assertEquals("http://global-gateway:8005/test-tool/sse/sse?api_key=test-key", result);
+    }
+    
+    @Test
+    void testGetSSEUrl_UserTool_Success() {
+        // Given
+        ContainerAppService.ContainerInfo containerInfo = 
+            new ContainerAppService.ContainerInfo("192.168.1.100", 8005, true, ContainerStatus.RUNNING, "container-123");
+        when(containerAppService.getUserContainerInfo("user123")).thenReturn(containerInfo);
+        when(properties.getApiKey()).thenReturn("test-key");
+        
+        // When
+        String result = mcpGatewayService.getSSEUrl("test-tool", "user123", false);
+        
+        // Then
+        assertEquals("http://192.168.1.100:8005/test-tool/sse/sse?api_key=test-key", result);
+    }
+    
+    @Test
+    void testGetSSEUrl_UserTool_ContainerNotFound() {
+        // Given
+        when(containerAppService.getUserContainerInfo("user123")).thenReturn(null);
+        
+        // When & Then
+        assertThrows(BusinessException.class, () -> {
+            mcpGatewayService.getSSEUrl("test-tool", "user123", false);
+        });
+    }
+}
+```
+
+#### 8.2 集成测试
+
+```java
+@SpringBootTest
+@Testcontainers
+class ContainerToolIntegrationTest {
+    
+    @Container
+    static final GenericContainer<?> mcpGateway = new GenericContainer<>("mcp-gateway:latest")
+        .withExposedPorts(8005)
+        .waitingFor(Wait.forHttp("/health"));
+    
+    @Autowired
+    private AgentToolManager agentToolManager;
+    
+    @Test
+    void testCreateToolProvider_MixedTools() {
+        // Given
+        List<String> tools = Arrays.asList("global-tool", "user-tool");
+        String userId = "test-user";
+        String agentId = "test-agent";
+        
+        // When
+        ToolProvider result = agentToolManager.createToolProvider(tools, null, userId, agentId);
+        
+        // Then
+        assertNotNull(result);
+        // 验证工具提供者的功能...
+    }
+}
+```
+
+### 9. 部署和运维指南
+
+#### 9.1 容器镜像准备
+
+```dockerfile
+# 用户容器镜像示例
+FROM node:18-alpine
+
+# 安装MCP网关
+RUN npm install -g @mcp/gateway
+
+# 设置工作目录
+WORKDIR /app
+
+# 复制MCP网关配置
+COPY mcp-gateway.config.json /app/
+
+# 暴露端口
+EXPOSE 8005
+
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+  CMD curl -f http://localhost:8005/health || exit 1
+
+# 启动命令
+CMD ["mcp-gateway", "--config", "/app/mcp-gateway.config.json"]
+```
+
+#### 9.2 环境配置
+
+```yaml
+# application.yml 扩展配置
+mcp:
+  gateway:
+    # 全局MCP Gateway配置
+    base-url: ${MCP_GATEWAY_URL:http://localhost:8005}
+    api-key: ${MCP_GATEWAY_API_KEY:123456}
+    
+    # 用户容器MCP配置
+    user-container:
+      # 用户容器中MCP服务的端口
+      port: ${USER_CONTAINER_MCP_PORT:8005}
+      # 连接超时配置
+      connect-timeout: ${USER_CONTAINER_CONNECT_TIMEOUT:30000}
+      read-timeout: ${USER_CONTAINER_READ_TIMEOUT:60000}
+      # 健康检查配置
+      health-check:
+        enabled: ${USER_CONTAINER_HEALTH_CHECK_ENABLED:true}
+        interval: ${USER_CONTAINER_HEALTH_CHECK_INTERVAL:60000}
+        timeout: ${USER_CONTAINER_HEALTH_CHECK_TIMEOUT:5000}
+
+# 容器管理配置扩展
+container:
+  management:
+    # 用户容器默认镜像
+    default-image: ${USER_CONTAINER_DEFAULT_IMAGE:agentx/user-mcp-gateway:latest}
+    # 端口分配范围
+    port-range:
+      start: ${CONTAINER_PORT_RANGE_START:30000}
+      end: ${CONTAINER_PORT_RANGE_END:40000}
+    # 资源限制
+    resources:
+      memory: ${CONTAINER_MEMORY_LIMIT:512m}
+      cpu: ${CONTAINER_CPU_LIMIT:0.5}
+```
+
+### 10. 实施检查清单
+
+#### 10.1 代码修改检查
+
+- [ ] `MCPGatewayService.getSSEUrl()` 方法支持工具类型参数
+- [ ] `AgentToolManager.createToolProvider()` 方法支持用户上下文
+- [ ] `ContainerAppService.getUserContainerInfo()` 方法返回详细容器信息
+- [ ] `ToolEntity` 实体添加 `isGlobal` 字段
+- [ ] `ToolDomainService` 添加工具类型查询方法
+- [ ] 对话服务调用点传递用户和Agent上下文
+- [ ] 异常处理和重试机制完善
+- [ ] 监控指标和日志记录添加
+
+#### 10.2 测试验证检查
+
+- [ ] 全局工具对话测试通过
+- [ ] 用户隔离工具对话测试通过
+- [ ] 混合工具对话测试通过
+- [ ] 容器不存在时自动创建测试通过
+- [ ] 容器不健康时错误处理测试通过
+- [ ] 工具部署失败时降级测试通过
+- [ ] 并发用户容器创建测试通过
+- [ ] 负载测试和性能验证通过
+
+#### 10.3 运维准备检查
+
+- [ ] 用户容器镜像构建和推送
+- [ ] 监控告警规则配置
+- [ ] 日志收集和分析配置
+- [ ] 容器资源限制配置
+- [ ] 网络安全策略配置
+- [ ] 备份和恢复流程准备
+- [ ] 故障处理手册编写
+- [ ] 容器清理策略验证
+
+---
+
+## 总结
+
+通过上述详细的技术实现方案，我们可以实现Agent与容器的深度集成，支持全局工具和用户隔离工具的混合使用。关键改进包括：
+
+1. **智能URL路由**：根据工具类型自动选择全局或用户容器连接
+2. **容器生命周期管理**：自动创建、健康检查、故障恢复
+3. **工具部署自动化**：按需部署工具到用户容器
+4. **性能优化**：缓存、连接池、异步处理
+5. **可观测性**：监控、日志、告警
+
+这套方案确保了Agent对话流程的流畅性，同时维护了用户数据的隔离性和系统的高可用性。

@@ -88,7 +88,7 @@ public class ContainerTemplateController {
      * @return 更新后的模板信息 */
     @PutMapping("/{templateId}")
     public Result<ContainerTemplateDTO> updateTemplate(@PathVariable String templateId,
-                                                      @RequestBody @Validated UpdateContainerTemplateRequest request) {
+            @RequestBody @Validated UpdateContainerTemplateRequest request) {
         String userId = UserContext.getCurrentUserId();
         ContainerTemplateDTO template = templateAppService.updateTemplate(templateId, request, userId);
         return Result.success(template);

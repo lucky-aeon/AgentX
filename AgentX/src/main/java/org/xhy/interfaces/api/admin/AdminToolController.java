@@ -75,8 +75,8 @@ public class AdminToolController {
      * @param request 更新请求
      * @return 操作结果 */
     @PutMapping("/{toolId}/global-status")
-    public Result updateGlobalStatus(@PathVariable String toolId, 
-                                   @RequestBody @Validated UpdateGlobalStatusRequest request) {
+    public Result updateGlobalStatus(@PathVariable String toolId,
+            @RequestBody @Validated UpdateGlobalStatusRequest request) {
         adminToolAppService.updateToolGlobalStatus(toolId, request.getIsGlobal());
         return Result.success();
     }

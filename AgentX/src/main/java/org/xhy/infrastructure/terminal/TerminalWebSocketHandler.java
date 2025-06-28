@@ -14,7 +14,7 @@ import java.net.URI;
 public class TerminalWebSocketHandler implements WebSocketHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(TerminalWebSocketHandler.class);
-    
+
     private final WebTerminalService webTerminalService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -25,20 +25,20 @@ public class TerminalWebSocketHandler implements WebSocketHandler {
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
         logger.info("WebSocket连接建立: {}", session.getId());
-        
+
         // 从URL参数中获取容器ID
         URI uri = session.getUri();
         if (uri != null && uri.getQuery() != null) {
             String[] params = uri.getQuery().split("&");
             String containerId = null;
-            
+
             for (String param : params) {
                 if (param.startsWith("containerId=")) {
                     containerId = param.substring("containerId=".length());
                     break;
                 }
             }
-            
+
             if (containerId != null) {
                 // 创建终端会话
                 boolean success = webTerminalService.createTerminalSession(session.getId(), containerId, session);
@@ -58,12 +58,12 @@ public class TerminalWebSocketHandler implements WebSocketHandler {
         if (message instanceof TextMessage) {
             TextMessage textMessage = (TextMessage) message;
             String payload = textMessage.getPayload();
-            
+
             try {
                 // 解析JSON消息
                 JsonNode jsonNode = objectMapper.readTree(payload);
                 String type = jsonNode.get("type").asText();
-                
+
                 if ("input".equals(type)) {
                     String input = jsonNode.get("data").asText();
                     webTerminalService.sendCommand(session.getId(), input);

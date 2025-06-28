@@ -5,61 +5,61 @@ import java.util.Map;
 
 /** 创建容器模板请求 */
 public class CreateContainerTemplateRequest {
-    
+
     @NotBlank(message = "模板名称不可为空")
     @Size(max = 100, message = "模板名称长度不能超过100字符")
     private String name;
-    
+
     @Size(max = 500, message = "模板描述长度不能超过500字符")
     private String description;
-    
+
     @NotBlank(message = "模板类型不可为空")
     @Size(max = 50, message = "模板类型长度不能超过50字符")
     private String type;
-    
+
     @NotBlank(message = "镜像名称不可为空")
     @Size(max = 200, message = "镜像名称长度不能超过200字符")
     private String image;
-    
+
     @Size(max = 50, message = "镜像标签长度不能超过50字符")
     private String imageTag;
-    
+
     @NotNull(message = "内部端口不可为空")
     @Min(value = 1, message = "端口号必须大于0")
     @Max(value = 65535, message = "端口号不能超过65535")
     private Integer internalPort;
-    
+
     @NotNull(message = "CPU限制不可为空")
     @DecimalMin(value = "0.1", message = "CPU限制最少0.1核")
     @DecimalMax(value = "32.0", message = "CPU限制最多32核")
     private Double cpuLimit;
-    
+
     @NotNull(message = "内存限制不可为空")
     @Min(value = 64, message = "内存限制最少64MB")
     @Max(value = 32768, message = "内存限制最多32768MB")
     private Integer memoryLimit;
-    
+
     private Map<String, String> environment;
-    
+
     @Size(max = 500, message = "数据卷路径长度不能超过500字符")
     private String volumeMountPath;
-    
+
     private String[] command;
-    
+
     @Size(max = 50, message = "网络模式长度不能超过50字符")
     private String networkMode;
-    
+
     @Size(max = 50, message = "重启策略长度不能超过50字符")
     private String restartPolicy;
-    
+
     private Map<String, Object> healthCheck;
-    
+
     private Map<String, Object> resourceConfig;
-    
+
     private Boolean enabled = true;
-    
+
     private Boolean isDefault = false;
-    
+
     @Min(value = 0, message = "排序权重不能为负数")
     private Integer sortOrder = 0;
 

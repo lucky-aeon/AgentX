@@ -9,9 +9,7 @@ import org.xhy.application.container.dto.ContainerDTO;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * 容器应用服务集成测试 - 使用真实数据
- */
+/** 容器应用服务集成测试 - 使用真实数据 */
 @SpringBootTest
 @ActiveProfiles("test")
 class ContainerAppServiceIntegrationTest {
@@ -21,9 +19,7 @@ class ContainerAppServiceIntegrationTest {
 
     private static final String TEST_USER_ID = "60ab0f71c11d3e7b79dff00639b77e36";
 
-    /**
-     * 测试创建用户容器 - 使用真实数据
-     */
+    /** 测试创建用户容器 - 使用真实数据 */
     @Test
     void testCreateUserContainer_WithRealData() {
         // When: 为用户创建容器
@@ -43,14 +39,14 @@ class ContainerAppServiceIntegrationTest {
         assertNotNull(result.getStatus(), "容器状态不应为null");
         assertNotNull(result.getType(), "容器类型不应为null");
         assertNotNull(result.getCreatedAt(), "创建时间不应为null");
-        
+
         System.out.println("创建容器成功:");
         System.out.println("- 容器ID: " + result.getId());
         System.out.println("- 容器名称: " + result.getName());
         System.out.println("- 外部端口: " + result.getExternalPort());
         System.out.println("- 卷路径: " + result.getVolumePath());
         System.out.println("- 状态: " + result.getStatus());
-        while (true){
+        while (true) {
             try {
                 Thread.sleep(1000L);
             } catch (InterruptedException e) {
@@ -59,9 +55,7 @@ class ContainerAppServiceIntegrationTest {
         }
     }
 
-    /**
-     * 测试检查用户容器健康状态 - 使用真实数据
-     */
+    /** 测试检查用户容器健康状态 - 使用真实数据 */
     @Test
     void testCheckUserContainerHealth_WithRealData() {
         // Given: 首先创建一个容器
@@ -69,25 +63,25 @@ class ContainerAppServiceIntegrationTest {
         assertNotNull(createdContainer, "预置容器创建失败");
 
         // When: 检查容器健康状态
-        ContainerAppService.ContainerHealthStatus healthStatus = 
-            containerAppService.checkUserContainerHealth(TEST_USER_ID);
+        ContainerAppService.ContainerHealthStatus healthStatus = containerAppService
+                .checkUserContainerHealth(TEST_USER_ID);
 
         // Then: 验证健康检查结果
         assertNotNull(healthStatus, "健康检查结果不应为null");
         assertNotNull(healthStatus.getMessage(), "健康检查消息不应为null");
         assertNotNull(healthStatus.getContainer(), "健康检查返回的容器信息不应为null");
-        
+
         // 验证返回的容器信息
         ContainerDTO containerFromHealth = healthStatus.getContainer();
         assertEquals(createdContainer.getId(), containerFromHealth.getId(), "容器ID应匹配");
         assertEquals(TEST_USER_ID, containerFromHealth.getUserId(), "用户ID应匹配");
-        
+
         System.out.println("容器健康检查结果:");
         System.out.println("- 是否健康: " + healthStatus.isHealthy());
         System.out.println("- 检查消息: " + healthStatus.getMessage());
         System.out.println("- 容器ID: " + containerFromHealth.getId());
         System.out.println("- 容器状态: " + containerFromHealth.getStatus());
-        
+
         // 根据容器状态验证健康性
         if (containerFromHealth.getStatus().name().equals("RUNNING")) {
             assertTrue(healthStatus.isHealthy(), "运行中的容器应该是健康的");
@@ -99,9 +93,7 @@ class ContainerAppServiceIntegrationTest {
         }
     }
 
-    /**
-     * 测试重复创建容器 - 应返回现有容器
-     */
+    /** 测试重复创建容器 - 应返回现有容器 */
     @Test
     void testCreateUserContainer_ShouldReturnExisting() {
         // Given: 首先创建一个容器
@@ -113,13 +105,13 @@ class ContainerAppServiceIntegrationTest {
 
         // Then: 应返回相同的容器（如果第一个容器是可操作的）
         assertNotNull(secondContainer, "第二次创建容器返回null");
-        
+
         System.out.println("重复创建测试:");
         System.out.println("- 第一次创建ID: " + firstContainer.getId());
         System.out.println("- 第二次创建ID: " + secondContainer.getId());
         System.out.println("- 第一次状态: " + firstContainer.getStatus());
         System.out.println("- 第二次状态: " + secondContainer.getStatus());
-        
+
         // 如果第一个容器是可操作的，应该返回相同的容器
         if (isOperatable(firstContainer.getStatus().name())) {
             assertEquals(firstContainer.getId(), secondContainer.getId(), "应返回相同的容器ID");
@@ -129,9 +121,7 @@ class ContainerAppServiceIntegrationTest {
         }
     }
 
-    /**
-     * 判断容器状态是否可操作
-     */
+    /** 判断容器状态是否可操作 */
     private boolean isOperatable(String status) {
         return !"DELETING".equals(status) && !"DELETED".equals(status);
     }
