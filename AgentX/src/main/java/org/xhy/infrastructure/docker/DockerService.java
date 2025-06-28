@@ -384,6 +384,92 @@ public class DockerService {
         }
     }
 
+    /** 获取容器日志
+     * 
+     * @param containerId Docker容器ID
+     * @param lines 获取日志行数，null表示获取所有
+     * @param follow 是否持续跟踪日志
+     * @return 日志内容 */
+    public String getContainerLogs(String containerId, Integer lines, boolean follow) {
+        try {
+            StringBuilder logs = new StringBuilder();
+            
+            dockerClient.logContainerCmd(containerId)
+                    .withStdOut(true)
+                    .withStdErr(true)
+                    .withTimestamps(true)
+                    .withTail(lines)
+                    .withFollowStream(follow)
+                    .exec(new com.github.dockerjava.api.async.ResultCallback.Adapter<Frame>() {
+                        @Override
+                        public void onNext(Frame frame) {
+                            if (frame != null && frame.getPayload() != null) {
+                                logs.append(new String(frame.getPayload()));
+                            }
+                        }
+                    }).awaitCompletion();
+                    
+            return logs.toString();
+        } catch (Exception e) {
+            logger.error("获取容器日志失败: {}", containerId, e);
+            throw new BusinessException("获取容器日志失败: " + e.getMessage());
+        }
+    }
+
+    /** 在容器中执行命令
+     * 
+     * @param containerId Docker容器ID
+     * @param command 要执行的命令
+     * @return 执行结果 */
+    public String executeCommand(String containerId, String[] command) {
+        try {
+            String execId = dockerClient.execCreateCmd(containerId)
+                    .withAttachStdout(true)
+                    .withAttachStderr(true)
+                    .withCmd(command)
+                    .exec()
+                    .getId();
+
+            StringBuilder output = new StringBuilder();
+            
+            dockerClient.execStartCmd(execId)
+                    .exec(new com.github.dockerjava.api.async.ResultCallback.Adapter<Frame>() {
+                        @Override
+                        public void onNext(Frame frame) {
+                            if (frame != null && frame.getPayload() != null) {
+                                output.append(new String(frame.getPayload()));
+                            }
+                        }
+                    }).awaitCompletion();
+                    
+            return output.toString();
+        } catch (Exception e) {
+            logger.error("容器命令执行失败: {} -> {}", containerId, String.join(" ", command), e);
+            throw new BusinessException("容器命令执行失败: " + e.getMessage());
+        }
+    }
+
+    /** 检查容器是否可以执行命令
+     * 
+     * @param containerId Docker容器ID
+     * @return 是否可以执行命令 */
+    public boolean canExecuteCommands(String containerId) {
+        try {
+            String status = getContainerStatus(containerId);
+            return "running".equalsIgnoreCase(status);
+        } catch (Exception e) {
+            logger.warn("检查容器命令执行能力失败: {}", containerId, e);
+            return false;
+        }
+    }
+
+    /** 获取Docker客户端（用于WebTerminal）
+     * 
+     * @return Docker客户端 */
+    public DockerClient getDockerClient() {
+        return dockerClient;
+    }
+
     /** 容器统计信息类 */
     public static class ContainerStats {
         private String containerId;

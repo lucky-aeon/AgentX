@@ -90,4 +90,68 @@ public class AdminContainerController {
         return Result.success();
     }
 
+    /** 获取容器日志
+     * 
+     * @param containerId 容器ID
+     * @param lines 获取日志行数（可选，默认100行）
+     * @return 容器日志 */
+    @GetMapping("/{containerId}/logs")
+    public Result<String> getContainerLogs(@PathVariable String containerId, 
+                                         @RequestParam(required = false) Integer lines) {
+        String logs = containerAppService.getContainerLogs(containerId, lines);
+        return Result.success(logs);
+    }
+
+    /** 在容器中执行命令
+     * 
+     * @param containerId 容器ID
+     * @param command 要执行的命令
+     * @return 命令执行结果 */
+    @PostMapping("/{containerId}/exec")
+    public Result<String> executeCommand(@PathVariable String containerId, 
+                                       @RequestParam String command) {
+        String result = containerAppService.executeContainerCommand(containerId, command);
+        return Result.success(result);
+    }
+
+    /** 获取容器系统信息
+     * 
+     * @param containerId 容器ID
+     * @return 系统信息 */
+    @GetMapping("/{containerId}/system-info")
+    public Result<String> getSystemInfo(@PathVariable String containerId) {
+        String info = containerAppService.getContainerSystemInfo(containerId);
+        return Result.success(info);
+    }
+
+    /** 获取容器进程信息
+     * 
+     * @param containerId 容器ID
+     * @return 进程信息 */
+    @GetMapping("/{containerId}/processes")
+    public Result<String> getProcessInfo(@PathVariable String containerId) {
+        String info = containerAppService.getContainerProcessInfo(containerId);
+        return Result.success(info);
+    }
+
+    /** 获取容器网络信息
+     * 
+     * @param containerId 容器ID
+     * @return 网络信息 */
+    @GetMapping("/{containerId}/network")
+    public Result<String> getNetworkInfo(@PathVariable String containerId) {
+        String info = containerAppService.getContainerNetworkInfo(containerId);
+        return Result.success(info);
+    }
+
+    /** 检查容器内MCP网关状态
+     * 
+     * @param containerId 容器ID
+     * @return MCP网关状态 */
+    @GetMapping("/{containerId}/mcp-status")
+    public Result<String> getMcpGatewayStatus(@PathVariable String containerId) {
+        String status = containerAppService.checkMcpGatewayStatus(containerId);
+        return Result.success(status);
+    }
+
 }

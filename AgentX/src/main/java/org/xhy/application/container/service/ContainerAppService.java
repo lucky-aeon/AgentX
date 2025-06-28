@@ -298,6 +298,104 @@ public class ContainerAppService {
         return containerDomainService.getStatistics();
     }
 
+    /** 获取容器日志
+     * 
+     * @param containerId 容器ID
+     * @param lines 获取日志行数（可选）
+     * @return 日志内容 */
+    public String getContainerLogs(String containerId, Integer lines) {
+        ContainerEntity container = getContainerById(containerId);
+        
+        if (container.getDockerContainerId() == null) {
+            throw new BusinessException("容器未完成初始化，无法获取日志");
+        }
+
+        try {
+            // 默认获取最后100行日志
+            Integer logLines = lines != null ? lines : 100;
+            return dockerService.getContainerLogs(container.getDockerContainerId(), logLines, false);
+        } catch (Exception e) {
+            logger.error("获取容器日志失败: {}", containerId, e);
+            throw new BusinessException("获取容器日志失败: " + e.getMessage());
+        }
+    }
+
+    /** 在容器中执行命令
+     * 
+     * @param containerId 容器ID
+     * @param command 要执行的命令
+     * @return 执行结果 */
+    public String executeContainerCommand(String containerId, String command) {
+        ContainerEntity container = getContainerById(containerId);
+        
+        if (container.getDockerContainerId() == null) {
+            throw new BusinessException("容器未完成初始化，无法执行命令");
+        }
+
+        // 检查容器是否可以执行命令
+        if (!dockerService.canExecuteCommands(container.getDockerContainerId())) {
+            throw new BusinessException("容器未运行，无法执行命令");
+        }
+
+        try {
+            // 解析命令字符串为数组
+            String[] commandArray = parseCommand(command);
+            return dockerService.executeCommand(container.getDockerContainerId(), commandArray);
+        } catch (Exception e) {
+            logger.error("容器命令执行失败: {} -> {}", containerId, command, e);
+            throw new BusinessException("命令执行失败: " + e.getMessage());
+        }
+    }
+
+    /** 获取容器的系统信息
+     * 
+     * @param containerId 容器ID
+     * @return 系统信息 */
+    public String getContainerSystemInfo(String containerId) {
+        return executeContainerCommand(containerId, "uname -a && whoami && pwd && ls -la");
+    }
+
+    /** 获取容器的进程信息
+     * 
+     * @param containerId 容器ID
+     * @return 进程信息 */
+    public String getContainerProcessInfo(String containerId) {
+        return executeContainerCommand(containerId, "ps aux");
+    }
+
+    /** 获取容器的网络信息
+     * 
+     * @param containerId 容器ID
+     * @return 网络信息 */
+    public String getContainerNetworkInfo(String containerId) {
+        return executeContainerCommand(containerId, "netstat -tuln");
+    }
+
+    /** 检查容器内MCP网关状态
+     * 
+     * @param containerId 容器ID
+     * @return MCP网关状态 */
+    public String checkMcpGatewayStatus(String containerId) {
+        try {
+            // 检查MCP网关进程
+            String processCheck = executeContainerCommand(containerId, "ps aux | grep -v grep | grep mcp");
+            
+            // 检查端口占用
+            String portCheck = executeContainerCommand(containerId, "netstat -tuln | grep :8080");
+            
+            // 检查服务健康状态
+            String healthCheck = executeContainerCommand(containerId, "curl -s http://localhost:8080/health || echo 'Health check failed'");
+            
+            return "=== MCP网关进程 ===\n" + processCheck + 
+                   "\n\n=== 端口占用 ===\n" + portCheck +
+                   "\n\n=== 健康检查 ===\n" + healthCheck;
+                   
+        } catch (Exception e) {
+            logger.error("检查MCP网关状态失败: {}", containerId, e);
+            return "检查MCP网关状态失败: " + e.getMessage();
+        }
+    }
+
     /** 异步创建Docker容器 */
     private void createDockerContainerAsync(ContainerEntity container, ContainerTemplate template) {
         // 在实际应用中，这里应该使用异步任务队列
@@ -392,6 +490,29 @@ public class ContainerAppService {
     /** 根据ID获取容器 */
     private ContainerEntity getContainerById(String containerId) {
         return containerDomainService.getContainerById(containerId);
+    }
+
+    /** 解析命令字符串为数组
+     * 
+     * @param command 命令字符串
+     * @return 命令数组 */
+    private String[] parseCommand(String command) {
+        if (command == null || command.trim().isEmpty()) {
+            throw new BusinessException("命令不能为空");
+        }
+        
+        // 简单的命令解析，支持基本的shell命令
+        // 对于复杂命令，可以使用更完善的解析器
+        command = command.trim();
+        
+        // 如果命令包含管道、重定向等，使用sh -c执行
+        if (command.contains("|") || command.contains("&&") || command.contains("||") || 
+            command.contains(">") || command.contains("<")) {
+            return new String[]{"sh", "-c", command};
+        }
+        
+        // 简单命令直接分割
+        return command.split("\\s+");
     }
 
     /** 更新容器最后访问时间

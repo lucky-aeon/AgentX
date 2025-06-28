@@ -13,7 +13,15 @@
       "Bash(../AgentX/./mvnw clean compile)",
       "Bash(npm run lint:*)",
       "Bash(ls:*)",
-      "Bash(sh -c:*)"
+      "Bash(sh -c:*)",
+      "Bash(mkdir:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm install:*)",
+      "Bash(npm uninstall:*)",
+      "Bash(/Users/xhy/course/AgentX/AgentX/mvnw -f /Users/xhy/course/AgentX/AgentX/pom.xml clean compile)",
+      "Bash(curl:*)",
+      "Bash(docker exec:*)",
+      "Bash(docker start:*)"
     ],
     "deny": []
   }

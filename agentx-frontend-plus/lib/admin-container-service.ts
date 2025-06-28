@@ -111,6 +111,39 @@ export class AdminContainerService {
   static async deleteContainer(containerId: string): Promise<ApiResponse<void>> {
     return await httpClient.delete<ApiResponse<void>>(`/admin/containers/${containerId}`);
   }
+
+  /** 获取容器日志 */
+  static async getContainerLogs(containerId: string, lines?: number): Promise<ApiResponse<string>> {
+    const params = lines ? { lines } : {};
+    return await httpClient.get<ApiResponse<string>>(`/admin/containers/${containerId}/logs`, { params });
+  }
+
+  /** 在容器中执行命令 */
+  static async executeCommand(containerId: string, command: string): Promise<ApiResponse<string>> {
+    return await httpClient.post<ApiResponse<string>>(`/admin/containers/${containerId}/exec`, null, {
+      params: { command }
+    });
+  }
+
+  /** 获取容器系统信息 */
+  static async getSystemInfo(containerId: string): Promise<ApiResponse<string>> {
+    return await httpClient.get<ApiResponse<string>>(`/admin/containers/${containerId}/system-info`);
+  }
+
+  /** 获取容器进程信息 */
+  static async getProcessInfo(containerId: string): Promise<ApiResponse<string>> {
+    return await httpClient.get<ApiResponse<string>>(`/admin/containers/${containerId}/processes`);
+  }
+
+  /** 获取容器网络信息 */
+  static async getNetworkInfo(containerId: string): Promise<ApiResponse<string>> {
+    return await httpClient.get<ApiResponse<string>>(`/admin/containers/${containerId}/network`);
+  }
+
+  /** 检查容器内MCP网关状态 */
+  static async getMcpGatewayStatus(containerId: string): Promise<ApiResponse<string>> {
+    return await httpClient.get<ApiResponse<string>>(`/admin/containers/${containerId}/mcp-status`);
+  }
 }
 
 // 带Toast提示的API方法
@@ -152,6 +185,42 @@ export const deleteContainerWithToast = withToast(AdminContainerService.deleteCo
   showErrorToast: true,
   successTitle: "删除容器成功",
   errorTitle: "删除容器失败"
+});
+
+export const getContainerLogsWithToast = withToast(AdminContainerService.getContainerLogs, {
+  showSuccessToast: false,
+  showErrorToast: true,
+  errorTitle: "获取容器日志失败"
+});
+
+export const executeCommandWithToast = withToast(AdminContainerService.executeCommand, {
+  showSuccessToast: false,
+  showErrorToast: true,
+  errorTitle: "执行命令失败"
+});
+
+export const getSystemInfoWithToast = withToast(AdminContainerService.getSystemInfo, {
+  showSuccessToast: false,
+  showErrorToast: true,
+  errorTitle: "获取系统信息失败"
+});
+
+export const getProcessInfoWithToast = withToast(AdminContainerService.getProcessInfo, {
+  showSuccessToast: false,
+  showErrorToast: true,
+  errorTitle: "获取进程信息失败"
+});
+
+export const getNetworkInfoWithToast = withToast(AdminContainerService.getNetworkInfo, {
+  showSuccessToast: false,
+  showErrorToast: true,
+  errorTitle: "获取网络信息失败"
+});
+
+export const getMcpGatewayStatusWithToast = withToast(AdminContainerService.getMcpGatewayStatus, {
+  showSuccessToast: false,
+  showErrorToast: true,
+  errorTitle: "获取MCP网关状态失败"
 });
 
 // 容器状态和类型常量

@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Search, Play, Square, Trash2, Plus, RefreshCw, Settings } from "lucide-react";
+import { Search, Play, Square, Trash2, Plus, RefreshCw, Settings, FileText, Terminal, Monitor, Activity, Network, Server } from "lucide-react";
 import Link from "next/link";
 import { 
   getContainersWithToast, 
@@ -14,6 +14,12 @@ import {
   startContainerWithToast,
   stopContainerWithToast,
   deleteContainerWithToast,
+  getContainerLogsWithToast,
+  executeCommandWithToast,
+  getSystemInfoWithToast,
+  getProcessInfoWithToast,
+  getNetworkInfoWithToast,
+  getMcpGatewayStatusWithToast,
   Container, 
   ContainerStatistics, 
   PageResponse,
@@ -40,6 +46,21 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import dynamic from 'next/dynamic';
+
+// 动态导入WebTerminal组件，避免SSR问题
+const WebTerminal = dynamic(() => import('@/components/WebTerminal'), { 
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center h-96">加载终端中...</div>
+});
 
 export default function ContainersPage() {
   const [containers, setContainers] = useState<Container[]>([]);
@@ -54,6 +75,9 @@ export default function ContainersPage() {
     pages: 0
   });
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; container: Container | null }>({ open: false, container: null });
+  const [logsDialog, setLogsDialog] = useState<{ open: boolean; container: Container | null; logs: string }>({ open: false, container: null, logs: '' });
+  const [terminalDialog, setTerminalDialog] = useState<{ open: boolean; container: Container | null }>({ open: false, container: null });
+  const [infoDialog, setInfoDialog] = useState<{ open: boolean; container: Container | null; title: string; content: string }>({ open: false, container: null, title: '', content: '' });
   const { toast } = useToast();
 
   // 加载容器数据
@@ -231,6 +255,89 @@ export default function ContainersPage() {
         setDeleteDialog({ open: false, container: null });
         loadContainers(pageData.current, searchQuery);
         loadStatistics();
+      }
+    } catch (error) {
+      // 错误处理已由withToast处理
+    }
+  };
+
+  // 查看容器日志
+  const handleViewLogs = async (container: Container) => {
+    try {
+      const response = await getContainerLogsWithToast(container.id, 200);
+      if (response.code === 200) {
+        setLogsDialog({ 
+          open: true, 
+          container, 
+          logs: response.data || '暂无日志' 
+        });
+      }
+    } catch (error) {
+      // 错误处理已由withToast处理
+    }
+  };
+
+  // 打开终端
+  const handleOpenTerminal = (container: Container) => {
+    setTerminalDialog({ open: true, container });
+  };
+
+  // 查看系统信息
+  const handleViewSystemInfo = async (container: Container) => {
+    // 检查容器状态
+    const isRunning = container.status?.code === 2 || 
+                     container.status?.code === CONTAINER_STATUSES.RUNNING.code ||
+                     (typeof container.status === 'string' && container.status === 'RUNNING');
+    
+    if (!isRunning) {
+      toast({
+        title: "无法获取系统信息",
+        description: "容器未运行，请先启动容器",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    try {
+      const response = await getSystemInfoWithToast(container.id);
+      if (response.code === 200) {
+        setInfoDialog({
+          open: true,
+          container,
+          title: '系统信息',
+          content: response.data || '无法获取系统信息'
+        });
+      }
+    } catch (error) {
+      // 错误处理已由withToast处理
+    }
+  };
+
+  // 查看MCP网关状态
+  const handleViewMcpStatus = async (container: Container) => {
+    // 检查容器状态
+    const isRunning = container.status?.code === 2 || 
+                     container.status?.code === CONTAINER_STATUSES.RUNNING.code ||
+                     (typeof container.status === 'string' && container.status === 'RUNNING');
+    
+    if (!isRunning) {
+      toast({
+        title: "无法获取MCP网关状态",
+        description: "容器未运行，请先启动容器",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    try {
+      const response = await getMcpGatewayStatusWithToast(container.id);
+      if (response.code === 200) {
+        setInfoDialog({
+          open: true,
+          container,
+          title: 'MCP网关状态',
+          content: response.data || '无法获取MCP网关状态'
+        });
       }
     } catch (error) {
       // 错误处理已由withToast处理
@@ -421,12 +528,14 @@ export default function ContainersPage() {
                     <div className="text-sm">{formatDate(container.createdAt)}</div>
                   </TableCell>
                   <TableCell>
-                    <div className="flex space-x-2">
+                    <div className="flex flex-wrap gap-1">
+                      {/* 基础操作按钮 */}
                       {canStartContainer(container) && (
                         <Button
                           size="sm"
                           variant="outline"
                           onClick={() => handleStartContainer(container)}
+                          title="启动容器"
                         >
                           <Play className="w-3 h-3" />
                         </Button>
@@ -436,15 +545,52 @@ export default function ContainersPage() {
                           size="sm"
                           variant="outline"
                           onClick={() => handleStopContainer(container)}
+                          title="停止容器"
                         >
                           <Square className="w-3 h-3" />
                         </Button>
                       )}
+                      
+                      {/* 观测功能按钮 - 始终显示，运行状态检查在点击时进行 */}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleViewLogs(container)}
+                        title="查看日志"
+                      >
+                        <FileText className="w-3 h-3" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleOpenTerminal(container)}
+                        title="终端"
+                      >
+                        <Terminal className="w-3 h-3" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleViewSystemInfo(container)}
+                        title="系统信息"
+                      >
+                        <Monitor className="w-3 h-3" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleViewMcpStatus(container)}
+                        title="MCP状态"
+                      >
+                        <Server className="w-3 h-3" />
+                      </Button>
+                      
                       {canDeleteContainer(container) && (
                         <Button
                           size="sm"
                           variant="outline"
                           onClick={() => setDeleteDialog({ open: true, container })}
+                          title="删除容器"
                         >
                           <Trash2 className="w-3 h-3" />
                         </Button>
@@ -520,6 +666,79 @@ export default function ContainersPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* 容器日志对话框 */}
+      <Dialog open={logsDialog.open} onOpenChange={(open) => setLogsDialog({ open, container: logsDialog.container, logs: logsDialog.logs })}>
+        <DialogContent className="max-w-4xl max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle>容器日志 - {logsDialog.container?.name}</DialogTitle>
+            <DialogDescription>
+              最近200行日志记录
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Textarea
+              value={logsDialog.logs}
+              readOnly
+              className="min-h-[400px] font-mono text-sm bg-black text-green-400 resize-none"
+              placeholder="暂无日志..."
+            />
+            <div className="flex justify-end space-x-2">
+              <Button 
+                variant="outline"
+                onClick={() => handleViewLogs(logsDialog.container!)}
+                disabled={!logsDialog.container}
+              >
+                <RefreshCw className="w-4 h-4 mr-2" />
+                刷新日志
+              </Button>
+              <Button onClick={() => setLogsDialog({ open: false, container: null, logs: '' })}>
+                关闭
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* 容器终端对话框 - 使用真正的Web Terminal */}
+      <Dialog open={terminalDialog.open} onOpenChange={(open) => setTerminalDialog({ open, container: terminalDialog.container })}>
+        <DialogContent className="max-w-6xl max-h-[90vh] p-0">
+          <DialogHeader className="sr-only">
+            <DialogTitle>容器终端 - {terminalDialog.container?.name}</DialogTitle>
+          </DialogHeader>
+          <div className="h-[80vh]">
+            {terminalDialog.container && (
+              <WebTerminal
+                containerId={terminalDialog.container.id}
+                containerName={terminalDialog.container.name}
+                onClose={() => setTerminalDialog({ open: false, container: null })}
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* 信息查看对话框 */}
+      <Dialog open={infoDialog.open} onOpenChange={(open) => setInfoDialog({ open, container: infoDialog.container, title: infoDialog.title, content: infoDialog.content })}>
+        <DialogContent className="max-w-4xl max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle>{infoDialog.title} - {infoDialog.container?.name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Textarea
+              value={infoDialog.content}
+              readOnly
+              className="min-h-[400px] font-mono text-sm bg-slate-50 resize-none"
+              placeholder="暂无信息..."
+            />
+            <div className="flex justify-end">
+              <Button onClick={() => setInfoDialog({ open: false, container: null, title: '', content: '' })}>
+                关闭
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
