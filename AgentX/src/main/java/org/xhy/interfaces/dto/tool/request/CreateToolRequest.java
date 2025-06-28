@@ -36,6 +36,9 @@ public class CreateToolRequest {
     @NotNull(message = "安装命令不可为空")
     private Map<String, Object> installCommand;
 
+    /** 是否为全局工具，默认为false */
+    private Boolean isGlobal = false;
+
     // 构造方法
     public CreateToolRequest() {
     }
@@ -95,5 +98,13 @@ public class CreateToolRequest {
 
     public void setUploadUrl(String uploadUrl) {
         this.uploadUrl = uploadUrl;
+    }
+
+    public Boolean getIsGlobal() {
+        return isGlobal;
+    }
+
+    public void setIsGlobal(Boolean isGlobal) {
+        this.isGlobal = isGlobal;
     }
 }

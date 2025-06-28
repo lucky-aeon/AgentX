@@ -7,7 +7,6 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.xhy.domain.agent.constant.PublishStatus;
 import org.xhy.domain.agent.model.*;
 import org.xhy.domain.agent.repository.AgentRepository;
@@ -44,7 +43,6 @@ public class AgentDomainService {
     }
 
     /** 创建新Agent */
-    @Transactional
     public AgentEntity createAgent(AgentEntity agent) {
         agentRepository.insert(agent);
         return agent;
@@ -87,7 +85,6 @@ public class AgentDomainService {
     }
 
     /** 更新Agent信息（基本信息和配置合并更新） */
-    @Transactional
     public AgentEntity updateAgent(AgentEntity updateEntity) {
 
         // 需要根据 agentId 和 userId 作为条件进行修改
@@ -98,7 +95,6 @@ public class AgentDomainService {
     }
 
     /** 切换Agent的启用/禁用状态 */
-    @Transactional
     public AgentEntity toggleAgentStatus(String agentId) {
 
         AgentEntity agent = agentRepository.selectById(agentId);
@@ -118,7 +114,6 @@ public class AgentDomainService {
     }
 
     /** 删除Agent */
-    @Transactional
     public void deleteAgent(String agentId, String userId) {
         // 根据agentId和userId删除即可，创建 wrapper
         LambdaQueryWrapper<AgentEntity> wrapper = Wrappers.<AgentEntity>lambdaQuery().eq(AgentEntity::getId, agentId)
@@ -130,7 +125,6 @@ public class AgentDomainService {
     }
 
     /** 发布Agent版本 */
-    @Transactional
     public AgentVersionEntity publishAgentVersion(String agentId, AgentVersionEntity versionEntity) {
         AgentEntity agent = agentRepository.selectById(agentId);
         if (agent == null) {
@@ -174,7 +168,6 @@ public class AgentDomainService {
     }
 
     /** 更新版本发布状态 */
-    @Transactional
     public AgentVersionEntity updateVersionPublishStatus(String versionId, PublishStatus status) {
         AgentVersionEntity version = agentVersionRepository.selectById(versionId);
         if (version == null) {
@@ -200,7 +193,6 @@ public class AgentDomainService {
     }
 
     /** 拒绝版本发布 */
-    @Transactional
     public AgentVersionEntity rejectVersion(String versionId, String reason) {
         AgentVersionEntity version = agentVersionRepository.selectById(versionId);
         if (version == null) {

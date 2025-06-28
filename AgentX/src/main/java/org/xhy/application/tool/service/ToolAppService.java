@@ -17,6 +17,7 @@ import org.xhy.application.tool.dto.ToolDTO;
 import org.xhy.application.tool.dto.ToolVersionDTO;
 import org.xhy.domain.tool.constant.ToolStatus;
 import org.xhy.domain.tool.model.ToolEntity;
+import org.xhy.domain.tool.model.ToolOperationResult;
 import org.xhy.domain.tool.model.ToolVersionEntity;
 import org.xhy.domain.tool.model.UserToolEntity;
 import org.xhy.domain.tool.service.ToolDomainService;
@@ -45,12 +46,16 @@ public class ToolAppService {
 
     private final UserDomainService userDomainService;
 
+    private final ToolStateAppService toolStateAppService;
+
     public ToolAppService(ToolDomainService toolDomainService, UserToolDomainService userToolDomainService,
-            ToolVersionDomainService toolVersionDomainService, UserDomainService userDomainService) {
+            ToolVersionDomainService toolVersionDomainService, UserDomainService userDomainService,
+            ToolStateAppService toolStateAppService) {
         this.toolDomainService = toolDomainService;
         this.userToolDomainService = userToolDomainService;
         this.toolVersionDomainService = toolVersionDomainService;
         this.userDomainService = userDomainService;
+        this.toolStateAppService = toolStateAppService;
     }
 
     /** 上传工具
@@ -67,10 +72,15 @@ public class ToolAppService {
 
         toolEntity.setStatus(ToolStatus.WAITING_REVIEW);
         // 调用领域服务创建工具
-        ToolEntity createdTool = toolDomainService.createTool(toolEntity);
+        ToolOperationResult result = toolDomainService.createTool(toolEntity);
+
+        // 检查是否需要状态转换
+        if (result.needStateTransition()) {
+            toolStateAppService.processToolState(result.getTool());
+        }
 
         // 将实体转换为DTO返回
-        return ToolAssembler.toDTO(createdTool);
+        return ToolAssembler.toDTO(result.getTool());
     }
 
     public ToolDTO getToolDetail(String toolId, String userId) {
@@ -88,8 +98,14 @@ public class ToolAppService {
     public ToolDTO updateTool(String toolId, UpdateToolRequest request, String userId) {
         ToolEntity toolEntity = ToolAssembler.toEntity(request, userId);
         toolEntity.setId(toolId);
-        ToolEntity updatedTool = toolDomainService.updateTool(toolEntity);
-        return ToolAssembler.toDTO(updatedTool);
+        ToolOperationResult result = toolDomainService.updateTool(toolEntity);
+
+        // 检查是否需要状态转换
+        if (result.needStateTransition()) {
+            toolStateAppService.processToolState(result.getTool());
+        }
+
+        return ToolAssembler.toDTO(result.getTool());
     }
 
     public void deleteTool(String toolId, String userId) {

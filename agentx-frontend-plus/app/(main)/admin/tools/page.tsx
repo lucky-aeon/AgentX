@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { Search, Eye, RefreshCw, Code, Github, ExternalLink, CheckCircle, XCircle, Plus } from "lucide-react";
 import { 
   AdminToolService, 
@@ -41,6 +42,7 @@ export default function ToolsPage() {
   const [pageSize, setPageSize] = useState(15);
   const [selectedTool, setSelectedTool] = useState<Tool | null>(null);
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
+  const [updatingToolIds, setUpdatingToolIds] = useState<Set<string>>(new Set());
   const [statistics, setStatistics] = useState<ToolStatistics>({
     totalTools: 0,
     pendingReviewTools: 0,
@@ -167,6 +169,65 @@ export default function ToolsPage() {
   const handleReviewComplete = () => {
     loadTools();
     loadStatistics();
+  };
+
+  // 切换工具全局状态（乐观更新）
+  const handleToggleGlobalStatus = async (tool: Tool) => {
+    // 防止重复操作
+    if (updatingToolIds.has(tool.id)) {
+      return;
+    }
+
+    const newGlobalStatus = !tool.isGlobal;
+    const originalTool = { ...tool };
+    
+    // 1. 添加加载状态
+    setUpdatingToolIds(prev => new Set(prev).add(tool.id));
+    
+    // 2. 立即更新UI（乐观更新）
+    setTools(prevTools => prevTools.map(t => 
+      t.id === tool.id 
+        ? { ...t, isGlobal: newGlobalStatus }
+        : t
+    ));
+
+    try {
+      // 3. 调用API
+      const response = await AdminToolService.updateToolGlobalStatus(tool.id, newGlobalStatus);
+      
+      if (response.code === 200) {
+        // 4. 成功时不显示提示（UI已经反映了变化）
+        // 用户能直接看到Switch状态和文字的变化，无需额外提示
+      } else {
+        // 5. API返回错误时回滚UI
+        setTools(prevTools => prevTools.map(t => 
+          t.id === tool.id ? originalTool : t
+        ));
+        toast({
+          variant: "destructive",
+          title: "操作失败",
+          description: response.message || "未知错误"
+        });
+      }
+    } catch (error) {
+      // 6. 网络错误时回滚UI
+      setTools(prevTools => prevTools.map(t => 
+        t.id === tool.id ? originalTool : t
+      ));
+      console.error('切换工具全局状态失败:', error);
+      toast({
+        variant: "destructive",
+        title: "操作失败",
+        description: "网络连接异常，请稍后重试"
+      });
+    } finally {
+      // 7. 移除加载状态
+      setUpdatingToolIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(tool.id);
+        return newSet;
+      });
+    }
   };
 
 
@@ -335,6 +396,7 @@ export default function ToolsPage() {
                 <TableHead>工具信息</TableHead>
                 <TableHead>创建者</TableHead>
                 <TableHead>类型</TableHead>
+                <TableHead>范围</TableHead>
                 <TableHead>审核状态</TableHead>
                 <TableHead>上传链接</TableHead>
                 <TableHead>创建时间</TableHead>
@@ -388,6 +450,19 @@ export default function ToolsPage() {
                         {tool.isOffice ? "官方" : "第三方"}
                       </Badge>
                       <div className="text-xs text-gray-500">{tool.toolType}</div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        checked={tool.isGlobal || false}
+                        onCheckedChange={() => handleToggleGlobalStatus(tool)}
+                        disabled={updatingToolIds.has(tool.id)}
+                        size="sm"
+                      />
+                      <span className={`text-sm ${updatingToolIds.has(tool.id) ? 'text-gray-400' : 'text-gray-600'}`}>
+                        {updatingToolIds.has(tool.id) ? '更新中...' : (tool.isGlobal ? "全局" : "用户")}
+                      </span>
                     </div>
                   </TableCell>
                   <TableCell>

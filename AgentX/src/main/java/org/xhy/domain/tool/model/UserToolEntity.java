@@ -69,6 +69,10 @@ public class UserToolEntity extends BaseEntity {
     @TableField("mcp_server_name")
     private String mcpServerName;
 
+    /** 是否为全局工具 */
+    @TableField("is_global")
+    private Boolean isGlobal;
+
     public String getId() {
         return id;
     }
@@ -179,5 +183,13 @@ public class UserToolEntity extends BaseEntity {
 
     public void setMcpServerName(String mcpServerName) {
         this.mcpServerName = mcpServerName;
+    }
+
+    public Boolean getIsGlobal() {
+        return isGlobal;
+    }
+
+    public void setIsGlobal(Boolean isGlobal) {
+        this.isGlobal = isGlobal;
     }
 }

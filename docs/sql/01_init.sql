@@ -564,3 +564,147 @@ INSERT INTO auth_settings (id, feature_type, feature_key, feature_name, enabled,
 ('auth-github-login', 'LOGIN', 'GITHUB_LOGIN', 'GitHub登录', TRUE, 2, 'GitHub OAuth登录'),
 ('auth-community-login', 'LOGIN', 'COMMUNITY_LOGIN', '敲鸭登录', TRUE, 3, '敲鸭社区OAuth登录'),
 ('auth-user-register', 'REGISTER', 'USER_REGISTER', '用户注册', TRUE, 1, '允许新用户注册账号');
+
+
+-- 创建用户容器表
+CREATE TABLE user_containers (
+    id VARCHAR(36) PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    user_id VARCHAR(36) NOT NULL,
+    type INTEGER NOT NULL,
+    status INTEGER NOT NULL,
+    docker_container_id VARCHAR(100),
+    image VARCHAR(200) NOT NULL,
+    internal_port INTEGER NOT NULL,
+    external_port INTEGER,
+    ip_address VARCHAR(45),
+    cpu_usage DECIMAL(5,2),
+    memory_usage DECIMAL(5,2),
+    volume_path VARCHAR(500),
+    env_config TEXT,
+    container_config TEXT,
+    error_message TEXT,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP NULL
+);
+
+
+-- 添加表注释
+COMMENT ON TABLE user_containers IS '用户容器表';
+COMMENT ON COLUMN user_containers.id IS '容器ID';
+COMMENT ON COLUMN user_containers.name IS '容器名称';
+COMMENT ON COLUMN user_containers.user_id IS '用户ID';
+COMMENT ON COLUMN user_containers.type IS '容器类型: 1-用户容器, 2-审核容器';
+COMMENT ON COLUMN user_containers.status IS '容器状态: 1-创建中, 2-运行中, 3-已停止, 4-错误状态, 5-删除中, 6-已删除';
+COMMENT ON COLUMN user_containers.docker_container_id IS 'Docker容器ID';
+COMMENT ON COLUMN user_containers.image IS '容器镜像';
+COMMENT ON COLUMN user_containers.internal_port IS '内部端口';
+COMMENT ON COLUMN user_containers.external_port IS '外部映射端口';
+COMMENT ON COLUMN user_containers.ip_address IS '容器IP地址';
+COMMENT ON COLUMN user_containers.cpu_usage IS 'CPU使用率(%)';
+COMMENT ON COLUMN user_containers.memory_usage IS '内存使用率(%)';
+COMMENT ON COLUMN user_containers.volume_path IS '数据卷路径';
+COMMENT ON COLUMN user_containers.env_config IS '环境变量配置(JSON)';
+COMMENT ON COLUMN user_containers.container_config IS '容器配置(JSON)';
+COMMENT ON COLUMN user_containers.error_message IS '错误信息';
+COMMENT ON COLUMN user_containers.created_at IS '创建时间';
+COMMENT ON COLUMN user_containers.updated_at IS '更新时间';
+
+-- 创建容器模板表
+CREATE TABLE container_templates (
+    id VARCHAR(36) PRIMARY KEY,
+    name VARCHAR(100) NOT NULL UNIQUE,
+    description TEXT,
+    type VARCHAR(50) NOT NULL,
+    image VARCHAR(200) NOT NULL,
+    image_tag VARCHAR(50),
+    internal_port INTEGER NOT NULL,
+    cpu_limit DECIMAL(4,2) NOT NULL,
+    memory_limit INTEGER NOT NULL,
+    environment TEXT,
+    volume_mount_path VARCHAR(500),
+    command TEXT,
+    network_mode VARCHAR(50),
+    restart_policy VARCHAR(50),
+    health_check TEXT,
+    resource_config TEXT,
+    enabled BOOLEAN NOT NULL DEFAULT true,
+    is_default BOOLEAN NOT NULL DEFAULT false,
+    created_by VARCHAR(36),
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP NULL
+);
+
+
+-- 添加表注释
+COMMENT ON TABLE container_templates IS '容器模板表';
+COMMENT ON COLUMN container_templates.id IS '模板ID';
+COMMENT ON COLUMN container_templates.name IS '模板名称';
+COMMENT ON COLUMN container_templates.description IS '模板描述';
+COMMENT ON COLUMN container_templates.type IS '模板类型(mcp-gateway等)';
+COMMENT ON COLUMN container_templates.image IS '容器镜像名称';
+COMMENT ON COLUMN container_templates.image_tag IS '镜像版本标签';
+COMMENT ON COLUMN container_templates.internal_port IS '容器内部端口';
+COMMENT ON COLUMN container_templates.cpu_limit IS 'CPU限制(核数)';
+COMMENT ON COLUMN container_templates.memory_limit IS '内存限制(MB)';
+COMMENT ON COLUMN container_templates.environment IS '环境变量配置(JSON格式)';
+COMMENT ON COLUMN container_templates.volume_mount_path IS '数据卷挂载路径';
+COMMENT ON COLUMN container_templates.command IS '启动命令(JSON数组格式)';
+COMMENT ON COLUMN container_templates.network_mode IS '网络模式';
+COMMENT ON COLUMN container_templates.restart_policy IS '重启策略';
+COMMENT ON COLUMN container_templates.health_check IS '健康检查配置(JSON格式)';
+COMMENT ON COLUMN container_templates.resource_config IS '资源配置(JSON格式)';
+COMMENT ON COLUMN container_templates.enabled IS '是否启用';
+COMMENT ON COLUMN container_templates.is_default IS '是否为默认模板';
+COMMENT ON COLUMN container_templates.created_by IS '创建者用户ID';
+COMMENT ON COLUMN container_templates.sort_order IS '排序权重';
+COMMENT ON COLUMN container_templates.created_at IS '创建时间';
+COMMENT ON COLUMN container_templates.updated_at IS '更新时间';
+COMMENT ON COLUMN container_templates.deleted_at IS '删除时间';
+
+-- 插入默认的MCP网关模板
+INSERT INTO container_templates (
+    id, name, description, type, image, image_tag, internal_port, 
+    cpu_limit, memory_limit, volume_mount_path, network_mode, 
+    restart_policy, enabled, is_default, created_by, sort_order
+) VALUES (
+    'default-mcp-gateway-template',
+    'MCP网关默认模板',
+    '用于创建用户MCP网关容器的默认模板，提供工具部署和Agent对话功能',
+    'mcp-gateway',
+    'ghcr.io/lucky-aeon/mcp-gateway',
+    'latest',
+    8080,
+    1.0,
+    512,
+    '/app/data',
+    'bridge',
+    'unless-stopped',
+    true,
+    true,
+    'SYSTEM',
+    0
+);
+
+
+-- 为工具表添加全局状态字段
+ALTER TABLE tools ADD COLUMN is_global BOOLEAN NOT NULL DEFAULT false;
+
+-- 添加字段注释
+COMMENT ON COLUMN tools.is_global IS '是否为全局工具（true=全局工具，在系统级别部署；false=用户工具，需要在用户容器中部署）';
+
+-- 为user_tools表也添加全局状态字段，用于跟踪用户安装的工具类型
+ALTER TABLE user_tools ADD COLUMN is_global BOOLEAN NOT NULL DEFAULT false;
+
+-- 添加字段注释
+COMMENT ON COLUMN user_tools.is_global IS '是否为全局工具（继承自原始工具的全局状态）';
+
+
+-- 添加容器最后访问时间字段，用于自动清理
+ALTER TABLE user_containers ADD COLUMN last_accessed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP;
+
+-- 添加字段注释
+COMMENT ON COLUMN user_containers.last_accessed_at IS '最后访问时间，用于自动清理判断';

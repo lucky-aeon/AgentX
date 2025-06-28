@@ -1,7 +1,6 @@
 package org.xhy.domain.conversation.service.impl;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.xhy.domain.conversation.model.ContextEntity;
 import org.xhy.domain.conversation.model.MessageEntity;
 import org.xhy.domain.conversation.service.ChatCompletionHandler;
@@ -34,7 +33,6 @@ public class ChatCompletionHandlerImpl implements ChatCompletionHandler {
      * @param outputTokenCount 输出token数量
      * @param llmContent LLM回复内容 */
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public void handleCompletion(MessageEntity userMessage, MessageEntity llmMessage, ContextEntity contextEntity,
             Integer inputTokenCount, Integer outputTokenCount, String llmContent) {
         try {

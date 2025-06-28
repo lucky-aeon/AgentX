@@ -5,7 +5,6 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.xhy.domain.apikey.model.ApiKeyEntity;
 import org.xhy.domain.apikey.repository.ApiKeyRepository;
@@ -29,7 +28,6 @@ public class ApiKeyDomainService {
      *
      * @param apiKeyEntity API密钥实体
      * @return 创建后的API密钥实体 */
-    @Transactional
     public ApiKeyEntity createApiKey(ApiKeyEntity apiKeyEntity) {
         // 生成API Key
         apiKeyEntity.generateApiKey();
@@ -70,7 +68,6 @@ public class ApiKeyDomainService {
     /** 更新API Key使用记录
      *
      * @param apiKey API密钥 */
-    @Transactional
     public void updateUsage(String apiKey) {
         LambdaUpdateWrapper<ApiKeyEntity> wrapper = Wrappers.<ApiKeyEntity>lambdaUpdate()
                 .eq(ApiKeyEntity::getApiKey, apiKey).setSql("usage_count = usage_count + 1")
@@ -152,7 +149,6 @@ public class ApiKeyDomainService {
      * @param apiKeyId API密钥ID
      * @param userId 用户ID
      * @param status 状态 */
-    @Transactional
     public void updateStatus(String apiKeyId, String userId, Boolean status) {
         LambdaUpdateWrapper<ApiKeyEntity> wrapper = Wrappers.<ApiKeyEntity>lambdaUpdate()
                 .eq(ApiKeyEntity::getId, apiKeyId).eq(ApiKeyEntity::getUserId, userId)
@@ -165,7 +161,6 @@ public class ApiKeyDomainService {
      *
      * @param apiKeyId API密钥ID
      * @param userId 用户ID */
-    @Transactional
     public void deleteApiKey(String apiKeyId, String userId) {
         Wrapper<ApiKeyEntity> wrapper = Wrappers.<ApiKeyEntity>lambdaQuery().eq(ApiKeyEntity::getId, apiKeyId)
                 .eq(ApiKeyEntity::getUserId, userId);
@@ -178,7 +173,6 @@ public class ApiKeyDomainService {
      * @param apiKeyId API密钥ID
      * @param userId 用户ID
      * @return 新的API密钥实体 */
-    @Transactional
     public ApiKeyEntity resetApiKey(String apiKeyId, String userId) {
         ApiKeyEntity apiKeyEntity = getApiKey(apiKeyId, userId);
 

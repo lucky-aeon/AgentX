@@ -28,7 +28,7 @@ import FileUpload from "@/components/ui/file-upload"
 
 const mcpServerCommandTemp = '例如：{"mcpServers": {"file-system": {"args": ["-y", "@modelcontextprotocol/server-filesystem", "/etc/proxy"], "command": "npx"}}}';
 
-// 表单验证模式 - 与前台保持一致
+// 表单验证模式 - 管理员工具创建
 const formSchema = z.object({
   name: z.string().min(2, "工具名称至少需要2个字符").max(50, "工具名称最多50个字符"),
   subtitle: z.string().min(2, "副标题至少需要2个字符").max(100, "副标题最多100个字符"),

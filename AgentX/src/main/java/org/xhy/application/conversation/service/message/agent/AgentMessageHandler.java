@@ -39,7 +39,9 @@ public class AgentMessageHandler extends AbstractMessageHandler {
 
     @Override
     protected ToolProvider provideTools(ChatContext chatContext) {
+        // 关键改造：传递用户ID给工具管理器
         return agentToolManager.createToolProvider(agentToolManager.getAvailableTools(chatContext),
-                chatContext.getAgent().getToolPresetParams());
+                chatContext.getAgent().getToolPresetParams(), chatContext.getUserId() // 新增：传递用户ID
+        );
     }
 }

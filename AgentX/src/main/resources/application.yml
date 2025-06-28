@@ -26,7 +26,7 @@ spring:
   # 跨域配置
   mvc:
     cors:
-      allowed-origins: "*"
+      allowed-origin-patterns: "*"
       allowed-methods: "*"
       allowed-headers: "*"
       allow-credentials: true
@@ -36,6 +36,7 @@ spring:
 mybatis-plus:
   mapper-locations: classpath*:/mapper/**/*.xml
   type-aliases-package: org.xhy.domain
+  type-handlers-package: org.xhy.infrastructure.converter
   configuration:
     map-underscore-to-camel-case: true
     cache-enabled: false

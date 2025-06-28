@@ -11,6 +11,7 @@ import org.xhy.domain.tool.constant.ToolStatus;
 import org.xhy.domain.tool.constant.ToolType;
 import org.xhy.domain.tool.constant.UploadType;
 import org.xhy.domain.tool.model.ToolEntity;
+import org.xhy.domain.tool.model.ToolOperationResult;
 import org.xhy.domain.tool.service.ToolDomainService;
 import org.xhy.domain.tool.service.ToolStateDomainService;
 import org.xhy.interfaces.dto.tool.request.CreateToolRequest;
@@ -48,8 +49,8 @@ public class AdminToolAppService {
         entity.setIsOffice(true);
 
         // 保存工具
-        ToolEntity createdTool = toolDomainService.createTool(entity);
-        String toolId = createdTool.getId();
+        ToolOperationResult tool = toolDomainService.createTool(entity);
+        String toolId = tool.getTool().getId();
 
         logger.info("官方工具创建成功: toolId={}", toolId);
         return toolId;
@@ -97,5 +98,25 @@ public class AdminToolAppService {
      * @return 工具统计数据 */
     public ToolStatisticsDTO getToolStatistics() {
         return toolDomainService.getToolStatistics();
+    }
+
+    /** 更新工具全局状态
+     * 
+     * @param toolId 工具ID
+     * @param isGlobal 是否为全局工具 */
+    @Transactional
+    public void updateToolGlobalStatus(String toolId, Boolean isGlobal) {
+        logger.info("更新工具全局状态: toolId={}, isGlobal={}", toolId, isGlobal);
+
+        // 检查工具是否存在
+        ToolEntity tool = toolDomainService.getTool(toolId);
+        if (tool == null) {
+            throw new BusinessException("工具不存在: " + toolId);
+        }
+
+        // 使用专门的方法更新全局状态，不触发审核流程
+        toolDomainService.updateToolGlobalStatus(toolId, isGlobal);
+
+        logger.info("工具全局状态更新成功: toolId={}, isGlobal={}", toolId, isGlobal);
     }
 }

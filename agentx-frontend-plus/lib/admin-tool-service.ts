@@ -50,6 +50,7 @@ export interface Tool {
   rejectReason?: string;
   failedStepStatus?: ToolStatus;
   mcpServerName?: string;
+  isGlobal?: boolean; // 是否为全局工具
 }
 
 // 工具查询参数接口
@@ -202,6 +203,26 @@ export class AdminToolService {
       return {
         code: 500,
         message: "更新工具状态失败",
+        data: undefined,
+        timestamp: Date.now()
+      };
+    }
+  }
+
+  /**
+   * 更新工具全局状态
+   * @param toolId 工具ID
+   * @param isGlobal 是否为全局工具
+   * @returns 操作结果
+   */
+  static async updateToolGlobalStatus(toolId: string, isGlobal: boolean): Promise<ApiResponse<void>> {
+    try {
+      const url = `/admin/tools/${toolId}/global-status`;
+      return await httpClient.put(url, { isGlobal });
+    } catch (error) {
+      return {
+        code: 500,
+        message: "更新工具全局状态失败",
         data: undefined,
         timestamp: Date.now()
       };
