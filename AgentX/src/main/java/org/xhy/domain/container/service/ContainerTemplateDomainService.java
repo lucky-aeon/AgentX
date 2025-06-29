@@ -2,6 +2,7 @@ package org.xhy.domain.container.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.stereotype.Service;
+import org.xhy.domain.container.constant.ContainerType;
 import org.xhy.domain.container.model.ContainerTemplateEntity;
 import org.xhy.domain.container.repository.ContainerTemplateRepository;
 import org.xhy.infrastructure.entity.Operator;
@@ -12,9 +13,6 @@ import java.util.List;
 /** 容器模板领域服务 */
 @Service
 public class ContainerTemplateDomainService {
-
-    /** MCP网关模板类型（即用户容器） */
-    public static final String MCP_GATEWAY_TYPE = "mcp-gateway";
 
     private final ContainerTemplateRepository templateRepository;
 
@@ -158,12 +156,30 @@ public class ContainerTemplateDomainService {
         return templateRepository.findDefaultByType(type);
     }
 
-    /** 获取MCP网关默认模板 */
+    /** 根据类型获取默认模板
+     * 
+     * @param type 模板类型枚举
+     * @return 默认模板，可能为null */
+    public ContainerTemplateEntity getDefaultTemplate(ContainerType type) {
+        return templateRepository.findDefaultByType(type.name().toLowerCase());
+    }
+
+    /** 获取用户容器默认模板（MCP网关镜像） */
     public ContainerTemplateEntity getMcpGatewayTemplate() {
-        ContainerTemplateEntity template = getDefaultTemplate(MCP_GATEWAY_TYPE);
+        ContainerTemplateEntity template = getDefaultTemplate(ContainerType.USER);
         if (template == null) {
             // 如果没有配置默认模板，返回内置模板
             return createBuiltinMcpGatewayTemplate();
+        }
+        return template;
+    }
+
+    /** 获取审核容器默认模板 */
+    public ContainerTemplateEntity getReviewContainerTemplate() {
+        ContainerTemplateEntity template = getDefaultTemplate(ContainerType.REVIEW);
+        if (template == null) {
+            // 如果没有配置审核容器模板，返回内置模板
+            return createBuiltinReviewContainerTemplate();
         }
         return template;
     }
@@ -216,8 +232,8 @@ public class ContainerTemplateDomainService {
     }
 
     /** 取消指定类型的默认模板设置 */
-    private void clearDefaultTemplate(String type) {
-        ContainerTemplateEntity currentDefault = templateRepository.findDefaultByType(type);
+    private void clearDefaultTemplate(ContainerType type) {
+        ContainerTemplateEntity currentDefault = templateRepository.findDefaultByType(type.name().toLowerCase());
         if (currentDefault != null) {
             currentDefault.setIsDefault(false);
             templateRepository.updateById(currentDefault);
@@ -287,7 +303,28 @@ public class ContainerTemplateDomainService {
         ContainerTemplateEntity template = new ContainerTemplateEntity();
         template.setName("MCP网关默认模板");
         template.setDescription("内置的MCP网关容器模板，用于用户容器创建");
-        template.setType(MCP_GATEWAY_TYPE);
+        template.setType(ContainerType.USER);
+        template.setImage("ghcr.io/lucky-aeon/mcp-gateway");
+        template.setImageTag("latest");
+        template.setInternalPort(8080);
+        template.setCpuLimit(1.0);
+        template.setMemoryLimit(512);
+        template.setVolumeMountPath("/app/data");
+        template.setNetworkMode("bridge");
+        template.setRestartPolicy("unless-stopped");
+        template.setEnabled(true);
+        template.setIsDefault(true);
+        template.setCreatedBy("SYSTEM");
+        template.setSortOrder(0);
+        return template;
+    }
+
+    /** 创建内置审核容器模板 */
+    private ContainerTemplateEntity createBuiltinReviewContainerTemplate() {
+        ContainerTemplateEntity template = new ContainerTemplateEntity();
+        template.setName("审核容器默认模板");
+        template.setDescription("内置的审核容器模板，用于工具审核环境");
+        template.setType(ContainerType.REVIEW);
         template.setImage("ghcr.io/lucky-aeon/mcp-gateway");
         template.setImageTag("latest");
         template.setInternalPort(8080);

@@ -148,6 +148,38 @@ public class MCPGatewayService {
         }
     }
 
+    /** 从审核容器获取工具列表
+     *
+     * @param toolName 工具名称
+     * @param containerIp 审核容器IP地址
+     * @param containerPort 审核容器端口
+     * @return 工具定义列表
+     * @throws BusinessException 如果API调用失败 */
+    public List<ToolDefinition> listToolsFromReviewContainer(String toolName, String containerIp, Integer containerPort)
+            throws Exception {
+        String url = "http://" + containerIp + ":" + containerPort + "/" + toolName + "/sse/sse?api_key="
+                + properties.getApiKey();
+
+        logger.info("从审核容器获取工具列表: {}", url);
+
+        HttpMcpTransport transport = new HttpMcpTransport.Builder().sseUrl(url).timeout(Duration.ofSeconds(10))
+                .logRequests(false).logResponses(true).build();
+        McpClient client = new DefaultMcpClient.Builder().transport(transport).build();
+        try {
+            List<ToolSpecification> toolSpecifications = client.listTools();
+            List<ToolDefinition> result = ToolSpecificationConverter.convert(toolSpecifications);
+
+            logger.info("成功从审核容器获取到工具列表，共 {} 个工具定义", result != null ? result.size() : 0);
+            return result;
+
+        } catch (Exception e) {
+            logger.error("从审核容器调用MCP Gateway API失败: {}:{}", containerIp, containerPort, e);
+            throw new BusinessException("从审核容器调用MCP Gateway API失败: " + e.getMessage(), e);
+        } finally {
+            client.close();
+        }
+    }
+
     /** 创建配置了超时的HTTP客户端 */
     private CloseableHttpClient createHttpClient() {
         RequestConfig config = RequestConfig.custom().setConnectTimeout(properties.getConnectTimeout())

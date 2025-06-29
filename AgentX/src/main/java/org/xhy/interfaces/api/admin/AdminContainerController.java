@@ -5,6 +5,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.xhy.application.container.dto.ContainerDTO;
 import org.xhy.application.container.service.ContainerAppService;
+import org.xhy.application.container.service.ReviewContainerService;
 import org.xhy.domain.container.model.ContainerEntity;
 import org.xhy.domain.container.service.ContainerDomainService;
 import org.xhy.infrastructure.auth.UserContext;
@@ -19,9 +20,12 @@ import org.xhy.interfaces.dto.container.response.ContainerStatisticsResponse;
 public class AdminContainerController {
 
     private final ContainerAppService containerAppService;
+    private final ReviewContainerService reviewContainerService;
 
-    public AdminContainerController(ContainerAppService containerAppService) {
+    public AdminContainerController(ContainerAppService containerAppService,
+            ReviewContainerService reviewContainerService) {
         this.containerAppService = containerAppService;
+        this.reviewContainerService = reviewContainerService;
     }
 
     /** 分页获取容器列表
@@ -108,6 +112,64 @@ public class AdminContainerController {
     public Result<String> getMcpGatewayStatus(@PathVariable String containerId) {
         String status = containerAppService.checkMcpGatewayStatus(containerId);
         return Result.success(status);
+    }
+
+    /** 启动容器
+     * 
+     * @param containerId 容器ID
+     * @return 操作结果 */
+    @PostMapping("/{containerId}/start")
+    public Result<Void> startContainer(@PathVariable String containerId) {
+        containerAppService.startContainer(containerId);
+        return Result.success();
+    }
+
+    /** 停止容器
+     * 
+     * @param containerId 容器ID
+     * @return 操作结果 */
+    @PostMapping("/{containerId}/stop")
+    public Result<Void> stopContainer(@PathVariable String containerId) {
+        containerAppService.stopContainer(containerId);
+        return Result.success();
+    }
+
+    /** 获取或创建审核容器
+     * 
+     * @return 审核容器信息 */
+    @PostMapping("/review")
+    public Result<ContainerDTO> getOrCreateReviewContainer() {
+        ContainerDTO reviewContainer = containerAppService.getOrCreateReviewContainer();
+        return Result.success(reviewContainer);
+    }
+
+    /** 检查审核容器健康状态
+     * 
+     * @return 审核容器健康状态 */
+    @GetMapping("/review/health")
+    public Result<ReviewContainerService.ReviewContainerHealthStatus> checkReviewContainerHealth() {
+        ReviewContainerService.ReviewContainerHealthStatus healthStatus = reviewContainerService
+                .checkReviewContainerHealth();
+        return Result.success(healthStatus);
+    }
+
+    /** 重新创建审核容器
+     * 
+     * @return 新的审核容器信息 */
+    @PostMapping("/review/recreate")
+    public Result<ContainerDTO> recreateReviewContainer() {
+        ContainerDTO reviewContainer = reviewContainerService.recreateReviewContainer();
+        return Result.success(reviewContainer);
+    }
+
+    /** 从模板创建容器
+     * 
+     * @param templateId 模板ID
+     * @return 创建的容器信息 */
+    @PostMapping("/from-template/{templateId}")
+    public Result<ContainerDTO> createContainerFromTemplate(@PathVariable String templateId) {
+        ContainerDTO container = containerAppService.createContainerFromTemplate(templateId);
+        return Result.success(container);
     }
 
 }

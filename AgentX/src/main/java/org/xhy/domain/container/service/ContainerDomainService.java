@@ -64,25 +64,32 @@ public class ContainerDomainService {
 
     /** 创建审核容器
      * 
-     * @param userId 用户ID
      * @param containerName 容器名称
      * @param image 镜像名称
      * @param internalPort 内部端口
+     * @param volumePath 数据卷路径
      * @return 容器实体 */
-    public ContainerEntity createReviewContainer(String userId, String containerName, String image,
-            Integer internalPort) {
+    public ContainerEntity createReviewContainer(String containerName, String image, Integer internalPort,
+            String volumePath) {
+        // 检查是否已有审核容器
+        ContainerEntity existingContainer = findReviewContainer();
+        if (existingContainer != null && existingContainer.isOperatable()) {
+            throw new BusinessException("系统已存在审核容器，无法重复创建");
+        }
+
         // 分配外部端口
         Integer externalPort = allocateExternalPort();
 
         // 创建审核容器实体
         ContainerEntity container = new ContainerEntity();
         container.setName(containerName);
-        container.setUserId(userId);
+        container.setUserId("SYSTEM"); // 审核容器使用系统用户ID
         container.setType(ContainerType.REVIEW);
         container.setStatus(ContainerStatus.CREATING);
         container.setImage(image);
         container.setInternalPort(internalPort);
         container.setExternalPort(externalPort);
+        container.setVolumePath(volumePath);
         container.setLastAccessedAt(LocalDateTime.now()); // 设置初始访问时间
 
         containerRepository.insert(container);
@@ -95,6 +102,17 @@ public class ContainerDomainService {
      * @return 用户容器，可能为null */
     public ContainerEntity findUserContainer(String userId) {
         return containerRepository.findByUserIdAndType(userId, ContainerType.USER);
+    }
+
+    /** 获取审核容器
+     * 
+     * @return 审核容器，可能为null */
+    public ContainerEntity findReviewContainer() {
+        LambdaQueryWrapper<ContainerEntity> wrapper = Wrappers.<ContainerEntity>lambdaQuery()
+                .eq(ContainerEntity::getType, ContainerType.REVIEW).orderByDesc(ContainerEntity::getCreatedAt);
+
+        List<ContainerEntity> containers = containerRepository.selectList(wrapper);
+        return containers.isEmpty() ? null : containers.get(0);
     }
 
     /** 根据ID获取容器

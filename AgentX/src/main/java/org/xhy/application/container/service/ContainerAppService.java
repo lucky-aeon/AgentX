@@ -365,7 +365,7 @@ public class ContainerAppService {
         }
     }
 
-    /** 异步创建Docker容器 */
+    /** 创建Docker容器 */
     private void createDockerContainer(ContainerEntity container, ContainerTemplate template) {
         try {
             String dockerContainerId = dockerService.createAndStartContainer(container.getName(), template,
@@ -519,6 +519,127 @@ public class ContainerAppService {
             containerDomainService.markContainerError(container.getId(), "恢复失败: " + e.getMessage(), Operator.ADMIN);
             throw new BusinessException("容器恢复失败");
         }
+    }
+
+    /** 获取或创建审核容器
+     * 
+     * @return 审核容器信息，保证返回可用的审核容器 */
+    @Transactional
+    public ContainerDTO getOrCreateReviewContainer() {
+        // 查找现有的审核容器
+        ContainerEntity reviewContainer = containerDomainService.findReviewContainer();
+
+        if (reviewContainer == null) {
+            // 审核容器不存在，创建新的
+            logger.info("审核容器不存在，自动创建");
+            return createReviewContainer();
+        }
+
+        // 检查审核容器健康状态
+        if (!isContainerHealthy(reviewContainer)) {
+            logger.info("审核容器不健康，尝试启动: status={}", reviewContainer.getStatus());
+            try {
+                // 启动容器
+                startContainer(reviewContainer.getId());
+                // 重新获取最新状态
+                reviewContainer = containerDomainService.getContainerById(reviewContainer.getId());
+            } catch (Exception e) {
+                logger.error("启动审核容器失败: containerId={}", reviewContainer.getId(), e);
+                throw new BusinessException("审核容器启动失败: " + e.getMessage());
+            }
+        }
+
+        return ContainerAssembler.toDTO(reviewContainer);
+    }
+
+    /** 创建审核容器
+     * 
+     * @return 审核容器信息 */
+    @Transactional
+    public ContainerDTO createReviewContainer() {
+        // 获取审核容器模板
+        ContainerTemplateEntity templateEntity = templateDomainService.getReviewContainerTemplate();
+        ContainerTemplate template = templateEntity.toContainerTemplate();
+
+        // 生成审核容器名称
+        String containerName = "mcp-gateway-review-system";
+
+        // 创建审核容器数据卷目录
+        String volumePath = createReviewVolumeDirectory();
+
+        // 创建审核容器实体
+        ContainerEntity container = containerDomainService.createReviewContainer(containerName, template.getImage(),
+                template.getInternalPort(), volumePath);
+
+        // 创建Docker容器
+        createDockerContainer(container, template);
+
+        return ContainerAssembler.toDTO(container);
+    }
+
+    /** 创建审核容器数据卷目录 */
+    private String createReviewVolumeDirectory() {
+        String volumePath = USER_VOLUME_BASE_PATH + "/review-system";
+        File directory = new File(volumePath);
+
+        if (!directory.exists()) {
+            boolean created = directory.mkdirs();
+            if (!created) {
+                logger.warn("无法创建审核容器数据目录: {}，尝试使用临时目录", volumePath);
+                // 如果无法创建指定目录，使用临时目录
+                String tempVolumePath = System.getProperty("java.io.tmpdir") + "/agentx-docker-volumes/review-system";
+                File tempDirectory = new File(tempVolumePath);
+                if (!tempDirectory.exists()) {
+                    boolean tempCreated = tempDirectory.mkdirs();
+                    if (!tempCreated) {
+                        throw new BusinessException("创建审核容器数据目录失败: " + tempVolumePath);
+                    }
+                }
+                return tempVolumePath;
+            }
+        }
+
+        return volumePath;
+    }
+
+    /** 从模板创建容器
+     * 
+     * @param templateId 模板ID
+     * @return 创建的容器信息 */
+    @Transactional
+    public ContainerDTO createContainerFromTemplate(String templateId) {
+        // 获取容器模板
+        ContainerTemplateEntity templateEntity = templateDomainService.getTemplateById(templateId);
+        ContainerTemplate template = templateEntity.toContainerTemplate();
+
+        // 根据模板类型创建不同类型的容器
+        if (ContainerType.REVIEW.equals(templateEntity.getType())) {
+            // 审核容器
+            return createReviewContainerFromTemplate(template);
+        } else {
+            throw new BusinessException("暂不支持从此类型模板创建容器: " + templateEntity.getType());
+        }
+    }
+
+    /** 从模板创建审核容器
+     * 
+     * @param template 容器模板
+     * @return 创建的容器信息 */
+    private ContainerDTO createReviewContainerFromTemplate(ContainerTemplate template) {
+        // 生成审核容器名称
+        String containerName = "mcp-gateway-review-" + System.currentTimeMillis();
+
+        // 创建审核容器数据卷目录
+        String volumePath = createReviewVolumeDirectory();
+
+        // 创建审核容器实体
+        ContainerEntity container = containerDomainService.createReviewContainer(containerName, template.getImage(),
+                template.getInternalPort(), volumePath);
+
+        // 异步创建Docker容器
+        createDockerContainer(container, template);
+
+        return ContainerAssembler.toDTO(container);
     }
 
     /** 容器健康状态检查结果 */

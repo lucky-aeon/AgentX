@@ -3,6 +3,7 @@ package org.xhy.application.tool.service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.xhy.application.container.service.ReviewContainerService;
 import org.xhy.domain.tool.constant.ToolStatus;
 import org.xhy.domain.tool.model.ToolEntity;
 import org.xhy.domain.tool.service.ToolStateDomainService;
@@ -24,12 +25,14 @@ public class ToolStateAppService {
     private final ToolStateDomainService toolStateDomainService;
     private final MCPGatewayService mcpGatewayService;
     private final GitHubService gitHubService;
+    private final ReviewContainerService reviewContainerService;
 
     public ToolStateAppService(ToolStateDomainService toolStateDomainService, MCPGatewayService mcpGatewayService,
-            GitHubService gitHubService) {
+            GitHubService gitHubService, ReviewContainerService reviewContainerService) {
         this.toolStateDomainService = toolStateDomainService;
         this.mcpGatewayService = mcpGatewayService;
         this.gitHubService = gitHubService;
+        this.reviewContainerService = reviewContainerService;
     }
 
     /** 处理工具部署 */
@@ -62,29 +65,36 @@ public class ToolStateAppService {
     /** 处理工具列表获取 */
     public void processFetchingTools(ToolEntity tool) {
         try {
-            logger.info("开始获取工具列表: {}", tool.getName());
+            logger.info("开始从审核容器获取工具列表: {}", tool.getName());
 
-            // 调用MCPGatewayService获取工具列表
-            List<ToolDefinition> toolDefinitions = mcpGatewayService.listTools(tool.getMcpServerName());
+            // 获取审核容器连接信息
+            ReviewContainerService.ReviewContainerConnection reviewConnection = reviewContainerService
+                    .getReviewContainerConnection();
+
+            logger.info("使用审核容器 {}:{} 获取工具 {} 的列表", reviewConnection.getIpAddress(), reviewConnection.getPort(),
+                    tool.getName());
+
+            // 调用MCPGatewayService从审核容器获取工具列表
+            List<ToolDefinition> toolDefinitions = mcpGatewayService.listToolsFromReviewContainer(
+                    tool.getMcpServerName(), reviewConnection.getIpAddress(), reviewConnection.getPort());
 
             if (toolDefinitions != null && !toolDefinitions.isEmpty()) {
-                logger.info("工具列表获取成功，数量: {}, 工具: {}", toolDefinitions.size(), tool.getName());
+                logger.info("从审核容器获取工具列表成功，数量: {}, 工具: {}", toolDefinitions.size(), tool.getName());
 
-                // 将工具定义存储到工具实体（如果需要）
-                String toolDefinitionsJson = JsonUtils.toJsonString(toolDefinitions);
+                // 将工具定义存储到工具实体
                 tool.setToolList(toolDefinitions);
 
-                // 转换状态到已通过
-                toolStateDomainService.transitionToStatus(tool, ToolStatus.APPROVED);
+                // 转换状态到手动审核
+                toolStateDomainService.transitionToStatus(tool, ToolStatus.MANUAL_REVIEW);
             } else {
-                logger.warn("工具列表获取失败或为空: {}", tool.getName());
+                logger.warn("从审核容器获取工具列表失败或为空: {}", tool.getName());
                 toolStateDomainService.transitionToStatus(tool, ToolStatus.FAILED);
-                throw new BusinessException("工具列表获取失败或为空");
+                throw new BusinessException("从审核容器获取工具列表失败或为空");
             }
         } catch (Exception e) {
-            logger.error("获取工具列表过程中发生异常: tool={}", tool.getName(), e);
+            logger.error("从审核容器获取工具列表过程中发生异常: tool={}", tool.getName(), e);
             toolStateDomainService.transitionToStatus(tool, ToolStatus.FAILED);
-            throw new BusinessException("工具列表获取失败: " + e.getMessage());
+            throw new BusinessException("从审核容器获取工具列表失败: " + e.getMessage());
         }
     }
 

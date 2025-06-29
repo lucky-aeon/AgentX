@@ -3,7 +3,7 @@ CREATE TABLE user_containers (
     id VARCHAR(36) PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     user_id VARCHAR(36) NOT NULL,
-    type INTEGER NOT NULL,
+    type VARCHAR(50) NOT NULL,
     status INTEGER NOT NULL,
     docker_container_id VARCHAR(100),
     image VARCHAR(200) NOT NULL,
@@ -27,7 +27,7 @@ COMMENT ON TABLE user_containers IS '用户容器表';
 COMMENT ON COLUMN user_containers.id IS '容器ID';
 COMMENT ON COLUMN user_containers.name IS '容器名称';
 COMMENT ON COLUMN user_containers.user_id IS '用户ID';
-COMMENT ON COLUMN user_containers.type IS '容器类型: 1-用户容器, 2-审核容器';
+COMMENT ON COLUMN user_containers.type IS '容器类型: user-用户容器, review-审核容器';
 COMMENT ON COLUMN user_containers.status IS '容器状态: 1-创建中, 2-运行中, 3-已停止, 4-错误状态, 5-删除中, 6-已删除';
 COMMENT ON COLUMN user_containers.docker_container_id IS 'Docker容器ID';
 COMMENT ON COLUMN user_containers.image IS '容器镜像';

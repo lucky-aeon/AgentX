@@ -5,6 +5,7 @@ import org.springframework.beans.BeanUtils;
 import org.xhy.application.container.dto.ContainerTemplateDTO;
 import org.xhy.interfaces.dto.container.request.CreateContainerTemplateRequest;
 import org.xhy.interfaces.dto.container.request.UpdateContainerTemplateRequest;
+import org.xhy.domain.container.constant.ContainerType;
 import org.xhy.domain.container.model.ContainerTemplateEntity;
 
 import java.util.Collections;
@@ -25,8 +26,13 @@ public class ContainerTemplateAssembler {
         }
 
         ContainerTemplateEntity entity = new ContainerTemplateEntity();
-        BeanUtils.copyProperties(request, entity);
+        BeanUtils.copyProperties(request, entity, "type");
         entity.setCreatedBy(userId);
+
+        // 手动设置类型，从字符串转换为枚举
+        if (request.getType() != null) {
+            entity.setType(ContainerType.valueOf(request.getType().toUpperCase()));
+        }
 
         return entity;
     }
@@ -41,7 +47,12 @@ public class ContainerTemplateAssembler {
         }
 
         ContainerTemplateEntity entity = new ContainerTemplateEntity();
-        BeanUtils.copyProperties(request, entity);
+        BeanUtils.copyProperties(request, entity, "type");
+
+        // 手动设置类型，从字符串转换为枚举
+        if (request.getType() != null) {
+            entity.setType(ContainerType.valueOf(request.getType().toUpperCase()));
+        }
 
         return entity;
     }
@@ -56,7 +67,12 @@ public class ContainerTemplateAssembler {
         }
 
         ContainerTemplateDTO dto = new ContainerTemplateDTO();
-        BeanUtils.copyProperties(entity, dto);
+        BeanUtils.copyProperties(entity, dto, "type");
+
+        // 手动设置类型，从枚举转换为字符串
+        if (entity.getType() != null) {
+            dto.setType(entity.getType().name().toLowerCase());
+        }
 
         // 设置完整镜像名称
         dto.setFullImageName(entity.getFullImageName());

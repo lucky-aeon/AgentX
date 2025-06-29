@@ -4,7 +4,9 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import org.xhy.domain.container.constant.ContainerType;
 import org.xhy.infrastructure.entity.BaseEntity;
+import org.xhy.infrastructure.converter.ContainerTypeConverter;
 import org.xhy.infrastructure.converter.JsonConverter;
 
 import java.util.Map;
@@ -21,7 +23,8 @@ public class ContainerTemplateEntity extends BaseEntity {
     /** 模板描述 */
     private String description;
     /** 模板类型 */
-    private String type;
+    @TableField(typeHandler = ContainerTypeConverter.class)
+    private ContainerType type;
     /** 镜像名称 */
     private String image;
     /** 镜像版本标签 */
@@ -83,11 +86,11 @@ public class ContainerTemplateEntity extends BaseEntity {
         this.description = description;
     }
 
-    public String getType() {
+    public ContainerType getType() {
         return type;
     }
 
-    public void setType(String type) {
+    public void setType(ContainerType type) {
         this.type = type;
     }
 

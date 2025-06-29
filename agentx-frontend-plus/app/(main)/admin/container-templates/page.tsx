@@ -12,8 +12,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { toast } from "@/hooks/use-toast";
-import { Plus, Edit, Trash2, Settings, Star, Play, Pause, Search } from "lucide-react";
+import { Plus, Edit, Trash2, Settings, Star, Play, Pause, Search, Container } from "lucide-react";
 import { ContainerTemplateService, type ContainerTemplate, type PageResponse, type TemplateStatistics, type CreateContainerTemplateRequest, type UpdateContainerTemplateRequest } from "@/lib/container-template-service";
+import { createContainerFromTemplateWithToast } from "@/lib/admin-container-service";
 
 export default function ContainerTemplatesPage() {
   const [templates, setTemplates] = useState<ContainerTemplate[]>([]);
@@ -44,7 +45,7 @@ export default function ContainerTemplatesPage() {
   const [formData, setFormData] = useState({
     name: "",
     description: "",
-    type: "mcp-gateway",
+    type: "user",
     image: "ghcr.io/lucky-aeon/mcp-gateway",
     imageTag: "latest",
     internalPort: 8080,
@@ -289,12 +290,28 @@ export default function ContainerTemplatesPage() {
     }
   };
 
+  const handleCreateContainer = async (template: ContainerTemplate) => {
+    try {
+      const response = await createContainerFromTemplateWithToast(template.id);
+      
+      if (response.code === 200) {
+        // 容器创建成功，可以选择跳转到容器管理页面或显示容器信息
+        toast({
+          title: "容器创建成功",
+          description: `已从模板 "${template.name}" 创建容器`,
+        });
+      }
+    } catch (error) {
+      // 错误处理已经由 withToast 处理了
+    }
+  };
+
   const resetForm = () => {
     setFormData({
       name: "",
       description: "",
-      type: "mcp-gateway",
-      image: "",
+      type: "user",
+      image: "ghcr.io/lucky-aeon/mcp-gateway",
       imageTag: "latest",
       internalPort: 8080,
       cpuLimit: 1.0,
@@ -338,11 +355,25 @@ export default function ContainerTemplatesPage() {
   }, []);
 
   const getTypeLabel = (type: string) => {
-    return type === "mcp-gateway" ? "MCP网关" : type;
+    switch (type) {
+      case "user":
+        return "用户容器";
+      case "review":
+        return "审核容器";
+      default:
+        return type;
+    }
   };
 
   const getTypeBadgeVariant = (type: string) => {
-    return "default";
+    switch (type) {
+      case "review":
+        return "destructive";
+      case "user":
+        return "default";
+      default:
+        return "secondary";
+    }
   };
 
   return (
@@ -389,6 +420,19 @@ export default function ContainerTemplatesPage() {
                     placeholder="请输入模板描述"
                     rows={2}
                   />
+                </div>
+
+                <div>
+                  <Label htmlFor="type">容器类型 *</Label>
+                  <Select value={formData.type} onValueChange={(value) => setFormData({ ...formData, type: value })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="选择容器类型" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="user">用户容器</SelectItem>
+                      <SelectItem value="review">审核容器</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
@@ -606,7 +650,8 @@ export default function ContainerTemplatesPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">所有类型</SelectItem>
-                <SelectItem value="mcp-gateway">MCP网关</SelectItem>
+                <SelectItem value="user">用户容器</SelectItem>
+                <SelectItem value="review">审核容器</SelectItem>
               </SelectContent>
             </Select>
             
@@ -712,7 +757,7 @@ export default function ContainerTemplatesPage() {
                   </div>
                 </div>
                 
-                <div className="flex gap-2 mt-4">
+                <div className="flex gap-2 mt-4 flex-wrap">
                   <Button
                     variant="outline"
                     size="sm"
@@ -721,6 +766,18 @@ export default function ContainerTemplatesPage() {
                     <Edit className="w-4 h-4 mr-1" />
                     编辑
                   </Button>
+                  
+                  {template.type === "review" && template.enabled && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleCreateContainer(template)}
+                      className="text-blue-600 hover:text-blue-700"
+                    >
+                      <Container className="w-4 h-4 mr-1" />
+                      创建容器
+                    </Button>
+                  )}
                   
                   <Button
                     variant="outline"

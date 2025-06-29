@@ -99,6 +99,11 @@ export class AdminContainerService {
     return await httpClient.post<ApiResponse<Container>>('/admin/containers/review', data);
   }
 
+  /** 从模板创建容器 */
+  static async createContainerFromTemplate(templateId: string): Promise<ApiResponse<Container>> {
+    return await httpClient.post<ApiResponse<Container>>(`/admin/containers/from-template/${templateId}`);
+  }
+
   /** 启动容器 */
   static async startContainer(containerId: string): Promise<ApiResponse<void>> {
     return await httpClient.post<ApiResponse<void>>(`/admin/containers/${containerId}/start`);
@@ -166,6 +171,13 @@ export const createReviewContainerWithToast = withToast(AdminContainerService.cr
   showErrorToast: true,
   successTitle: "创建审核容器成功",
   errorTitle: "创建审核容器失败"
+});
+
+export const createContainerFromTemplateWithToast = withToast(AdminContainerService.createContainerFromTemplate, {
+  showSuccessToast: true,
+  showErrorToast: true,
+  successTitle: "从模板创建容器成功",
+  errorTitle: "从模板创建容器失败"
 });
 
 export const startContainerWithToast = withToast(AdminContainerService.startContainer, {
