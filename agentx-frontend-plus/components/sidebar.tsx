@@ -282,6 +282,7 @@ function SidebarItemComponent({ item, depth = 0 }: SidebarItemProps) {
 }
 
 export function Sidebar() {
+  const { refreshTrigger } = useWorkspace()
   const [agents, setAgents] = useState<Agent[]>([])
   const [loading, setLoading] = useState(true)
   const [modelDialogOpen, setModelDialogOpen] = useState(false)
@@ -304,7 +305,7 @@ export function Sidebar() {
 
   useEffect(() => {
     loadWorkspaceAgents()
-  }, [])
+  }, [refreshTrigger])
 
   // 处理移除Agent
   const handleRemoveAgent = async (agentId: string) => {

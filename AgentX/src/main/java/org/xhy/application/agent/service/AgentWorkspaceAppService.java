@@ -74,7 +74,7 @@ public class AgentWorkspaceAppService {
         if (!deleteAgent) {
             throw new BusinessException("删除助理失败");
         }
-        List<String> sessionIds = sessionDomainService.getSessionsByAgentId(agentId).stream().map(SessionEntity::getId)
+        List<String> sessionIds = sessionDomainService.getSessionsByAgentId(agentId,userId).stream().map(SessionEntity::getId)
                 .collect(Collectors.toList());
         if (sessionIds.isEmpty()) {
             return;

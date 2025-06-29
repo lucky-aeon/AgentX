@@ -14,10 +14,12 @@ import { toast } from "@/hooks/use-toast"
 import { getPublishedAgents, addAgentToWorkspaceWithToast } from "@/lib/agent-service"
 import type { AgentVersion } from "@/types/agent"
 import { Sidebar } from "@/components/sidebar"
+import { useWorkspace } from "@/contexts/workspace-context"
 import Link from "next/link"
 
 export default function ExplorePage() {
   const router = useRouter()
+  const { refreshWorkspace } = useWorkspace()
   const [searchQuery, setSearchQuery] = useState("")
   const [debouncedQuery, setDebouncedQuery] = useState("")
   const [agents, setAgents] = useState<AgentVersion[]>([])
@@ -78,6 +80,8 @@ export default function ExplorePage() {
       if (response.code === 200) {
         // 局部刷新列表，而不是跳转到首页
         await fetchAgents()
+        // 刷新左侧边栏的工作区列表
+        refreshWorkspace()
       }
     } catch (error) {
       // 错误已由withToast处理
