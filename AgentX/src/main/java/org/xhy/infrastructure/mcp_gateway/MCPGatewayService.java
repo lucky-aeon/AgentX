@@ -187,4 +187,5 @@ public class MCPGatewayService {
 
         return HttpClients.custom().setDefaultRequestConfig(config).build();
     }
+
 }

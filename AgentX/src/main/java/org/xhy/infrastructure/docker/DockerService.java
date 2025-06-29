@@ -1,6 +1,7 @@
 package org.xhy.infrastructure.docker;
 
 import com.github.dockerjava.api.DockerClient;
+import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.github.dockerjava.api.command.CreateContainerResponse;
 import com.github.dockerjava.api.command.InspectContainerResponse;
 import com.github.dockerjava.api.command.StartContainerCmd;
@@ -74,11 +75,6 @@ public class DockerService {
             // 首先拉取镜像
             pullImageIfNotExists(template.getImage());
 
-            // 构建端口绑定
-            ExposedPort exposedPort = ExposedPort.tcp(template.getInternalPort());
-            Ports portBindings = new Ports();
-            portBindings.bind(exposedPort, Ports.Binding.bindPort(externalPort));
-
             // 构建环境变量
             String[] envVars = buildEnvironmentVariables(template, userId);
 
@@ -86,16 +82,34 @@ public class DockerService {
             Volume volume = new Volume(template.getVolumeMountPath());
             Bind bind = new Bind(volumePath, volume);
 
-            // 创建容器
-            CreateContainerResponse container = dockerClient.createContainerCmd(template.getImage())
-                    .withName(containerName).withExposedPorts(exposedPort).withPortBindings(portBindings)
+            // 检查网络模式，host模式不需要端口绑定
+            boolean isHostNetwork = "host".equals(template.getNetworkMode());
+
+            CreateContainerCmd createCmd = dockerClient.createContainerCmd(template.getImage()).withName(containerName)
                     .withEnv(envVars).withBinds(bind).withRestartPolicy(RestartPolicy.unlessStoppedRestart())
-                    .withNetworkMode(template.getNetworkMode())
-                    .withHostConfig(HostConfig.newHostConfig().withPortBindings(portBindings).withBinds(bind)
-                            .withMemory(template.getMemoryLimit() * 1024L * 1024L) // MB to bytes
-                            .withCpuQuota(Math.round(template.getCpuLimit() * 100000L)) // CPU限制
-                            .withRestartPolicy(RestartPolicy.unlessStoppedRestart()))
-                    .exec();
+                    .withNetworkMode(template.getNetworkMode());
+
+            HostConfig hostConfig = HostConfig.newHostConfig().withBinds(bind)
+                    .withMemory(template.getMemoryLimit() * 1024L * 1024L) // MB to bytes
+                    .withCpuQuota(Math.round(template.getCpuLimit() * 100000L)) // CPU限制
+                    .withRestartPolicy(RestartPolicy.unlessStoppedRestart()).withNetworkMode(template.getNetworkMode());
+
+            if (!isHostNetwork) {
+                // 非host网络模式才需要端口绑定
+                ExposedPort exposedPort = ExposedPort.tcp(template.getInternalPort());
+                Ports portBindings = new Ports();
+                portBindings.bind(exposedPort, Ports.Binding.bindPort(externalPort));
+
+                createCmd.withExposedPorts(exposedPort).withPortBindings(portBindings);
+                hostConfig.withPortBindings(portBindings);
+
+                logger.info("容器使用桥接网络模式，端口映射: {}:{}", externalPort, template.getInternalPort());
+            } else {
+                logger.info("容器使用host网络模式，直接使用宿主机网络");
+            }
+
+            // 创建容器
+            CreateContainerResponse container = createCmd.withHostConfig(hostConfig).exec();
 
             String containerId = container.getId();
             logger.info("容器创建成功: {} -> {}", containerName, containerId);
@@ -287,7 +301,8 @@ public class DockerService {
         }
 
         // 添加用户相关的环境变量
-        envMap.put("USER_ID", userId);
+        // 注释掉 USER_ID，可能导致容器退出
+        // envMap.put("USER_ID", userId);
         envMap.put("TZ", "Asia/Shanghai");
 
         return envMap.entrySet().stream().map(entry -> entry.getKey() + "=" + entry.getValue()).toArray(String[]::new);

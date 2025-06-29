@@ -150,18 +150,10 @@ public class ContainerTemplateDomainService {
 
     /** 根据类型获取默认模板
      * 
-     * @param type 模板类型
-     * @return 默认模板，可能为null */
-    public ContainerTemplateEntity getDefaultTemplate(String type) {
-        return templateRepository.findDefaultByType(type);
-    }
-
-    /** 根据类型获取默认模板
-     * 
      * @param type 模板类型枚举
      * @return 默认模板，可能为null */
     public ContainerTemplateEntity getDefaultTemplate(ContainerType type) {
-        return templateRepository.findDefaultByType(type.name().toLowerCase());
+        return templateRepository.findDefaultByType(type);
     }
 
     /** 获取用户容器默认模板（MCP网关镜像） */
@@ -233,7 +225,7 @@ public class ContainerTemplateDomainService {
 
     /** 取消指定类型的默认模板设置 */
     private void clearDefaultTemplate(ContainerType type) {
-        ContainerTemplateEntity currentDefault = templateRepository.findDefaultByType(type.name().toLowerCase());
+        ContainerTemplateEntity currentDefault = templateRepository.findDefaultByType(type);
         if (currentDefault != null) {
             currentDefault.setIsDefault(false);
             templateRepository.updateById(currentDefault);
@@ -310,7 +302,7 @@ public class ContainerTemplateDomainService {
         template.setCpuLimit(1.0);
         template.setMemoryLimit(512);
         template.setVolumeMountPath("/app/data");
-        template.setNetworkMode("bridge");
+        template.setNetworkMode("host");
         template.setRestartPolicy("unless-stopped");
         template.setEnabled(true);
         template.setIsDefault(true);
@@ -331,7 +323,7 @@ public class ContainerTemplateDomainService {
         template.setCpuLimit(1.0);
         template.setMemoryLimit(512);
         template.setVolumeMountPath("/app/data");
-        template.setNetworkMode("bridge");
+        template.setNetworkMode("host");
         template.setRestartPolicy("unless-stopped");
         template.setEnabled(true);
         template.setIsDefault(true);

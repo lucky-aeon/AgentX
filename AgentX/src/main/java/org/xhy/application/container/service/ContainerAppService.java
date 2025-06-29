@@ -373,7 +373,13 @@ public class ContainerAppService {
 
             // 获取容器IP地址
             DockerService.ContainerInfo containerInfo = dockerService.getContainerInfo(dockerContainerId);
-            String ipAddress = extractIpAddress(containerInfo);
+            String ipAddress = extractIpAddress(containerInfo, template.getNetworkMode());
+
+            // 对于host网络模式，外部端口就是内部端口
+            // TODO: 需要在ContainerDomainService中添加updateContainerExternalPort方法
+            if ("host".equals(template.getNetworkMode())) {
+                logger.info("host网络模式，容器外部端口应为内部端口: {}", template.getInternalPort());
+            }
 
             // 更新容器状态
             containerDomainService.updateContainerStatus(container.getId(), ContainerStatus.RUNNING, Operator.ADMIN,
@@ -438,13 +444,34 @@ public class ContainerAppService {
         file.delete();
     }
 
-    /** 提取容器IP地址 */
-    private String extractIpAddress(DockerService.ContainerInfo containerInfo) {
-        if (containerInfo.getNetworkSettings() != null && containerInfo.getNetworkSettings().getNetworks() != null) {
-
-            return containerInfo.getNetworkSettings().getNetworks().values().stream().findFirst()
-                    .map(network -> network.getIpAddress()).orElse(null);
+    /** 从容器信息中提取IP地址
+     * 
+     * @param containerInfo 容器信息
+     * @param networkMode 网络模式
+     * @return IP地址 */
+    private String extractIpAddress(DockerService.ContainerInfo containerInfo, String networkMode) {
+        // host网络模式直接返回127.0.0.1
+        if ("host".equals(networkMode)) {
+            logger.info("容器使用host网络模式，IP地址设为127.0.0.1");
+            return "127.0.0.1";
         }
+
+        // bridge网络模式返回127.0.0.1，通过端口映射访问
+        if ("bridge".equals(networkMode)) {
+            logger.info("容器使用bridge网络模式，IP地址设为127.0.0.1（通过端口映射访问）");
+            return "127.0.0.1";
+        }
+
+        // 其他特殊网络模式从容器网络设置中提取IP
+        if (containerInfo.getNetworkSettings() != null && containerInfo.getNetworkSettings().getNetworks() != null) {
+            String ipAddress = containerInfo.getNetworkSettings().getNetworks().values().stream().findFirst()
+                    .map(network -> network.getIpAddress()).orElse(null);
+
+            logger.info("容器使用{}网络模式，提取容器内网IP地址: {}", networkMode, ipAddress);
+            return ipAddress;
+        }
+
+        logger.warn("无法从容器网络设置中提取IP地址，网络模式: {}", networkMode);
         return null;
     }
 
@@ -532,7 +559,10 @@ public class ContainerAppService {
         if (reviewContainer == null) {
             // 审核容器不存在，创建新的
             logger.info("审核容器不存在，自动创建");
-            return createReviewContainer();
+            ContainerDTO createdContainer = createReviewContainer();
+
+            // 等待容器创建完成并获取网络信息
+            return waitForContainerReady(createdContainer.getId());
         }
 
         // 检查审核容器健康状态
@@ -640,6 +670,53 @@ public class ContainerAppService {
         createDockerContainer(container, template);
 
         return ContainerAssembler.toDTO(container);
+    }
+
+    /** 等待容器准备就绪（包含网络信息）
+     * 
+     * @param containerId 容器ID
+     * @return 包含完整网络信息的容器DTO
+     * @throws BusinessException 如果等待超时或容器创建失败 */
+    private ContainerDTO waitForContainerReady(String containerId) {
+        int maxRetries = 30; // 最多等待30秒
+        int retryCount = 0;
+
+        while (retryCount < maxRetries) {
+            try {
+                Thread.sleep(1000); // 等待1秒
+
+                ContainerEntity container = containerDomainService.getContainerById(containerId);
+
+                // 检查容器是否处于错误状态
+                if (ContainerStatus.ERROR.equals(container.getStatus())) {
+                    logger.error("容器创建失败: containerId={}, status={}", containerId, container.getStatus());
+                    throw new BusinessException("容器创建失败，请检查Docker环境");
+                }
+
+                // 检查容器是否已经有完整的网络信息
+                if (ContainerStatus.RUNNING.equals(container.getStatus()) && container.getIpAddress() != null
+                        && container.getExternalPort() != null) {
+                    logger.info("容器准备就绪: containerId={}, ip={}, port={}", containerId, container.getIpAddress(),
+                            container.getExternalPort());
+                    return ContainerAssembler.toDTO(container);
+                }
+
+                retryCount++;
+                logger.debug("等待容器准备就绪: containerId={}, retry={}/{}, status={}, ip={}", containerId, retryCount,
+                        maxRetries, container.getStatus(), container.getIpAddress());
+
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new BusinessException("等待容器准备被中断");
+            }
+        }
+
+        // 超时后尝试获取最新状态
+        ContainerEntity container = containerDomainService.getContainerById(containerId);
+        logger.warn("容器等待超时，当前状态: containerId={}, status={}, ip={}, port={}", containerId, container.getStatus(),
+                container.getIpAddress(), container.getExternalPort());
+
+        throw new BusinessException("容器创建超时，请稍后重试或检查Docker环境");
     }
 
     /** 容器健康状态检查结果 */

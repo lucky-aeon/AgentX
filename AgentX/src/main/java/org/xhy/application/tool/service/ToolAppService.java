@@ -46,16 +46,16 @@ public class ToolAppService {
 
     private final UserDomainService userDomainService;
 
-    private final ToolStateAppService toolStateAppService;
+    private final ToolStateStateMachineAppService toolStateStateMachine;
 
     public ToolAppService(ToolDomainService toolDomainService, UserToolDomainService userToolDomainService,
             ToolVersionDomainService toolVersionDomainService, UserDomainService userDomainService,
-            ToolStateAppService toolStateAppService) {
+            ToolStateStateMachineAppService toolStateStateMachine) {
         this.toolDomainService = toolDomainService;
         this.userToolDomainService = userToolDomainService;
         this.toolVersionDomainService = toolVersionDomainService;
         this.userDomainService = userDomainService;
-        this.toolStateAppService = toolStateAppService;
+        this.toolStateStateMachine = toolStateStateMachine;
     }
 
     /** 上传工具
@@ -76,7 +76,7 @@ public class ToolAppService {
 
         // 检查是否需要状态转换
         if (result.needStateTransition()) {
-            toolStateAppService.processToolState(result.getTool());
+            toolStateStateMachine.submitToolForProcessing(result.getTool());
         }
 
         // 将实体转换为DTO返回
@@ -102,7 +102,7 @@ public class ToolAppService {
 
         // 检查是否需要状态转换
         if (result.needStateTransition()) {
-            toolStateAppService.processToolState(result.getTool());
+            toolStateStateMachine.submitToolForProcessing(result.getTool());
         }
 
         return ToolAssembler.toDTO(result.getTool());

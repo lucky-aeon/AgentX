@@ -13,7 +13,7 @@ import org.xhy.domain.tool.constant.UploadType;
 import org.xhy.domain.tool.model.ToolEntity;
 import org.xhy.domain.tool.model.ToolOperationResult;
 import org.xhy.domain.tool.service.ToolDomainService;
-import org.xhy.domain.tool.service.ToolStateDomainService;
+import org.xhy.application.tool.service.ToolStateStateMachineAppService;
 import org.xhy.interfaces.dto.tool.request.CreateToolRequest;
 import org.xhy.interfaces.dto.tool.request.QueryToolRequest;
 import org.xhy.infrastructure.exception.BusinessException;
@@ -26,13 +26,13 @@ public class AdminToolAppService {
     private static final Logger logger = LoggerFactory.getLogger(AdminToolAppService.class);
 
     private final ToolDomainService toolDomainService;
-    private final ToolStateDomainService toolStateService;
+    private final ToolStateStateMachineAppService toolStateStateMachine;
     private final ToolAppService toolAppService;
 
-    public AdminToolAppService(ToolDomainService toolDomainService, ToolStateDomainService toolStateService,
-            ToolAppService toolAppService) {
+    public AdminToolAppService(ToolDomainService toolDomainService,
+            ToolStateStateMachineAppService toolStateStateMachine, ToolAppService toolAppService) {
         this.toolDomainService = toolDomainService;
-        this.toolStateService = toolStateService;
+        this.toolStateStateMachine = toolStateStateMachine;
         this.toolAppService = toolAppService;
     }
 
@@ -66,8 +66,8 @@ public class AdminToolAppService {
         ToolEntity tool = toolDomainService.getTool(toolId);
 
         if (tool.getStatus() == ToolStatus.MANUAL_REVIEW && status == ToolStatus.APPROVED) {
-            // 人工审核通过，调用状态服务处理
-            String approvedToolId = toolStateService.manualReviewComplete(tool, true);
+            // 人工审核通过，调用应用层状态机处理
+            String approvedToolId = toolStateStateMachine.manualReviewComplete(tool, true);
             // 审核通过后，手动触发自动安装
             toolAppService.autoInstallApprovedTool(approvedToolId);
         } else if (status == ToolStatus.FAILED) {

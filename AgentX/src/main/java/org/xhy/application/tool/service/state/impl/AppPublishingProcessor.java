@@ -1,35 +1,36 @@
-package org.xhy.domain.tool.service.state.impl;
+package org.xhy.application.tool.service.state.impl;
 
 import net.lingala.zip4j.ZipFile;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
+import org.xhy.application.tool.service.state.AppToolStateProcessor;
 import org.xhy.domain.tool.constant.ToolStatus;
 import org.xhy.domain.tool.model.ToolEntity;
 import org.xhy.domain.tool.model.dto.GitHubRepoInfo;
-import org.xhy.domain.tool.service.state.ToolStateProcessor;
 import org.xhy.infrastructure.exception.BusinessException;
 import org.xhy.infrastructure.github.GitHubService;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List; // 确保导入
+import java.util.List;
 import java.util.UUID;
 
-/** "发布"状态处理器。 负责从源GitHub下载工具内容，并将其发布到目标GitHub仓库。 */
-@Service
-public class PublishingProcessor implements ToolStateProcessor {
-    private static final Logger logger = LoggerFactory.getLogger(PublishingProcessor.class);
+/** 应用层工具发布处理器
+ * 
+ * 职责： 1. 处理已通过审核的工具发布 2. 从源GitHub下载工具内容，并将其发布到目标GitHub仓库 3. 完成工具发布流程 */
+public class AppPublishingProcessor implements AppToolStateProcessor {
+
+    private static final Logger logger = LoggerFactory.getLogger(AppPublishingProcessor.class);
 
     private final GitHubService gitHubService;
 
-    /** 构造函数。
+    /** 构造函数，注入GitHubService
      * 
-     * @param gitHubService GitHub服务实例，用于与GitHub API交互。 */
-    public PublishingProcessor(GitHubService gitHubService) {
+     * @param gitHubService GitHub服务 */
+    public AppPublishingProcessor(GitHubService gitHubService) {
         this.gitHubService = gitHubService;
     }
 
@@ -43,7 +44,7 @@ public class PublishingProcessor implements ToolStateProcessor {
         Path tempDownloadPath = null;
         Path tempUnzipPath = null;
 
-        logger.info("工具ID: {} 进入PUBLISHING状态，开始发布流程。", tool.getId());
+        logger.info("工具ID: {} 进入APPROVED状态，开始发布流程。", tool.getId());
 
         try {
             String sourceGitHubUrl = tool.getUploadUrl();
@@ -101,13 +102,10 @@ public class PublishingProcessor implements ToolStateProcessor {
                     version, sourceRepoInfo.getFullName(), sourceRepoInfo.getRef());
             gitHubService.commitAndPushToTargetRepo(sourcePathToPublish, targetPathInInternalRepo, commitMessage);
 
-            // 7. 如果发布成功，ToolStateService会将状态设置为PUBLISHED
             logger.info("工具 {} 版本 {} 成功发布到目标仓库的路径 {} 下", tool.getName(), version, targetPathInInternalRepo);
-            // 此处理器不直接修改状态，由ToolStateService在调用此process后根据是否抛异常来决定下一个状态
 
-        } catch (BusinessException | IOException | GitAPIException e) { // 更具体地捕获已知异常
+        } catch (BusinessException | IOException | GitAPIException e) {
             logger.error("发布工具 {} (ID: {}) 失败: {}", tool.getName(), tool.getId(), e.getMessage(), e);
-            // 抛出异常，ToolStateService会捕获并设置状态为PUBLISH_FAILED
             throw new BusinessException("发布工具到目标仓库时失败: " + e.getMessage(), e);
         } finally {
             // 清理临时文件和目录
@@ -117,10 +115,11 @@ public class PublishingProcessor implements ToolStateProcessor {
 
     @Override
     public ToolStatus getNextStatus() {
-        return ToolStatus.APPROVED;
+        // 发布完成后没有自动下一状态，工具保持在APPROVED状态
+        return null;
     }
 
-    /** 清理临时下载和解压的文件/目录。 */
+    /** 清理临时下载和解压的文件/目录 */
     private void cleanupTemporaryFiles(Path tempDownloadPath, Path tempUnzipPath) {
         try {
             if (tempDownloadPath != null && Files.exists(tempDownloadPath)) {
@@ -136,7 +135,7 @@ public class PublishingProcessor implements ToolStateProcessor {
         }
     }
 
-    /** 查找解压后ZIP文件的实际内容根目录。 GitHub下载的ZIP通常会有一个顶层目录，例如 repo-name-commitsha/ 或 repo-name-tag/
+    /** 查找解压后ZIP文件的实际内容根目录 GitHub下载的ZIP通常会有一个顶层目录，例如 repo-name-commitsha/ 或 repo-name-tag/
      * 
      * @param unzipDir 解压操作的根目录
      * @param repoNameHint 源仓库的名称，用于辅助查找

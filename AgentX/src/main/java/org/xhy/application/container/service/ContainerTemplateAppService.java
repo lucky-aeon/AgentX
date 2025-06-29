@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.xhy.application.container.assembler.ContainerTemplateAssembler;
 import org.xhy.application.container.dto.ContainerTemplateDTO;
+import org.xhy.domain.container.constant.ContainerType;
 import org.xhy.interfaces.dto.container.request.CreateContainerTemplateRequest;
 import org.xhy.interfaces.dto.container.request.UpdateContainerTemplateRequest;
 import org.xhy.interfaces.dto.container.request.QueryContainerTemplateRequest;
@@ -103,7 +104,7 @@ public class ContainerTemplateAppService {
      * 
      * @param type 模板类型
      * @return 默认模板信息，可能为null */
-    public ContainerTemplateDTO getDefaultTemplate(String type) {
+    public ContainerTemplateDTO getDefaultTemplate(ContainerType type) {
         ContainerTemplateEntity template = templateDomainService.getDefaultTemplate(type);
         return template != null ? ContainerTemplateAssembler.toDTO(template) : null;
     }

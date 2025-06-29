@@ -5,6 +5,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.xhy.application.container.dto.ContainerTemplateDTO;
 import org.xhy.application.container.service.ContainerTemplateAppService;
+import org.xhy.domain.container.constant.ContainerType;
 import org.xhy.interfaces.dto.container.request.CreateContainerTemplateRequest;
 import org.xhy.interfaces.dto.container.request.UpdateContainerTemplateRequest;
 import org.xhy.interfaces.dto.container.request.QueryContainerTemplateRequest;
@@ -60,7 +61,8 @@ public class AdminContainerTemplateController {
      * @return 默认模板 */
     @GetMapping("/default/{type}")
     public Result<ContainerTemplateDTO> getDefaultTemplate(@PathVariable String type) {
-        ContainerTemplateDTO template = templateAppService.getDefaultTemplate(type);
+
+        ContainerTemplateDTO template = templateAppService.getDefaultTemplate(ContainerType.fromCode(type));
         return Result.success(template);
     }
 

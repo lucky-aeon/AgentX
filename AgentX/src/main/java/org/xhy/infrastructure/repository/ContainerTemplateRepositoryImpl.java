@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.apache.ibatis.annotations.Mapper;
 import org.springframework.stereotype.Repository;
+import org.xhy.domain.container.constant.ContainerType;
 import org.xhy.domain.container.model.ContainerTemplateEntity;
 import org.xhy.domain.container.repository.ContainerTemplateRepository;
 
@@ -26,9 +27,9 @@ public interface ContainerTemplateRepositoryImpl extends ContainerTemplateReposi
     }
 
     @Override
-    default ContainerTemplateEntity findDefaultByType(String type) {
+    default ContainerTemplateEntity findDefaultByType(ContainerType type) {
         LambdaQueryWrapper<ContainerTemplateEntity> wrapper = Wrappers.<ContainerTemplateEntity>lambdaQuery()
-                .eq(ContainerTemplateEntity::getType, type).eq(ContainerTemplateEntity::getEnabled, true)
+                .eq(ContainerTemplateEntity::getType, type.name()).eq(ContainerTemplateEntity::getEnabled, true)
                 .eq(ContainerTemplateEntity::getIsDefault, true).orderByDesc(ContainerTemplateEntity::getCreatedAt);
 
         return selectOne(wrapper);

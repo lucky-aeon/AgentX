@@ -27,24 +27,28 @@ public class ReviewContainerService {
      * @throws BusinessException 如果审核容器不可用 */
     public ReviewContainerConnection getReviewContainerConnection() {
         try {
-            // 获取或创建审核容器
+            // 获取或创建审核容器（现在会等待容器完全准备就绪）
             ContainerDTO reviewContainer = containerAppService.getOrCreateReviewContainer();
 
-            // 验证容器信息完整性
+            // 二次验证容器信息完整性（防御性编程）
             if (reviewContainer.getIpAddress() == null || reviewContainer.getExternalPort() == null) {
-                logger.error("审核容器网络信息不完整: ip={}, port={}", reviewContainer.getIpAddress(),
-                        reviewContainer.getExternalPort());
-                throw new BusinessException("审核容器网络配置不完整，请检查容器状态");
+                logger.error("审核容器网络信息不完整: ip={}, port={}, status={}", reviewContainer.getIpAddress(),
+                        reviewContainer.getExternalPort(), reviewContainer.getStatus());
+                throw new BusinessException("审核容器网络配置不完整，容器状态: " + reviewContainer.getStatus());
             }
 
-            logger.info("获取审核容器连接信息: {}:{}", reviewContainer.getIpAddress(), reviewContainer.getExternalPort());
+            logger.info("获取审核容器连接信息: {}:{} ({})", reviewContainer.getIpAddress(), reviewContainer.getExternalPort(),
+                    reviewContainer.getStatus());
 
             return new ReviewContainerConnection(reviewContainer.getIpAddress(), reviewContainer.getExternalPort(),
                     reviewContainer.getId(), reviewContainer.getName());
 
+        } catch (BusinessException e) {
+            // 重新抛出业务异常，保持原始错误信息
+            throw e;
         } catch (Exception e) {
             logger.error("获取审核容器连接信息失败", e);
-            throw new BusinessException("审核容器不可用: " + e.getMessage());
+            throw new BusinessException("审核容器服务异常: " + e.getMessage());
         }
     }
 

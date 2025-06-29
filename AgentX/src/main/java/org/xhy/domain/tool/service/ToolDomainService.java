@@ -155,6 +155,62 @@ public class ToolDomainService {
         return toolRepository.selectById(toolId);
     }
 
+    /** 更新工具实体
+     * 
+     * @param toolEntity 工具实体
+     * @return 更新后的工具实体 */
+    public ToolEntity updateToolEntity(ToolEntity toolEntity) {
+        if (toolEntity == null || toolEntity.getId() == null) {
+            throw new BusinessException("工具实体或工具ID不能为空");
+        }
+        toolRepository.updateById(toolEntity);
+        return toolEntity;
+    }
+
+    /** 处理人工审核完成
+     *
+     * @param tool 工具实体
+     * @param approved 审核结果，true表示批准，false表示拒绝
+     * @return 返回工具ID，方便调用方进行后续处理 */
+    public String manualReviewComplete(ToolEntity tool, boolean approved) {
+        if (tool == null) {
+            throw new BusinessException("工具不存在");
+        }
+
+        String toolId = tool.getId();
+        if (tool.getStatus() != ToolStatus.MANUAL_REVIEW) {
+            throw new BusinessException("工具ID: " + toolId + " 当前状态不是MANUAL_REVIEW，无法进行人工审核操作");
+        }
+
+        if (approved) {
+            tool.setStatus(ToolStatus.APPROVED);
+            updateToolEntity(tool);
+        } else {
+            tool.setStatus(ToolStatus.FAILED);
+            updateToolEntity(tool);
+        }
+
+        return toolId;
+    }
+
+    /** 转换工具状态到指定状态
+     *
+     * @param tool 工具实体
+     * @param targetStatus 目标状态 */
+    public void transitionToStatus(ToolEntity tool, ToolStatus targetStatus) {
+        if (tool == null) {
+            throw new BusinessException("工具不存在");
+        }
+
+        ToolStatus currentStatus = tool.getStatus();
+        if (currentStatus == targetStatus) {
+            return; // 状态相同，无需转换
+        }
+
+        tool.setStatus(targetStatus);
+        updateToolEntity(tool);
+    }
+
     private String getMcpServerName(ToolEntity tool) {
         if (tool == null) {
             return null;

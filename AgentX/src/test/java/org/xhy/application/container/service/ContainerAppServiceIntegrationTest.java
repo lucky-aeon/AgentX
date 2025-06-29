@@ -17,7 +17,34 @@ class ContainerAppServiceIntegrationTest {
     @Autowired
     private ContainerAppService containerAppService;
 
+    @Autowired
+    private ReviewContainerService reviewContainerService;
+
     private static final String TEST_USER_ID = "60ab0f71c11d3e7b79dff00639b77e36";
+
+    @Test
+    void test2() throws InterruptedException {
+        try {
+            System.out.println("开始获取审核容器连接信息...");
+            ReviewContainerService.ReviewContainerConnection reviewContainerConnection = reviewContainerService
+                    .getReviewContainerConnection();
+            System.out.println("审核容器连接信息获取成功:");
+            System.out.println("- 容器ID: " + reviewContainerConnection.getContainerId());
+            System.out.println("- 容器名称: " + reviewContainerConnection.getContainerName());
+            System.out.println("- IP地址: " + reviewContainerConnection.getIpAddress());
+            System.out.println("- 端口: " + reviewContainerConnection.getPort());
+            System.out.println("- 基础URL: " + reviewContainerConnection.getBaseUrl());
+            System.out.println(reviewContainerConnection);
+        } catch (Exception e) {
+            System.err.println("获取审核容器连接信息失败: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
+        // 需要加上 while，不然容器会自动关闭，这里只是为了测试使用
+        while (true) {
+            Thread.sleep(1000l);
+        }
+    }
 
     /** 测试创建用户容器 - 使用真实数据 */
     @Test
