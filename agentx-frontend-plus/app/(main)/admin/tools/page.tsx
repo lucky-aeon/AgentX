@@ -22,7 +22,17 @@ import {
 } from "@/lib/admin-tool-service";
 import { useToast } from "@/hooks/use-toast";
 import { ToolReviewDialog } from "@/components/admin/ToolReviewDialog";
+import { ToolDetailsDialog } from "@/components/admin/ToolDetailsDialog";
 import Link from "next/link";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 export default function ToolsPage() {
   const [tools, setTools] = useState<Tool[]>([]);
@@ -42,6 +52,7 @@ export default function ToolsPage() {
   const [pageSize, setPageSize] = useState(15);
   const [selectedTool, setSelectedTool] = useState<Tool | null>(null);
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [updatingToolIds, setUpdatingToolIds] = useState<Set<string>>(new Set());
   const [statistics, setStatistics] = useState<ToolStatistics>({
     totalTools: 0,
@@ -165,6 +176,12 @@ export default function ToolsPage() {
     setReviewDialogOpen(true);
   };
 
+  // 打开详情对话框
+  const handleViewDetails = (tool: Tool) => {
+    setSelectedTool(tool);
+    setDetailsDialogOpen(true);
+  };
+
   // 审核完成后刷新列表
   const handleReviewComplete = () => {
     loadTools();
@@ -257,6 +274,54 @@ export default function ToolsPage() {
         description: "网络连接异常，请稍后重试"
       });
     }
+  };
+
+  // 处理分页点击
+  const handlePageChange = (page: number) => {
+    if (page < 1 || page > pagination.pages) return;
+    setCurrentPage(page);
+  };
+
+  // 生成分页页码数组
+  const generatePageNumbers = () => {
+    const current = pagination.current;
+    const total = pagination.pages;
+    const pages: (number | string)[] = [];
+
+    if (total <= 7) {
+      // 如果总页数少于等于7，显示所有页码
+      for (let i = 1; i <= total; i++) {
+        pages.push(i);
+      }
+    } else {
+      // 总是显示第一页
+      pages.push(1);
+
+      if (current <= 4) {
+        // 当前页在前面
+        for (let i = 2; i <= 5; i++) {
+          pages.push(i);
+        }
+        pages.push('...');
+        pages.push(total);
+      } else if (current >= total - 3) {
+        // 当前页在后面
+        pages.push('...');
+        for (let i = total - 4; i <= total; i++) {
+          pages.push(i);
+        }
+      } else {
+        // 当前页在中间
+        pages.push('...');
+        for (let i = current - 1; i <= current + 1; i++) {
+          pages.push(i);
+        }
+        pages.push('...');
+        pages.push(total);
+      }
+    }
+
+    return pages;
   };
 
   if (loading) {
@@ -398,7 +463,6 @@ export default function ToolsPage() {
                 <TableHead>类型</TableHead>
                 <TableHead>范围</TableHead>
                 <TableHead>审核状态</TableHead>
-                <TableHead>上传链接</TableHead>
                 <TableHead>创建时间</TableHead>
                 <TableHead>操作</TableHead>
               </TableRow>
@@ -420,9 +484,6 @@ export default function ToolsPage() {
                         <div className="text-sm text-gray-500 max-w-xs truncate">
                           {tool.description || "暂无描述"}
                         </div>
-                        <div className="text-xs text-gray-400 mt-1">
-                          ID: {tool.id}
-                        </div>
                       </div>
                     </div>
                   </TableCell>
@@ -434,13 +495,8 @@ export default function ToolsPage() {
                           {tool.userNickname?.charAt(0) || tool.userEmail?.charAt(0) || 'U'}
                         </AvatarFallback>
                       </Avatar>
-                      <div>
-                        <div className="text-sm font-medium">
-                          {tool.userNickname || tool.userEmail || '未知用户'}
-                        </div>
-                        <div className="text-xs text-gray-400 font-mono">
-                          {tool.userId}
-                        </div>
+                      <div className="text-sm font-medium">
+                        {tool.userNickname || tool.userEmail || '未知用户'}
                       </div>
                     </div>
                   </TableCell>
@@ -470,28 +526,12 @@ export default function ToolsPage() {
                       <Badge className={getToolStatusColor(tool.status)}>
                         {getToolStatusText(tool.status)}
                       </Badge>
-                      {tool.rejectReason && (
+                      {tool.rejectReason && tool.status === ToolStatus.FAILED && (
                         <div className="text-xs text-red-600 max-w-xs truncate">
                           原因: {tool.rejectReason}
                         </div>
                       )}
                     </div>
-                  </TableCell>
-                  <TableCell>
-                    {tool.uploadUrl && (
-                      <a 
-                        href={tool.uploadUrl} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:text-blue-800 flex items-center gap-1 text-sm"
-                      >
-                        <Github className="w-3 h-3" />
-                        <span className="max-w-xs truncate">
-                          {tool.uploadUrl.replace('https://github.com/', '')}
-                        </span>
-                        <ExternalLink className="w-3 h-3" />
-                      </a>
-                    )}
                   </TableCell>
                   <TableCell>
                     <div className="text-sm">{new Date(tool.createdAt).toLocaleDateString()}</div>
@@ -502,7 +542,7 @@ export default function ToolsPage() {
                         variant="ghost" 
                         size="icon" 
                         title="查看详情"
-                        onClick={() => handleReviewTool(tool)}
+                        onClick={() => handleViewDetails(tool)}
                       >
                         <Eye className="w-4 h-4" />
                       </Button>
@@ -536,6 +576,52 @@ export default function ToolsPage() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* 分页组件 */}
+      {pagination.pages > 1 && (
+        <div className="flex justify-center">
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious 
+                  onClick={() => handlePageChange(pagination.current - 1)}
+                  className={pagination.current <= 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                />
+              </PaginationItem>
+              
+              {generatePageNumbers().map((page, index) => (
+                <PaginationItem key={index}>
+                  {page === '...' ? (
+                    <PaginationEllipsis />
+                  ) : (
+                    <PaginationLink
+                      onClick={() => handlePageChange(page as number)}
+                      isActive={page === pagination.current}
+                      className="cursor-pointer"
+                    >
+                      {page}
+                    </PaginationLink>
+                  )}
+                </PaginationItem>
+              ))}
+              
+              <PaginationItem>
+                <PaginationNext 
+                  onClick={() => handlePageChange(pagination.current + 1)}
+                  className={pagination.current >= pagination.pages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
+      )}
+
+      {/* 工具详情对话框 */}
+      <ToolDetailsDialog
+        open={detailsDialogOpen}
+        onOpenChange={setDetailsDialogOpen}
+        tool={selectedTool}
+      />
 
       {/* 工具审核对话框 */}
       <ToolReviewDialog

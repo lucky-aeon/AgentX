@@ -358,10 +358,17 @@ public class ToolDomainService {
      * @param toolId 工具ID
      * @param isGlobal 是否为全局工具 */
     public void updateToolGlobalStatus(String toolId, Boolean isGlobal) {
-        LambdaUpdateWrapper<ToolEntity> wrapper = Wrappers.<ToolEntity>lambdaUpdate().eq(ToolEntity::getId, toolId)
+        // 1. 更新主工具表
+        LambdaUpdateWrapper<ToolEntity> toolWrapper = Wrappers.<ToolEntity>lambdaUpdate()
+                .eq(ToolEntity::getId, toolId)
                 .set(ToolEntity::getIsGlobal, isGlobal);
+        toolRepository.checkedUpdate(toolWrapper);
 
-        toolRepository.checkedUpdate(wrapper);
+        // 2. 同步更新所有已安装的user_tools记录
+        LambdaUpdateWrapper<UserToolEntity> userToolWrapper = Wrappers.<UserToolEntity>lambdaUpdate()
+                .eq(UserToolEntity::getToolId, toolId)
+                .set(UserToolEntity::getIsGlobal, isGlobal);
+        userToolRepository.update(null, userToolWrapper);
     }
 
     /** 根据MCP服务器名称获取工具
