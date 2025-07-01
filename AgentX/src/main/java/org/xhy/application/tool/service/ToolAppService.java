@@ -241,11 +241,15 @@ public class ToolAppService {
 
     public void uninstallTool(String toolId, String userId) {
         // 先检查是否是用户自己创建的工具
-        ToolEntity toolEntity = toolDomainService.getTool(toolId);
-
-        if (toolEntity != null && toolEntity.getUserId().equals(userId)) {
-            // 不允许删除用户自己创建的工具
-            throw new BusinessException("不允许卸载自己创建的工具");
+        try {
+            ToolEntity toolEntity = toolDomainService.getTool(toolId);
+            if (toolEntity != null && toolEntity.getUserId().equals(userId)) {
+                // 不允许删除用户自己创建的工具
+                throw new BusinessException("不允许卸载自己创建的工具");
+            }
+        } catch (BusinessException e) {
+            // 如果原始工具不存在，说明已被删除，允许用户卸载已安装的工具
+            logger.info("原始工具不存在，允许用户卸载已安装的工具: toolId={}, userId={}", toolId, userId);
         }
 
         // 执行正常的卸载流程

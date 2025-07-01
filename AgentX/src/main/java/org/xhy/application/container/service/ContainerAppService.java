@@ -56,6 +56,9 @@ public class ContainerAppService {
         ContainerTemplate template = templateEntity.toContainerTemplate();
 
         // 生成容器名称
+        if (userId == null || userId.length() < 8) {
+            throw new BusinessException("用户ID无效，无法创建用户容器");
+        }
         String containerName = "mcp-gateway-user-" + userId.substring(0, 8);
 
         // 创建用户数据卷目录
