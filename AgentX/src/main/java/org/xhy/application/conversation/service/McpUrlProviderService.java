@@ -149,6 +149,7 @@ public class McpUrlProviderService {
             String installCommandJson = convertInstallCommand(tool.getInstallCommand());
             mcpGatewayService.deployTool(installCommandJson, container.getIpAddress(), container.getExternalPort());
 
+            Thread.sleep(1000L);
             logger.debug("工具 {} 部署请求已发送到用户容器", toolName);
 
         } catch (Exception e) {
