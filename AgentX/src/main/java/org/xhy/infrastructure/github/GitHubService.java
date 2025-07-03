@@ -36,9 +36,18 @@ public class GitHubService {
 
     public GitHubService(GitHubProperties gitHubProperties) throws IOException {
         this.gitHubProperties = gitHubProperties;
-        // 生产环境强烈建议配置个人访问令牌（PAT），例如：
-        // this.github = new GitHubBuilder().withOAuthToken("YOUR_GITHUB_PERSONAL_ACCESS_TOKEN").build();
-        this.github = new GitHubBuilder().build(); // 使用匿名访问，可能受速率限制影响
+        // 配置超时时间和连接设置
+        GitHubBuilder builder = new GitHubBuilder();
+
+        // 如果配置了访问令牌，使用认证访问，否则使用匿名访问
+        if (gitHubProperties.getTarget().getToken() != null
+                && !gitHubProperties.getTarget().getToken().trim().isEmpty()) {
+            logger.info("使用GitHub访问令牌进行认证访问");
+            this.github = builder.withOAuthToken(gitHubProperties.getTarget().getToken()).build();
+        } else {
+            logger.warn("未配置GitHub访问令牌，使用匿名访问（可能受速率限制影响）");
+            this.github = builder.build();
+        }
     }
 
     /** 初始化时验证配置 */
@@ -76,7 +85,22 @@ public class GitHubService {
 
         logger.info("开始通过 GitHub API 验证仓库：{}，引用：{}，路径：{}", repoInfo.getFullName(), ref, pathInRepo);
 
-        GHRepository repository = github.getRepository(repoInfo.getFullName());
+        GHRepository repository;
+        try {
+            logger.debug("正在获取GitHub仓库信息：{}", repoInfo.getFullName());
+            repository = github.getRepository(repoInfo.getFullName());
+            logger.debug("成功获取GitHub仓库信息：{}", repoInfo.getFullName());
+        } catch (IOException e) {
+            logger.error("获取GitHub仓库信息失败：{}，错误：{}", repoInfo.getFullName(), e.getMessage());
+            if (e.getMessage().contains("404") || e.getMessage().contains("Not Found")) {
+                throw new BusinessException("GitHub 仓库不存在或无权访问：" + repoInfo.getFullName());
+            } else if (e.getMessage().contains("403") || e.getMessage().contains("rate limit")) {
+                throw new BusinessException("GitHub API 访问受限，请检查网络连接或配置访问令牌：" + e.getMessage());
+            } else if (e.getMessage().contains("timeout")) {
+                throw new BusinessException("GitHub API 请求超时，请检查网络连接：" + e.getMessage());
+            }
+            throw new BusinessException("访问 GitHub API 失败：" + e.getMessage(), e);
+        }
 
         if (repository == null) {
             throw new BusinessException("GitHub 仓库不存在：" + repoInfo.getFullName());

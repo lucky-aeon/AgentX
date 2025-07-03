@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.xhy.domain.auth.constant.AuthFeatureKey;
 import org.xhy.domain.auth.constant.FeatureType;
 import org.xhy.domain.auth.model.AuthSettingEntity;
@@ -95,7 +94,6 @@ public class AuthSettingDomainService {
      * 
      * @param id 配置ID
      * @return 更新后的配置 */
-    @Transactional
     public AuthSettingEntity toggleEnabled(String id) {
         AuthSettingEntity entity = getById(id);
 
@@ -113,7 +111,6 @@ public class AuthSettingDomainService {
      * 
      * @param entity 认证配置实体
      * @return 更新后的配置 */
-    @Transactional
     public AuthSettingEntity updateAuthSetting(AuthSettingEntity entity) {
         AuthSettingEntity existingEntity = getById(entity.getId());
 
@@ -129,7 +126,6 @@ public class AuthSettingDomainService {
      * 
      * @param entity 认证配置实体
      * @return 创建的配置 */
-    @Transactional
     public AuthSettingEntity createAuthSetting(AuthSettingEntity entity) {
         // 检查功能键是否已存在
         LambdaQueryWrapper<AuthSettingEntity> wrapper = Wrappers.<AuthSettingEntity>lambdaQuery()
@@ -146,7 +142,6 @@ public class AuthSettingDomainService {
     /** 删除认证配置
      * 
      * @param id 配置ID */
-    @Transactional
     public void deleteAuthSetting(String id) {
         AuthSettingEntity entity = getById(id);
         authSettingRepository.deleteById(id);

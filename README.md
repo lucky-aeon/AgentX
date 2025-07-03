@@ -255,7 +255,7 @@ chmod +x setup_with_compose.sh
 
 ```bash
 cd AgentX
-./mvnw spring-boot:run
+./mvn spring-boot:run
 ```
 
 #### 3\. 启动前端服务

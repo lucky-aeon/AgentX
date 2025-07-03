@@ -9,7 +9,7 @@ import dev.langchain4j.mcp.client.transport.http.HttpMcpTransport;
 import dev.langchain4j.service.tool.ToolProvider;
 import org.springframework.stereotype.Component;
 import org.xhy.application.conversation.service.handler.context.ChatContext;
-import org.xhy.infrastructure.mcp_gateway.MCPGatewayService;
+import org.xhy.application.conversation.service.McpUrlProviderService;
 import org.xhy.infrastructure.utils.JsonUtils;
 
 import java.time.Duration;
@@ -21,18 +21,20 @@ import java.util.Map;
 @Component
 public class AgentToolManager {
 
-    private final MCPGatewayService mcpGatewayService;
+    private final McpUrlProviderService mcpUrlProviderService;
 
-    public AgentToolManager(MCPGatewayService mcpGatewayService) {
-        this.mcpGatewayService = mcpGatewayService;
+    public AgentToolManager(McpUrlProviderService mcpUrlProviderService) {
+        this.mcpUrlProviderService = mcpUrlProviderService;
     }
 
-    /** 创建工具提供者
+    /** 创建工具提供者（支持全局/用户隔离工具自动识别）
      *
-     * @param mcpServerNames 工具URL列表
+     * @param mcpServerNames 工具服务名列表
+     * @param toolPresetParams 工具预设参数
+     * @param userId 用户ID（关键参数：用于用户隔离工具）
      * @return 工具提供者实例，如果工具列表为空则返回null */
     public ToolProvider createToolProvider(List<String> mcpServerNames,
-            Map<String, Map<String, Map<String, String>>> toolPresetParams) {
+            Map<String, Map<String, Map<String, String>>> toolPresetParams, String userId) {
         if (mcpServerNames == null || mcpServerNames.isEmpty()) {
             return null;
         }
@@ -40,8 +42,7 @@ public class AgentToolManager {
         List<McpClient> mcpClients = new ArrayList<>();
 
         for (String mcpServerName : mcpServerNames) {
-
-            String sseUrl = this.mcpGatewayService.getSSEUrl(mcpServerName);
+            String sseUrl = mcpUrlProviderService.getMcpToolUrl(mcpServerName, userId);
             McpTransport transport = new HttpMcpTransport.Builder().sseUrl(sseUrl).logRequests(true).logResponses(true)
                     .timeout(Duration.ofHours(1)).build();
 
@@ -61,6 +62,16 @@ public class AgentToolManager {
         }
 
         return McpToolProvider.builder().mcpClients(mcpClients).build();
+    }
+
+    /** 兼容性方法：保持向后兼容
+     *
+     * @param mcpServerNames 工具服务名列表
+     * @param toolPresetParams 工具预设参数
+     * @return 工具提供者实例，如果工具列表为空则返回null */
+    public ToolProvider createToolProvider(List<String> mcpServerNames,
+            Map<String, Map<String, Map<String, String>>> toolPresetParams) {
+        return createToolProvider(mcpServerNames, toolPresetParams, null);
     }
 
     /** 获取可用的工具列表

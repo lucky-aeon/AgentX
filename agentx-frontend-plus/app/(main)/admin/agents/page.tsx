@@ -13,6 +13,16 @@ import { useMemo, useCallback } from "react";
 import { AdminAgentService, Agent, GetAgentsParams, PageResponse, AgentStatistics, AgentVersion } from "@/lib/admin-agent-service";
 import { useToast } from "@/hooks/use-toast";
 import { AgentVersionsDialog } from "@/components/admin/AgentVersionsDialog";
+import { AgentDetailsDialog } from "@/components/admin/AgentDetailsDialog";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 export default function AgentsPage() {
   const [agents, setAgents] = useState<Agent[]>([]);
@@ -36,6 +46,8 @@ export default function AgentsPage() {
   const [pageSize, setPageSize] = useState(15);
   const [selectedAgent, setSelectedAgent] = useState<{ id: string; name: string } | null>(null);
   const [versionsDialogOpen, setVersionsDialogOpen] = useState(false);
+  const [selectedAgentForDetails, setSelectedAgentForDetails] = useState<Agent | null>(null);
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [statistics, setStatistics] = useState<AgentStatistics>({
     totalAgents: 0,
     enabledAgents: 0,
@@ -207,6 +219,60 @@ export default function AgentsPage() {
     setVersionsDialogOpen(true);
   };
 
+  // 打开详情Dialog
+  const handleViewDetails = (agent: Agent) => {
+    setSelectedAgentForDetails(agent);
+    setDetailsDialogOpen(true);
+  };
+
+  // 处理分页点击
+  const handlePageChange = (page: number) => {
+    if (page < 1 || page > pagination.pages) return;
+    setCurrentPage(page);
+  };
+
+  // 生成分页页码数组
+  const generatePageNumbers = () => {
+    const current = pagination.current;
+    const total = pagination.pages;
+    const pages: (number | string)[] = [];
+
+    if (total <= 7) {
+      // 如果总页数少于等于7，显示所有页码
+      for (let i = 1; i <= total; i++) {
+        pages.push(i);
+      }
+    } else {
+      // 总是显示第一页
+      pages.push(1);
+
+      if (current <= 4) {
+        // 当前页在前面
+        for (let i = 2; i <= 5; i++) {
+          pages.push(i);
+        }
+        pages.push('...');
+        pages.push(total);
+      } else if (current >= total - 3) {
+        // 当前页在后面
+        pages.push('...');
+        for (let i = total - 4; i <= total; i++) {
+          pages.push(i);
+        }
+      } else {
+        // 当前页在中间
+        pages.push('...');
+        for (let i = current - 1; i <= current + 1; i++) {
+          pages.push(i);
+        }
+        pages.push('...');
+        pages.push(total);
+      }
+    }
+
+    return pages;
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -327,7 +393,7 @@ export default function AgentsPage() {
                           {agent.description || "暂无描述"}
                         </div>
                         <div className="text-xs text-gray-400 mt-1">
-                          ID: {agent.id} | 版本数: {agent.versions?.length || 0}
+                          版本数: {agent.versions?.length || 0}
                         </div>
                       </div>
                     </div>
@@ -385,10 +451,18 @@ export default function AgentsPage() {
                       <Button 
                         variant="ghost" 
                         size="icon" 
-                        title="查看版本"
-                        onClick={() => handleViewVersions(agent)}
+                        title="查看详情"
+                        onClick={() => handleViewDetails(agent)}
                       >
                         <Eye className="w-4 h-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        title="版本管理"
+                        onClick={() => handleViewVersions(agent)}
+                      >
+                        <Bot className="w-4 h-4" />
                       </Button>
                     </div>
                   </TableCell>
@@ -398,6 +472,52 @@ export default function AgentsPage() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* 分页组件 */}
+      {pagination.pages > 1 && (
+        <div className="flex justify-center">
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious 
+                  onClick={() => handlePageChange(pagination.current - 1)}
+                  className={pagination.current <= 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                />
+              </PaginationItem>
+              
+              {generatePageNumbers().map((page, index) => (
+                <PaginationItem key={index}>
+                  {page === '...' ? (
+                    <PaginationEllipsis />
+                  ) : (
+                    <PaginationLink
+                      onClick={() => handlePageChange(page as number)}
+                      isActive={page === pagination.current}
+                      className="cursor-pointer"
+                    >
+                      {page}
+                    </PaginationLink>
+                  )}
+                </PaginationItem>
+              ))}
+              
+              <PaginationItem>
+                <PaginationNext 
+                  onClick={() => handlePageChange(pagination.current + 1)}
+                  className={pagination.current >= pagination.pages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
+      )}
+
+      {/* Agent详情Dialog */}
+      <AgentDetailsDialog
+        open={detailsDialogOpen}
+        onOpenChange={setDetailsDialogOpen}
+        agent={selectedAgentForDetails}
+      />
 
       {/* Agent版本管理Dialog */}
       {selectedAgent && (

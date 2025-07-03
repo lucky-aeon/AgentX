@@ -2,7 +2,7 @@
   "permissions": {
     "allow": [
       "Bash(git checkout:*)",
-      "Bash(./mvnw:*)",
+      "Bash(./mvn:*)",
       "Bash(grep:*)",
       "Bash(ls:*)",
       "Bash(find:*)",
@@ -35,7 +35,12 @@
       "Bash(docker exec:*)",
       "Bash(git log:*)",
       "Bash(mkdir:*)",
-      "Bash(git pull:*)"
+      "Bash(git pull:*)",
+      "Bash(sed:*)",
+      "Bash(rg:*)",
+      "Bash(docker inspect:*)",
+      "Bash(docker stop:*)",
+      "Bash(docker rm:*)"
     ],
     "deny": []
   }

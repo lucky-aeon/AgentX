@@ -18,6 +18,7 @@ export interface Tool {
   installCount: number // 前端展示用
   current_version?: string // 当前版本号
   mcpServerName?: string // MCP服务器名称，用于预设参数
+  isGlobal?: boolean // 是否为全局工具
   createdAt: string
   updatedAt: string
 }

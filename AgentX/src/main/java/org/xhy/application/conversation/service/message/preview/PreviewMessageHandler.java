@@ -51,7 +51,7 @@ public class PreviewMessageHandler extends AbstractMessageHandler {
     @Override
     protected ToolProvider provideTools(ChatContext chatContext) {
         return agentToolManager.createToolProvider(agentToolManager.getAvailableTools(chatContext),
-                chatContext.getAgent().getToolPresetParams());
+                chatContext.getAgent().getToolPresetParams(), chatContext.getUserId());
     }
 
     /** 预览专用的聊天处理逻辑 与正常流程的区别是不保存消息到数据库 */
