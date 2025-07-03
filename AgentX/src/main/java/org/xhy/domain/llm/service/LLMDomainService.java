@@ -5,7 +5,6 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.transaction.annotation.Transactional;
 import org.xhy.domain.llm.event.ModelCreatedEvent;
 import org.xhy.domain.llm.event.ModelDeletedEvent;
 import org.xhy.domain.llm.event.ModelStatusChangedEvent;
@@ -205,7 +204,6 @@ public class LLMDomainService {
     /** 删除服务商
      * @param providerId 服务商id
      * @param userId 用户id */
-    @Transactional
     public void deleteProvider(String providerId, String userId, Operator operator) {
         // 删除服务商前先获取要删除的模型列表，用于发布批量删除事件
         Wrapper<ModelEntity> modelQueryWrapper = Wrappers.<ModelEntity>lambdaQuery().eq(ModelEntity::getProviderId,

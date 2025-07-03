@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:github.com)",
+      "Bash(grep:*)",
+      "Bash(rm:*)",
+      "Bash(mvn clean compile:*)",
+      "Bash(find:*)",
+      "Bash(mvn:*)",
+      "Bash(mv:*)",
+      "Bash(rg:*)",
+      "Bash(../AgentX/mvn clean compile:*)",
+      "Bash(../AgentX/./mvn clean compile)",
+      "Bash(npm run lint:*)",
+      "Bash(ls:*)",
+      "Bash(sh -c:*)",
+      "Bash(mkdir:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm install:*)",
+      "Bash(npm uninstall:*)",
+      "Bash(/Users/xhy/course/AgentX/AgentX/mvn -f /Users/xhy/course/AgentX/AgentX/pom.xml clean compile)",
+      "Bash(curl:*)",
+      "Bash(docker exec:*)",
+      "Bash(docker start:*)"
+    ],
+    "deny": []
+  }
+}

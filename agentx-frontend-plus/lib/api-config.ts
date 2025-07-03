@@ -99,6 +99,15 @@ export const API_ENDPOINTS = {
   ADMIN_USERS: "/admin/users", // 管理员获取用户列表
   ADMIN_AGENTS: "/admin/agents", // 管理员获取Agent列表
   ADMIN_AGENT_STATISTICS: "/admin/agents/statistics", // 管理员获取Agent统计
+  
+  // API Key 相关
+  API_KEYS: "/api-keys", // 获取用户API密钥列表
+  CREATE_API_KEY: "/api-keys", // 创建API密钥
+  API_KEY_DETAIL: (id: string) => `/api-keys/${id}`, // 获取API密钥详情
+  UPDATE_API_KEY_STATUS: (id: string) => `/api-keys/${id}/status`, // 更新API密钥状态
+  DELETE_API_KEY: (id: string) => `/api-keys/${id}`, // 删除API密钥
+  RESET_API_KEY: (id: string) => `/api-keys/${id}/reset`, // 重置API密钥
+  AGENT_API_KEYS: (agentId: string) => `/api-keys/agent/${agentId}`, // 获取Agent的API密钥列表
 }
 
 // 构建完整的API URL
