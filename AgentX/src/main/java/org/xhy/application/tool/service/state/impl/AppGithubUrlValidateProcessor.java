@@ -41,8 +41,8 @@ public class AppGithubUrlValidateProcessor implements AppToolStateProcessor {
         try {
             logger.debug("解析GitHub URL: {}", uploadUrl);
             GitHubRepoInfo repoInfo = GitHubUrlParser.parseGithubUrl(uploadUrl);
-            logger.debug("解析结果 - 仓库: {}, 引用: {}, 路径: {}", 
-                repoInfo.getFullName(), repoInfo.getRef(), repoInfo.getPathInRepo());
+            logger.debug("解析结果 - 仓库: {}, 引用: {}, 路径: {}", repoInfo.getFullName(), repoInfo.getRef(),
+                    repoInfo.getPathInRepo());
 
             logger.debug("开始调用GitHub API验证");
             gitHubService.validateGitHubRepoRefAndPath(repoInfo);

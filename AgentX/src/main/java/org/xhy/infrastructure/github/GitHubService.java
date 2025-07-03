@@ -40,8 +40,8 @@ public class GitHubService {
         GitHubBuilder builder = new GitHubBuilder();
 
         // 如果配置了访问令牌，使用认证访问，否则使用匿名访问
-        if (gitHubProperties.getTarget().getToken() != null && 
-            !gitHubProperties.getTarget().getToken().trim().isEmpty()) {
+        if (gitHubProperties.getTarget().getToken() != null
+                && !gitHubProperties.getTarget().getToken().trim().isEmpty()) {
             logger.info("使用GitHub访问令牌进行认证访问");
             this.github = builder.withOAuthToken(gitHubProperties.getTarget().getToken()).build();
         } else {

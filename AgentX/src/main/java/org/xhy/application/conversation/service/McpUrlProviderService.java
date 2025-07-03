@@ -191,14 +191,14 @@ public class McpUrlProviderService {
 
                 // 检查容器是否已经健康运行
                 if (isContainerHealthy(container)) {
-                    logger.info("用户容器准备就绪: userId={}, containerId={}, ip={}, port={}", userId, containerId, 
+                    logger.info("用户容器准备就绪: userId={}, containerId={}, ip={}, port={}", userId, containerId,
                             container.getIpAddress(), container.getExternalPort());
                     return container;
                 }
 
                 retryCount++;
-                logger.debug("等待用户容器准备就绪: userId={}, containerId={}, retry={}/{}, status={}, ip={}", 
-                        userId, containerId, retryCount, maxRetries, container.getStatus(), container.getIpAddress());
+                logger.debug("等待用户容器准备就绪: userId={}, containerId={}, retry={}/{}, status={}, ip={}", userId,
+                        containerId, retryCount, maxRetries, container.getStatus(), container.getIpAddress());
 
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
@@ -215,8 +215,8 @@ public class McpUrlProviderService {
         // 超时后尝试获取最新状态
         try {
             ContainerDTO container = containerAppService.getUserContainer(userId);
-            logger.warn("用户容器等待超时，当前状态: userId={}, containerId={}, status={}, ip={}, port={}", 
-                    userId, containerId, container.getStatus(), container.getIpAddress(), container.getExternalPort());
+            logger.warn("用户容器等待超时，当前状态: userId={}, containerId={}, status={}, ip={}, port={}", userId, containerId,
+                    container.getStatus(), container.getIpAddress(), container.getExternalPort());
         } catch (Exception e) {
             logger.error("获取用户容器最终状态失败: userId={}", userId, e);
         }

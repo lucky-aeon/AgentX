@@ -109,10 +109,10 @@ public class ToolDomainService {
             needStateTransition = true;
             String mcpServerName = this.getMcpServerName(toolEntity);
             toolEntity.setMcpServerName(mcpServerName);
-            
+
             // 校验更新后的MCP名称不能与用户其他工具重复
             this.validateMcpServerNameUnique(mcpServerName, toolEntity.getUserId(), toolEntity.getId());
-            
+
             toolEntity.setStatus(ToolStatus.WAITING_REVIEW);
         } else {
             // 只修改了信息，设置为人工审核状态
@@ -366,15 +366,13 @@ public class ToolDomainService {
      * @param isGlobal 是否为全局工具 */
     public void updateToolGlobalStatus(String toolId, Boolean isGlobal) {
         // 1. 更新主工具表
-        LambdaUpdateWrapper<ToolEntity> toolWrapper = Wrappers.<ToolEntity>lambdaUpdate()
-                .eq(ToolEntity::getId, toolId)
+        LambdaUpdateWrapper<ToolEntity> toolWrapper = Wrappers.<ToolEntity>lambdaUpdate().eq(ToolEntity::getId, toolId)
                 .set(ToolEntity::getIsGlobal, isGlobal);
         toolRepository.checkedUpdate(toolWrapper);
 
         // 2. 同步更新所有已安装的user_tools记录
         LambdaUpdateWrapper<UserToolEntity> userToolWrapper = Wrappers.<UserToolEntity>lambdaUpdate()
-                .eq(UserToolEntity::getToolId, toolId)
-                .set(UserToolEntity::getIsGlobal, isGlobal);
+                .eq(UserToolEntity::getToolId, toolId).set(UserToolEntity::getIsGlobal, isGlobal);
         userToolRepository.update(null, userToolWrapper);
     }
 
@@ -389,8 +387,7 @@ public class ToolDomainService {
         }
 
         LambdaQueryWrapper<UserToolEntity> wrapper = Wrappers.<UserToolEntity>lambdaQuery()
-                .eq(UserToolEntity::getMcpServerName, serverName)
-                .eq(UserToolEntity::getUserId, userId);
+                .eq(UserToolEntity::getMcpServerName, serverName).eq(UserToolEntity::getUserId, userId);
 
         return userToolRepository.selectList(wrapper).get(0);
     }
@@ -411,7 +408,7 @@ public class ToolDomainService {
             // 返回对应的原始工具信息
             return toolRepository.selectById(userTool.getToolId());
         }
-        
+
         return null;
     }
 
@@ -419,18 +416,17 @@ public class ToolDomainService {
      * 
      * @param mcpServerName MCP服务器名称
      * @param userId 用户ID
-     * @param excludeToolId 排除的工具ID（更新时使用）*/
+     * @param excludeToolId 排除的工具ID（更新时使用） */
     private void validateMcpServerNameUnique(String mcpServerName, String userId, String excludeToolId) {
         // 检查用户已安装工具中是否已存在此名称
         LambdaQueryWrapper<UserToolEntity> userToolWrapper = Wrappers.<UserToolEntity>lambdaQuery()
-                .eq(UserToolEntity::getMcpServerName, mcpServerName)
-                .eq(UserToolEntity::getUserId, userId);
-        
+                .eq(UserToolEntity::getMcpServerName, mcpServerName).eq(UserToolEntity::getUserId, userId);
+
         // 如果是工具更新，需要排除来自同一工具的安装记录
         if (excludeToolId != null) {
             userToolWrapper.ne(UserToolEntity::getToolId, excludeToolId);
         }
-        
+
         long userToolCount = userToolRepository.selectCount(userToolWrapper);
         if (userToolCount > 0) {
             throw new BusinessException("MCP服务器名称 '" + mcpServerName + "' 与已安装工具冲突，请使用其他名称");
