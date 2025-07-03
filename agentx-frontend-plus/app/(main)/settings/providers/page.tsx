@@ -98,7 +98,7 @@ export default function ProvidersPage() {
       if (activeTab === "官方服务") {
         type = "official";
       } else if (activeTab === "自定义服务") {
-        type = "user";
+        type = "custom";
       }
       
       const response = await getProviders(type);
@@ -391,10 +391,190 @@ export default function ProvidersPage() {
           <TabsTrigger value="自定义服务">自定义服务</TabsTrigger>
         </TabsList>
         
-        <TabsContent value={activeTab} className="space-y-6">
+        <TabsContent value="全部" className="space-y-6">
           {filteredProviders.length === 0 ? (
             <div className="text-center py-10 border rounded-md bg-gray-50">
               <p className="text-muted-foreground">暂无服务商数据</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredProviders.map((provider) => (
+                <Card 
+                  key={provider.id} 
+                  className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+                  onClick={() => openDetail(provider)}
+                >
+                  <CardHeader className="pb-2 relative">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-md bg-blue-100 text-blue-600">
+                          {provider.protocol.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <CardTitle className="text-base">{provider.name}</CardTitle>
+                          <CardDescription className="text-xs">
+                            {provider.protocol}
+                            {provider.isOfficial && (
+                              <Badge variant="outline" className="ml-2 text-[10px]">
+                                官方
+                              </Badge>
+                            )}
+                          </CardDescription>
+                        </div>
+                      </div>
+                      {!provider.isOfficial && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                            <Button variant="ghost" size="icon" className="absolute top-2 right-2">
+                              <MoreHorizontal className="h-4 w-4" />
+                              <span className="sr-only">打开菜单</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={(e) => openEditDialog(provider, e)}>
+                              <Edit className="mr-2 h-4 w-4" />
+                              编辑
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={(e) => openDeleteConfirm(provider, e)}>
+                              <Trash className="mr-2 h-4 w-4" />
+                              删除
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={(e) => toggleProviderStatus(provider, e)}
+                              disabled={isTogglingStatus}
+                            >
+                              {provider.status ? (
+                                <>
+                                  <PowerOff className="mr-2 h-4 w-4" />
+                                  禁用
+                                </>
+                              ) : (
+                                <>
+                                  <Power className="mr-2 h-4 w-4" />
+                                  启用
+                                </>
+                              )}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      {provider.description || "无描述"}
+                    </p>
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {provider.status ? (
+                        <Badge variant="outline" className="bg-green-50 text-green-600 border-green-200">
+                          已启用
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="bg-red-50 text-red-600 border-red-200">
+                          已禁用
+                        </Badge>
+                      )}
+                      {provider.models && provider.models.length > 0 && (
+                        <div className="w-full mt-2">
+                          <p className="text-xs text-muted-foreground mb-1">可用模型:</p>
+                          <div className="flex flex-wrap gap-1">
+                            {provider.models.slice(0, 3).map((model, index) => (
+                              <Badge key={index} variant="outline" className="bg-blue-50 text-blue-600 border-blue-200">
+                                {model.name}
+                              </Badge>
+                            ))}
+                            {provider.models.length > 3 && (
+                              <Badge variant="outline" className="bg-blue-50 text-blue-600 border-blue-200">
+                                +{provider.models.length - 3}
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+        
+        <TabsContent value="官方服务" className="space-y-6">
+          {filteredProviders.length === 0 ? (
+            <div className="text-center py-10 border rounded-md bg-gray-50">
+              <p className="text-muted-foreground">暂无官方服务商数据</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredProviders.map((provider) => (
+                <Card 
+                  key={provider.id} 
+                  className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+                  onClick={() => openDetail(provider)}
+                >
+                  <CardHeader className="pb-2 relative">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-md bg-blue-100 text-blue-600">
+                          {provider.protocol.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <CardTitle className="text-base">{provider.name}</CardTitle>
+                          <CardDescription className="text-xs">
+                            {provider.protocol}
+                            {provider.isOfficial && (
+                              <Badge variant="outline" className="ml-2 text-[10px]">
+                                官方
+                              </Badge>
+                            )}
+                          </CardDescription>
+                        </div>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      {provider.description || "无描述"}
+                    </p>
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {provider.status ? (
+                        <Badge variant="outline" className="bg-green-50 text-green-600 border-green-200">
+                          已启用
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="bg-red-50 text-red-600 border-red-200">
+                          已禁用
+                        </Badge>
+                      )}
+                      {provider.models && provider.models.length > 0 && (
+                        <div className="w-full mt-2">
+                          <p className="text-xs text-muted-foreground mb-1">可用模型:</p>
+                          <div className="flex flex-wrap gap-1">
+                            {provider.models.slice(0, 3).map((model, index) => (
+                              <Badge key={index} variant="outline" className="bg-blue-50 text-blue-600 border-blue-200">
+                                {model.name}
+                              </Badge>
+                            ))}
+                            {provider.models.length > 3 && (
+                              <Badge variant="outline" className="bg-blue-50 text-blue-600 border-blue-200">
+                                +{provider.models.length - 3}
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+        
+        <TabsContent value="自定义服务" className="space-y-6">
+          {filteredProviders.length === 0 ? (
+            <div className="text-center py-10 border rounded-md bg-gray-50">
+              <p className="text-muted-foreground">暂无自定义服务商数据</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

@@ -60,7 +60,7 @@ public class AgentSessionAppService {
         }
 
         // 获取对应的会话列表
-        List<SessionEntity> sessions = sessionDomainService.getSessionsByAgentId(agentId);
+        List<SessionEntity> sessions = sessionDomainService.getSessionsByAgentId(agentId, userId);
         if (sessions.isEmpty()) {
             // 如果会话列表为空，则新创建一个并且返回
             SessionEntity session = sessionDomainService.createSession(agentId, userId);

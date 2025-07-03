@@ -163,7 +163,7 @@ public class ToolDomainService {
     }
 
     /** 更新工具实体
-     * 
+     *
      * @param toolEntity 工具实体
      * @return 更新后的工具实体 */
     public ToolEntity updateToolEntity(ToolEntity toolEntity) {
@@ -361,7 +361,7 @@ public class ToolDomainService {
     }
 
     /** 仅更新工具全局状态，不触发审核流程
-     * 
+     *
      * @param toolId 工具ID
      * @param isGlobal 是否为全局工具 */
     public void updateToolGlobalStatus(String toolId, Boolean isGlobal) {
@@ -377,7 +377,7 @@ public class ToolDomainService {
     }
 
     /** 根据MCP服务器名称获取用户已安装的工具
-     * 
+     *
      * @param serverName MCP服务器名称
      * @param userId 用户ID
      * @return 用户已安装的工具实体，如果不存在返回null */
@@ -393,7 +393,7 @@ public class ToolDomainService {
     }
 
     /** 根据MCP服务器名称获取用户已安装的工具对应的原始工具
-     * 
+     *
      * @param serverName MCP服务器名称
      * @param userId 用户ID
      * @return 工具实体，如果不存在返回null */
@@ -413,7 +413,7 @@ public class ToolDomainService {
     }
 
     /** 校验用户MCP服务器名称唯一性
-     * 
+     *
      * @param mcpServerName MCP服务器名称
      * @param userId 用户ID
      * @param excludeToolId 排除的工具ID（更新时使用） */
