@@ -172,7 +172,17 @@ export default function ContainersPage() {
       2: { color: 'bg-purple-100 text-purple-800', text: '审核容器' }
     };
     
-    const typeInfo = typeMap[type?.code] || typeMap[1];
+    // 处理字符串类型的情况
+    let typeCode = type?.code;
+    if (typeof type === 'string') {
+      const stringToCodeMap: { [key: string]: number } = {
+        'USER': 1,
+        'REVIEW': 2
+      };
+      typeCode = stringToCodeMap[type] || 1;
+    }
+    
+    const typeInfo = typeMap[typeCode] || typeMap[1];
     return (
       <Badge className={typeInfo.color}>
         {typeInfo.text}
