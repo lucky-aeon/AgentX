@@ -272,7 +272,7 @@ public class DockerService {
     /** 拉取镜像（如果不存在） */
     private void pullImageIfNotExists(String image) {
         try {
-            // 检查镜像是否存在
+            // 检查镜像是否存在 提一下：拉取 docker 镜像的时候尽量使用国内源
             List<Image> images = dockerClient.listImagesCmd().withImageNameFilter(image).exec();
 
             if (images.isEmpty()) {

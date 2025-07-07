@@ -109,7 +109,9 @@ public class ContainerDomainService {
      * @return 审核容器，可能为null */
     public ContainerEntity findReviewContainer() {
         LambdaQueryWrapper<ContainerEntity> wrapper = Wrappers.<ContainerEntity>lambdaQuery()
-                .eq(ContainerEntity::getType, ContainerType.REVIEW).orderByDesc(ContainerEntity::getCreatedAt);
+                .eq(ContainerEntity::getType, ContainerType.REVIEW)
+                .ne(ContainerEntity::getStatus, ContainerStatus.DELETED)
+                .orderByDesc(ContainerEntity::getCreatedAt);
 
         List<ContainerEntity> containers = containerRepository.selectList(wrapper);
         return containers.isEmpty() ? null : containers.get(0);
@@ -290,7 +292,6 @@ public class ContainerDomainService {
     public List<ContainerEntity> getContainersNeedingSuspension() {
         LocalDateTime oneDayAgo = LocalDateTime.now().minusDays(1);
         LambdaQueryWrapper<ContainerEntity> wrapper = Wrappers.<ContainerEntity>lambdaQuery()
-                .eq(ContainerEntity::getStatus, ContainerStatus.RUNNING)
                 .lt(ContainerEntity::getLastAccessedAt, oneDayAgo).orderByAsc(ContainerEntity::getLastAccessedAt);
         return containerRepository.selectList(wrapper);
     }
@@ -301,7 +302,6 @@ public class ContainerDomainService {
     public List<ContainerEntity> getContainersNeedingDeletion() {
         LocalDateTime fiveDaysAgo = LocalDateTime.now().minusDays(5);
         LambdaQueryWrapper<ContainerEntity> wrapper = Wrappers.<ContainerEntity>lambdaQuery()
-                .ne(ContainerEntity::getStatus, ContainerStatus.DELETED)
                 .lt(ContainerEntity::getLastAccessedAt, fiveDaysAgo).orderByAsc(ContainerEntity::getLastAccessedAt);
         return containerRepository.selectList(wrapper);
     }

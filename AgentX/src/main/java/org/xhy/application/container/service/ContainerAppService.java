@@ -68,7 +68,7 @@ public class ContainerAppService {
         ContainerEntity container = containerDomainService.createUserContainer(userId, containerName,
                 template.getImage(), template.getInternalPort(), volumePath);
 
-        // 异步创建Docker容器
+        // 创建Docker容器
         createDockerContainer(container, template);
 
         return ContainerAssembler.toDTO(container);
