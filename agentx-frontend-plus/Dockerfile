@@ -2,7 +2,7 @@
 FROM node:18-alpine AS builder
 
 # 设置工作目录
-WORKDIR /build
+WORKDIR /app
 
 # 复制package文件
 COPY package*.json ./
@@ -16,30 +16,30 @@ COPY . .
 # 构建应用
 RUN npm run build
 
-# 多阶段构建：第二阶段 - 运行时镜像
-FROM node:18-alpine
+# 第二阶段：生产运行时
+FROM node:18-alpine AS runner
 
 # 设置工作目录
 WORKDIR /app
 
-# 复制package文件
-COPY package*.json ./
+# 创建非root用户
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
 
-# 安装生产依赖
-RUN npm install --production --legacy-peer-deps
+# 复制public目录（静态资源）
+COPY --from=builder /app/public ./public
 
-# 从构建阶段复制构建结果
-COPY --from=builder /build/.next ./.next
-COPY --from=builder /build/public ./public
-COPY --from=builder /build/next.config.mjs ./
-COPY --from=builder /build/components.json ./
+# 复制standalone应用
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+USER nextjs
 
 # 暴露端口
 EXPOSE 3000
 
-# 健康检查
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD curl -f http://localhost:3000 || exit 1
+ENV PORT 3000
+ENV HOSTNAME "0.0.0.0"
 
 # 启动应用
-CMD ["npm", "start"] 
+CMD ["node", "server.js"] 

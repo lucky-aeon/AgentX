@@ -29,6 +29,9 @@ const nextConfig = {
     }
     return config;
   },
+  // 确保静态资源路径正确
+  trailingSlash: false,
+  generateEtags: false,
 }
 
 mergeConfig(nextConfig, userConfig)

@@ -74,7 +74,7 @@ services:
       dockerfile: Dockerfile
     container_name: agentx-backend
     ports:
-      - "8080:8080"
+      - "8088:8088"
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/agentx
