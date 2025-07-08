@@ -8,6 +8,7 @@ import org.xhy.application.apikey.service.ApiKeyAppService;
 import org.xhy.infrastructure.auth.UserContext;
 import org.xhy.interfaces.api.common.Result;
 import org.xhy.interfaces.dto.apikey.request.CreateApiKeyRequest;
+import org.xhy.interfaces.dto.apikey.request.QueryApiKeyRequest;
 import org.xhy.interfaces.dto.apikey.request.UpdateApiKeyStatusRequest;
 import org.xhy.interfaces.dto.apikey.response.ApiKeyResponse;
 
@@ -42,11 +43,12 @@ public class PortalApiKeyController {
 
     /** 获取用户的API密钥列表
      *
+     * @param queryRequest 查询条件
      * @return API密钥列表 */
     @GetMapping
-    public Result<List<ApiKeyResponse>> getUserApiKeys() {
+    public Result<List<ApiKeyResponse>> getUserApiKeys(QueryApiKeyRequest queryRequest) {
         String userId = UserContext.getCurrentUserId();
-        List<ApiKeyDTO> apiKeys = apiKeyAppService.getUserApiKeys(userId);
+        List<ApiKeyDTO> apiKeys = apiKeyAppService.getUserApiKeys(userId, queryRequest);
 
         List<ApiKeyResponse> responses = apiKeys.stream().map(dto -> {
             ApiKeyResponse response = new ApiKeyResponse();

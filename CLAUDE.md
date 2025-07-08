@@ -32,16 +32,16 @@ AgentX is an intelligent agent platform built with Domain-Driven Design (DDD) ar
 cd AgentX
 
 # Run backend server (development)
-./mvnw spring-boot:run
+./mvn spring-boot:run
 
 # Build backend
-./mvnw clean compile
+./mvn clean compile
 
 # Run tests
-./mvnw test
+./mvn test
 
 # Code formatting (uses Spotless plugin)
-./mvnw spotless:apply
+./mvn spotless:apply
 ```
 
 ### Frontend (Next.js)
@@ -96,6 +96,36 @@ setup_with_compose.bat   # Windows
 
 ## Code Architecture Patterns
 
+### DDD分层架构依赖原则 ⚠️ **严格遵守**
+
+**核心约束**：
+- ✅ **Infrastructure → Domain** (基础设施层可以依赖领域层)
+- ✅ **Application → Infrastructure** (应用层可以使用基础设施层)  
+- ✅ **Application → Domain** (应用层可以协调领域层)
+- ❌ **Infrastructure → Application** (基础设施层**禁止**依赖应用层)
+- ❌ **Domain → Infrastructure** (领域层禁止依赖基础设施层，通过接口反转)
+- ❌ **Domain → Application** (领域层禁止依赖应用层)
+
+**架构检查清单**：
+- 基础设施层类（`org.xhy.infrastructure.*`）不得import应用层类（`org.xhy.application.*`）
+- 领域层类（`org.xhy.domain.*`）不得import基础设施层或应用层类
+- 违反此原则的代码必须立即重构
+
+**正确示例**：
+```java
+// ✅ 正确：基础设施依赖领域
+@Service // Infrastructure
+public class MCPGatewayService {
+    private final ContainerDomainService containerDomainService; // Domain ✅
+}
+
+// ❌ 错误：基础设施依赖应用
+@Service // Infrastructure  
+public class MCPGatewayService {
+    private final ContainerAppService containerAppService; // Application ❌
+}
+```
+
 ### Backend DDD Structure
 - **Entities**: Core business objects with identity (e.g., `AgentEntity`, `UserEntity`)
 - **Aggregates**: Clusters of related entities (e.g., `TaskAggregate`) 
@@ -128,10 +158,14 @@ setup_with_compose.bat   # Windows
 - **JSON Fields**: Use custom converters in `infrastructure/converter/` for JSON database fields
 - **Exceptions**: Use `BusinessException` for business logic errors
 - **Repository Naming Conventions**: 
-  - `getXxx()`: Must return value or throw exception
+  - `getXxx()`: Must return value or throw exception (never return null)
   - `findXxx()`: Can return null
   - `existsXxx()`: Returns boolean
   - `checkXxxExists()`: Throws exception if not found
+- **Container Management Conventions**:
+  - 容器相关接口只有管理员能调用，都是admin接口入口
+  - 容器操作方法需要传入`Operator.ADMIN`（管理员权限）
+  - 系统内部调用容器服务时，统一使用`Operator.ADMIN`权限
 - **Entity Operations**: Use `Operator.ADMIN` for admin operations, check `operator.needCheckUserId()`
 - **Assembler Pattern**: Always use `BeanUtils.copyProperties()` for Entity/DTO conversions to avoid field omissions
 
@@ -420,7 +454,7 @@ logger.error("Failed to process request", exception);
 ## Development Workflow
 
 ### Code Quality Checklist
-- [ ] Run `mvnw spotless:apply` before committing Java code
+- [ ] Run `mvn spotless:apply` before committing Java code
 - [ ] Run `npm run lint` before committing TypeScript code
 - [ ] Write unit tests for new business logic
 - [ ] Update API documentation for interface changes
@@ -1083,7 +1117,7 @@ repository.checkedUpdate(entity, updateWrapper);
 - **Database Init**: Verify SQL scripts execute correctly
 
 ## Important Notes
-- Always run code formatting before commits (`mvnw spotless:apply` for Java)
+- Always run code formatting before commits (`mvn spotless:apply` for Java)
 - Use `--legacy-peer-deps` flag when installing npm dependencies
 - Development mode includes file watching with automatic container restarts
 - Follow REST conventions for API design

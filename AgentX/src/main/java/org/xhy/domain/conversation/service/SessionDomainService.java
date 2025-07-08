@@ -21,9 +21,9 @@ public class SessionDomainService {
     /** 根据 agentId 获取会话列表
      * 
      * @param agentId 助理id */
-    public List<SessionEntity> getSessionsByAgentId(String agentId) {
+    public List<SessionEntity> getSessionsByAgentId(String agentId, String userId) {
         return sessionRepository.selectList(Wrappers.<SessionEntity>lambdaQuery().eq(SessionEntity::getAgentId, agentId)
-                .orderByDesc(SessionEntity::getCreatedAt));
+                .eq(SessionEntity::getUserId, userId).orderByDesc(SessionEntity::getCreatedAt));
     }
 
     /** 删除会话

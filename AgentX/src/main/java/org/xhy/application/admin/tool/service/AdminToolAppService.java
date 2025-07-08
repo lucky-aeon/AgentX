@@ -8,11 +8,10 @@ import org.xhy.application.tool.service.ToolAppService;
 import org.xhy.application.tool.dto.ToolWithUserDTO;
 import org.xhy.application.tool.dto.ToolStatisticsDTO;
 import org.xhy.domain.tool.constant.ToolStatus;
-import org.xhy.domain.tool.constant.ToolType;
-import org.xhy.domain.tool.constant.UploadType;
 import org.xhy.domain.tool.model.ToolEntity;
+import org.xhy.domain.tool.model.ToolOperationResult;
 import org.xhy.domain.tool.service.ToolDomainService;
-import org.xhy.domain.tool.service.ToolStateDomainService;
+import org.xhy.application.tool.service.ToolStateStateMachineAppService;
 import org.xhy.interfaces.dto.tool.request.CreateToolRequest;
 import org.xhy.interfaces.dto.tool.request.QueryToolRequest;
 import org.xhy.infrastructure.exception.BusinessException;
@@ -25,13 +24,13 @@ public class AdminToolAppService {
     private static final Logger logger = LoggerFactory.getLogger(AdminToolAppService.class);
 
     private final ToolDomainService toolDomainService;
-    private final ToolStateDomainService toolStateService;
+    private final ToolStateStateMachineAppService toolStateStateMachine;
     private final ToolAppService toolAppService;
 
-    public AdminToolAppService(ToolDomainService toolDomainService, ToolStateDomainService toolStateService,
-            ToolAppService toolAppService) {
+    public AdminToolAppService(ToolDomainService toolDomainService,
+            ToolStateStateMachineAppService toolStateStateMachine, ToolAppService toolAppService) {
         this.toolDomainService = toolDomainService;
-        this.toolStateService = toolStateService;
+        this.toolStateStateMachine = toolStateStateMachine;
         this.toolAppService = toolAppService;
     }
 
@@ -48,8 +47,8 @@ public class AdminToolAppService {
         entity.setIsOffice(true);
 
         // 保存工具
-        ToolEntity createdTool = toolDomainService.createTool(entity);
-        String toolId = createdTool.getId();
+        ToolOperationResult tool = toolDomainService.createTool(entity);
+        String toolId = tool.getTool().getId();
 
         logger.info("官方工具创建成功: toolId={}", toolId);
         return toolId;
@@ -65,8 +64,8 @@ public class AdminToolAppService {
         ToolEntity tool = toolDomainService.getTool(toolId);
 
         if (tool.getStatus() == ToolStatus.MANUAL_REVIEW && status == ToolStatus.APPROVED) {
-            // 人工审核通过，调用状态服务处理
-            String approvedToolId = toolStateService.manualReviewComplete(tool, true);
+            // 人工审核通过，调用应用层状态机处理
+            String approvedToolId = toolStateStateMachine.manualReviewComplete(tool, true);
             // 审核通过后，手动触发自动安装
             toolAppService.autoInstallApprovedTool(approvedToolId);
         } else if (status == ToolStatus.FAILED) {
@@ -97,5 +96,25 @@ public class AdminToolAppService {
      * @return 工具统计数据 */
     public ToolStatisticsDTO getToolStatistics() {
         return toolDomainService.getToolStatistics();
+    }
+
+    /** 更新工具全局状态
+     * 
+     * @param toolId 工具ID
+     * @param isGlobal 是否为全局工具 */
+    @Transactional
+    public void updateToolGlobalStatus(String toolId, Boolean isGlobal) {
+        logger.info("更新工具全局状态: toolId={}, isGlobal={}", toolId, isGlobal);
+
+        // 检查工具是否存在
+        ToolEntity tool = toolDomainService.getTool(toolId);
+        if (tool == null) {
+            throw new BusinessException("工具不存在: " + toolId);
+        }
+
+        // 使用专门的方法更新全局状态，不触发审核流程
+        toolDomainService.updateToolGlobalStatus(toolId, isGlobal);
+
+        logger.info("工具全局状态更新成功: toolId={}, isGlobal={}", toolId, isGlobal);
     }
 }

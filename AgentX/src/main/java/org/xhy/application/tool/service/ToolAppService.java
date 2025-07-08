@@ -17,6 +17,7 @@ import org.xhy.application.tool.dto.ToolDTO;
 import org.xhy.application.tool.dto.ToolVersionDTO;
 import org.xhy.domain.tool.constant.ToolStatus;
 import org.xhy.domain.tool.model.ToolEntity;
+import org.xhy.domain.tool.model.ToolOperationResult;
 import org.xhy.domain.tool.model.ToolVersionEntity;
 import org.xhy.domain.tool.model.UserToolEntity;
 import org.xhy.domain.tool.service.ToolDomainService;
@@ -45,12 +46,16 @@ public class ToolAppService {
 
     private final UserDomainService userDomainService;
 
+    private final ToolStateStateMachineAppService toolStateStateMachine;
+
     public ToolAppService(ToolDomainService toolDomainService, UserToolDomainService userToolDomainService,
-            ToolVersionDomainService toolVersionDomainService, UserDomainService userDomainService) {
+            ToolVersionDomainService toolVersionDomainService, UserDomainService userDomainService,
+            ToolStateStateMachineAppService toolStateStateMachine) {
         this.toolDomainService = toolDomainService;
         this.userToolDomainService = userToolDomainService;
         this.toolVersionDomainService = toolVersionDomainService;
         this.userDomainService = userDomainService;
+        this.toolStateStateMachine = toolStateStateMachine;
     }
 
     /** 上传工具
@@ -67,10 +72,15 @@ public class ToolAppService {
 
         toolEntity.setStatus(ToolStatus.WAITING_REVIEW);
         // 调用领域服务创建工具
-        ToolEntity createdTool = toolDomainService.createTool(toolEntity);
+        ToolOperationResult result = toolDomainService.createTool(toolEntity);
+
+        // 检查是否需要状态转换
+        if (result.needStateTransition()) {
+            toolStateStateMachine.submitToolForProcessing(result.getTool());
+        }
 
         // 将实体转换为DTO返回
-        return ToolAssembler.toDTO(createdTool);
+        return ToolAssembler.toDTO(result.getTool());
     }
 
     public ToolDTO getToolDetail(String toolId, String userId) {
@@ -88,8 +98,14 @@ public class ToolAppService {
     public ToolDTO updateTool(String toolId, UpdateToolRequest request, String userId) {
         ToolEntity toolEntity = ToolAssembler.toEntity(request, userId);
         toolEntity.setId(toolId);
-        ToolEntity updatedTool = toolDomainService.updateTool(toolEntity);
-        return ToolAssembler.toDTO(updatedTool);
+        ToolOperationResult result = toolDomainService.updateTool(toolEntity);
+
+        // 检查是否需要状态转换
+        if (result.needStateTransition()) {
+            toolStateStateMachine.submitToolForProcessing(result.getTool());
+        }
+
+        return ToolAssembler.toDTO(result.getTool());
     }
 
     public void deleteTool(String toolId, String userId) {
@@ -225,11 +241,15 @@ public class ToolAppService {
 
     public void uninstallTool(String toolId, String userId) {
         // 先检查是否是用户自己创建的工具
-        ToolEntity toolEntity = toolDomainService.getTool(toolId);
-
-        if (toolEntity != null && toolEntity.getUserId().equals(userId)) {
-            // 不允许删除用户自己创建的工具
-            throw new BusinessException("不允许卸载自己创建的工具");
+        try {
+            ToolEntity toolEntity = toolDomainService.getTool(toolId);
+            if (toolEntity != null && toolEntity.getUserId().equals(userId)) {
+                // 不允许删除用户自己创建的工具
+                throw new BusinessException("不允许卸载自己创建的工具");
+            }
+        } catch (BusinessException e) {
+            // 如果原始工具不存在，说明已被删除，允许用户卸载已安装的工具
+            logger.info("原始工具不存在，允许用户卸载已安装的工具: toolId={}, userId={}", toolId, userId);
         }
 
         // 执行正常的卸载流程

@@ -12,6 +12,7 @@ import org.xhy.domain.agent.service.AgentDomainService;
 import org.xhy.domain.apikey.model.ApiKeyEntity;
 import org.xhy.domain.apikey.service.ApiKeyDomainService;
 import org.xhy.infrastructure.exception.BusinessException;
+import org.xhy.interfaces.dto.apikey.request.QueryApiKeyRequest;
 
 import java.util.List;
 import java.util.Map;
@@ -67,9 +68,10 @@ public class ApiKeyAppService {
     /** 获取用户的API密钥列表
      *
      * @param userId 用户ID
+     * @param queryRequest 查询条件
      * @return API密钥列表 */
-    public List<ApiKeyDTO> getUserApiKeys(String userId) {
-        List<ApiKeyEntity> apiKeys = apiKeyDomainService.getUserApiKeys(userId);
+    public List<ApiKeyDTO> getUserApiKeys(String userId, QueryApiKeyRequest queryRequest) {
+        List<ApiKeyEntity> apiKeys = apiKeyDomainService.getUserApiKeys(userId, queryRequest);
         List<ApiKeyDTO> dtos = ApiKeyAssembler.toDTOs(apiKeys);
 
         // 批量获取Agent信息
@@ -89,6 +91,14 @@ public class ApiKeyAppService {
         }
 
         return dtos;
+    }
+
+    /** 获取用户的API密钥列表（无查询条件，保持向后兼容）
+     *
+     * @param userId 用户ID
+     * @return API密钥列表 */
+    public List<ApiKeyDTO> getUserApiKeys(String userId) {
+        return getUserApiKeys(userId, null);
     }
 
     /** 获取Agent的API密钥列表

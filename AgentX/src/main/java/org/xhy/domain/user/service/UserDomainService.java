@@ -135,6 +135,34 @@ public class UserDomainService {
         userRepository.checkedUpdateById(user);
     }
 
+    /** 修改用户密码（需要验证当前密码）
+     * 
+     * @param userId 用户ID
+     * @param currentPassword 当前密码
+     * @param newPassword 新密码 */
+    public void changePassword(String userId, String currentPassword, String newPassword) {
+        UserEntity user = userRepository.selectById(userId);
+        if (user == null) {
+            throw new BusinessException("用户不存在");
+        }
+
+        // 验证当前密码
+        if (!PasswordUtils.matches(currentPassword, user.getPassword())) {
+            throw new BusinessException("当前密码不正确");
+        }
+
+        // 检查新密码是否与当前密码相同
+        if (PasswordUtils.matches(newPassword, user.getPassword())) {
+            throw new BusinessException("新密码不能与当前密码相同");
+        }
+
+        // 加密新密码并更新
+        String encodedPassword = PasswordUtils.encode(newPassword);
+        user.setPassword(encodedPassword);
+
+        userRepository.checkedUpdateById(user);
+    }
+
     public List<UserEntity> getByIds(List<String> userIds) {
         if (userIds == null || userIds.isEmpty()) {
             return new ArrayList<>();

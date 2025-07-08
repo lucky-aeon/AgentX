@@ -3,27 +3,25 @@ package org.xhy.domain.tool.service;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.xhy.application.tool.service.ToolStateStateMachineAppService;
 import org.xhy.domain.tool.model.ToolEntity;
-import org.xhy.domain.tool.service.state.impl.PublishingProcessor;
 
 @SpringBootTest
 public class ToolTest {
 
     @Autowired
-    private ToolStateDomainService toolStateService;
+    private ToolStateStateMachineAppService toolStateStateMachine;
 
     @Autowired
     private ToolDomainService toolDomainService;
-    @Autowired
-    private PublishingProcessor publishApprovedTool;
 
     @Test
     public void testToolState() {
-
         ToolEntity tool = toolDomainService.getTool("fcf8589b869aada08e4fe7c29121ddb8");
-        toolStateService.submitToolForProcessing(tool);
-        while (true) {
+        toolStateStateMachine.submitToolForProcessing(tool);
 
-        }
+        // 简化测试逻辑，避免无限循环
+        // while (true) {
+        // }
     }
 }

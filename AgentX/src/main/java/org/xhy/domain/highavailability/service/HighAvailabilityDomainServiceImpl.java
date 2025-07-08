@@ -120,7 +120,7 @@ public class HighAvailabilityDomainServiceImpl implements HighAvailabilityDomain
         if (!properties.isEnabled()) {
             // 高可用未启用，使用默认逻辑
             logger.debug("高可用功能未启用，使用默认Provider选择逻辑: modelId={}", model.getId());
-            ProviderEntity provider = llmDomainService.getProvider(model.getProviderId(), userId);
+            ProviderEntity provider = llmDomainService.getProvider(model.getProviderId());
             return new HighAvailabilityResult(provider, model, null);
         }
 
@@ -164,7 +164,7 @@ public class HighAvailabilityDomainServiceImpl implements HighAvailabilityDomain
 
             // 降级处理：使用默认逻辑
             try {
-                ProviderEntity provider = llmDomainService.getProvider(model.getProviderId(), userId);
+                ProviderEntity provider = llmDomainService.getProvider(model.getProviderId());
                 return new HighAvailabilityResult(provider, model, null);
             } catch (Exception fallbackException) {
                 logger.error("降级逻辑也失败了: modelId={}, sessionId={}", model.getId(), sessionId, fallbackException);

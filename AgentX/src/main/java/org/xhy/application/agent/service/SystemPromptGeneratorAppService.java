@@ -46,7 +46,7 @@ public class SystemPromptGeneratorAppService {
 
         // 2. 获取模型和提供商信息
         ModelEntity model = llmDomainService.getModelById(defaultModelId);
-        ProviderEntity provider = llmDomainService.getProvider(model.getProviderId(), userId);
+        ProviderEntity provider = llmDomainService.getProvider(model.getProviderId());
 
         // 3. 获取工具详细信息
         List<ToolEntity> tools = new ArrayList<>();

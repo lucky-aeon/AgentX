@@ -7,6 +7,8 @@ type WorkspaceContextType = {
   selectedConversationId: string | null
   setSelectedWorkspaceId: (id: string | null) => void
   setSelectedConversationId: (id: string | null) => void
+  refreshWorkspace: () => void
+  refreshTrigger: number
 }
 
 const WorkspaceContext = createContext<WorkspaceContextType | undefined>(undefined)
@@ -53,6 +55,12 @@ const conversations = [
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | null>(null)
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null)
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
+
+  // 刷新工作区的方法
+  const refreshWorkspace = () => {
+    setRefreshTrigger(prev => prev + 1)
+  }
 
   // 当工作区变化时，自动选择第一个对话
   useEffect(() => {
@@ -71,6 +79,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         selectedConversationId,
         setSelectedWorkspaceId,
         setSelectedConversationId,
+        refreshWorkspace,
+        refreshTrigger,
       }}
     >
       {children}
