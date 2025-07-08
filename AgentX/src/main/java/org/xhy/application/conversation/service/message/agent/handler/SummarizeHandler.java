@@ -4,6 +4,7 @@ import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.chat.StreamingChatLanguageModel;
+import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.model.chat.request.ChatRequest;
 import dev.langchain4j.model.chat.response.ChatResponse;
 import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
@@ -64,8 +65,8 @@ public class SummarizeHandler extends AbstractAgentHandler {
             String taskSummary = context.buildTaskSummary();
             
             // 获取流式模型客户端
-            StreamingChatLanguageModel streamingClient = getStreamingClient(context);
-            
+            StreamingChatModel streamingClient = getStreamingClient(context);
+
             // 构建汇总请求
             ChatRequest summaryRequest = buildSummaryRequest(context, taskSummary);
             

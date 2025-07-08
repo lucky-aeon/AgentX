@@ -2,7 +2,9 @@ package org.xhy.application.conversation.service.message.agent.handler;
 
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.model.chat.ChatLanguageModel;
+import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.StreamingChatLanguageModel;
+import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.model.chat.request.ChatRequest;
 import dev.langchain4j.model.openai.OpenAiChatRequestParameters;
 import org.xhy.application.conversation.service.handler.content.ChatContext;
@@ -110,7 +112,7 @@ public abstract class AbstractAgentHandler implements AgentEventHandler {
     /**
      * 获取流式模型客户端
      */
-    protected <T> StreamingChatLanguageModel getStreamingClient(AgentWorkflowContext<T> context) {
+    protected <T> StreamingChatModel getStreamingClient(AgentWorkflowContext<T> context) {
         return llmServiceFactory.getStreamingClient(
                 context.getChatContext().getProvider(), 
                 context.getChatContext().getModel());
@@ -119,7 +121,7 @@ public abstract class AbstractAgentHandler implements AgentEventHandler {
     /**
      * 获取标准模型客户端
      */
-    protected <T> ChatLanguageModel getStrandClient(AgentWorkflowContext<T> context) {
+    protected <T> ChatModel getStrandClient(AgentWorkflowContext<T> context) {
         return llmServiceFactory.getStrandClient(
                 context.getChatContext().getProvider(),
                 context.getChatContext().getModel());

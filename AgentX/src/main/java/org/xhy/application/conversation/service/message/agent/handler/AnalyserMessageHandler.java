@@ -1,6 +1,7 @@
 package org.xhy.application.conversation.service.message.agent.handler;
 
 import dev.langchain4j.model.chat.ChatLanguageModel;
+import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.request.ChatRequest;
 import dev.langchain4j.model.chat.response.ChatResponse;
 import org.springframework.stereotype.Component;
@@ -73,11 +74,11 @@ public class AnalyserMessageHandler extends AbstractAgentHandler {
         String userMessage = contextObj.getChatContext().getUserMessage();
         try {
             // 获取流式模型客户端
-            ChatLanguageModel chatLanguageModel = getStrandClient(context);
+            ChatModel strandClient = getStrandClient(context);
 
             // 构建请求
             ChatRequest request = buildRequest(context);
-            ChatResponse chat = chatLanguageModel.chat(request);
+            ChatResponse chat = strandClient.chat(request);
             String text = chat.aiMessage().text();
             AnalyzerMessageDTO analyzerMessageDTO = ModelResponseToJsonUtils.toJson(text, AnalyzerMessageDTO.class);
             context.addExtraData(extraAnalyzerMessageKey, analyzerMessageDTO);

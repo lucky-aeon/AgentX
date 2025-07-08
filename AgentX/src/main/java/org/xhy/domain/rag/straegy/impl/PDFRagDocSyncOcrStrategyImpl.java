@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import dev.langchain4j.model.chat.ChatModel;
 import org.dromara.streamquery.stream.core.bean.BeanHelper;
 import org.dromara.x.file.storage.core.FileInfo;
 import org.dromara.x.file.storage.core.FileStorageService;
@@ -103,7 +104,7 @@ public class PDFRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl impl
                 );
 
 
-                final ChatLanguageModel ocrModel = LLMProviderService.getStrand(ProviderProtocol.OpenAI, null);
+                ChatModel ocrModel = LLMProviderService.getStrand(ProviderProtocol.OPENAI, null);
 
                 final ChatResponse chat = ocrModel.chat(userMessage);
 

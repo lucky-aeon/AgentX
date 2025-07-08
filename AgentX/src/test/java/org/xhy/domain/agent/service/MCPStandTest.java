@@ -43,7 +43,7 @@ public class MCPStandTest {
                 .build();
 
         AgentStandTest agent = AiServices.builder(AgentStandTest.class)
-                .streamingChatLanguageModel(model)
+                .streamingChatModel(model)
                 .toolProvider(toolProvider)
                 .build();
 

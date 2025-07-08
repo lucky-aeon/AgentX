@@ -5,6 +5,7 @@ import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.chat.ChatLanguageModel;
+import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.request.ChatRequest;
 import dev.langchain4j.model.chat.response.ChatResponse;
 import org.slf4j.Logger;
@@ -132,8 +133,8 @@ public class InfoRequirementService {
         
         try {
             // 获取模型客户端
-            ChatLanguageModel chatLanguageModel = getStrandClient(context);
-            
+            ChatModel strandClient = getStrandClient(context);
+
             // 构建请求
             ChatRequest request = buildRequest(context);
 
@@ -143,7 +144,7 @@ public class InfoRequirementService {
             }
 
             request.messages().add(new SystemMessage(AgentPromptTemplates.getInfoAnalysisPrompt()));
-            ChatResponse chat = chatLanguageModel.chat(request);
+            ChatResponse chat = strandClient.chat(request);
             String text = chat.aiMessage().text();
             
             log.debug("会话[{}]信息完整性检查结果: {}", sessionId, text);
@@ -250,7 +251,7 @@ public class InfoRequirementService {
     /**
      * 获取Strand客户端
      */
-    protected <T> ChatLanguageModel getStrandClient(AgentWorkflowContext<T> context) {
+    protected <T> ChatModel getStrandClient(AgentWorkflowContext<T> context) {
         return llmServiceFactory.getStrandClient(
                 context.getChatContext().getProvider(),
                 context.getChatContext().getModel());

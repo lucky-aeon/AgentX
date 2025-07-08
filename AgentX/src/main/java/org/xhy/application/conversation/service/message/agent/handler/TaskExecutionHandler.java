@@ -2,12 +2,14 @@ package org.xhy.application.conversation.service.message.agent.handler;
 
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.model.chat.ChatLanguageModel;
+import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.service.AiServices;
 import dev.langchain4j.service.tool.ToolProvider;
 import org.springframework.stereotype.Component;
+import org.xhy.application.conversation.service.handler.content.ChatContext;
 import org.xhy.application.conversation.service.message.agent.Agent;
+import org.xhy.application.conversation.service.message.agent.AgentToolManager;
 import org.xhy.application.conversation.service.message.agent.event.AgentWorkflowEvent;
-import org.xhy.application.conversation.service.message.agent.manager.AgentToolManager;
 import org.xhy.application.conversation.service.message.agent.manager.TaskManager;
 import org.xhy.application.conversation.service.message.agent.template.AgentPromptTemplates;
 import org.xhy.application.conversation.service.message.agent.workflow.AgentWorkflowContext;
@@ -59,7 +61,8 @@ public class TaskExecutionHandler extends AbstractAgentHandler {
         
         try {
             // 获取工具提供者
-            ToolProvider toolProvider = toolManager.createToolProvider(toolManager.getAvailableTools());
+            ChatContext chatContext = contextObj.getChatContext();
+//            ToolProvider toolProvider = toolManager.createToolProvider(toolManager.getAvailableTools());
             
             // 依次执行每个子任务
             while (context.hasNextTask()) {
@@ -69,7 +72,7 @@ public class TaskExecutionHandler extends AbstractAgentHandler {
                 }
                 
                 TaskEntity subTask = context.getSubTaskMap().get(taskName);
-                executeSubTask(context, subTask, taskName, toolProvider);
+                executeSubTask(context, subTask, taskName, null);
                 
                 // 更新父任务进度
                 taskManager.updateTaskProgress(
@@ -124,13 +127,13 @@ public class TaskExecutionHandler extends AbstractAgentHandler {
                     previousTaskResults);
             
             // 执行子任务
-            ChatLanguageModel model = llmServiceFactory.getStrandClient(
-                    context.getChatContext().getProvider(), 
+            ChatModel strandClient = llmServiceFactory.getStrandClient(
+                    context.getChatContext().getProvider(),
                     context.getChatContext().getModel());
-            
+
             // 创建Agent服务
             Agent agent = AiServices.builder(Agent.class)
-                    .chatLanguageModel(model)
+                    .chatModel(strandClient)
                     .toolProvider(toolProvider)
                     .build();
             

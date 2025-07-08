@@ -34,9 +34,4 @@ public class FileDetailDomainService {
                 .set(FileDetailEntity::getDataSetId, fileDetailEntity.getDataSetId()));
 
     }
-
-
-
-
-
 }
