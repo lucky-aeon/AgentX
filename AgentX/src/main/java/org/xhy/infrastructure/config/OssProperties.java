@@ -1,38 +1,37 @@
 package org.xhy.infrastructure.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
+import org.springframework.context.annotation.Configuration;
 
-/** S3对象存储配置属性 */
-@Component
-@ConfigurationProperties(prefix = "s3")
-public class S3Properties {
+/** OSS对象存储配置 */
+@Configuration
+@ConfigurationProperties(prefix = "oss")
+public class OssProperties {
 
-    /** S3服务端点 */
+    /** 访问端点 */
     private String endpoint;
 
-    /** 自定义域名(可选) */
+    /** 自定义域名 */
     private String customDomain;
 
     /** 访问密钥 */
     private String accessKey;
 
-    /** 密钥 */
+    /** 秘密密钥 */
     private String secretKey;
 
-    /** 默认存储桶名称 */
+    /** 存储桶名称 */
     private String bucketName;
 
     /** 区域 */
-    private String region;
+    private String region = "cn-beijing";
 
-    /** 是否启用路径样式访问 */
-    private boolean pathStyleAccess = true;
+    /** 启用路径样式访问 */
+    private boolean pathStyleAccess = false;
 
     /** 文件访问URL前缀 */
     private String urlPrefix;
 
-    // Getters and Setters
     public String getEndpoint() {
         return endpoint;
     }

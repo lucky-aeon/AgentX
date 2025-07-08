@@ -9,7 +9,8 @@ import java.util.Map;
 
 import org.dromara.streamquery.stream.core.bean.BeanHelper;
 import org.dromara.streamquery.stream.core.stream.Steam;
-import org.xhy.infrastructure.storage.StorageService;
+import org.dromara.x.file.storage.core.FileInfo;
+import org.dromara.x.file.storage.core.FileStorageService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -42,13 +43,12 @@ public class WORDRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl imp
 
     private final FileDetailRepository fileDetailRepository;
 
-    private final StorageService storageService;
+    @Resource
+    private FileStorageService fileStorageService;
 
-    public WORDRagDocSyncOcrStrategyImpl(DocumentUnitRepository documentUnitRepository, 
-            FileDetailRepository fileDetailRepository, StorageService storageService) {
+    public WORDRagDocSyncOcrStrategyImpl(DocumentUnitRepository documentUnitRepository, FileDetailRepository fileDetailRepository) {
         this.documentUnitRepository = documentUnitRepository;
         this.fileDetailRepository = fileDetailRepository;
-        this.storageService = storageService;
     }
 
     /**
@@ -81,9 +81,10 @@ public class WORDRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl imp
             return new byte[0];
         }
 
-        // 使用文件路径下载文件
-        log.info("Preparing to download Word document: {}", fileDetailEntity.getFilename());
-        return storageService.downloadFile(fileDetailEntity.getPath());
+        // 转换为FileInfo并下载文件
+        FileInfo fileInfo = BeanHelper.copyProperties(fileDetailEntity, FileInfo.class);
+        log.info("Preparing to download Word document: {}", fileInfo.getFilename());
+        return fileStorageService.download(fileInfo).bytes();
     }
 
     /**

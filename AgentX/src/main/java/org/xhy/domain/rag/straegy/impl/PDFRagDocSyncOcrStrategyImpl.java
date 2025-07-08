@@ -8,7 +8,8 @@ import java.util.regex.Pattern;
 
 import dev.langchain4j.model.chat.ChatModel;
 import org.dromara.streamquery.stream.core.bean.BeanHelper;
-import org.xhy.infrastructure.storage.StorageService;
+import org.dromara.x.file.storage.core.FileInfo;
+import org.dromara.x.file.storage.core.FileStorageService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -45,13 +46,12 @@ public class PDFRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl impl
 
     private final FileDetailRepository fileDetailRepository;
 
-    private final StorageService storageService;
+    @Resource
+    private FileStorageService fileStorageService;
 
-    public PDFRagDocSyncOcrStrategyImpl(DocumentUnitRepository documentUnitRepository, 
-            FileDetailRepository fileDetailRepository, StorageService storageService) {
+    public PDFRagDocSyncOcrStrategyImpl(DocumentUnitRepository documentUnitRepository, FileDetailRepository fileDetailRepository) {
         this.documentUnitRepository = documentUnitRepository;
         this.fileDetailRepository = fileDetailRepository;
-        this.storageService = storageService;
     }
 
     /**
@@ -81,8 +81,9 @@ public class PDFRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl impl
 
         final FileDetailEntity fileDetailEntity = fileDetailRepository.selectById(ragDocSyncOcrMessage.getFileId());
 
-        // 使用文件路径下载文件
-        return storageService.downloadFile(fileDetailEntity.getPath());
+        final FileInfo fileInfo = BeanHelper.copyProperties(fileDetailEntity, FileInfo.class);
+
+        return fileStorageService.download(fileInfo).bytes();
     }
 
     /**

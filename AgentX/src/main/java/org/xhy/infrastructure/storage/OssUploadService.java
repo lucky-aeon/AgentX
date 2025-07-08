@@ -13,16 +13,16 @@ import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
 import org.springframework.stereotype.Service;
-import org.xhy.infrastructure.config.S3Properties;
+import org.xhy.infrastructure.config.OssProperties;
 
 /** OSS上传服务 提供前端直传OSS的上传凭证生成功能 */
 @Service
 public class OssUploadService {
 
-    private final S3Properties s3Properties;
+    private final OssProperties ossProperties;
 
-    public OssUploadService(S3Properties s3Properties) {
-        this.s3Properties = s3Properties;
+    public OssUploadService(OssProperties ossProperties) {
+        this.ossProperties = ossProperties;
     }
 
     /** 生成前端直传OSS的上传凭证
@@ -43,7 +43,7 @@ public class OssUploadService {
             policy.put("expiration", new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'").format(expiration));
 
             List<Object> conditions = new ArrayList<>();
-            conditions.add(Map.of("bucket", s3Properties.getBucketName()));
+            conditions.add(Map.of("bucket", ossProperties.getBucketName()));
             conditions.add(new String[]{"starts-with", "$key", keyPrefix});
             conditions.add(new Object[]{"content-length-range", 0, 10485760}); // 0到10MB
             policy.put("conditions", conditions);
@@ -56,13 +56,13 @@ public class OssUploadService {
             String signature = generateSignature(encodedPolicy);
 
             // 构建上传URL
-            String uploadUrl = "https://" + s3Properties.getBucketName() + "."
-                    + s3Properties.getEndpoint().replace("https://", "");
+            String uploadUrl = "https://" + ossProperties.getBucketName() + "."
+                    + ossProperties.getEndpoint().replace("https://", "");
 
             // 构建文件访问URL前缀
             String accessUrlPrefix = uploadUrl + "/" + keyPrefix;
 
-            return new UploadCredential(uploadUrl, s3Properties.getAccessKey(), encodedPolicy, signature, keyPrefix,
+            return new UploadCredential(uploadUrl, ossProperties.getAccessKey(), encodedPolicy, signature, keyPrefix,
                     accessUrlPrefix, expiration, 10485760);
 
         } catch (Exception e) {
@@ -83,7 +83,7 @@ public class OssUploadService {
         return new StsCredential("STS.temp_access_key", // 实际应该从STS服务获取
                 "temp_secret_key", // 实际应该从STS服务获取
                 "security_token", // 实际应该从STS服务获取
-                new Date(expireTime), s3Properties.getBucketName(), s3Properties.getEndpoint());
+                new Date(expireTime), ossProperties.getBucketName(), ossProperties.getEndpoint());
     }
 
     /** 验证上传回调签名（可选）
@@ -101,7 +101,7 @@ public class OssUploadService {
     /** 生成签名 */
     private String generateSignature(String encodedPolicy) throws Exception {
         Mac mac = Mac.getInstance("HmacSHA1");
-        SecretKeySpec secretKeySpec = new SecretKeySpec(s3Properties.getSecretKey().getBytes("UTF-8"), "HmacSHA1");
+        SecretKeySpec secretKeySpec = new SecretKeySpec(ossProperties.getSecretKey().getBytes("UTF-8"), "HmacSHA1");
         mac.init(secretKeySpec);
         byte[] signatureBytes = mac.doFinal(encodedPolicy.getBytes("UTF-8"));
         return Base64.getEncoder().encodeToString(signatureBytes);

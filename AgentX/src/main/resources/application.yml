@@ -84,20 +84,21 @@ high-availability:
   connect-timeout: 30000 # 连接超时时间(毫秒)
   read-timeout: 60000 # 读取超时时间(毫秒)
 
-# S3对象存储配置
-s3:
-  # 阿里云OSS的S3兼容endpoint
-  endpoint: ${S3_ENDPOINT:https://oss-cn-beijing.aliyuncs.com}
-  # 自定义域名(可选)，如果配置了自定义域名可以使用此配置
-  custom-domain: ${S3_CUSTOM_DOMAIN:}
+# OSS对象存储配置（前端直传用）
+oss:
+  # 阿里云OSS的endpoint
+  endpoint: ${OSS_ENDPOINT:https://oss-cn-beijing.aliyuncs.com}
+  # 自定义域名(可选)
+  custom-domain: ${OSS_CUSTOM_DOMAIN:}
   # 访问密钥
-  access-key: ${S3_ACCESS_KEY:${OSS_ACCESS_KEY:${OSS_ACCESS_KEY_ID:}}}
-  secret-key: ${S3_SECRET_KEY:${OSS_SECRET_KEY:${OSS_ACCESS_KEY_SECRET:}}}
+  access-key: ${OSS_ACCESS_KEY:${OSS_ACCESS_KEY_ID:}}
+  secret-key: ${OSS_SECRET_KEY:${OSS_ACCESS_KEY_SECRET:}}
   # 默认存储桶
-  bucket-name: ${S3_BUCKET_NAME:${OSS_BUCKET:}}
+  bucket-name: ${OSS_BUCKET:}
   # 区域
-  region: ${S3_REGION:cn-beijing}
-  # 启用路径样式访问（阿里云OSS需要设置为false，使用虚拟主机样式）
-  path-style-access: ${S3_PATH_STYLE_ACCESS:false}
+  region: ${OSS_REGION:cn-beijing}
+  # 启用路径样式访问
+  path-style-access: ${OSS_PATH_STYLE_ACCESS:false}
   # 文件访问URL前缀
-  url-prefix: ${S3_URL_PREFIX:}
+  url-prefix: ${OSS_URL_PREFIX:}
+
