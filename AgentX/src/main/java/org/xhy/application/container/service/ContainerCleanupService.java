@@ -119,12 +119,12 @@ public class ContainerCleanupService {
                 dockerService.removeContainer(container.getDockerContainerId(), true);
                 logger.debug("Docker容器已删除: {}", container.getDockerContainerId());
             } catch (Exception e) {
-                logger.warn("删除Docker容器失败，继续删除数据库记录: {}", container.getDockerContainerId(), e);
+                logger.warn("删除Docker容器失败，继续更新容器状态: {}", container.getDockerContainerId(), e);
             }
         }
 
-        // 2. 物理删除容器记录
-        containerDomainService.physicalDeleteContainer(container.getId());
+        // 2. 逻辑删除容器记录 - 设置状态为DELETED
+        containerDomainService.updateContainerStatus(container.getId(), ContainerStatus.DELETED, Operator.ADMIN, null);
     }
 
     /** 手动触发清理（用于测试） */

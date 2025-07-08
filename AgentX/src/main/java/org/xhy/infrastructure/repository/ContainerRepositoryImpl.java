@@ -23,6 +23,7 @@ public interface ContainerRepositoryImpl extends ContainerRepository {
     default ContainerEntity findByUserIdAndType(String userId, ContainerType type) {
         LambdaQueryWrapper<ContainerEntity> wrapper = Wrappers.<ContainerEntity>lambdaQuery()
                 .eq(ContainerEntity::getUserId, userId).eq(ContainerEntity::getType, type)
+                .ne(ContainerEntity::getStatus, ContainerStatus.DELETED)
                 .orderByDesc(ContainerEntity::getCreatedAt);
 
         return selectOne(wrapper);
@@ -47,7 +48,9 @@ public interface ContainerRepositoryImpl extends ContainerRepository {
     @Override
     default List<ContainerEntity> findByUserId(String userId) {
         LambdaQueryWrapper<ContainerEntity> wrapper = Wrappers.<ContainerEntity>lambdaQuery()
-                .eq(ContainerEntity::getUserId, userId).orderByDesc(ContainerEntity::getCreatedAt);
+                .eq(ContainerEntity::getUserId, userId)
+                .ne(ContainerEntity::getStatus, ContainerStatus.DELETED)
+                .orderByDesc(ContainerEntity::getCreatedAt);
 
         return selectList(wrapper);
     }
@@ -108,7 +111,8 @@ public interface ContainerRepositoryImpl extends ContainerRepository {
     @Override
     default long countByUserId(String userId) {
         LambdaQueryWrapper<ContainerEntity> wrapper = Wrappers.<ContainerEntity>lambdaQuery()
-                .eq(ContainerEntity::getUserId, userId);
+                .eq(ContainerEntity::getUserId, userId)
+                .ne(ContainerEntity::getStatus, ContainerStatus.DELETED);
 
         return selectCount(wrapper);
     }

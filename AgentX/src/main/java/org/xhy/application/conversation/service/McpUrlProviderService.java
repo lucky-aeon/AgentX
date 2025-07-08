@@ -41,8 +41,8 @@ public class McpUrlProviderService {
         boolean isGlobalTool = isGlobalTool(mcpServerName, userId);
 
         if (isGlobalTool) {
-            // 全局工具：使用yml配置的全局Gateway
-            return mcpGatewayService.buildGlobalSSEUrl(mcpServerName);
+            // 全局工具：使用审核容器
+            return buildReviewContainerSSEUrl(mcpServerName);
         }
 
         // 用户工具：需要用户容器
@@ -95,6 +95,27 @@ public class McpUrlProviderService {
         } catch (Exception e) {
             logger.error("构建用户容器SSE URL失败: userId={}, tool={}", userId, mcpServerName, e);
             throw new BusinessException("无法连接用户工具：" + e.getMessage());
+        }
+    }
+
+    /** 构建审核容器工具SSE URL */
+    private String buildReviewContainerSSEUrl(String mcpServerName) {
+        try {
+            logger.info("准备审核容器工具连接: tool={}", mcpServerName);
+
+            // 1. 确保审核容器就绪（自动创建和启动）
+            ContainerDTO containerInfo = ensureReviewContainerReady();
+
+            // 2. 构建容器SSE URL
+            String sseUrl = mcpGatewayService.buildUserContainerUrl(mcpServerName, containerInfo.getIpAddress(),
+                    containerInfo.getExternalPort());
+
+            logger.info("审核容器工具连接就绪: tool={}, url={}", mcpServerName, maskSensitiveInfo(sseUrl));
+            return sseUrl;
+
+        } catch (Exception e) {
+            logger.error("构建审核容器SSE URL失败: tool={}", mcpServerName, e);
+            throw new BusinessException("无法连接全局工具：" + e.getMessage());
         }
     }
 
@@ -222,6 +243,85 @@ public class McpUrlProviderService {
         }
 
         throw new BusinessException("用户容器创建超时，请稍后重试或检查Docker环境");
+    }
+
+    /** 确保审核容器就绪（自动创建和启动） */
+    private ContainerDTO ensureReviewContainerReady() {
+        try {
+            // ContainerAppService.getReviewContainer() 已经包含自动创建和启动逻辑
+            ContainerDTO reviewContainer = containerAppService.getOrCreateReviewContainer();
+
+            // 如果容器正在创建中，等待其完成
+            if (ContainerStatus.CREATING.equals(reviewContainer.getStatus())) {
+                logger.info("审核容器正在创建中，等待完成");
+                reviewContainer = waitForReviewContainerReady(reviewContainer.getId());
+            }
+
+            // 最终验证容器状态
+            if (!isContainerHealthy(reviewContainer)) {
+                throw new BusinessException("审核容器准备失败，状态异常: " + reviewContainer.getStatus());
+            }
+
+            return reviewContainer;
+        } catch (Exception e) {
+            logger.error("准备审核容器失败", e);
+            throw new BusinessException("审核容器准备失败: " + e.getMessage());
+        }
+    }
+
+    /** 等待审核容器准备就绪 */
+    private ContainerDTO waitForReviewContainerReady(String containerId) {
+        int maxRetries = 30; // 最多等待30秒
+        int retryCount = 0;
+
+        while (retryCount < maxRetries) {
+            try {
+                Thread.sleep(1000); // 等待1秒
+
+                ContainerDTO container = containerAppService.getOrCreateReviewContainer();
+
+                // 检查容器是否处于错误状态
+                if (ContainerStatus.ERROR.equals(container.getStatus())) {
+                    logger.error("审核容器创建失败: containerId={}, status={}", containerId, container.getStatus());
+                    throw new BusinessException("审核容器创建失败，请检查Docker环境");
+                }
+
+                // 检查容器是否已经健康运行
+                if (isContainerHealthy(container)) {
+                    logger.info("审核容器准备就绪: containerId={}, ip={}, port={}", containerId,
+                            container.getIpAddress(), container.getExternalPort());
+                    return container;
+                }
+
+                retryCount++;
+                logger.debug("等待审核容器准备就绪: containerId={}, retry={}/{}, status={}, ip={}", containerId,
+                        retryCount, maxRetries, container.getStatus(), container.getIpAddress());
+
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new BusinessException("等待审核容器准备被中断");
+            } catch (BusinessException e) {
+                // 如果是业务异常，直接抛出
+                throw e;
+            } catch (Exception e) {
+                logger.warn("检查审核容器状态时出错: retry={}", retryCount, e);
+                retryCount++;
+            }
+        }
+
+        throw new BusinessException("审核容器创建超时，请稍后重试或检查Docker环境");
+    }
+
+    /** 部署全局工具到审核容器 */
+    private void deployGlobalTool(ContainerDTO container, String toolName) {
+        try {
+            // 对于全局工具，暂时跳过部署步骤，因为全局工具应该已经在审核容器中预安装
+            logger.debug("全局工具 {} 连接到审核容器，跳过部署步骤（应已预安装）", toolName);
+
+        } catch (Exception e) {
+            logger.warn("处理审核容器内全局工具时出错: tool={}, error={}", toolName, e.getMessage());
+            // 不抛出异常，避免影响主流程
+        }
     }
 
     /** 屏蔽敏感信息 */
