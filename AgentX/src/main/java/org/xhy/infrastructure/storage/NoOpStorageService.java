@@ -100,4 +100,14 @@ public class NoOpStorageService implements StorageService {
     public String generateObjectKey(String originalFileName, String folder) {
         throw new UnsupportedOperationException(ERROR_MESSAGE);
     }
+
+    @Override
+    public byte[] downloadFile(String objectKey) {
+        throw new UnsupportedOperationException(ERROR_MESSAGE);
+    }
+
+    @Override
+    public byte[] downloadFile(String objectKey, String bucketName) {
+        throw new UnsupportedOperationException(ERROR_MESSAGE);
+    }
 }

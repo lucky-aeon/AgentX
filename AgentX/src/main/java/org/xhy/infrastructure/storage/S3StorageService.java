@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Conditional;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.xhy.infrastructure.config.S3Properties;
@@ -28,6 +29,7 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3Configuration;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
 import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
@@ -35,6 +37,7 @@ import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 
 /** S3对象存储服务实现 支持阿里云OSS通过S3协议访问 */
 @Service
+@Primary
 @Conditional(S3EnabledCondition.class)
 public class S3StorageService implements StorageService {
 
@@ -263,6 +266,30 @@ public class S3StorageService implements StorageService {
         }
         int lastSlashIndex = objectKey.lastIndexOf('/');
         return lastSlashIndex >= 0 ? objectKey.substring(lastSlashIndex + 1) : objectKey;
+    }
+
+    @Override
+    public byte[] downloadFile(String objectKey) {
+        return downloadFile(objectKey, s3Properties.getBucketName());
+    }
+
+    @Override
+    public byte[] downloadFile(String objectKey, String bucketName) {
+        try {
+            GetObjectRequest getObjectRequest = GetObjectRequest.builder()
+                    .bucket(bucketName)
+                    .key(objectKey)
+                    .build();
+
+            byte[] bytes = s3Client.getObject(getObjectRequest).readAllBytes();
+
+            logger.info("文件下载成功: bucket={}, key={}, size={}", bucketName, objectKey, bytes.length);
+            return bytes;
+
+        } catch (Exception e) {
+            logger.error("文件下载失败: bucket={}, key={}", bucketName, objectKey, e);
+            throw new RuntimeException("文件下载失败", e);
+        }
     }
 
     /** 根据文件名获取内容类型 */

@@ -73,4 +73,17 @@ public interface StorageService {
      * @param folder 文件夹路径
      * @return 生成的对象路径 */
     String generateObjectKey(String originalFileName, String folder);
+
+    /** 下载文件
+     * 
+     * @param objectKey 对象存储中的文件路径
+     * @return 文件字节数组 */
+    byte[] downloadFile(String objectKey);
+
+    /** 下载指定桶中的文件
+     * 
+     * @param objectKey 对象存储中的文件路径
+     * @param bucketName 存储桶名称
+     * @return 文件字节数组 */
+    byte[] downloadFile(String objectKey, String bucketName);
 }
