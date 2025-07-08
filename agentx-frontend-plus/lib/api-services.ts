@@ -29,23 +29,11 @@ function buildQueryString(params: Record<string, any>): string {
 // 创建会话
 export async function createSession(params: CreateSessionParams): Promise<ApiResponse<Session>> {
   try {
-    const queryString = buildQueryString(params)
-    const url = `/api/proxy/sessions${queryString}`
-
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        Accept: "*/*",
-        "Content-Type": "application/json",
-      },
-    })
-
-    const data = await response.json()
-
-    if (!response.ok && !data.code) {
-      throw new Error(`创建会话失败: ${response.status}, ${data.error || "Unknown error"}`)
-    }
-
+    const data = await httpClient.post<ApiResponse<Session>>(
+      API_ENDPOINTS.SESSION,
+      {},
+      { params }
+    )
     return data
   } catch (error) {
     console.error("创建会话错误:", error)
@@ -62,25 +50,12 @@ export async function createSession(params: CreateSessionParams): Promise<ApiRes
 // 获取会话列表
 export async function getSessions(params: GetSessionsParams): Promise<ApiResponse<Session[]>> {
   try {
-    const queryString = buildQueryString(params)
-    const url = `/api/proxy/sessions${queryString}`
+    console.log(`Fetching sessions`)
 
-    console.log(`Fetching sessions with URL: ${url}`)
-
-    const response = await fetch(url, {
-      method: "GET",
-      headers: {
-        Accept: "*/*",
-        "Content-Type": "application/json",
-      },
-    })
-
-    const data = await response.json()
-
-    if (!response.ok && !data.code) {
-      throw new Error(`获取会话列表失败: ${response.status}, ${data.error || "Unknown error"}`)
-    }
-
+    const data = await httpClient.get<ApiResponse<Session[]>>(
+      API_ENDPOINTS.SESSION,
+      { params }
+    )
     return data
   } catch (error) {
     console.error("获取会话列表错误:", error)
@@ -97,24 +72,11 @@ export async function getSessions(params: GetSessionsParams): Promise<ApiRespons
 // 获取单个会话详情
 export async function getSession(sessionId: string): Promise<ApiResponse<Session>> {
   try {
-    const url = `/api/proxy/sessions/${sessionId}`
+    console.log(`Fetching session details for ${sessionId}`)
 
-    console.log(`Fetching session with URL: ${url}`)
-
-    const response = await fetch(url, {
-      method: "GET",
-      headers: {
-        Accept: "*/*",
-        "Content-Type": "application/json",
-      },
-    })
-
-    const data = await response.json()
-
-    if (!response.ok && !data.code) {
-      throw new Error(`获取会话详情失败: ${response.status}, ${data.error || "Unknown error"}`)
-    }
-
+    const data = await httpClient.get<ApiResponse<Session>>(
+      API_ENDPOINTS.SESSION_DETAIL(sessionId)
+    )
     return data
   } catch (error) {
     console.error("获取会话详情错误:", error)
@@ -131,25 +93,13 @@ export async function getSession(sessionId: string): Promise<ApiResponse<Session
 // 更新会话
 export async function updateSession(sessionId: string, params: UpdateSessionParams): Promise<ApiResponse<Session>> {
   try {
-    const queryString = buildQueryString(params)
-    const url = `/api/proxy/sessions/${sessionId}${queryString}`
+    console.log(`Updating session ${sessionId}`)
 
-    console.log(`Updating session with URL: ${url}`)
-
-    const response = await fetch(url, {
-      method: "PUT",
-      headers: {
-        Accept: "*/*",
-        "Content-Type": "application/json",
-      },
-    })
-
-    const data = await response.json()
-
-    if (!response.ok && !data.code) {
-      throw new Error(`更新会话失败: ${response.status}, ${data.error || "Unknown error"}`)
-    }
-
+    const data = await httpClient.put<ApiResponse<Session>>(
+      API_ENDPOINTS.SESSION_DETAIL(sessionId),
+      {},
+      { params }
+    )
     return data
   } catch (error) {
     console.error("更新会话错误:", error)
@@ -166,24 +116,11 @@ export async function updateSession(sessionId: string, params: UpdateSessionPara
 // 删除会话
 export async function deleteSession(sessionId: string): Promise<ApiResponse<null>> {
   try {
-    const url = `/api/proxy/sessions/${sessionId}`
+    console.log(`Deleting session ${sessionId}`)
 
-    console.log(`Deleting session with URL: ${url}`)
-
-    const response = await fetch(url, {
-      method: "DELETE",
-      headers: {
-        Accept: "*/*",
-        "Content-Type": "application/json",
-      },
-    })
-
-    const data = await response.json()
-
-    if (!response.ok && !data.code) {
-      throw new Error(`删除会话失败: ${response.status}, ${data.error || "Unknown error"}`)
-    }
-
+    const data = await httpClient.delete<ApiResponse<null>>(
+      API_ENDPOINTS.DELETE_SESSION(sessionId)
+    )
     return data
   } catch (error) {
     console.error("删除会话错误:", error)
@@ -420,18 +357,37 @@ export async function getModels(type?: string): Promise<ApiResponse<any[]>> {
   try {
     console.log(`Fetching models, type: ${type || 'all'}`)
     
-    // type参数值: all-所有(默认)，official-官方，custom-用户自定义
-    // 注意: 不支持通过此参数过滤模型类型如"CHAT"，需要在前端过滤
-    const params = type ? { type } : undefined;
-    const response = await httpClient.get<ApiResponse<any[]>>('/llm/models', { params });
+    const params = type ? { modelType: type } : undefined;
+    const response = await httpClient.get<ApiResponse<any[]>>(API_ENDPOINTS.MODELS, { params });
     
     return response;
   } catch (error) {
     console.error("获取模型列表错误:", error)
+    // 返回格式化的错误响应
     return {
       code: 500,
       message: error instanceof Error ? error.message : "未知错误",
       data: [],
+      timestamp: Date.now(),
+    }
+  }
+}
+
+// 获取默认模型
+export async function getDefaultModel(): Promise<ApiResponse<any>> {
+  try {
+    console.log('Fetching default model')
+    
+    const response = await httpClient.get<ApiResponse<any>>(API_ENDPOINTS.DEFAULT_MODEL);
+    
+    return response;
+  } catch (error) {
+    console.error("获取默认模型错误:", error)
+    // 返回格式化的错误响应
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : "未知错误",
+      data: null,
       timestamp: Date.now(),
     }
   }
@@ -443,11 +399,18 @@ export const getModelsWithToast = withToast(getModels, {
   errorTitle: "获取模型列表失败"
 })
 
+export const getDefaultModelWithToast = withToast(getDefaultModel, {
+  showSuccessToast: false,
+  showErrorToast: true,
+  errorTitle: "获取默认模型失败"
+})
+
 // 模型配置接口
 interface ModelConfig {
   modelId: string;
   temperature: number;
   topP: number;
+  topK: number;
   maxTokens: number;
   strategyType: string;
   reserveRatio: number;
@@ -631,7 +594,7 @@ export async function getWorkspaceAgents(): Promise<ApiResponse<any[]>> {
   try {
     console.log('Fetching workspace agents')
     
-    const response = await httpClient.get<ApiResponse<any[]>>('/agent/workspace/agents');
+    const response = await httpClient.get<ApiResponse<any[]>>('/agents/workspaces/agents');
     
     return response;
   } catch (error) {
@@ -649,4 +612,141 @@ export const getWorkspaceAgentsWithToast = withToast(getWorkspaceAgents, {
   showSuccessToast: false,
   showErrorToast: true,
   errorTitle: "获取工作区Agent列表失败"
+})
+
+// 登录
+export async function loginApi(data: { account: string; password: string }, showToast: boolean = false) {
+  return httpClient.post<{ code: number; message: string; data: { token: string } }>('/login', data, {}, { showToast })
+}
+
+// 注册
+export async function registerApi(data: { 
+  email?: string; 
+  phone?: string; 
+  password: string;
+  code?: string;
+}, showToast: boolean = false) {
+  return httpClient.post<{ code: number; message: string; data: any }>('/register', data, {}, { showToast })
+}
+
+// 获取图形验证码
+export async function getCaptchaApi() {
+  return httpClient.post<{ code: number; message: string; data: { uuid: string; imageBase64: string } }>(
+    '/get-captcha',
+    {}
+  )
+}
+
+// 发送邮箱验证码
+export async function sendEmailCodeApi(email: string, captchaUuid: string, captchaCode: string, showToast: boolean = true) {
+  return httpClient.post<{ code: number; message: string; data: any }>(
+    '/send-email-code', 
+    { email, captchaUuid, captchaCode }, 
+    {}, 
+    { showToast }
+  )
+}
+
+// 验证邮箱验证码
+export async function verifyEmailCodeApi(email: string, code: string, showToast: boolean = true) {
+  return httpClient.post<{ code: number; message: string; data: boolean }>(
+    '/verify-email-code', 
+    { email, code }, 
+    {}, 
+    { showToast }
+  )
+}
+
+// 发送重置密码的验证码
+export async function sendResetPasswordCodeApi(
+  email: string, 
+  captchaUuid: string, 
+  captchaCode: string, 
+  showToast: boolean = true
+) {
+  return httpClient.post<{ code: number; message: string; data: null }>(
+    '/send-reset-password-code',
+    { email, captchaUuid, captchaCode },
+    {},
+    { showToast }
+  )
+}
+
+// 重置密码
+export async function resetPasswordApi(
+  email: string, 
+  newPassword: string, 
+  code: string, 
+  showToast: boolean = true
+) {
+  return httpClient.post<{ code: number; message: string; data: null }>(
+    '/reset-password',
+    { email, newPassword, code },
+    {},
+    { showToast }
+  )
+}
+
+// 获取GitHub授权URL
+export async function getGithubAuthorizeUrlApi() {
+  return httpClient.get<{ code: number; message: string; data: { authorizeUrl: string } }>(
+    '/oauth/github/authorize'
+  )
+}
+
+// 处理GitHub回调
+export async function handleGithubCallbackApi(code: string) {
+  return httpClient.get<{ code: number; message: string; data: { token: string } }>(
+    `/oauth/github/callback?code=${code}`
+  )
+}
+
+// 获取SSO登录URL
+export async function getSsoLoginUrlApi(provider: string, redirectUrl?: string) {
+  const params = redirectUrl ? `?redirectUrl=${encodeURIComponent(redirectUrl)}` : ''
+  return httpClient.get<{ code: number; message: string; data: { loginUrl: string } }>(
+    `/sso/${provider}/login${params}`
+  )
+}
+
+// 处理SSO回调
+export async function handleSsoCallbackApi(provider: string, code: string) {
+  return httpClient.get<{ code: number; message: string; data: { token: string } }>(
+    `/sso/${provider}/callback?code=${code}`
+  )
+}
+
+// 生成系统提示词
+export async function generateSystemPrompt(data: {
+  agentName: string;
+  agentDescription: string;
+  toolIds: string[];
+}): Promise<ApiResponse<string>> {
+  try {
+    console.log(`Generating system prompt for agent: ${data.agentName}`)
+    
+    const response = await httpClient.post<ApiResponse<string>>(
+      API_ENDPOINTS.GENERATE_SYSTEM_PROMPT,
+      data
+    );
+    
+    return response;
+  } catch (error) {
+    console.error("生成系统提示词错误:", error)
+    // 返回格式化的错误响应
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : "未知错误",
+      data: "",
+      timestamp: Date.now(),
+    }
+  }
+}
+
+// 带Toast的生成系统提示词
+export const generateSystemPromptWithToast = withToast(generateSystemPrompt, {
+  showSuccessToast: true,
+  showErrorToast: true,
+  successTitle: "生成系统提示词成功",
+  errorTitle: "生成系统提示词失败"
 })

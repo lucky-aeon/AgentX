@@ -1,5 +1,5 @@
 server:
-  port: 8080
+  port: 8088
   servlet:
     context-path: /api
   # 添加Tomcat异步请求配置
@@ -26,7 +26,7 @@ spring:
   # 跨域配置
   mvc:
     cors:
-      allowed-origins: "*"
+      allowed-origin-patterns: "*"
       allowed-methods: "*"
       allowed-headers: "*"
       allow-credentials: true
@@ -36,10 +36,10 @@ spring:
 mybatis-plus:
   mapper-locations: classpath*:/mapper/**/*.xml
   type-aliases-package: org.xhy.domain
+  type-handlers-package: org.xhy.infrastructure.converter
   configuration:
     map-underscore-to-camel-case: true
     cache-enabled: false
-    type-handlers-package: org.xhy.infrastructure.converter
   global-config:
     db-config:
       id-type: auto
@@ -48,50 +48,56 @@ mybatis-plus:
       logic-not-delete-value: "null"
     banner: false
 
-embedding:
-  name: OpenAI
-  api-key: ${SILICONFLOW_API_KEY:}
-  api-url: ${SILICONFLOW_API_URL_EMBEDDING:https://api.siliconflow.cn/v1/embeddings}
-  model: ${SILICONFLOW_MODEL_EMBEDDING_MODEL:BAAI/bge-m3}
-  timeout: ${SILICONFLOW_TIMEOUT:30000}
-
-rerank:
-  name: OpenAI
-  api-key: ${SILICONFLOW_API_KEY:}
-  api-url: ${SILICONFLOW_API_URL_RERANK:https://api.siliconflow.cn/v1/rerank}
-  model: ${SILICONFLOW_MODEL_RERANK_MODEL:Pro/BAAI/bge-reranker-v2-m3}
-  timeout: ${SILICONFLOW_TIMEOUT:30000}
-# LLM服务配置
-llm:
-  provider:
-    default: ${LLM_DEFAULT_PROVIDER:siliconflow}
-    providers:
-      siliconflow:
-        name: SiliconFlow
-        api-url: ${SILICONFLOW_API_URL:https://api.siliconflow.cn/v1/chat/completions}
-        api-key: ${SILICONFLOW_API_KEY:}
-        model: ${SILICONFLOW_MODEL:Qwen/Qwen2.5-VL-72B-Instruct}
-        timeout: ${SILICONFLOW_TIMEOUT:30000}
-dromara:
-  x-file-storage: #文件存储配置
-    default-platform: amazon-s3-1 #默认使用的存储平台
-    thumbnail-suffix: ".min.jpg" #缩略图后缀，例如【.min.jpg】【.png】
-    #对应平台的配置写在这里，注意缩进要对齐
-    amazon-s3: # 0.0.7 及以前的版本，配置名称是：aws-s3
-      - platform: amazon-s3-1 # 存储平台标识
-        enable-storage: true  # 启用存储
-        access-key: ${S3_SECRET_ID}
-        secret-key:  ${S3_SECRET_KEY}
-        region: ?? # 与 end-point 参数至少填一个
-        end-point: https://cos.ap-beijing.myqcloud.com # 与 region 参数至少填一个
-        bucket-name: zang-1307996497
-        domain: ?? # 访问域名，注意“/”结尾，例如：https://abc.hn-bkt.clouddn.com/
-        base-path: s3/ # 基础路径
-
-
 logging:
   level:
     root: info
     org.xhy: debug
   file:
     name: logs/agent-x.log
+mail:
+  smtp:
+    host: ${MAIL_SMTP_HOST:qq}
+    port: ${MAIL_SMTP_PORT:25}
+    username: ${MAIL_SMTP_USERNAME:xx}
+    password: ${MAIL_SMTP_PASSWORD:xx}
+  verification:
+    template: ${MAIL_VERIFICATION_TEMPLATE:您的验证码是:%s，有效期10分钟，请勿泄露给他人。}
+    subject: ${MAIL_VERIFICATION_SUBJECT:AgentX - 邮箱验证码}
+
+# GitHub OAuth 配置
+oauth:
+  github:
+    client-id: ${GITHUB_CLIENT_ID}
+    client-secret: ${GITHUB_CLIENT_SECRET}
+    redirect-uri: ${GITHUB_REDIRECT_URI:https://xxx/oauth/github/callback}
+
+mcp:
+  gateway:
+    api-key: 123456
+    base-url: ${MCP_GATEWAY_URL:http://localhost:8005}
+
+# 高可用网关配置
+high-availability:
+  enabled: false # 是否启用高可用功能
+  gateway-url: ${HIGH_AVAILABILITY_GATEWAY_URL:http://localhost:8081} # 高可用网关地址
+  api-key: ${HIGH_AVAILABILITY_API_KEY:default-api-key-1234567890} # API密钥
+  connect-timeout: 30000 # 连接超时时间(毫秒)
+  read-timeout: 60000 # 读取超时时间(毫秒)
+
+# S3对象存储配置
+s3:
+  # 阿里云OSS的S3兼容endpoint
+  endpoint: ${S3_ENDPOINT:https://oss-cn-beijing.aliyuncs.com}
+  # 自定义域名(可选)，如果配置了自定义域名可以使用此配置
+  custom-domain: ${S3_CUSTOM_DOMAIN:}
+  # 访问密钥
+  access-key: ${S3_ACCESS_KEY:${OSS_ACCESS_KEY:${OSS_ACCESS_KEY_ID:}}}
+  secret-key: ${S3_SECRET_KEY:${OSS_SECRET_KEY:${OSS_ACCESS_KEY_SECRET:}}}
+  # 默认存储桶
+  bucket-name: ${S3_BUCKET_NAME:${OSS_BUCKET:}}
+  # 区域
+  region: ${S3_REGION:cn-beijing}
+  # 启用路径样式访问（阿里云OSS需要设置为false，使用虚拟主机样式）
+  path-style-access: ${S3_PATH_STYLE_ACCESS:false}
+  # 文件访问URL前缀
+  url-prefix: ${S3_URL_PREFIX:}

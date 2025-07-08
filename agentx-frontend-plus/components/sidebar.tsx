@@ -23,9 +23,11 @@ import {
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { ModelSelectDialog } from "../components/model-select-dialog"
 import { 
-  getWorkspaceAgentsWithToast, 
-  removeAgentFromWorkspaceWithToast 
+  getWorkspaceAgentsWithToast
 } from "@/lib/api-services"
+import { 
+  deleteWorkspaceAgentWithToast 
+} from "@/lib/agent-service"
 
 type SidebarItem = {
   title: string
@@ -130,9 +132,9 @@ function WorkspaceItem({ id, name, icon, avatar, onClick }: WorkspaceItemProps) 
         )}
         onClick={onClick}
       >
-        {avatar ? (
+        {avatar && avatar.trim() !== '' ? (
           <div className="w-5 h-5 rounded-full overflow-hidden mr-2 flex-shrink-0">
-            <img src={avatar || "/placeholder.svg"} alt={name} className="w-full h-full object-cover" />
+            <img src={avatar} alt={name} className="w-full h-full object-cover" />
           </div>
         ) : icon ? (
           <span className="mr-2">{icon}</span>
@@ -280,6 +282,7 @@ function SidebarItemComponent({ item, depth = 0 }: SidebarItemProps) {
 }
 
 export function Sidebar() {
+  const { refreshTrigger } = useWorkspace()
   const [agents, setAgents] = useState<Agent[]>([])
   const [loading, setLoading] = useState(true)
   const [modelDialogOpen, setModelDialogOpen] = useState(false)
@@ -302,12 +305,12 @@ export function Sidebar() {
 
   useEffect(() => {
     loadWorkspaceAgents()
-  }, [])
+  }, [refreshTrigger])
 
   // 处理移除Agent
   const handleRemoveAgent = async (agentId: string) => {
     try {
-      const response = await removeAgentFromWorkspaceWithToast(agentId)
+      const response = await deleteWorkspaceAgentWithToast(agentId)
       if (response.code === 200) {
         // 重新加载工作区Agent列表
         await loadWorkspaceAgents()

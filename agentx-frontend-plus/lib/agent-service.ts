@@ -17,7 +17,7 @@ export async function getUserAgents(params?: Partial<GetAgentsParams>): Promise<
   try {
     console.log(`Fetching user agents`)
     
-    const response = await httpClient.get<ApiResponse<Agent[]>>("/agent/user", {
+    const response = await httpClient.get<ApiResponse<Agent[]>>("/agents/user", {
       params: params
     });
     
@@ -39,7 +39,7 @@ export async function getWorkspaceAgents(): Promise<ApiResponse<Agent[]>> {
   try {
     console.log(`Fetching workspace agents`)
     
-    const response = await httpClient.get<ApiResponse<Agent[]>>("/agent/workspace/agents");
+    const response = await httpClient.get<ApiResponse<Agent[]>>("/agents/workspaces/agents");
     
     return response;
   } catch (error) {
@@ -124,8 +124,6 @@ export async function updateAgent(agentId: string, agentData: Partial<UpdateAgen
     // 确保请求数据中包含必要字段
     const requestData = {
       ...agentData,
-      // 确保agentType字段存在，这样后端才能正确计算statusText
-      agentType: agentData.agentType || 1
     };
     
     const response = await httpClient.put<ApiResponse<Agent>>(API_ENDPOINTS.UPDATE_AGENT(agentId), requestData);
@@ -251,6 +249,28 @@ export async function getAgentVersion(agentId: string, versionNumber: string): P
   }
 }
 
+// 获取助理最新版本
+export async function getAgentLatestVersion(agentId: string): Promise<ApiResponse<AgentVersion>> {
+  try {
+    console.log(`Fetching agent latest version: ${agentId}`)
+    
+    const response = await httpClient.get<ApiResponse<AgentVersion>>(
+      API_ENDPOINTS.AGENT_LATEST_VERSION(agentId)
+    );
+    
+    return response;
+  } catch (error) {
+    console.error("获取助理最新版本错误:", error)
+    // 返回格式化的错误响应
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : "未知错误",
+      data: null as unknown as AgentVersion,
+      timestamp: Date.now(),
+    }
+  }
+}
+
 // 搜索助理
 export async function searchAgents(params: SearchAgentsRequest): Promise<ApiResponse<Agent[]>> {
   try {
@@ -279,7 +299,7 @@ export async function getAgentBySessionId(sessionId: string): Promise<ApiRespons
   try {
     console.log(`Fetching agent by session ID: ${sessionId}`)
     
-    const response = await httpClient.get<ApiResponse<Agent>>(`/agent/session-agent/${sessionId}`);
+    const response = await httpClient.get<ApiResponse<Agent>>(`/agents/session-agent/${sessionId}`);
     
     return response;
   } catch (error) {
@@ -299,7 +319,7 @@ export async function deleteWorkspaceAgent(agentId: string): Promise<ApiResponse
   try {
     console.log(`Deleting workspace agent: ${agentId}`)
     
-    const response = await httpClient.delete<ApiResponse<null>>(`/agent/workspace/agents/${agentId}`);
+    const response = await httpClient.delete<ApiResponse<null>>(`/agents/workspaces/agents/${agentId}`);
     
     return response;
   } catch (error) {
@@ -309,6 +329,28 @@ export async function deleteWorkspaceAgent(agentId: string): Promise<ApiResponse
       code: 500,
       message: error instanceof Error ? error.message : "未知错误",
       data: null,
+      timestamp: Date.now(),
+    }
+  }
+}
+
+// 添加助理到工作区
+export async function addAgentToWorkspace(agentId: string): Promise<ApiResponse<Agent>> {
+  try {
+    console.log(`Adding agent to workspace: ${agentId}`)
+    
+    const response = await httpClient.post<ApiResponse<Agent>>(
+      API_ENDPOINTS.ADD_AGENT_TO_WORKSPACE(agentId)
+    );
+    
+    return response;
+  } catch (error) {
+    console.error("添加助理到工作区错误:", error)
+    // 返回格式化的错误响应
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : "未知错误",
+      data: null as unknown as Agent,
       timestamp: Date.now(),
     }
   }
@@ -373,5 +415,12 @@ export const getAgentBySessionIdWithToast = withToast(getAgentBySessionId, {
 export const deleteWorkspaceAgentWithToast = withToast(deleteWorkspaceAgent, {
   successTitle: "移除工作区助理成功",
   errorTitle: "移除工作区助理失败"
+})
+
+export const addAgentToWorkspaceWithToast = withToast(addAgentToWorkspace, {
+  showSuccessToast: true,
+  showErrorToast: true,
+  successTitle: "已成功添加助理到工作区",
+  errorTitle: "添加失败"
 })
 

@@ -1,9 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { Database, FileText, Home, Menu, Search, Settings, PenToolIcon as Tool, UploadCloud } from "lucide-react"
+import { usePathname, useRouter } from "next/navigation"
+import { Database, FileText, Home, Menu, Search, Settings, PenToolIcon as Tool, UploadCloud, LogOut, Wrench } from "lucide-react"
+import { toast } from "@/hooks/use-toast"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -17,6 +18,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { deleteCookie } from "@/lib/utils"
+import { getUserInfoWithToast, type UserInfo } from "@/lib/user-service"
 
 const navItems = [
   {
@@ -35,15 +38,40 @@ const navItems = [
     icon: Database,
   },
   {
-    name: "工具",
+    name: "工具市场",
     href: "/tools",
-    icon: Tool,
+    icon: Wrench,
   },
 ]
 
 export function NavigationBar() {
   const pathname = usePathname()
+  const router = useRouter()
   const [open, setOpen] = useState(false)
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  // 获取用户信息
+  useEffect(() => {
+    async function fetchUserInfo() {
+      try {
+        setLoading(true)
+        const response = await getUserInfoWithToast()
+        
+        if (response.code === 200) {
+          setUserInfo(response.data)
+        } else {
+          console.error("获取用户信息失败:", response.message)
+        }
+      } catch (error) {
+        console.error("获取用户信息错误:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchUserInfo()
+  }, [])
 
   // Check if current path matches the menu item's href
   const isActiveRoute = (href: string) => {
@@ -51,6 +79,29 @@ export function NavigationBar() {
       return true // Main page also counts as explore
     }
     return pathname === href || pathname.startsWith(`${href}/`)
+  }
+
+  // 获取用户头像首字母
+  const getUserAvatarFallback = () => {
+    if (!userInfo?.nickname) return "U"
+    return userInfo.nickname.charAt(0).toUpperCase()
+  }
+
+  const handleLogout = () => {
+    // 清除localStorage中的token
+    localStorage.removeItem("auth_token")
+    
+    // 清除cookie中的token
+    deleteCookie("token")
+    
+    // 显示退出成功提示
+    toast({
+      title: "成功",
+      description: "退出登录成功"
+    })
+    
+    // 跳转到登录页
+    router.push("/login")
   }
 
   return (
@@ -90,7 +141,7 @@ export function NavigationBar() {
         </Sheet>
         <Link href="/" className="mr-6 flex items-center space-x-2">
           <Home className="h-6 w-6 text-blue-600" />
-          <span className="hidden font-bold sm:inline-block">AgentX Plus</span>
+          <span className="hidden font-bold sm:inline-block">AgentX</span>
         </Link>
         <div className="flex flex-1 items-center justify-between">
           <nav className="flex items-center space-x-6">
@@ -111,16 +162,14 @@ export function NavigationBar() {
             ))}
           </nav>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" className="hidden md:flex">
-              <UploadCloud className="mr-2 h-4 w-4" />
-              插件
-            </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="rounded-full">
                   <Avatar className="h-8 w-8">
                     <AvatarImage src="/placeholder.svg?height=32&width=32" alt="User" />
-                    <AvatarFallback>X</AvatarFallback>
+                    <AvatarFallback>
+                      {loading ? "..." : getUserAvatarFallback()}
+                    </AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
@@ -128,11 +177,19 @@ export function NavigationBar() {
                 <DropdownMenuLabel className="flex items-center gap-2">
                   <Avatar className="h-8 w-8">
                     <AvatarImage src="/placeholder.svg?height=32&width=32" alt="User" />
-                    <AvatarFallback>X</AvatarFallback>
+                    <AvatarFallback>
+                      {loading ? "..." : getUserAvatarFallback()}
+                    </AvatarFallback>
                   </Avatar>
                   <div>
-                    <div className="font-medium">xhy</div>
-                    <div className="text-xs text-muted-foreground">xhy@example.com</div>
+                    <div className="font-medium">
+                      {loading ? "加载中..." : (userInfo?.nickname || "未知用户")}
+                    </div>
+                    {userInfo?.email && (
+                      <div className="text-sm text-muted-foreground">
+                        {userInfo.email}
+                      </div>
+                    )}
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
@@ -140,6 +197,12 @@ export function NavigationBar() {
                   <Link href="/settings/profile">
                     <Settings className="mr-2 h-4 w-4" />
                     个人设置
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/settings/general">
+                    <Settings className="mr-2 h-4 w-4" />
+                    通用设置
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
@@ -161,7 +224,10 @@ export function NavigationBar() {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>退出登录</DropdownMenuItem>
+                <DropdownMenuItem onSelect={handleLogout}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  退出登录
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

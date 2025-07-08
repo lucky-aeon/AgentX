@@ -1,93 +1,63 @@
 package org.xhy.application.agent.dto;
 
-import org.xhy.domain.agent.constant.AgentStatus;
-import org.xhy.domain.agent.constant.AgentType;
-import org.xhy.domain.agent.model.*;
-
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
-/**
- * Agent数据传输对象，用于表示层和应用层之间传递数据
- */
+/** Agent数据传输对象，用于表示层和应用层之间传递数据 */
 public class AgentDTO {
 
-    /**
-     * Agent唯一ID
-     */
+    /** Agent唯一ID */
     private String id;
 
-    /**
-     * Agent名称
-     */
+    /** Agent名称 */
     private String name;
 
-    /**
-     * Agent头像URL
-     */
+    /** Agent头像URL */
     private String avatar;
 
-    /**
-     * Agent描述
-     */
+    /** Agent描述 */
     private String description;
 
-    /**
-     * Agent系统提示词
-     */
+    /** Agent系统提示词 */
     private String systemPrompt;
 
-    /**
-     * 欢迎消息
-     */
+    /** 欢迎消息 */
     private String welcomeMessage;
 
-    /**
-     * Agent可使用的工具列表
-     */
-    private List<AgentTool> tools;
+    /** Agent可使用的工具列表 */
+    private List<String> toolIds;
 
-    /**
-     * 关联的知识库ID列表
-     */
+    /** 关联的知识库ID列表 */
     private List<String> knowledgeBaseIds;
 
-    /**
-     * 当前发布的版本ID
-     */
+    /** 当前发布的版本ID */
     private String publishedVersion;
 
-    /**
-     * Agent状态：true-启用，false-禁用
-     */
+    /** Agent状态：true-启用，false-禁用 */
     private Boolean enabled = Boolean.TRUE;
 
-    /**
-     * Agent类型：1-聊天助手, 2-功能性Agent
-     */
-    private Integer agentType;
-
-    /**
-     * 创建者用户ID
-     */
+    /** 创建者用户ID */
     private String userId;
 
-    /**
-     * 创建时间
-     */
+    /** 创建者用户昵称 */
+    private String userNickname;
+
+    private Map<String, Map<String, Map<String, String>>> toolPresetParams;
+
+    /** 创建时间 */
     private LocalDateTime createdAt;
 
-    /**
-     * 最后更新时间
-     */
+    /** 最后更新时间 */
     private LocalDateTime updatedAt;
 
-    /**
-     * 无参构造函数
-     */
+    /** 是否支持多模态 */
+    private Boolean multiModal;
+
+    /** 无参构造函数 */
     public AgentDTO() {
-        this.tools = new ArrayList<>();
+        this.toolIds = new ArrayList<>();
         this.knowledgeBaseIds = new ArrayList<>();
     }
 
@@ -140,12 +110,12 @@ public class AgentDTO {
         this.welcomeMessage = welcomeMessage;
     }
 
-    public List<AgentTool> getTools() {
-        return tools;
+    public List<String> getToolIds() {
+        return toolIds;
     }
 
-    public void setTools(List<AgentTool> tools) {
-        this.tools = tools;
+    public void setToolIds(List<String> toolIds) {
+        this.toolIds = toolIds;
     }
 
     public List<String> getKnowledgeBaseIds() {
@@ -172,14 +142,6 @@ public class AgentDTO {
         this.enabled = enabled;
     }
 
-    public Integer getAgentType() {
-        return agentType;
-    }
-
-    public void setAgentType(Integer agentType) {
-        this.agentType = agentType;
-    }
-
     public String getUserId() {
         return userId;
     }
@@ -204,40 +166,27 @@ public class AgentDTO {
         this.updatedAt = updatedAt;
     }
 
-    /**
-     * 获取状态文本描述
-     */
-    public String getStatusText() {
-        return AgentStatus.fromCode(enabled ? 1 : 0).getDescription();
+    public void setToolPresetParams(Map<String, Map<String, Map<String, String>>> toolPresetParams) {
+        this.toolPresetParams = toolPresetParams;
     }
 
-    /**
-     * 获取类型文本描述
-     */
-    public String getAgentTypeText() {
-        return AgentType.fromCode(agentType).getDescription();
+    public Map<String, Map<String, Map<String, String>>> getToolPresetParams() {
+        return toolPresetParams;
     }
 
-    /**
-     * 将当前DTO转换为Entity对象
-     * @return 转换后的AgentEntity对象
-     */
-    public AgentEntity toEntity() {
-        AgentEntity entity = new AgentEntity();
-        entity.setId(this.id);
-        entity.setName(this.name);
-        entity.setAvatar(this.avatar);
-        entity.setDescription(this.description);
-        entity.setSystemPrompt(this.systemPrompt);
-        entity.setWelcomeMessage(this.welcomeMessage);
-        entity.setTools(this.tools);
-        entity.setKnowledgeBaseIds(this.knowledgeBaseIds);
-        entity.setPublishedVersion(this.publishedVersion);
-        entity.setEnabled(this.enabled);
-        entity.setAgentType(this.agentType);
-        entity.setUserId(this.userId);
-        entity.setCreatedAt(this.createdAt);
-        entity.setUpdatedAt(this.updatedAt);
-        return entity;
+    public Boolean getMultiModal() {
+        return multiModal;
     }
-} 
+
+    public void setMultiModal(Boolean multiModal) {
+        this.multiModal = multiModal;
+    }
+
+    public String getUserNickname() {
+        return userNickname;
+    }
+
+    public void setUserNickname(String userNickname) {
+        this.userNickname = userNickname;
+    }
+}

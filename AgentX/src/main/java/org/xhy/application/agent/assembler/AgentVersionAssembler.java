@@ -1,5 +1,6 @@
 package org.xhy.application.agent.assembler;
 
+import org.springframework.beans.BeanUtils;
 import org.xhy.application.agent.dto.AgentVersionDTO;
 import org.xhy.domain.agent.model.AgentEntity;
 import org.xhy.domain.agent.model.AgentVersionEntity;
@@ -12,10 +13,7 @@ import java.util.stream.Collectors;
 
 public class AgentVersionAssembler {
 
-
-    /**
-     * 将AgentVersionEntity列表转换为AgentVersionDTO列表
-     */
+    /** 将AgentVersionEntity列表转换为AgentVersionDTO列表 */
     public static List<AgentVersionDTO> toVersionDTOList(List<AgentVersionEntity> entities) {
         if (entities == null) {
             return new ArrayList<>();
@@ -29,37 +27,18 @@ public class AgentVersionAssembler {
         return dtoList;
     }
 
-    /**
-     * 将AgentVersionEntity转换为AgentVersionDTO
-     */
+    /** 将AgentVersionEntity转换为AgentVersionDTO */
     public static AgentVersionDTO toDTO(AgentVersionEntity entity) {
         if (entity == null) {
             return null;
         }
 
         AgentVersionDTO dto = new AgentVersionDTO();
-        dto.setId(entity.getId());
-        dto.setName(entity.getName());
-        dto.setDescription(entity.getDescription());
-        dto.setAvatar(entity.getAvatar());
-        dto.setAgentId(entity.getAgentId());
-        dto.setVersionNumber(entity.getVersionNumber());
-        dto.setSystemPrompt(entity.getSystemPrompt());
-        dto.setWelcomeMessage(entity.getWelcomeMessage());
-        dto.setTools(entity.getTools());
-        dto.setKnowledgeBaseIds(entity.getKnowledgeBaseIds());
-        dto.setChangeLog(entity.getChangeLog());
-        dto.setAgentType(entity.getAgentType());
-        dto.setPublishedAt(entity.getPublishedAt());
-        dto.setPublishStatus(entity.getPublishStatus());
-
+        BeanUtils.copyProperties(entity, dto);
         return dto;
     }
 
-
-    /**
-     * 创建AgentVersionEntity
-     */
+    /** 创建AgentVersionEntity */
     public static AgentVersionEntity createVersionEntity(AgentEntity agent, PublishAgentVersionRequest request) {
         return AgentVersionEntity.createFromAgent(agent, request.getVersionNumber(), request.getChangeLog());
     }

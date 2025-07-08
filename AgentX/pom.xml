@@ -28,11 +28,24 @@
         <fastjson.version>2.0.47</fastjson.version>
         <hutool.version>5.8.26</hutool.version>
         <httpclient.version>4.5.14</httpclient.version>
-        <stream-query.version>3.0.0</stream-query.version>
-        <x-file-storage.version>2.2.0</x-file-storage.version>
-        <pdf-box>3.0.2</pdf-box>
-        <poi.version>4.1.0</poi.version>
+        <langchain4j.version>1.0.1-beta7-SNAPSHOT</langchain4j.version>
+        <spotless.version>2.37.0</spotless.version>
     </properties>
+
+    <pluginRepositories>
+        <pluginRepository>
+            <id>maven-central</id>
+            <name>Maven Central</name>
+            <url>https://repo.maven.apache.org/maven2</url>
+        </pluginRepository>
+    </pluginRepositories>
+
+    <repositories>
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
+    </repositories>
 
     <dependencies>
         <!-- Spring Boot 依赖 -->
@@ -44,55 +57,21 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
-
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-configuration-processor</artifactId>
+            <optional>true</optional>
+        </dependency>
+        
         <dependency>
             <groupId>com.baomidou</groupId>
             <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
             <version>${mybatis-plus.version}</version>
         </dependency>
-
-        <!-- MQ环境 -->
-
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-amqp</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.rabbitmq</groupId>
-                    <artifactId>amqp-client</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>com.rabbitmq</groupId>
-            <artifactId>amqp-client</artifactId>
-            <version>5.21.0</version>
-        </dependency>
-        <dependency>
-            <groupId>commons-io</groupId>
-            <artifactId>commons-io</artifactId>
-            <version>2.15.1</version>
-        </dependency>
-        <dependency>
-            <groupId>dev.langchain4j</groupId>
-            <artifactId>langchain4j-document-parser-apache-poi</artifactId>
-            <version>1.0.0-beta2</version>
-        </dependency>
-
-
-        <!-- 文件上传服务 -->
-        <dependency>
-            <groupId>org.dromara.x-file-storage</groupId>
-            <artifactId>x-file-storage-spring</artifactId>
-            <version>${x-file-storage.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.amazonaws</groupId>
-            <artifactId>aws-java-sdk-s3</artifactId>
-            <version>1.12.429</version>
-        </dependency>
-
 
         <!-- 数据库相关依赖 -->
         <dependency>
@@ -132,14 +111,37 @@
             <artifactId>fastjson</artifactId>
             <version>${fastjson.version}</version>
         </dependency>
+        
+        <!-- Jackson JSON处理 -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jsr310</artifactId>
+        </dependency>
+        
         <dependency>
             <groupId>cn.hutool</groupId>
             <artifactId>hutool-crypto</artifactId>
             <version>${hutool.version}</version>
         </dependency>
         <dependency>
+            <groupId>cn.hutool</groupId>
+            <artifactId>hutool-captcha</artifactId>
+            <version>${hutool.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
+        </dependency>
+
+        <!-- Jakarta Mail -->
+        <dependency>
+            <groupId>org.eclipse.angus</groupId>
+            <artifactId>jakarta.mail</artifactId>
+            <version>2.0.2</version>
         </dependency>
 
         <!-- SLF4J -->
@@ -154,61 +156,28 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
-
         <dependency>
-            <groupId>dev.langchain4j</groupId>
+            <groupId>com.github.lucky-aeon.langchain4j</groupId>
+            <artifactId>langchain4j-anthropic</artifactId>
+            <version>${langchain4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.lucky-aeon.langchain4j</groupId>
             <artifactId>langchain4j-open-ai</artifactId>
-            <version>1.0.0-beta2</version>
+            <version>${langchain4j.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>dev.langchain4j</groupId>
+            <groupId>com.github.lucky-aeon.langchain4j</groupId>
             <artifactId>langchain4j</artifactId>
-            <version>1.0.0-beta2</version>
-        </dependency>
-
-        <!-- 文档解析 -->
-        <dependency>
-            <groupId>org.apache.pdfbox</groupId>
-            <artifactId>pdfbox</artifactId>
-            <version>${pdf-box}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.tika</groupId>
-            <artifactId>tika-core</artifactId>
-            <version>2.6.0</version>
-        </dependency>
-
-        <dependency>
-            <groupId>dev.langchain4j</groupId>
-            <artifactId>langchain4j-embeddings-all-minilm-l6-v2</artifactId>
-            <version>1.0.0-beta2</version>
+            <version>${langchain4j.version}</version>
         </dependency>
 
 
         <dependency>
-            <groupId>dev.langchain4j</groupId>
+            <groupId>com.github.lucky-aeon.langchain4j</groupId>
             <artifactId>langchain4j-mcp</artifactId>
-            <version>1.0.0-beta2</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.dromara.stream-query</groupId>
-            <artifactId>stream-core</artifactId>
-            <version>${stream-query.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.vladsch.flexmark</groupId>
-            <artifactId>flexmark-all</artifactId>
-            <version>0.64.8</version>
-        </dependency>
-
-        <dependency>
-            <groupId>dev.langchain4j</groupId>
-            <artifactId>langchain4j-pgvector</artifactId>
-            <version>1.0.0-beta2</version>
+            <version>${langchain4j.version}</version>
         </dependency>
 
         <dependency>
@@ -223,12 +192,91 @@
         </dependency>
 
 
+        <!-- GitHub API 客户端 (Kohsuke) -->
+        <dependency>
+            <groupId>org.kohsuke</groupId>
+            <artifactId>github-api</artifactId>
+            <version>1.321</version> <!-- Using the newer version -->
+        </dependency>
 
+        <!-- JGit for Git operations -->
+        <dependency>
+            <groupId>org.eclipse.jgit</groupId>
+            <artifactId>org.eclipse.jgit</artifactId>
+            <version>6.7.0.202309050840-r</version> <!-- 或最新稳定版 -->
+        </dependency>
 
+        <!-- Apache Commons IO for FileUtils -->
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>2.15.0</version> <!-- 或最新稳定版 -->
+        </dependency>
+
+        <!-- Zip4j for unzipping -->
+        <dependency>
+            <groupId>net.lingala.zip4j</groupId>
+            <artifactId>zip4j</artifactId>
+            <version>2.11.5</version> <!-- 或最新稳定版 -->
+        </dependency>
+
+        <!-- AWS S3 SDK for S3-compatible object storage -->
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>s3</artifactId>
+            <version>2.20.162</version>
+        </dependency>
+
+        <!-- AWS SDK Core -->
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>url-connection-client</artifactId>
+            <version>2.20.162</version>
+        </dependency>
+
+        <!-- Docker Java 客户端 -->
+        <dependency>
+            <groupId>com.github.docker-java</groupId>
+            <artifactId>docker-java-core</artifactId>
+            <version>3.3.6</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.docker-java</groupId>
+            <artifactId>docker-java-transport-httpclient5</artifactId>
+            <version>3.3.6</version>
+        </dependency>
+        <!-- Apache HTTP Core 5 for Docker Java -->
+        <dependency>
+            <groupId>org.apache.httpcomponents.core5</groupId>
+            <artifactId>httpcore5</artifactId>
+            <version>5.2.4</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents.core5</groupId>
+            <artifactId>httpcore5-h2</artifactId>
+            <version>5.2.4</version>
+        </dependency>
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-jsqlparser</artifactId>
+            <version>${mybatis-plus.version}</version>
+        </dependency>
     </dependencies>
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>com.diffplug.spotless</groupId>
+                <artifactId>spotless-maven-plugin</artifactId>
+                <version>${spotless.version}</version>
+                <configuration>
+                    <java>
+                        <eclipse>
+                            <file>${project.basedir}/eclipse-formatter.xml</file>
+                        </eclipse>
+                    </java>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
@@ -247,4 +295,32 @@
             </plugin>
         </plugins>
     </build>
+
+    <!-- Maven Profiles for different environments -->
+    <profiles>
+        <!-- 开发环境 -->
+        <profile>
+            <id>dev</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <properties>
+                <spring.profiles.active>dev</spring.profiles.active>
+            </properties>
+        </profile>
+
+        <!-- 生产环境 -->
+        <profile>
+            <id>prod</id>
+            <activation>
+                <property>
+                    <name>spring.profiles.active</name>
+                    <value>prod</value>
+                </property>
+            </activation>
+            <properties>
+                <spring.profiles.active>prod</spring.profiles.active>
+            </properties>
+        </profile>
+    </profiles>
 </project>

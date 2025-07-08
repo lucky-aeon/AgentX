@@ -2,34 +2,22 @@ package org.xhy.domain.agent.constant;
 
 import org.xhy.infrastructure.exception.BusinessException;
 
-/**
- * Agent状态枚举
- */
+/** Agent状态枚举 */
 public enum AgentStatus {
 
-    /**
-     * 草稿状态
-     */
+    /** 草稿状态 */
     DRAFT(0, "草稿"),
 
-    /**
-     * 待审核状态
-     */
+    /** 待审核状态 */
     PENDING_REVIEW(1, "待审核"),
 
-    /**
-     * 已上架状态
-     */
+    /** 已上架状态 */
     PUBLISHED(2, "已上架"),
 
-    /**
-     * 已下架状态
-     */
+    /** 已下架状态 */
     UNPUBLISHED(3, "已下架"),
 
-    /**
-     * 审核拒绝状态
-     */
+    /** 审核拒绝状态 */
     REJECTED(4, "审核拒绝");
 
     private final Integer code;
@@ -48,9 +36,7 @@ public enum AgentStatus {
         return description;
     }
 
-    /**
-     * 根据状态码获取枚举值
-     */
+    /** 根据状态码获取枚举值 */
     public static AgentStatus fromCode(Integer code) {
         if (code == null) {
             return null;

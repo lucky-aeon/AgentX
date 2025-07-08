@@ -85,16 +85,13 @@ export function ModelSelectDialog({
       try {
         // 并行加载模型列表和当前模型ID
         const [modelsResponse, currentModelResponse] = await Promise.all([
-          getModels("all"),
+          getModels("CHAT"),
           getAgentModel(agentId)
         ]);
 
         // 处理模型列表
         if (modelsResponse.code === 200 && Array.isArray(modelsResponse.data)) {
-          const chatModels = modelsResponse.data.filter(model => 
-            model.type === "CHAT"
-          );
-          setModels(chatModels);
+          setModels(modelsResponse.data);
         }
 
         // 处理当前模型ID和配置

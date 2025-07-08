@@ -2,41 +2,24 @@
 
 import { DialogTrigger } from "@/components/ui/dialog"
 
-import { useEffect, useState } from "react"
-import { Plus, MoreHorizontal, Edit, Trash2, ChevronLeft, ChevronRight } from "lucide-react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useWorkspace } from "@/contexts/workspace-context"
-import { toast } from "@/components/ui/use-toast"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
-import {
-  getAgentSessions,
-  createAgentSession,
-  updateAgentSession,
-  deleteAgentSession,
-  type SessionDTO,
-  getAgentSessionsWithToast,
-  createAgentSessionWithToast,
-  updateAgentSessionWithToast,
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { ChevronLeft, ChevronRight, Edit, MoreHorizontal, Plus, Trash2, Clock } from "lucide-react"
+import { useWorkspace } from "@/contexts/workspace-context"
+import { 
+  getAgentSessionsWithToast, 
+  createAgentSessionWithToast, 
+  updateAgentSessionWithToast, 
   deleteAgentSessionWithToast,
+  type SessionDTO 
 } from "@/lib/agent-session-service"
+import { toast } from "@/hooks/use-toast"
 
 interface ConversationListProps {
   workspaceId: string
@@ -121,6 +104,37 @@ export function ConversationList({ workspaceId }: ConversationListProps) {
     setSessionToDelete(sessionId)
   }
 
+  // 确认删除会话
+  const confirmDeleteSession = async () => {
+    if (!sessionToDelete) return
+
+    try {
+      setIsDeletingSession(true)
+      
+      // 直接删除会话，后端会自动处理级联删除定时任务
+      const response = await deleteAgentSessionWithToast(sessionToDelete)
+
+      if (response.code === 200) {
+        // 重新获取会话列表
+        fetchSessions()
+        // 如果删除的是当前选中的会话，则清除选中状态
+        if (selectedConversationId === sessionToDelete) {
+          setSelectedConversationId(null)
+        }
+        
+        toast({
+          title: "删除成功",
+          description: "会话及其关联的定时任务已删除"
+        })
+      }
+    } catch (error) {
+      console.error("删除会话错误:", error)
+    } finally {
+      setIsDeletingSession(false)
+      setSessionToDelete(null)
+    }
+  }
+
   // 打开重命名对话框
   const openRenameDialog = (session: SessionDTO) => {
     console.log('打开重命名对话框:', session)
@@ -153,30 +167,6 @@ export function ConversationList({ workspaceId }: ConversationListProps) {
       }
     } catch (error) {
       console.error("重命名会话错误:", error)
-    }
-  }
-
-  // 确认删除会话
-  const confirmDeleteSession = async () => {
-    if (!sessionToDelete) return
-
-    try {
-      setIsDeletingSession(true)
-      const response = await deleteAgentSessionWithToast(sessionToDelete)
-
-      if (response.code === 200) {
-        // 重新获取会话列表
-        fetchSessions()
-        // 如果删除的是当前选中的会话，则清除选中状态
-        if (selectedConversationId === sessionToDelete) {
-          setSelectedConversationId(null)
-        }
-      }
-    } catch (error) {
-      console.error("删除会话错误:", error)
-    } finally {
-      setIsDeletingSession(false)
-      setSessionToDelete(null)
     }
   }
 
@@ -365,17 +355,20 @@ export function ConversationList({ workspaceId }: ConversationListProps) {
       
       {/* 删除确认对话框 */}
       <Dialog open={!!sessionToDelete} onOpenChange={(open) => !open && setSessionToDelete(null)}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>删除会话</DialogTitle>
             <DialogDescription>
-              确定要删除这个会话吗？此操作无法撤销。
+              "确定要删除这个会话吗？此操作无法撤销。"
             </DialogDescription>
           </DialogHeader>
+          
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => setSessionToDelete(null)}
+              onClick={() => {
+                setSessionToDelete(null)
+              }}
               disabled={isDeletingSession}
             >
               取消

@@ -8,9 +8,7 @@ import org.xhy.application.agent.service.AgentWorkspaceAppService;
 import org.xhy.domain.agent.model.AgentWorkspaceEntity;
 import org.xhy.infrastructure.repository.MyBatisPlusExtRepository;
 
-/**
- * Agent工作区仓库接口
- */
+/** Agent工作区仓库接口 */
 @Mapper
 public interface AgentWorkspaceRepository extends MyBatisPlusExtRepository<AgentWorkspaceEntity> {
 

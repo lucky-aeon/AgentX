@@ -4,20 +4,26 @@
 
 ## 文件说明
 
-- `setup_postgres.sh`: 使用 Docker 直接启动 PostgreSQL 容器的脚本
-- `setup_with_compose.sh`: 使用 Docker Compose 启动 PostgreSQL 容器的脚本  
+- `setup_postgres.sh`: 使用 Docker 直接启动 PostgreSQL 容器的脚本（Linux/macOS）
+- `setup_postgres.bat`: 使用 Docker 直接启动 PostgreSQL 容器的脚本（Windows）
+- `setup_with_compose.sh`: 使用 Docker Compose 启动 PostgreSQL 容器的脚本（Linux/macOS）
+- `setup_with_compose.bat`: 使用 Docker Compose 启动 PostgreSQL 容器的脚本（Windows）
 - `docker-compose.yml`: Docker Compose 配置文件
+- `test_sql_detection.sh`: SQL 文件检测测试脚本
 
 ## SQL 文件位置
 
-脚本会从 `docs/sql` 目录中读取 SQL 文件来初始化数据库。以下是默认的 SQL 文件：
+脚本会从 `docs/sql` 目录中读取**所有的** `.sql` 文件来初始化数据库，按文件名顺序执行：
 
-- `init.sql`: 数据库初始化 SQL 脚本，包含表结构定义和索引创建
+- `01_init.sql`: 数据库初始化 SQL 脚本，包含表结构定义和索引创建
+- `02_default_data.sql`: 默认数据插入脚本，包含默认用户账号等基础数据
+- 可以添加更多 `.sql` 文件，系统会自动按文件名顺序执行
 
 ## 使用方法
 
 ### 方法一：使用直接的 Docker 命令
 
+#### Linux/macOS:
 1. 确保已安装 Docker
 2. 为脚本添加执行权限：
    ```bash
@@ -28,8 +34,16 @@
    ./script/setup_postgres.sh
    ```
 
+#### Windows:
+1. 确保已安装 Docker Desktop
+2. 运行脚本：
+   ```cmd
+   script\setup_postgres.bat
+   ```
+
 ### 方法二：使用 Docker Compose
 
+#### Linux/macOS:
 1. 确保已安装 Docker 和 Docker Compose
 2. 为脚本添加执行权限：
    ```bash
@@ -39,6 +53,22 @@
    ```bash
    ./script/setup_with_compose.sh
    ```
+
+#### Windows:
+1. 确保已安装 Docker Desktop 和 Docker Compose
+2. 运行脚本：
+   ```cmd
+   script\setup_with_compose.bat
+   ```
+
+### 测试 SQL 文件检测
+
+可以运行测试脚本来验证 SQL 文件是否能被正确检测：
+
+```bash
+chmod +x script/test_sql_detection.sh
+./script/test_sql_detection.sh
+```
 
 ## 数据库连接信息
 

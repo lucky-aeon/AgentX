@@ -1,0 +1,147 @@
+version: "3.8"
+
+services:
+  # AgentX PostgreSQL数据库
+  postgres:
+    image: ankane/pgvector:latest
+    container_name: agentx-postgres
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=agentx
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./docs/sql:/docker-entrypoint-initdb.d
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d agentx"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - agentx-network
+
+  # API网关 PostgreSQL数据库
+  gateway-postgres:
+    image: postgres:15-alpine
+    container_name: api-gateway-postgres
+    environment:
+      - POSTGRES_DB=api_gateway
+      - POSTGRES_USER=gateway_user
+      - POSTGRES_PASSWORD=gateway_pass
+      - POSTGRES_INITDB_ARGS=--encoding=UTF8 --locale=C
+    ports:
+      - "5433:5432"
+    volumes:
+      - ./API-Premium-Gateway/docs/sql:/docker-entrypoint-initdb.d:ro
+      - gateway-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gateway_user -d api_gateway"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - agentx-network
+
+  # API网关服务 (开发模式 - 挂载源码)
+  api-gateway:
+    image: agentx-api-gateway:dev
+    build:
+      context: ./API-Premium-Gateway
+      dockerfile: Dockerfile
+    container_name: agentx-api-gateway-dev
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker,dev
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://gateway-postgres:5432/api_gateway?useUnicode=true&characterEncoding=UTF-8&useSSL=false&stringtype=unspecified&assumeMinServerVersion=9.6&prepareThreshold=0&DateStyle=ISO
+      - SPRING_DATASOURCE_USERNAME=gateway_user
+      - SPRING_DATASOURCE_PASSWORD=gateway_pass
+      - SPRING_DEVTOOLS_RESTART_ENABLED=true
+    depends_on:
+      gateway-postgres:
+        condition: service_healthy
+    volumes:
+      - ./logs/gateway:/app/logs
+      - maven-cache:/root/.m2
+    networks:
+      - agentx-network
+    restart: unless-stopped
+
+  # AgentX后端服务 (开发模式 - 使用Maven缓存)
+  agentx-backend:
+    image: agentx-backend:dev
+    build:
+      context: ./AgentX
+      dockerfile: Dockerfile.dev
+    container_name: agentx-backend-dev
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker,dev
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/agentx
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+      - SPRING_DEVTOOLS_RESTART_ENABLED=true
+      - MCP_GATEWAY_URL=http://mcp-gateway:8080
+      - HIGH_AVAILABILITY_GATEWAY_URL=http://api-gateway:8081
+    depends_on:
+      postgres:
+        condition: service_healthy
+      api-gateway:
+        condition: service_started
+      mcp-gateway:
+        condition: service_started
+    volumes:
+      - ./logs/backend:/app/logs
+      - maven-cache:/root/.m2 # Maven 依赖缓存
+    networks:
+      - agentx-network
+    restart: unless-stopped
+
+  # AgentX前端服务 (开发模式 - 使用npm缓存)
+  agentx-frontend:
+    image: agentx-frontend:dev
+    build:
+      context: ./agentx-frontend-plus
+      dockerfile: Dockerfile.dev
+    container_name: agentx-frontend-dev
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+    depends_on:
+      - agentx-backend
+    volumes:
+      - npm-cache:/root/.npm # NPM 缓存
+    networks:
+      - agentx-network
+    restart: unless-stopped
+
+  # MCP网关服务 (开发模式)
+  mcp-gateway:
+    image: ghcr.io/lucky-aeon/mcp-gateway:latest
+    container_name: agentx-mcp-gateway-dev
+    ports:
+      - "8005:8080" # 映射到主机的8082端口，避免冲突
+    networks:
+      - agentx-network
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+    name: agentx-postgres-data
+  gateway-postgres-data:
+    name: api-gateway-postgres-data
+  maven-cache:
+    name: agentx-maven-cache
+  npm-cache:
+    name: agentx-npm-cache
+
+networks:
+  agentx-network:
+    driver: bridge
+    name: agentx-network

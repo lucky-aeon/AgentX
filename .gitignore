@@ -48,6 +48,13 @@ coverage/
 /.ngsw.json
 /manifest.json
 /*.orig
+
+# 环境配置文件（包含敏感信息）
+.env
+.env.local
+.env.*.local
+application-prod.yml
+application-secrets.yml
 /*.rej
 /*/*.mo
 /*/*.meta

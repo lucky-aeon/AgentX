@@ -1,8 +1,9 @@
 package org.xhy.application.agent.assembler;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.beans.BeanUtils;
 import org.xhy.domain.agent.model.AgentEntity;
-import org.xhy.domain.agent.constant.AgentType;
+
 import org.xhy.application.agent.dto.AgentDTO;
 import org.xhy.interfaces.dto.agent.request.CreateAgentRequest;
 import org.xhy.interfaces.dto.agent.request.SearchAgentsRequest;
@@ -14,90 +15,55 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * Agent领域对象组装器
- * 负责DTO、Entity和Request之间的转换
- */
+/** Agent领域对象组装器 负责DTO、Entity和Request之间的转换 */
 public class AgentAssembler {
 
-    /**
-     * 将CreateAgentRequest转换为AgentEntity
-     */
-    public static AgentEntity toEntity(CreateAgentRequest request,String userId) {
+    /** 将CreateAgentRequest转换为AgentEntity */
+    public static AgentEntity toEntity(CreateAgentRequest request, String userId) {
         AgentEntity entity = new AgentEntity();
         entity.setName(request.getName());
         entity.setDescription(request.getDescription());
         entity.setAvatar(request.getAvatar());
         entity.setSystemPrompt(request.getSystemPrompt());
         entity.setWelcomeMessage(request.getWelcomeMessage());
-        
-        // 设置Agent类型，默认为聊天助手类型
-        AgentType agentType = request.getAgentType();
-        entity.setAgentType(agentType.getCode());
+
         entity.setUserId(userId);
 
         // 设置初始状态为启用
         entity.setEnabled(true);
 
-
         // 设置工具和知识库ID
-        entity.setTools(request.getTools() != null ? request.getTools() : new ArrayList<>());
-        entity.setKnowledgeBaseIds(request.getKnowledgeBaseIds() != null ? request.getKnowledgeBaseIds() : new ArrayList<>());
-        
+        entity.setToolIds(request.getToolIds() != null ? request.getToolIds() : new ArrayList<>());
+        entity.setKnowledgeBaseIds(
+                request.getKnowledgeBaseIds() != null ? request.getKnowledgeBaseIds() : new ArrayList<>());
+
         // 设置创建和更新时间
         LocalDateTime now = LocalDateTime.now();
         entity.setCreatedAt(now);
         entity.setUpdatedAt(now);
-        
+        entity.setToolIds(request.getToolIds());
+        // 设置预先设置的工具参数
+        entity.setToolPresetParams(request.getToolPresetParams());
+        entity.setMultiModal(request.getMultiModal());
         return entity;
     }
-    
 
-
-    /**
-     * 将UpdateAgentRequest转换为AgentEntity
-     */
-    public static AgentEntity toEntity(UpdateAgentRequest request,String userId) {
+    /** 将UpdateAgentRequest转换为AgentEntity */
+    public static AgentEntity toEntity(UpdateAgentRequest request, String userId) {
         AgentEntity entity = new AgentEntity();
-        entity.setName(request.getName());
-        entity.setDescription(request.getDescription());
-        entity.setAvatar(request.getAvatar());
-        entity.setSystemPrompt(request.getSystemPrompt());
-        entity.setWelcomeMessage(request.getWelcomeMessage());
-        entity.setTools(request.getTools());
-        entity.setKnowledgeBaseIds(request.getKnowledgeBaseIds());
-        entity.setUserId(userId);
-        entity.setEnabled(request.getEnabled());
-        entity.setId(request.getAgentId());
 
+        BeanUtils.copyProperties(request, entity);
+        entity.setUserId(userId);
         return entity;
     }
 
-
-    /**
-     * 将AgentEntity转换为AgentDTO
-     */
+    /** 将AgentEntity转换为AgentDTO */
     public static AgentDTO toDTO(AgentEntity entity) {
         if (entity == null) {
             return null;
         }
-        
         AgentDTO dto = new AgentDTO();
-        dto.setId(entity.getId());
-        dto.setName(entity.getName());
-        dto.setAvatar(entity.getAvatar());
-        dto.setDescription(entity.getDescription());
-        dto.setSystemPrompt(entity.getSystemPrompt());
-        dto.setWelcomeMessage(entity.getWelcomeMessage());
-        dto.setTools(entity.getTools());
-        dto.setKnowledgeBaseIds(entity.getKnowledgeBaseIds());
-        dto.setPublishedVersion(entity.getPublishedVersion());
-        dto.setEnabled(entity.getEnabled());
-        dto.setAgentType(entity.getAgentType());
-        dto.setUserId(entity.getUserId());
-        dto.setCreatedAt(entity.getCreatedAt());
-        dto.setUpdatedAt(entity.getUpdatedAt());
-        
+        BeanUtils.copyProperties(entity, dto);
         return dto;
     }
 
@@ -112,5 +78,15 @@ public class AgentAssembler {
         AgentEntity agentEntity = new AgentEntity();
         agentEntity.setName(searchAgentsRequest.getName());
         return agentEntity;
+    }
+
+    /** 将Entity分页对象转换为DTO分页对象 */
+    public static Page<AgentDTO> toPageDTO(Page<AgentEntity> page) {
+        Page<AgentDTO> dtoPage = new Page<>();
+        dtoPage.setCurrent(page.getCurrent());
+        dtoPage.setSize(page.getSize());
+        dtoPage.setTotal(page.getTotal());
+        dtoPage.setRecords(toDTOs(page.getRecords()));
+        return dtoPage;
     }
 }

@@ -7,26 +7,27 @@ import org.xhy.infrastructure.converter.ModelTypeConverter;
 import org.xhy.infrastructure.entity.BaseEntity;
 import org.xhy.infrastructure.exception.BusinessException;
 
-/**
- * 模型领域模型
- */
+/** 模型领域模型 */
 @TableName("models")
 public class ModelEntity extends BaseEntity {
-    
+
     @TableId(type = IdType.ASSIGN_UUID)
     private String id;
-    
+
     private String userId;
     private String providerId;
     private String modelId;
     private String name;
     private String description;
 
+    /** 模型部署名称 */
+    private String modelEndpoint;
+
     private Boolean isOfficial;
 
     @TableField(typeHandler = ModelTypeConverter.class, jdbcType = JdbcType.VARCHAR)
     private ModelType type;
-    
+
     private Boolean status;
 
     public String getId() {
@@ -101,8 +102,16 @@ public class ModelEntity extends BaseEntity {
         isOfficial = official;
     }
 
+    public String getModelEndpoint() {
+        return modelEndpoint;
+    }
+
+    public void setModelEndpoint(String modelEndpoint) {
+        this.modelEndpoint = modelEndpoint;
+    }
+
     public void isActive() {
-        if (!status){
+        if (!status) {
             throw new BusinessException("模型未激活");
         }
     }

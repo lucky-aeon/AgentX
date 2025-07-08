@@ -12,6 +12,121 @@ body {
   }
 }
 
+/* Markdown 样式，添加自动换行配置 */
+.react-markdown {
+  max-width: 100%;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: break-word;
+  white-space: normal;
+  hyphens: auto;
+}
+
+.react-markdown p, 
+.react-markdown li, 
+.react-markdown h1, 
+.react-markdown h2, 
+.react-markdown h3, 
+.react-markdown h4, 
+.react-markdown h5, 
+.react-markdown h6, 
+.react-markdown blockquote {
+  max-width: 100%;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+/* 代码块容器样式 */
+.code-block-container {
+  max-width: 100%;
+  position: relative;
+}
+
+/* 增强代码块内容换行规则 */
+.code-block-container pre {
+  white-space: pre-wrap; /* 改为pre-wrap以支持自动换行 */
+  word-wrap: break-word;
+  word-break: break-all; /* 使用break-all处理非空格处的断行 */
+  overflow-x: auto;
+}
+
+/* 处理长字符串如路径、URL等 */
+.react-markdown pre span,
+.react-markdown code span,
+.react-markdown :not(pre) > code {
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: break-all; /* 使用break-all处理长路径等 */
+  max-width: 100%;
+}
+
+/* 表格样式 */
+.react-markdown table {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  display: block;
+  border-collapse: collapse;
+  margin: 1rem 0;
+}
+
+.react-markdown table th,
+.react-markdown table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: break-word;
+  max-width: 300px; /* 限制单元格最大宽度 */
+}
+
+.react-markdown table th {
+  background-color: #f2f2f2;
+  font-weight: bold;
+}
+
+/* 列表样式 */
+.react-markdown ul,
+.react-markdown ol {
+  padding-left: 2rem;
+  margin-bottom: 1rem;
+}
+
+/* 引用块样式 */
+.react-markdown blockquote {
+  border-left: 4px solid #ddd;
+  padding-left: 1rem;
+  margin-left: 0;
+  color: #666;
+}
+
+/* 链接样式 */
+.react-markdown a {
+  color: #0077cc;
+  text-decoration: underline;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: break-all; /* 为长URL添加断行 */
+}
+
+/* 图片样式 */
+.react-markdown img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* 行内代码样式 */
+.react-markdown :not(pre) > code {
+  background-color: #f5f5f5;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-family: monospace;
+  white-space: normal; /* 确保行内代码可以换行 */
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -20,8 +135,8 @@ body {
     --card-foreground: 0 0% 3.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 3.9%;
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
     --secondary: 0 0% 96.1%;
     --secondary-foreground: 0 0% 9%;
     --muted: 0 0% 96.1%;
@@ -55,8 +170,8 @@ body {
     --card-foreground: 0 0% 98%;
     --popover: 0 0% 3.9%;
     --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
     --secondary: 0 0% 14.9%;
     --secondary-foreground: 0 0% 98%;
     --muted: 0 0% 14.9%;

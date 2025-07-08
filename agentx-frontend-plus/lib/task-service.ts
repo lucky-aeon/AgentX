@@ -1,6 +1,7 @@
 import { API_CONFIG, API_ENDPOINTS } from "./api-config";
 import { withToast } from "./toast-utils";
 import type { ApiResponse } from "@/types/agent";
+import { httpClient } from "@/lib/http-client";
 
 // 任务数据结构
 export interface TaskDTO {
@@ -23,19 +24,9 @@ export interface TaskAggregate {
 // 获取会话最新任务列表
 export async function getSessionTasks(sessionId: string): Promise<ApiResponse<TaskAggregate>> {
   try {
-    const response = await fetch(`${API_CONFIG.BASE_URL}${API_ENDPOINTS.SESSION_TASKS(sessionId)}`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "*/*",
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`获取会话任务失败: ${response.status}`);
-    }
-
-    const data = await response.json();
+    const data = await httpClient.get<ApiResponse<TaskAggregate>>(
+      API_ENDPOINTS.SESSION_TASKS(sessionId)
+    );
     return data;
   } catch (error) {
     console.error("获取会话任务错误:", error);
@@ -51,19 +42,9 @@ export async function getSessionTasks(sessionId: string): Promise<ApiResponse<Ta
 // 获取任务详情
 export async function getTaskDetail(taskId: string): Promise<ApiResponse<TaskDTO>> {
   try {
-    const response = await fetch(`${API_CONFIG.BASE_URL}${API_ENDPOINTS.SESSION_TASK_DETAIL(taskId)}`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "*/*",
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`获取任务详情失败: ${response.status}`);
-    }
-
-    const data = await response.json();
+    const data = await httpClient.get<ApiResponse<TaskDTO>>(
+      API_ENDPOINTS.SESSION_TASK_DETAIL(taskId)
+    );
     return data;
   } catch (error) {
     console.error("获取任务详情错误:", error);

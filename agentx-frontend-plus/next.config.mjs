@@ -7,6 +7,7 @@ try {
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'standalone',
   eslint: {
     ignoreDuringBuilds: true,
   },
@@ -21,6 +22,16 @@ const nextConfig = {
     parallelServerBuildTraces: true,
     parallelServerCompiles: true,
   },
+  webpack: (config, { dev }) => {
+    if (dev) {
+      // 禁用错误覆盖层
+      config.devtool = false;
+    }
+    return config;
+  },
+  // 确保静态资源路径正确
+  trailingSlash: false,
+  generateEtags: false,
 }
 
 mergeConfig(nextConfig, userConfig)

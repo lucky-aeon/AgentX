@@ -34,9 +34,15 @@ if ! command -v docker-compose &> /dev/null && ! docker compose version &> /dev/
     exit 1
 fi
 
-# 检查 SQL 文件是否存在
-if [ ! -f "$SQL_DIR/init.sql" ]; then
-    echo -e "${RED}错误: 初始化 SQL 文件 '$SQL_DIR/init.sql' 不存在${NC}"
+# 检查 SQL 目录是否存在
+if [ ! -d "$SQL_DIR" ]; then
+    echo -e "${RED}错误: SQL 目录 '$SQL_DIR' 不存在${NC}"
+    exit 1
+fi
+
+# 检查 SQL 目录中是否包含 .sql 文件
+if [ -z "$(find "$SQL_DIR" -name "*.sql" -type f)" ]; then
+    echo -e "${RED}错误: SQL 目录 '$SQL_DIR' 中没有找到 .sql 文件${NC}"
     exit 1
 fi
 

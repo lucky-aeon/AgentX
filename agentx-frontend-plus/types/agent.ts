@@ -14,6 +14,7 @@ export interface AgentTool {
   type?: string
   permissions?: string
   config?: Record<string, any>
+  presetParameters?: Record<string, Record<string, string>> // 预设参数：{功能名: {参数名: 参数值}}
 }
 
 export interface Agent {
@@ -25,17 +26,24 @@ export interface Agent {
   welcomeMessage: string
   modelConfig: ModelConfig
   tools: AgentTool[]
+  toolIds?: string[] // 工具ID列表，与后端返回格式兼容
+  toolPresetParams?: {
+    [serverName: string]: {
+      [functionName: string]: {
+        [paramName: string]: string
+      }
+    }
+  } // 工具预设参数
   knowledgeBaseIds: string[]
   publishedVersion: string | null
   enabled: boolean // 更新为布尔值，表示启用/禁用状态
-  agentType: number
   userId: string
   createdAt: string
   updatedAt: string
   statusText?: string
-  agentTypeText?: string
   modelId?: string // 关联的模型ID
   modelName?: string // 关联的模型名称
+  multiModal?: boolean // 多模态功能开关
 }
 
 // API响应基本结构
@@ -46,11 +54,7 @@ export interface ApiResponse<T> {
   timestamp: number
 }
 
-// 助理类型枚举
-export enum AgentType {
-  CHAT = 1,
-  FUNCTIONAL = 2,
-}
+
 
 // 获取助理列表请求参数
 export interface GetAgentsParams {
@@ -63,13 +67,22 @@ export interface CreateAgentRequest {
   name: string
   avatar?: string | null
   description?: string
-  agentType: "CHAT_ASSISTANT" | "FUNCTIONAL_AGENT"
+
   systemPrompt?: string
   welcomeMessage?: string
   modelConfig: ModelConfig
   tools?: AgentTool[]
+  toolIds?: string[] // 工具ID列表，用于传递给后端
+  toolPresetParams?: {
+    [serverName: string]: {
+      [functionName: string]: {
+        [paramName: string]: string
+      }
+    }
+  } // 工具预设参数
   knowledgeBaseIds?: string[]
   userId: string
+  multiModal?: boolean // 多模态功能开关
 }
 
 // 更新助理请求参数
@@ -81,9 +94,18 @@ export interface UpdateAgentRequest {
   welcomeMessage?: string
   modelConfig?: ModelConfig
   tools?: AgentTool[]
+  toolIds?: string[] // 工具ID列表，用于传递给后端
+  toolPresetParams?: {
+    [serverName: string]: {
+      [functionName: string]: {
+        [paramName: string]: string
+      }
+    }
+  } // 工具预设参数
   knowledgeBaseIds?: string[]
-  agentType?: number
+
   enabled?: boolean
+  multiModal?: boolean // 多模态功能开关
 }
 
 // 发布助理版本请求参数
@@ -94,7 +116,16 @@ export interface PublishAgentVersionRequest {
   welcomeMessage?: string
   modelConfig?: ModelConfig
   tools?: AgentTool[]
+  toolIds?: string[] // 工具ID列表，用于传递给后端
+  toolPresetParams?: {
+    [serverName: string]: {
+      [functionName: string]: {
+        [paramName: string]: string
+      }
+    }
+  } // 工具预设参数
   knowledgeBaseIds?: string[]
+  multiModal?: boolean // 多模态功能开关
 }
 
 // 搜索助理请求参数
@@ -114,9 +145,16 @@ export interface AgentVersion {
   welcomeMessage: string
   modelConfig: ModelConfig
   tools: AgentTool[]
+  toolIds?: string[] // 工具ID列表
+  toolPresetParams?: {
+    [serverName: string]: {
+      [functionName: string]: {
+        [paramName: string]: string
+      }
+    }
+  } // 工具预设参数
   knowledgeBaseIds: string[]
   changeLog: string
-  agentType: number
   publishStatus: number // 1-审核中, 2-已发布, 3-拒绝, 4-已下架
   rejectReason: string | null
   reviewTime: string
@@ -125,12 +163,13 @@ export interface AgentVersion {
   createdAt: string
   updatedAt: string
   deletedAt: string | null
-  agentTypeText?: string
   publishStatusText?: string
   published?: boolean
   rejected?: boolean
   reviewing?: boolean
   removed?: boolean
+  addWorkspace?: boolean // 是否已添加到工作区
+  multiModal?: boolean // 多模态功能开关
 }
 
 // 发布状态枚举

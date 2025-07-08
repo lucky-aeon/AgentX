@@ -1,26 +1,24 @@
 package org.xhy.interfaces.dto.agent.request;
 
 import jakarta.validation.constraints.NotBlank;
-import org.xhy.domain.agent.model.AgentTool;
-import org.xhy.domain.agent.constant.AgentType;
 
 import java.util.List;
+import java.util.Map;
 
-/**
- * 创建Agent的请求对象
- */
+/** 创建Agent的请求对象 */
 public class CreateAgentRequest {
 
     @NotBlank(message = "助理名称不可为空")
     private String name;
     private String description;
     private String avatar;
-    private AgentType agentType = AgentType.CHAT_ASSISTANT;
+
     private String systemPrompt;
     private String welcomeMessage;
-    private List<AgentTool> tools;
+    private List<String> toolIds;
     private List<String> knowledgeBaseIds;
-
+    private Map<String, Map<String, Map<String, String>>> toolPresetParams;
+    private Boolean multiModal;
     // 构造方法
     public CreateAgentRequest() {
     }
@@ -49,14 +47,6 @@ public class CreateAgentRequest {
         this.avatar = avatar;
     }
 
-    public AgentType getAgentType() {
-        return agentType;
-    }
-
-    public void setAgentType(AgentType agentType) {
-        this.agentType = agentType;
-    }
-
     public String getSystemPrompt() {
         return systemPrompt;
     }
@@ -73,12 +63,12 @@ public class CreateAgentRequest {
         this.welcomeMessage = welcomeMessage;
     }
 
-    public List<AgentTool> getTools() {
-        return tools;
+    public List<String> getToolIds() {
+        return toolIds;
     }
 
-    public void setTools(List<AgentTool> tools) {
-        this.tools = tools;
+    public void setToolIds(List<String> toolIds) {
+        this.toolIds = toolIds;
     }
 
     public List<String> getKnowledgeBaseIds() {
@@ -87,5 +77,21 @@ public class CreateAgentRequest {
 
     public void setKnowledgeBaseIds(List<String> knowledgeBaseIds) {
         this.knowledgeBaseIds = knowledgeBaseIds;
+    }
+
+    public Map<String, Map<String, Map<String, String>>> getToolPresetParams() {
+        return toolPresetParams;
+    }
+
+    public void setToolPresetParams(Map<String, Map<String, Map<String, String>>> toolPresetParams) {
+        this.toolPresetParams = toolPresetParams;
+    }
+
+    public Boolean getMultiModal() {
+        return multiModal;
+    }
+
+    public void setMultiModal(Boolean multiModal) {
+        this.multiModal = multiModal;
     }
 }
