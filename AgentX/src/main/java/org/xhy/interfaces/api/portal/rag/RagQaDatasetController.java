@@ -1,4 +1,4 @@
-package org.xhy.interfaces.api.rag;
+package org.xhy.interfaces.api.portal.rag;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.validation.annotation.Validated;
@@ -16,7 +16,7 @@ import java.util.List;
  * @date 2024-12-09
  */
 @RestController
-@RequestMapping("/api/rag/datasets")
+@RequestMapping("/rag/datasets")
 public class RagQaDatasetController {
 
     private final RagQaDatasetAppService ragQaDatasetAppService;
