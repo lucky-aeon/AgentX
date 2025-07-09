@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
 import org.dromara.x.file.storage.core.FileInfo;
 import org.dromara.x.file.storage.core.FileStorageService;
@@ -44,7 +45,8 @@ public class FileDetailDomainService {
             throw new BusinessException("数据集ID不能为空");
         }
 
-        final FileInfo upload = fileStorageService.of(fileDetailEntity.getMultipartFile()).upload();
+        final FileInfo upload = fileStorageService.of(fileDetailEntity.getMultipartFile())
+                .setMetadata(Map.of("dataset",fileDetailEntity.getDataSetId(),"userid",fileDetailEntity.getUserId())).upload();
         
         // 设置文件基本信息
         fileDetailEntity.setId(upload.getId());
@@ -58,7 +60,7 @@ public class FileDetailDomainService {
         fileDetailEntity.setPlatform(upload.getPlatform());
         
         // 保存文件记录
-        fileDetailRepository.insert(fileDetailEntity);
+        //fileDetailRepository.insert(fileDetailEntity);
         return fileDetailEntity;
     }
 
@@ -68,7 +70,7 @@ public class FileDetailDomainService {
      * @param userId 用户ID
      * @return 文件详情实体
      */
-    public FileDetailEntity getFile(String fileId, Long userId) {
+    public FileDetailEntity getFile(String fileId, String userId) {
         LambdaQueryWrapper<FileDetailEntity> wrapper = Wrappers.<FileDetailEntity>lambdaQuery()
                 .eq(FileDetailEntity::getId, fileId)
                 .eq(FileDetailEntity::getUserId, userId);
@@ -85,7 +87,7 @@ public class FileDetailDomainService {
      * @param userId 用户ID
      * @return 文件详情实体或null
      */
-    public FileDetailEntity findFile(String fileId, Long userId) {
+    public FileDetailEntity findFile(String fileId, String userId) {
         LambdaQueryWrapper<FileDetailEntity> wrapper = Wrappers.<FileDetailEntity>lambdaQuery()
                 .eq(FileDetailEntity::getId, fileId)
                 .eq(FileDetailEntity::getUserId, userId);
@@ -98,7 +100,7 @@ public class FileDetailDomainService {
      * @param userId 用户ID
      * @return 是否存在
      */
-    public boolean existsFile(String fileId, Long userId) {
+    public boolean existsFile(String fileId, String userId) {
         LambdaQueryWrapper<FileDetailEntity> wrapper = Wrappers.<FileDetailEntity>lambdaQuery()
                 .eq(FileDetailEntity::getId, fileId)
                 .eq(FileDetailEntity::getUserId, userId);
@@ -110,7 +112,7 @@ public class FileDetailDomainService {
      * @param fileId 文件ID
      * @param userId 用户ID
      */
-    public void checkFileExists(String fileId, Long userId) {
+    public void checkFileExists(String fileId, String userId) {
         if (!existsFile(fileId, userId)) {
             throw new BusinessException("文件不存在");
         }
@@ -121,7 +123,7 @@ public class FileDetailDomainService {
      * @param fileId 文件ID
      * @param userId 用户ID
      */
-    public void deleteFile(String fileId, Long userId) {
+    public void deleteFile(String fileId, String userId) {
         // 获取文件信息
         FileDetailEntity file = getFile(fileId, userId);
         
@@ -160,7 +162,7 @@ public class FileDetailDomainService {
      * @param keyword 搜索关键词
      * @return 分页结果
      */
-    public IPage<FileDetailEntity> listFilesByDataset(String datasetId, Long userId, Integer page, Integer pageSize, String keyword) {
+    public IPage<FileDetailEntity> listFilesByDataset(String datasetId, String userId, Integer page, Integer pageSize, String keyword) {
         LambdaQueryWrapper<FileDetailEntity> wrapper = Wrappers.<FileDetailEntity>lambdaQuery()
                 .eq(FileDetailEntity::getDataSetId, datasetId)
                 .eq(FileDetailEntity::getUserId, userId);
@@ -183,7 +185,7 @@ public class FileDetailDomainService {
      * @param userId 用户ID
      * @return 文件列表
      */
-    public List<FileDetailEntity> listAllFilesByDataset(String datasetId, Long userId) {
+    public List<FileDetailEntity> listAllFilesByDataset(String datasetId, String userId) {
         LambdaQueryWrapper<FileDetailEntity> wrapper = Wrappers.<FileDetailEntity>lambdaQuery()
                 .eq(FileDetailEntity::getDataSetId, datasetId)
                 .eq(FileDetailEntity::getUserId, userId)
@@ -197,7 +199,7 @@ public class FileDetailDomainService {
      * @param userId 用户ID
      * @return 文件数量
      */
-    public long countFilesByDataset(String datasetId, Long userId) {
+    public long countFilesByDataset(String datasetId, String userId) {
         LambdaQueryWrapper<FileDetailEntity> wrapper = Wrappers.<FileDetailEntity>lambdaQuery()
                 .eq(FileDetailEntity::getDataSetId, datasetId)
                 .eq(FileDetailEntity::getUserId, userId);
@@ -209,7 +211,7 @@ public class FileDetailDomainService {
      * @param datasetId 数据集ID
      * @param userId 用户ID
      */
-    public void deleteAllFilesByDataset(String datasetId, Long userId) {
+    public void deleteAllFilesByDataset(String datasetId, String userId) {
         // 获取所有文件
         List<FileDetailEntity> files = listAllFilesByDataset(datasetId, userId);
         

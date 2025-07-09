@@ -58,7 +58,7 @@ public class RagQaDatasetAppService {
         
         // 获取更新后的实体
         RagQaDatasetEntity updatedEntity = ragQaDatasetDomainService.getDataset(datasetId, userId);
-        Long fileCount = fileDetailDomainService.countFilesByDataset(datasetId, Long.valueOf(userId));
+        Long fileCount = fileDetailDomainService.countFilesByDataset(datasetId, userId);
         return RagQaDatasetAssembler.toDTO(updatedEntity, fileCount);
     }
 
@@ -70,7 +70,7 @@ public class RagQaDatasetAppService {
     @Transactional
     public void deleteDataset(String datasetId, String userId) {
         // 先删除数据集下的所有文件
-        fileDetailDomainService.deleteAllFilesByDataset(datasetId, Long.valueOf(userId));
+        fileDetailDomainService.deleteAllFilesByDataset(datasetId, userId);
         
         // 再删除数据集
         ragQaDatasetDomainService.deleteDataset(datasetId, userId);
@@ -84,7 +84,7 @@ public class RagQaDatasetAppService {
      */
     public RagQaDatasetDTO getDataset(String datasetId, String userId) {
         RagQaDatasetEntity entity = ragQaDatasetDomainService.getDataset(datasetId, userId);
-        Long fileCount = fileDetailDomainService.countFilesByDataset(datasetId, Long.valueOf(userId));
+        Long fileCount = fileDetailDomainService.countFilesByDataset(datasetId, userId);
         return RagQaDatasetAssembler.toDTO(entity, fileCount);
     }
 
@@ -108,7 +108,7 @@ public class RagQaDatasetAppService {
         // 转换为DTO并添加文件数量
         List<RagQaDatasetDTO> dtoList = entityPage.getRecords().stream()
                 .map(entity -> {
-                    Long fileCount = fileDetailDomainService.countFilesByDataset(entity.getId(), Long.valueOf(userId));
+                    Long fileCount = fileDetailDomainService.countFilesByDataset(entity.getId(), userId);
                     return RagQaDatasetAssembler.toDTO(entity, fileCount);
                 })
                 .toList();
@@ -126,7 +126,7 @@ public class RagQaDatasetAppService {
         List<RagQaDatasetEntity> entities = ragQaDatasetDomainService.listAllDatasets(userId);
         return entities.stream()
                 .map(entity -> {
-                    Long fileCount = fileDetailDomainService.countFilesByDataset(entity.getId(), Long.valueOf(userId));
+                    Long fileCount = fileDetailDomainService.countFilesByDataset(entity.getId(), userId);
                     return RagQaDatasetAssembler.toDTO(entity, fileCount);
                 })
                 .toList();
@@ -144,7 +144,7 @@ public class RagQaDatasetAppService {
         ragQaDatasetDomainService.checkDatasetExists(request.getDatasetId(), userId);
         
         // 上传文件
-        FileDetailEntity entity = FileDetailAssembler.toEntity(request, Long.valueOf(userId));
+        FileDetailEntity entity = FileDetailAssembler.toEntity(request, userId);
         FileDetailEntity uploadedEntity = fileDetailDomainService.uploadFileToDataset(entity);
         return FileDetailAssembler.toDTO(uploadedEntity);
     }
@@ -161,7 +161,7 @@ public class RagQaDatasetAppService {
         ragQaDatasetDomainService.checkDatasetExists(datasetId, userId);
         
         // 删除文件
-        fileDetailDomainService.deleteFile(fileId, Long.valueOf(userId));
+        fileDetailDomainService.deleteFile(fileId, userId);
     }
 
     /**
@@ -176,7 +176,7 @@ public class RagQaDatasetAppService {
         ragQaDatasetDomainService.checkDatasetExists(datasetId, userId);
         
         IPage<FileDetailEntity> entityPage = fileDetailDomainService.listFilesByDataset(
-                datasetId, Long.valueOf(userId), request.getPage(), request.getPageSize(), request.getKeyword()
+                datasetId, userId, request.getPage(), request.getPageSize(), request.getKeyword()
         );
         
         Page<FileDetailDTO> dtoPage = new Page<>(
@@ -200,7 +200,7 @@ public class RagQaDatasetAppService {
         // 检查数据集是否存在
         ragQaDatasetDomainService.checkDatasetExists(datasetId, userId);
         
-        List<FileDetailEntity> entities = fileDetailDomainService.listAllFilesByDataset(datasetId, Long.valueOf(userId));
+        List<FileDetailEntity> entities = fileDetailDomainService.listAllFilesByDataset(datasetId, userId);
         return FileDetailAssembler.toDTOs(entities);
     }
 }

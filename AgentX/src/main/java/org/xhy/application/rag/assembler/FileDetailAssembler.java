@@ -22,7 +22,7 @@ public class FileDetailAssembler {
      * @param userId 用户ID
      * @return 文件实体
      */
-    public static FileDetailEntity toEntity(UploadFileRequest request, Long userId) {
+    public static FileDetailEntity toEntity(UploadFileRequest request, String userId) {
         if (request == null) {
             return null;
         }

@@ -67,7 +67,7 @@ public class FileDetailDTO {
     /**
      * 用户ID
      */
-    private Long userId;
+    private String userId;
 
     /**
      * 创建时间
@@ -167,11 +167,11 @@ public class FileDetailDTO {
         this.isEmbedding = isEmbedding;
     }
 
-    public Long getUserId() {
+    public String getUserId() {
         return userId;
     }
 
-    public void setUserId(Long userId) {
+    public void setUserId(String userId) {
         this.userId = userId;
     }
 

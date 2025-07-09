@@ -117,6 +117,7 @@ public class RagDocFileConfig implements FileRecorder {
                 info, FileDetailEntity.class, "metadata", "userMetadata", "thMetadata", "thUserMetadata", "attr", "hashInfo");
 
         detail.setDataSetId(info.getMetadata().get("dataset"));
+        detail.setUserId(info.getMetadata().get("userid"));
         // 这里手动获 元数据 并转成 json 字符串，方便存储在数据库中
         detail.setMetadata(valueToJson(info.getMetadata()));
         detail.setUserMetadata(valueToJson(info.getUserMetadata()));
