@@ -148,4 +148,51 @@ public class RagQaDatasetController {
         List<FileDetailDTO> files = ragQaDatasetAppService.listAllDatasetFiles(datasetId, userId);
         return Result.success(files);
     }
+
+    /**
+     * 启动文件预处理
+     * @param request 预处理请求
+     * @return 操作结果
+     */
+    @PostMapping("/files/process")
+    public Result<Void> processFile(@RequestBody @Validated ProcessFileRequest request) {
+        String userId = UserContext.getCurrentUserId();
+        ragQaDatasetAppService.processFile(request, userId);
+        return Result.success();
+    }
+
+    /**
+     * 获取文件处理进度
+     * @param fileId 文件ID
+     * @return 处理进度
+     */
+    @GetMapping("/files/{fileId}/progress")
+    public Result<FileProcessProgressDTO> getFileProgress(@PathVariable String fileId) {
+        String userId = UserContext.getCurrentUserId();
+        FileProcessProgressDTO progress = ragQaDatasetAppService.getFileProgress(fileId, userId);
+        return Result.success(progress);
+    }
+
+    /**
+     * 获取数据集文件处理进度列表
+     * @param datasetId 数据集ID
+     * @return 处理进度列表
+     */
+    @GetMapping("/{datasetId}/files/progress")
+    public Result<List<FileProcessProgressDTO>> getDatasetFilesProgress(@PathVariable String datasetId) {
+        String userId = UserContext.getCurrentUserId();
+        List<FileProcessProgressDTO> progressList = ragQaDatasetAppService.getDatasetFilesProgress(datasetId, userId);
+        return Result.success(progressList);
+    }
+
+    /** RAG搜索文档
+     * 
+     * @param request RAG搜索请求
+     * @return 搜索结果 */
+    @PostMapping("/search")
+    public Result<List<DocumentUnitDTO>> ragSearch(@RequestBody @Validated RagSearchRequest request) {
+        String userId = UserContext.getCurrentUserId();
+        List<DocumentUnitDTO> searchResults = ragQaDatasetAppService.ragSearch(request, userId);
+        return Result.success(searchResults);
+    }
 }

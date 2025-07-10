@@ -1,6 +1,5 @@
 package org.xhy.application.conversation.service.message.agent.handler;
 
-import dev.langchain4j.model.chat.ChatLanguageModel;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.request.ChatRequest;
 import dev.langchain4j.model.chat.response.ChatResponse;
@@ -15,13 +14,10 @@ import org.xhy.application.conversation.service.message.agent.workflow.AgentWork
 import org.xhy.application.conversation.service.message.agent.workflow.AgentWorkflowState;
 import org.xhy.domain.conversation.constant.MessageType;
 import org.xhy.domain.conversation.service.ContextDomainService;
-import org.xhy.domain.conversation.service.ConversationDomainService;
 import org.xhy.domain.conversation.service.MessageDomainService;
 import org.xhy.infrastructure.llm.LLMServiceFactory;
 import org.xhy.infrastructure.utils.ModelResponseToJsonUtils;
-
 import java.util.Collections;
-import java.util.List;
 
 
 /**

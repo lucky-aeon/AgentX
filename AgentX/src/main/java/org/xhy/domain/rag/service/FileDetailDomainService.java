@@ -26,7 +26,8 @@ public class FileDetailDomainService {
     private final FileStorageService fileStorageService;
     private final FileDetailRepository fileDetailRepository;
 
-    public FileDetailDomainService(FileStorageService fileStorageService, FileDetailRepository fileDetailRepository) {
+    public FileDetailDomainService(FileStorageService fileStorageService, 
+                                   FileDetailRepository fileDetailRepository) {
         this.fileStorageService = fileStorageService;
         this.fileDetailRepository = fileDetailRepository;
     }
@@ -254,5 +255,77 @@ public class FileDetailDomainService {
                 .eq(FileDetailEntity::getId, fileId)
                 .set(FileDetailEntity::getIsEmbedding, status);
         fileDetailRepository.update(wrapper);
+    }
+
+    /**
+     * 根据文件ID获取文件详情
+     * @param fileId 文件ID
+     * @param userId 用户ID
+     * @return 文件实体
+     */
+    public FileDetailEntity getFileById(String fileId, String userId) {
+        LambdaQueryWrapper<FileDetailEntity> wrapper = Wrappers.<FileDetailEntity>lambdaQuery()
+                .eq(FileDetailEntity::getId, fileId)
+                .eq(FileDetailEntity::getUserId, userId);
+        FileDetailEntity fileEntity = fileDetailRepository.selectOne(wrapper);
+        if (fileEntity == null) {
+            throw new BusinessException("文件不存在或无权限访问");
+        }
+        return fileEntity;
+    }
+
+    /**
+     * 更新文件处理进度
+     * @param fileId 文件ID
+     * @param currentPage 当前处理页数
+     * @param progress 进度百分比
+     */
+    public void updateFileProgress(String fileId, Integer currentPage, Double progress) {
+        LambdaUpdateWrapper<FileDetailEntity> wrapper = Wrappers.<FileDetailEntity>lambdaUpdate()
+                .eq(FileDetailEntity::getId, fileId)
+                .set(FileDetailEntity::getCurrentPageNumber, currentPage)
+                .set(FileDetailEntity::getProcessProgress, progress);
+        fileDetailRepository.update(wrapper);
+    }
+
+    /**
+     * 更新文件总页数
+     * @param fileId 文件ID
+     * @param totalPages 总页数
+     */
+    public void updateFilePageSize(String fileId, Integer totalPages) {
+        LambdaUpdateWrapper<FileDetailEntity> wrapper = Wrappers.<FileDetailEntity>lambdaUpdate()
+                .eq(FileDetailEntity::getId, fileId)
+                .set(FileDetailEntity::getFilePageSize, totalPages);
+        fileDetailRepository.update(wrapper);
+    }
+
+    /**
+     * 获取文件扩展名
+     * @param fileId 文件ID
+     * @return 文件扩展名
+     */
+    public String getFileExtension(String fileId) {
+        LambdaQueryWrapper<FileDetailEntity> wrapper = Wrappers.<FileDetailEntity>lambdaQuery()
+                .eq(FileDetailEntity::getId, fileId)
+                .select(FileDetailEntity::getExt);
+        FileDetailEntity fileEntity = fileDetailRepository.selectOne(wrapper);
+        if (fileEntity == null) {
+            throw new BusinessException("文件不存在");
+        }
+        return fileEntity.getExt();
+    }
+
+    /**
+     * 根据文件ID获取文件详情（无用户权限检查，用于MQ消费）
+     * @param fileId 文件ID
+     * @return 文件实体
+     */
+    public FileDetailEntity getFileByIdWithoutUserCheck(String fileId) {
+        FileDetailEntity fileEntity = fileDetailRepository.selectById(fileId);
+        if (fileEntity == null) {
+            throw new BusinessException("文件不存在");
+        }
+        return fileEntity;
     }
 }

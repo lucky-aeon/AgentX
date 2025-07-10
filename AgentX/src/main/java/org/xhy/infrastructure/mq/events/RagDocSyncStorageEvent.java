@@ -28,9 +28,9 @@ public class RagDocSyncStorageEvent<T> extends MQSendEventModel<T> {
         this.eventType = eventType;
     }
 //
-    public static final String EXCHANGE_NAME = "rag.doc.task.syncStorage.exchange";
-    public static final String QUEUE_NAME = "rag.doc.task.syncStorage.queue";
-    public static final String ROUTE_KEY = "rag.doc.task.syncStorage";
+    public static final String EXCHANGE_NAME = "rag.doc.task.syncStorage.exchange1";
+    public static final String QUEUE_NAME = "rag.doc.task.syncStorage.queue1";
+    public static final String ROUTE_KEY = "rag.doc.task.syncStorage1";
 
     @Override
     public String description() {
@@ -39,17 +39,17 @@ public class RagDocSyncStorageEvent<T> extends MQSendEventModel<T> {
 
     @Override
     public String exchangeName() {
-        return "rag.doc.task.syncStorage.exchange";
+        return "rag.doc.task.syncStorage.exchange1";
     }
 
     @Override
     public String queueName() {
-        return "rag.doc.task.syncStorage.queue";
+        return "rag.doc.task.syncStorage.queue1";
     }
 
     @Override
     public String routeKey() {
-        return "rag.doc.task.syncStorage";
+        return "rag.doc.task.syncStorage1";
     }
 
     @Override

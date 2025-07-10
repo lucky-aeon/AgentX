@@ -1,7 +1,6 @@
 package org.xhy.application.conversation.service.message.agent.handler;
 
 import dev.langchain4j.data.message.AiMessage;
-import dev.langchain4j.model.chat.ChatLanguageModel;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.service.AiServices;
 import dev.langchain4j.service.tool.ToolProvider;
@@ -17,7 +16,6 @@ import org.xhy.application.conversation.service.message.agent.workflow.AgentWork
 import org.xhy.domain.conversation.constant.MessageType;
 import org.xhy.domain.conversation.model.MessageEntity;
 import org.xhy.domain.conversation.service.ContextDomainService;
-import org.xhy.domain.conversation.service.ConversationDomainService;
 import org.xhy.domain.conversation.service.MessageDomainService;
 import org.xhy.domain.task.constant.TaskStatus;
 import org.xhy.domain.task.model.TaskEntity;

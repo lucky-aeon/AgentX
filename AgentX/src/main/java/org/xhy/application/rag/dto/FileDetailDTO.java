@@ -65,6 +65,16 @@ public class FileDetailDTO {
     private Integer isEmbedding;
 
     /**
+     * 当前处理页数
+     */
+    private Integer currentPageNumber;
+
+    /**
+     * 处理进度百分比
+     */
+    private Double processProgress;
+
+    /**
      * 用户ID
      */
     private String userId;
@@ -165,6 +175,22 @@ public class FileDetailDTO {
 
     public void setIsEmbedding(Integer isEmbedding) {
         this.isEmbedding = isEmbedding;
+    }
+
+    public Integer getCurrentPageNumber() {
+        return currentPageNumber;
+    }
+
+    public void setCurrentPageNumber(Integer currentPageNumber) {
+        this.currentPageNumber = currentPageNumber;
+    }
+
+    public Double getProcessProgress() {
+        return processProgress;
+    }
+
+    public void setProcessProgress(Double processProgress) {
+        this.processProgress = processProgress;
     }
 
     public String getUserId() {

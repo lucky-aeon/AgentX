@@ -4,7 +4,6 @@ import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.message.UserMessage;
-import dev.langchain4j.model.chat.StreamingChatLanguageModel;
 import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.model.chat.request.ChatRequest;
 import dev.langchain4j.model.chat.response.ChatResponse;
@@ -25,7 +24,6 @@ import org.xhy.domain.conversation.model.MessageEntity;
 import org.xhy.domain.conversation.service.MessageDomainService;
 import org.xhy.domain.task.model.TaskEntity;
 import org.xhy.domain.conversation.service.ContextDomainService;
-import org.xhy.domain.conversation.service.ConversationDomainService;
 import org.xhy.infrastructure.llm.LLMServiceFactory;
 
 import java.util.ArrayList;

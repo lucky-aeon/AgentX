@@ -38,6 +38,11 @@ public class RagDocSyncStorageMessage implements Serializable {
 
     private String fileName;
 
+    /**
+     * 数据集ID
+     */
+    private String datasetId;
+
     public String getId() {
         return id;
     }
@@ -84,5 +89,13 @@ public class RagDocSyncStorageMessage implements Serializable {
 
     public void setFileName(String fileName) {
         this.fileName = fileName;
+    }
+
+    public String getDatasetId() {
+        return datasetId;
+    }
+
+    public void setDatasetId(String datasetId) {
+        this.datasetId = datasetId;
     }
 }

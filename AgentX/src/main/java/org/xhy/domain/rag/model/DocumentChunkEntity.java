@@ -1,5 +1,7 @@
 package org.xhy.domain.rag.model;
 
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
 import java.io.Serial;
 import java.io.Serializable;
 
@@ -18,6 +20,7 @@ public class DocumentChunkEntity extends BaseEntity implements Serializable {
     /**
      * id
      */
+    @TableId(type = IdType.ASSIGN_UUID)
     private String embeddingId;
 
     /**

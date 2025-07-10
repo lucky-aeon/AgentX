@@ -45,7 +45,7 @@ public class RerankDomainService {
         final HttpRequest build = HttpRequest.builder()
                 .addHeader("accept", "application/json")
                 .addHeader("Content-Type", "application/json; charset=utf-8")
-                .addHeader("Authorization", rerankProperties.getApiKey())
+                .addHeader("Authorization", "Bearer " + rerankProperties.getApiKey())
                 .method(HttpMethod.POST)
                 .url(rerankProperties.getApiUrl())
                 .body(JSONObject.toJSONString(rerankRequest)).build();

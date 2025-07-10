@@ -1,16 +1,30 @@
 package org.xhy.application.rag.service;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.xhy.application.rag.assembler.DocumentUnitAssembler;
 import org.xhy.application.rag.assembler.FileDetailAssembler;
 import org.xhy.application.rag.assembler.RagQaDatasetAssembler;
 import org.xhy.application.rag.dto.*;
+import org.xhy.domain.rag.constant.FileInitializeStatus;
+import org.xhy.domain.rag.constant.EmbeddingStatus;
+import org.xhy.domain.rag.message.RagDocSyncOcrMessage;
+import org.xhy.domain.rag.message.RagDocSyncStorageMessage;
+import org.xhy.domain.rag.model.DocumentUnitEntity;
 import org.xhy.domain.rag.model.FileDetailEntity;
 import org.xhy.domain.rag.model.RagQaDatasetEntity;
+import org.xhy.domain.rag.repository.DocumentUnitRepository;
+import org.xhy.domain.rag.service.EmbeddingDomainService;
 import org.xhy.domain.rag.service.FileDetailDomainService;
 import org.xhy.domain.rag.service.RagQaDatasetDomainService;
+import org.xhy.infrastructure.mq.enums.EventType;
+import org.xhy.infrastructure.mq.events.RagDocSyncOcrEvent;
+import org.xhy.infrastructure.mq.events.RagDocSyncStorageEvent;
 
 import java.util.List;
 
@@ -24,11 +38,20 @@ public class RagQaDatasetAppService {
 
     private final RagQaDatasetDomainService ragQaDatasetDomainService;
     private final FileDetailDomainService fileDetailDomainService;
+    private final DocumentUnitRepository documentUnitRepository;
+    private final ApplicationEventPublisher applicationEventPublisher;
+    private final EmbeddingDomainService embeddingDomainService;
 
     public RagQaDatasetAppService(RagQaDatasetDomainService ragQaDatasetDomainService,
-                                  FileDetailDomainService fileDetailDomainService) {
+                                  FileDetailDomainService fileDetailDomainService,
+                                  DocumentUnitRepository documentUnitRepository,
+                                  ApplicationEventPublisher applicationEventPublisher,
+                                  EmbeddingDomainService embeddingDomainService) {
         this.ragQaDatasetDomainService = ragQaDatasetDomainService;
         this.fileDetailDomainService = fileDetailDomainService;
+        this.documentUnitRepository = documentUnitRepository;
+        this.applicationEventPublisher = applicationEventPublisher;
+        this.embeddingDomainService = embeddingDomainService;
     }
 
     /**
@@ -202,5 +225,164 @@ public class RagQaDatasetAppService {
         
         List<FileDetailEntity> entities = fileDetailDomainService.listAllFilesByDataset(datasetId, userId);
         return FileDetailAssembler.toDTOs(entities);
+    }
+
+    /**
+     * 启动文件预处理
+     * @param request 预处理请求
+     * @param userId 用户ID
+     */
+    @Transactional
+    public void processFile(ProcessFileRequest request, String userId) {
+        // 检查数据集是否存在
+        ragQaDatasetDomainService.checkDatasetExists(request.getDatasetId(), userId);
+        
+        // 验证文件存在性和权限
+        FileDetailEntity fileEntity = fileDetailDomainService.getFileById(request.getFileId(), userId);
+        
+        if (request.getProcessType() == 1) {
+            // OCR预处理
+            fileDetailDomainService.updateFileInitializeStatus(request.getFileId(), FileInitializeStatus.INITIALIZING);
+            fileDetailDomainService.updateFileProgress(request.getFileId(), 0, 0.0);
+            
+            // 发送OCR处理MQ消息
+            RagDocSyncOcrMessage ocrMessage = new RagDocSyncOcrMessage();
+            ocrMessage.setFileId(request.getFileId());
+            ocrMessage.setPageSize(fileEntity.getFilePageSize());
+            
+            RagDocSyncOcrEvent<RagDocSyncOcrMessage> ocrEvent = new RagDocSyncOcrEvent<>(ocrMessage, EventType.DOC_REFRESH_ORG);
+            ocrEvent.setDescription("文件OCR预处理任务");
+            applicationEventPublisher.publishEvent(ocrEvent);
+            
+        } else if (request.getProcessType() == 2) {
+            // 向量化处理
+            if (!fileEntity.getIsInitialize().equals(FileInitializeStatus.INITIALIZED)) {
+                throw new IllegalStateException("文件需要先完成初始化才能进行向量化");
+            }
+
+            fileDetailDomainService.updateFileEmbeddingStatus(request.getFileId(), EmbeddingStatus.INITIALIZING);
+            fileDetailDomainService.updateFileProgress(request.getFileId(), 0, 0.0);
+
+            List<DocumentUnitEntity> documentUnits = documentUnitRepository.selectList(Wrappers.lambdaQuery(
+                    DocumentUnitEntity.class).eq(DocumentUnitEntity::getFileId, request.getFileId())
+                    .eq(DocumentUnitEntity::getIsOcr, true)
+                    .eq(DocumentUnitEntity::getIsVector, false));
+            
+            if (documentUnits.isEmpty()) {
+                throw new IllegalStateException("文件没有找到可用于向量化的语料数据");
+            }
+            
+            // 为每个DocumentUnit发送单独的向量化MQ消息
+            for (DocumentUnitEntity documentUnit : documentUnits) {
+                RagDocSyncStorageMessage storageMessage = new RagDocSyncStorageMessage();
+                storageMessage.setId(documentUnit.getId());
+                storageMessage.setFileId(request.getFileId());
+                storageMessage.setFileName(fileEntity.getOriginalFilename());
+                storageMessage.setPage(documentUnit.getPage());
+                storageMessage.setContent(documentUnit.getContent());
+                storageMessage.setVector(true);
+                storageMessage.setDatasetId(request.getDatasetId());  // 设置数据集ID
+                
+                RagDocSyncStorageEvent<RagDocSyncStorageMessage> storageEvent = new RagDocSyncStorageEvent<>(storageMessage, EventType.DOC_SYNC_RAG);
+                storageEvent.setDescription("文件向量化处理任务 - 页面 " + documentUnit.getPage());
+                applicationEventPublisher.publishEvent(storageEvent);
+            }
+            
+        } else {
+            throw new IllegalArgumentException("不支持的处理类型: " + request.getProcessType());
+        }
+    }
+
+    /**
+     * 获取文件处理进度
+     * @param fileId 文件ID
+     * @param userId 用户ID
+     * @return 处理进度
+     */
+    public FileProcessProgressDTO getFileProgress(String fileId, String userId) {
+        FileDetailEntity fileEntity = fileDetailDomainService.getFileById(fileId, userId);
+        return buildFileProgressDTO(fileEntity);
+    }
+
+    /**
+     * 获取数据集文件处理进度列表
+     * @param datasetId 数据集ID
+     * @param userId 用户ID
+     * @return 处理进度列表
+     */
+    public List<FileProcessProgressDTO> getDatasetFilesProgress(String datasetId, String userId) {
+        // 检查数据集是否存在
+        ragQaDatasetDomainService.checkDatasetExists(datasetId, userId);
+        
+        List<FileDetailEntity> entities = fileDetailDomainService.listAllFilesByDataset(datasetId, userId);
+        return entities.stream()
+                .map(this::buildFileProgressDTO)
+                .toList();
+    }
+
+    /**
+     * 构建文件处理进度DTO
+     * @param entity 文件实体
+     * @return 处理进度DTO
+     */
+    private FileProcessProgressDTO buildFileProgressDTO(FileDetailEntity entity) {
+        FileProcessProgressDTO dto = new FileProcessProgressDTO();
+        dto.setFileId(entity.getId());
+        dto.setFilename(entity.getOriginalFilename());
+        dto.setIsInitialize(entity.getIsInitialize());
+        dto.setIsEmbedding(entity.getIsEmbedding());
+        dto.setCurrentPageNumber(entity.getCurrentPageNumber() != null ? entity.getCurrentPageNumber() : 0);
+        dto.setFilePageSize(entity.getFilePageSize() != null ? entity.getFilePageSize() : 0);
+        dto.setProcessProgress(entity.getProcessProgress() != null ? entity.getProcessProgress() : 0.0);
+        dto.setStatusDescription(getStatusDescription(entity));
+        return dto;
+    }
+
+    /**
+     * 获取状态描述
+     * @param entity 文件实体
+     * @return 状态描述
+     */
+    private String getStatusDescription(FileDetailEntity entity) {
+        Integer initStatus = entity.getIsInitialize();
+        Integer embeddingStatus = entity.getIsEmbedding();
+        
+        if (initStatus == null || initStatus == 0) {
+            return "待初始化";
+        } else if (initStatus == 1) {
+            return "初始化中";
+        } else if (initStatus == 3) {
+            return "初始化失败";
+        } else if (initStatus == 2) {
+            if (embeddingStatus == null || embeddingStatus == 0) {
+                return "初始化完成，待向量化";
+            } else if (embeddingStatus == 1) {
+                return "向量化中";
+            } else if (embeddingStatus == 3) {
+                return "向量化失败";
+            } else if (embeddingStatus == 2) {
+                return "处理完成";
+            }
+        }
+        return "未知状态";
+    }
+
+    /**
+     * RAG搜索文档
+     * @param request 搜索请求
+     * @param userId 用户ID
+     * @return 搜索结果
+     */
+    public List<DocumentUnitDTO> ragSearch(RagSearchRequest request, String userId) {
+        // 验证数据集权限 - 检查用户是否有这些数据集的访问权限
+        for (String datasetId : request.getDatasetIds()) {
+            ragQaDatasetDomainService.checkDatasetExists(datasetId, userId);
+        }
+        
+        // 调用领域服务进行RAG搜索
+        List<DocumentUnitEntity> entities = embeddingDomainService.ragDoc(request.getDatasetIds(), request.getQuestion(), request.getMaxResults());
+        
+        // 转换为DTO并返回
+        return DocumentUnitAssembler.toDTOs(entities);
     }
 }

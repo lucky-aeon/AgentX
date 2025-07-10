@@ -81,10 +81,8 @@ public class WORDRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl imp
             return new byte[0];
         }
 
-        // 转换为FileInfo并下载文件
-        FileInfo fileInfo = BeanHelper.copyProperties(fileDetailEntity, FileInfo.class);
-        log.info("Preparing to download Word document: {}", fileInfo.getFilename());
-        return fileStorageService.download(fileInfo).bytes();
+        log.info("Preparing to download Word document: {}", fileDetailEntity.getFilename());
+        return fileStorageService.download(fileDetailEntity.getUrl()).bytes();
     }
 
     /**
@@ -152,11 +150,11 @@ public class WORDRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl imp
             documentUnitEntity.setContent(content);
             documentUnitEntity.setPage(pageIndex);
             documentUnitEntity.setFileId(ragDocSyncOcrMessage.getFileId());
-            documentUnitEntity.setVector(false);
-            documentUnitEntity.setOcr(true);
+            documentUnitEntity.setIsVector(false);
+            documentUnitEntity.setIsOcr(true);
             
             if (content == null) {
-                documentUnitEntity.setOcr(false);
+                documentUnitEntity.setIsOcr(false);
                 log.warn("第{}页内容为空", pageIndex + 1);
             }
             

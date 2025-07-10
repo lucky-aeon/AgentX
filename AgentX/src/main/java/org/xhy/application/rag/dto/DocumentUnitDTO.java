@@ -1,62 +1,51 @@
-package org.xhy.domain.rag.model;
-
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableId;
-import java.io.Serial;
-import java.io.Serializable;
-
-import org.xhy.infrastructure.entity.BaseEntity;
-
-import com.baomidou.mybatisplus.annotation.TableName;
+package org.xhy.application.rag.dto;
 
 /**
+ * 文档单元响应DTO
+ * 
  * @author shilong.zang
- * @date 20:24 <br/>
  */
-@TableName("document_unit")
-public class DocumentUnitEntity extends BaseEntity implements Serializable {
-
-    @Serial
-    private static final long serialVersionUID = 7001509997040094844L;
-
+public class DocumentUnitDTO {
+    
     /**
      * 主键
      */
-    @TableId(type = IdType.ASSIGN_UUID)
     private String id;
-
+    
     /**
-     * 文档ID
+     * 文件ID
      */
     private String fileId;
-
+    
     /**
      * 页码
      */
     private Integer page;
-
+    
     /**
-     * 当前页内容
+     * 内容
      */
     private String content;
-
+    
     /**
-     * 是否进行向量化
-     */
-    private Boolean isVector;
-
-    /**
-     * ocr识别状态
+     * 是否OCR处理
      */
     private Boolean isOcr;
-
-    public Boolean getIsOcr() {
-        return isOcr;
-    }
-
-    public void setIsOcr(Boolean isOcr) {
-        this.isOcr = isOcr;
-    }
+    
+    /**
+     * 是否向量化
+     */
+    private Boolean isVector;
+    
+    /**
+     * 创建时间
+     */
+    private String createdAt;
+    
+    /**
+     * 更新时间
+     */
+    private String updatedAt;
 
     public String getId() {
         return id;
@@ -90,11 +79,35 @@ public class DocumentUnitEntity extends BaseEntity implements Serializable {
         this.content = content;
     }
 
+    public Boolean getIsOcr() {
+        return isOcr;
+    }
+
+    public void setIsOcr(Boolean isOcr) {
+        this.isOcr = isOcr;
+    }
+
     public Boolean getIsVector() {
         return isVector;
     }
 
     public void setIsVector(Boolean isVector) {
         this.isVector = isVector;
+    }
+
+    public String getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(String createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public String getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(String updatedAt) {
+        this.updatedAt = updatedAt;
     }
 }

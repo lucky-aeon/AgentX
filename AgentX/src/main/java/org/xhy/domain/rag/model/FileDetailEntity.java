@@ -181,6 +181,16 @@ public class FileDetailEntity extends BaseEntity implements Serializable {
      */
     private Integer isEmbedding;
 
+    /**
+     * 当前处理页数
+     */
+    private Integer currentPageNumber;
+
+    /**
+     * 处理进度百分比
+     */
+    private Double processProgress;
+
     @TableField(exist = false)
     private MultipartFile multipartFile;
 
@@ -440,17 +450,33 @@ public class FileDetailEntity extends BaseEntity implements Serializable {
         this.isEmbedding = isEmbedding;
     }
 
+    public Integer getCurrentPageNumber() {
+        return currentPageNumber;
+    }
+
+    public void setCurrentPageNumber(Integer currentPageNumber) {
+        this.currentPageNumber = currentPageNumber;
+    }
+
+    public Double getProcessProgress() {
+        return processProgress;
+    }
+
+    public void setProcessProgress(Double processProgress) {
+        this.processProgress = processProgress;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
         FileDetailEntity that = (FileDetailEntity) o;
-        return Objects.equals(id, that.id) && Objects.equals(url, that.url) && Objects.equals(size, that.size) && Objects.equals(filename, that.filename) && Objects.equals(originalFilename, that.originalFilename) && Objects.equals(basePath, that.basePath) && Objects.equals(path, that.path) && Objects.equals(ext, that.ext) && Objects.equals(contentType, that.contentType) && Objects.equals(platform, that.platform) && Objects.equals(thUrl, that.thUrl) && Objects.equals(thFilename, that.thFilename) && Objects.equals(thSize, that.thSize) && Objects.equals(thContentType, that.thContentType) && Objects.equals(objectId, that.objectId) && Objects.equals(objectType, that.objectType) && Objects.equals(metadata, that.metadata) && Objects.equals(userMetadata, that.userMetadata) && Objects.equals(thMetadata, that.thMetadata) && Objects.equals(thUserMetadata, that.thUserMetadata) && Objects.equals(attr, that.attr) && Objects.equals(fileAcl, that.fileAcl) && Objects.equals(thFileAcl, that.thFileAcl) && Objects.equals(hashInfo, that.hashInfo) && Objects.equals(uploadId, that.uploadId) && Objects.equals(uploadStatus, that.uploadStatus) && Objects.equals(userId, that.userId) && Objects.equals(dataSetId, that.dataSetId) && Objects.equals(filePageSize, that.filePageSize) && Objects.equals(isInitialize, that.isInitialize) && Objects.equals(isEmbedding, that.isEmbedding);
+        return Objects.equals(id, that.id) && Objects.equals(url, that.url) && Objects.equals(size, that.size) && Objects.equals(filename, that.filename) && Objects.equals(originalFilename, that.originalFilename) && Objects.equals(basePath, that.basePath) && Objects.equals(path, that.path) && Objects.equals(ext, that.ext) && Objects.equals(contentType, that.contentType) && Objects.equals(platform, that.platform) && Objects.equals(thUrl, that.thUrl) && Objects.equals(thFilename, that.thFilename) && Objects.equals(thSize, that.thSize) && Objects.equals(thContentType, that.thContentType) && Objects.equals(objectId, that.objectId) && Objects.equals(objectType, that.objectType) && Objects.equals(metadata, that.metadata) && Objects.equals(userMetadata, that.userMetadata) && Objects.equals(thMetadata, that.thMetadata) && Objects.equals(thUserMetadata, that.thUserMetadata) && Objects.equals(attr, that.attr) && Objects.equals(fileAcl, that.fileAcl) && Objects.equals(thFileAcl, that.thFileAcl) && Objects.equals(hashInfo, that.hashInfo) && Objects.equals(uploadId, that.uploadId) && Objects.equals(uploadStatus, that.uploadStatus) && Objects.equals(userId, that.userId) && Objects.equals(dataSetId, that.dataSetId) && Objects.equals(filePageSize, that.filePageSize) && Objects.equals(isInitialize, that.isInitialize) && Objects.equals(isEmbedding, that.isEmbedding) && Objects.equals(currentPageNumber, that.currentPageNumber) && Objects.equals(processProgress, that.processProgress);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, url, size, filename, originalFilename, basePath, path, ext, contentType, platform, thUrl, thFilename, thSize, thContentType, objectId, objectType, metadata, userMetadata, thMetadata, thUserMetadata, attr, fileAcl, thFileAcl, hashInfo, uploadId, uploadStatus, userId, dataSetId, filePageSize, isInitialize, isEmbedding);
+        return Objects.hash(id, url, size, filename, originalFilename, basePath, path, ext, contentType, platform, thUrl, thFilename, thSize, thContentType, objectId, objectType, metadata, userMetadata, thMetadata, thUserMetadata, attr, fileAcl, thFileAcl, hashInfo, uploadId, uploadStatus, userId, dataSetId, filePageSize, isInitialize, isEmbedding, currentPageNumber, processProgress);
     }
 }

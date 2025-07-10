@@ -74,14 +74,15 @@ public class EmbeddingDomainService implements MetadataConstant {
     /**
      * @param dataSetId 知识库ids
      * @param question 内容
+     * @param maxResults 最大返回结果数量
      * @return List<Document> 文档列表
      */
-    public List<DocumentUnitEntity> ragDoc(List<String> dataSetId, String question) {
+    public List<DocumentUnitEntity> ragDoc(List<String> dataSetId, String question, Integer maxResults) {
         // todo xhy valid  question dataSetId
         final EmbeddingSearchResult<TextSegment> textSegmentList = embeddingStore.search(
                 EmbeddingSearchRequest.builder()
                         .filter(new IsIn(DATA_SET_ID, dataSetId))
-                        .maxResults(15)
+                        .maxResults(maxResults != null ? maxResults : 15)
                         .queryEmbedding(Embedding.from(openAiEmbeddingModel.embed(question).content().vector()))
                         .build());
 
@@ -207,21 +208,21 @@ public class EmbeddingDomainService implements MetadataConstant {
 
         final TextSegment textSegment = new TextSegment(content, documentMetadata);
 
-        // 生成嵌入向量
+        // 生成嵌入向量并保存TextSegment（包含content和metadata）
         Embedding embeddings = openAiEmbeddingModel.embed(textSegment).content();
 
-        embeddingStore.add(embeddings);
+        embeddingStore.add(embeddings, textSegment);
 
         documentUnitRepository.update(
                 Wrappers.lambdaUpdate(DocumentUnitEntity.class).eq(DocumentUnitEntity::getId, docId)
-                        .set(DocumentUnitEntity::getVector, true));
+                        .set(DocumentUnitEntity::getIsVector, true));
 
         // 修改文件状态
         final Integer pageSize = fileDetailEntity.getFilePageSize();
 
         final Long isVector = documentUnitRepository.selectCount(Wrappers.lambdaQuery(DocumentUnitEntity.class)
                 .eq(DocumentUnitEntity::getFileId, documentUnitEntity.getFileId())
-                .eq(DocumentUnitEntity::getVector, true));
+                .eq(DocumentUnitEntity::getIsVector, true));
 
         final Integer anInt = Convert.toInt(isVector);
 
@@ -239,6 +240,7 @@ public class EmbeddingDomainService implements MetadataConstant {
         metadata.put(FILE_ID, ragDocSyncStorageMessage.getFileId());
         metadata.put(FILE_NAME, ragDocSyncStorageMessage.getFileName());
         metadata.put(DOCUMENT_ID, ragDocSyncStorageMessage.getId());
+        metadata.put(DATA_SET_ID, ragDocSyncStorageMessage.getDatasetId());
         return metadata;
     }
 }

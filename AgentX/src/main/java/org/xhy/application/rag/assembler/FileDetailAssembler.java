@@ -44,6 +44,15 @@ public class FileDetailAssembler {
         }
         FileDetailDTO dto = new FileDetailDTO();
         BeanUtils.copyProperties(entity, dto);
+        
+        // 确保进度字段的正确转换
+        if (entity.getCurrentPageNumber() != null) {
+            dto.setCurrentPageNumber(entity.getCurrentPageNumber());
+        }
+        if (entity.getProcessProgress() != null) {
+            dto.setProcessProgress(entity.getProcessProgress());
+        }
+        
         return dto;
     }
 

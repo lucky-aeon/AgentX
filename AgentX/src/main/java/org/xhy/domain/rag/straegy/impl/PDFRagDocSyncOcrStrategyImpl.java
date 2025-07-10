@@ -6,6 +6,8 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import dev.langchain4j.model.chat.ChatModel;
 import org.dromara.streamquery.stream.core.bean.BeanHelper;
 import org.dromara.x.file.storage.core.FileInfo;
@@ -20,6 +22,7 @@ import org.xhy.domain.rag.model.FileDetailEntity;
 import org.xhy.domain.rag.repository.DocumentUnitRepository;
 import org.xhy.domain.rag.repository.FileDetailRepository;
 import org.xhy.infrastructure.llm.LLMProviderService;
+import org.xhy.infrastructure.llm.config.ProviderConfig;
 import org.xhy.infrastructure.llm.protocol.enums.ProviderProtocol;
 import org.xhy.infrastructure.rag.detector.TikaFileTypeDetector;
 import org.xhy.infrastructure.rag.utils.PdfToBase64Converter;
@@ -28,7 +31,6 @@ import cn.hutool.core.codec.Base64;
 import dev.langchain4j.data.message.ImageContent;
 import dev.langchain4j.data.message.TextContent;
 import dev.langchain4j.data.message.UserMessage;
-import dev.langchain4j.model.chat.ChatLanguageModel;
 import dev.langchain4j.model.chat.response.ChatResponse;
 import jakarta.annotation.Resource;
 
@@ -49,9 +51,26 @@ public class PDFRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl impl
     @Resource
     private FileStorageService fileStorageService;
 
+    // 用于存储当前处理的文件ID，以便更新进度
+    private String currentProcessingFileId;
+
     public PDFRagDocSyncOcrStrategyImpl(DocumentUnitRepository documentUnitRepository, FileDetailRepository fileDetailRepository) {
         this.documentUnitRepository = documentUnitRepository;
         this.fileDetailRepository = fileDetailRepository;
+    }
+
+    /**
+     * 处理消息，增加进度更新功能
+     * @param ragDocSyncOcrMessage 消息数据
+     * @param strategy 当前策略
+     */
+    @Override
+    public void handle(RagDocSyncOcrMessage ragDocSyncOcrMessage, String strategy) throws Exception {
+        // 设置当前处理的文件ID，用于进度更新
+        this.currentProcessingFileId = ragDocSyncOcrMessage.getFileId();
+        
+        // 调用父类处理逻辑
+        super.handle(ragDocSyncOcrMessage, strategy);
     }
 
     /**
@@ -64,6 +83,16 @@ public class PDFRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl impl
         try {
             final int pdfPageCount = PdfToBase64Converter.getPdfPageCount(bytes);
             ragDocSyncOcrMessage.setPageSize(pdfPageCount);
+            
+            // 更新数据库中的总页数
+            if (currentProcessingFileId != null) {
+                LambdaUpdateWrapper<FileDetailEntity> wrapper = Wrappers.<FileDetailEntity>lambdaUpdate()
+                        .eq(FileDetailEntity::getId, currentProcessingFileId)
+                        .set(FileDetailEntity::getFilePageSize, pdfPageCount);
+                fileDetailRepository.update(wrapper);
+                
+                log.info("Updated total pages for file {}: {} pages", currentProcessingFileId, pdfPageCount);
+            }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -81,9 +110,7 @@ public class PDFRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl impl
 
         final FileDetailEntity fileDetailEntity = fileDetailRepository.selectById(ragDocSyncOcrMessage.getFileId());
 
-        final FileInfo fileInfo = BeanHelper.copyProperties(fileDetailEntity, FileInfo.class);
-
-        return fileStorageService.download(fileInfo).bytes();
+        return fileStorageService.download(fileDetailEntity.getUrl()).bytes();
     }
 
     /**
@@ -104,11 +131,25 @@ public class PDFRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl impl
                 );
 
 
-                ChatModel ocrModel = LLMProviderService.getStrand(ProviderProtocol.OPENAI, null);
+                /**
+                 * 创建OCR处理的默认配置
+                 * TODO: 这里应该从系统配置中获取OCR专用的模型配置
+                 */
+                ProviderConfig ocrProviderConfig = new ProviderConfig(
+                    "sk-cxdmubeuwhayavsalqgmkrljfplhharyrociewxaikfmqkwm",
+                    "https://api.siliconflow.cn/v1",
+                    "Qwen/Qwen2.5-VL-72B-Instruct",
+                    ProviderProtocol.OPENAI
+                );
+                
+                ChatModel ocrModel = LLMProviderService.getStrand(ProviderProtocol.OPENAI, ocrProviderConfig);
 
                 final ChatResponse chat = ocrModel.chat(userMessage);
 
                 ocrData.put(pageIndex, processText(chat.aiMessage().text()));
+
+                // 实时更新处理进度
+                updateProcessProgress(pageIndex + 1, totalPages);
 
                 log.info("Processing request page {}/{}, current memory usage: {} MB",
                         (pageIndex + 1),
@@ -154,11 +195,11 @@ public class PDFRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl impl
             documentUnitDO.setContent(content);
             documentUnitDO.setPage(pageIndex);
             documentUnitDO.setFileId(ragDocSyncOcrMessage.getFileId());
-            documentUnitDO.setVector(false);
-            documentUnitDO.setOcr(true);
+            documentUnitDO.setIsVector(false);
+            documentUnitDO.setIsOcr(true);
 
             if (content == null) {
-                documentUnitDO.setOcr(false);
+                documentUnitDO.setIsOcr(false);
             }
 
             documentUnitRepository.checkInsert(documentUnitDO);
@@ -186,5 +227,32 @@ public class PDFRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl impl
         result = PATTERNS[5].matcher(result).replaceAll(Matcher.quoteReplacement("$"));
         result = PATTERNS[6].matcher(result).replaceAll(Matcher.quoteReplacement("$$"));
         return result.trim();
+    }
+
+    /**
+     * 更新处理进度
+     * @param currentPage 当前页数
+     * @param totalPages 总页数
+     */
+    private void updateProcessProgress(int currentPage, int totalPages) {
+        if (currentProcessingFileId == null) {
+            return;
+        }
+        
+        try {
+            double progress = (double) currentPage / totalPages * 100.0;
+            
+            LambdaUpdateWrapper<FileDetailEntity> wrapper = Wrappers.<FileDetailEntity>lambdaUpdate()
+                    .eq(FileDetailEntity::getId, currentProcessingFileId)
+                    .set(FileDetailEntity::getCurrentPageNumber, currentPage)
+                    .set(FileDetailEntity::getProcessProgress, progress);
+            
+            fileDetailRepository.update(wrapper);
+            
+            log.debug("Updated progress for file {}: {}/{} pages ({}%)", 
+                     currentProcessingFileId, currentPage, totalPages, String.format("%.1f", progress));
+        } catch (Exception e) {
+            log.warn("Failed to update progress for file {}: {}", currentProcessingFileId, e.getMessage());
+        }
     }
 }

@@ -78,9 +78,8 @@ public class TXTRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl{
         }
 
         // 转换为FileInfo并下载文件
-        FileInfo fileInfo = BeanHelper.copyProperties(fileDetailEntity, FileInfo.class);
-        log.info("Preparing to download TXT document: {}", fileInfo.getFilename());
-        return fileStorageService.download(fileInfo).bytes();
+        log.info("Preparing to download TXT document: {}", fileDetailEntity.getFilename());
+        return fileStorageService.download(fileDetailEntity.getUrl()).bytes();
     }
 
     /**
@@ -148,11 +147,11 @@ public class TXTRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl{
             documentUnitEntity.setContent(content);
             documentUnitEntity.setPage(pageIndex);
             documentUnitEntity.setFileId(ragDocSyncOcrMessage.getFileId());
-            documentUnitEntity.setVector(false);
-            documentUnitEntity.setOcr(true);
+            documentUnitEntity.setIsVector(false);
+            documentUnitEntity.setIsOcr(true);
 
             if (content == null) {
-                documentUnitEntity.setOcr(false);
+                documentUnitEntity.setIsOcr(false);
                 log.warn("Page {} is empty", pageIndex + 1);
             }
 

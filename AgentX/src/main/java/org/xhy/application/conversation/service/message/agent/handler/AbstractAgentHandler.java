@@ -1,9 +1,7 @@
 package org.xhy.application.conversation.service.message.agent.handler;
 
 import dev.langchain4j.data.message.ChatMessage;
-import dev.langchain4j.model.chat.ChatLanguageModel;
 import dev.langchain4j.model.chat.ChatModel;
-import dev.langchain4j.model.chat.StreamingChatLanguageModel;
 import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.model.chat.request.ChatRequest;
 import dev.langchain4j.model.openai.OpenAiChatRequestParameters;
@@ -12,12 +10,9 @@ import org.xhy.application.conversation.service.message.agent.event.AgentEventHa
 import org.xhy.application.conversation.service.message.agent.event.AgentWorkflowEvent;
 import org.xhy.application.conversation.service.message.agent.manager.TaskManager;
 import org.xhy.application.conversation.service.message.agent.workflow.AgentWorkflowContext;
-import org.xhy.application.conversation.service.message.agent.workflow.AgentWorkflowState;
 import org.xhy.domain.conversation.constant.MessageType;
-import org.xhy.domain.conversation.model.ContextEntity;
 import org.xhy.domain.conversation.model.MessageEntity;
 import org.xhy.domain.conversation.service.ContextDomainService;
-import org.xhy.domain.conversation.service.ConversationDomainService;
 import org.xhy.domain.conversation.service.MessageDomainService;
 import org.xhy.infrastructure.llm.LLMServiceFactory;
 
