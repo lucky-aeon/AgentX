@@ -26,9 +26,12 @@ export interface Interceptor {
 const defaultInterceptor: Interceptor = {
   // 请求拦截器
   request: (config) => {
+    // 检查是否是FormData，如果是则不设置Content-Type
+    const isFormData = config.body instanceof FormData;
+    
     // 默认添加Content-Type和Accept头
     config.headers = {
-      "Content-Type": "application/json",
+      ...(isFormData ? {} : { "Content-Type": "application/json" }),
       Accept: "*/*",
       ...(config.headers || {}),
     };
@@ -265,10 +268,21 @@ class HttpClient {
   }
 
   async post<T>(endpoint: string, data?: any, config: RequestConfig = {}, options?: RequestOptions): Promise<T> {
+    // 处理 FormData 类型的数据
+    const isFormData = data instanceof FormData;
+    
     return this.request<T>(endpoint, {
       ...config,
       method: "POST",
-      body: data ? JSON.stringify(data) : undefined,
+      body: data ? (isFormData ? data : JSON.stringify(data)) : undefined,
+      headers: isFormData ? {
+        // 对于 FormData，删除 Content-Type 让浏览器自动设置
+        ...config.headers,
+        // 删除可能存在的 Content-Type
+      } : {
+        "Content-Type": "application/json",
+        ...config.headers,
+      },
     }, options);
   }
 
