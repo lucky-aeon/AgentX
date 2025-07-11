@@ -106,3 +106,59 @@ export interface FileStatusConfig {
     color: string;
   };
 }
+
+// ========== 新增接口类型定义 ==========
+
+// 文件预处理请求（对应 ProcessFileRequest）
+export interface ProcessFileRequest {
+  fileId: string;
+  datasetId: string;
+  processType?: number; // 处理类型：1-初始化，2-向量化
+}
+
+// 文件处理进度响应（对应 FileProcessProgressDTO）
+export interface FileProcessProgressDTO {
+  fileId: string;
+  filename: string;
+  isInitialize: number; // 初始化状态
+  isEmbedding: number; // 向量化状态
+  currentPageNumber?: number; // 当前处理页数
+  filePageSize?: number; // 总页数
+  processProgress?: number; // 处理进度百分比
+  statusDescription?: string; // 状态描述
+}
+
+// RAG搜索请求（对应 RagSearchRequest）
+export interface RagSearchRequest {
+  datasetIds: string[]; // 数据集ID列表
+  question: string; // 搜索问题
+  maxResults?: number; // 最大返回结果数量，默认15
+}
+
+// 文档单元响应（对应 DocumentUnitDTO）
+export interface DocumentUnitDTO {
+  id: string;
+  fileId: string;
+  page: number;
+  content: string;
+  isOcr: boolean; // 是否OCR处理
+  isVector: boolean; // 是否向量化
+  createdAt: string;
+  updatedAt: string;
+}
+
+// 文件处理类型枚举
+export enum ProcessType {
+  INITIALIZE = 1, // 初始化
+  EMBEDDING = 2, // 向量化
+}
+
+// 处理进度状态
+export interface ProcessProgressStatus {
+  fileId: string;
+  filename: string;
+  isInitialize: FileInitializeStatus;
+  isEmbedding: FileEmbeddingStatus;
+  processProgress: number;
+  statusDescription: string;
+}

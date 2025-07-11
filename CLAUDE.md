@@ -1,5 +1,6 @@
 # CLAUDE.md
 
+必须使用中文回复我
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project Architecture
@@ -60,9 +61,6 @@ npm run build
 
 # Start production server
 npm start
-
-# Lint code
-npm run lint
 ```
 
 ### Docker Development (Recommended)
@@ -455,7 +453,6 @@ logger.error("Failed to process request", exception);
 
 ### Code Quality Checklist
 - [ ] Run `mvn spotless:apply` before committing Java code
-- [ ] Run `npm run lint` before committing TypeScript code
 - [ ] Write unit tests for new business logic
 - [ ] Update API documentation for interface changes
 - [ ] Validate database migrations work correctly

@@ -117,6 +117,11 @@ export const API_ENDPOINTS = {
   RAG_DATASET_FILES: (id: string) => `/rag/datasets/${id}/files`, // 分页查询数据集文件
   RAG_ALL_DATASET_FILES: (id: string) => `/rag/datasets/${id}/files/all`, // 获取数据集所有文件
   RAG_DATASET_FILE_DELETE: (datasetId: string, fileId: string) => `/rag/datasets/${datasetId}/files/${fileId}`, // 删除数据集文件
+  // 新增RAG接口
+  RAG_PROCESS_FILE: "/rag/datasets/files/process", // 启动文件预处理
+  RAG_FILE_PROGRESS: (fileId: string) => `/rag/datasets/files/${fileId}/progress`, // 获取文件处理进度
+  RAG_DATASET_FILES_PROGRESS: (datasetId: string) => `/rag/datasets/${datasetId}/files/progress`, // 获取数据集文件处理进度列表
+  RAG_SEARCH: "/rag/datasets/search", // RAG搜索文档
 }
 
 // 构建完整的API URL

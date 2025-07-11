@@ -11,6 +11,10 @@ import type {
   UploadFileRequest,
   PageResponse,
   ApiResponse,
+  ProcessFileRequest,
+  FileProcessProgressDTO,
+  RagSearchRequest,
+  DocumentUnitDTO,
 } from "@/types/rag-dataset"
 
 // 数据集管理相关API
@@ -254,6 +258,94 @@ export async function deleteFile(datasetId: string, fileId: string): Promise<Api
   }
 }
 
+// ========== 新增API方法 ==========
+
+// 启动文件预处理
+export async function processFile(request: ProcessFileRequest): Promise<ApiResponse<void>> {
+  try {
+    console.log("Processing file:", request)
+    
+    const response = await httpClient.post<ApiResponse<void>>(
+      API_ENDPOINTS.RAG_PROCESS_FILE,
+      request
+    )
+    
+    return response
+  } catch (error) {
+    console.error("启动文件预处理错误:", error)
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : "未知错误",
+      data: undefined as unknown as void,
+      timestamp: Date.now(),
+    }
+  }
+}
+
+// 获取文件处理进度
+export async function getFileProgress(fileId: string): Promise<ApiResponse<FileProcessProgressDTO>> {
+  try {
+    console.log(`Getting file progress: ${fileId}`)
+    
+    const response = await httpClient.get<ApiResponse<FileProcessProgressDTO>>(
+      API_ENDPOINTS.RAG_FILE_PROGRESS(fileId)
+    )
+    
+    return response
+  } catch (error) {
+    console.error("获取文件处理进度错误:", error)
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : "未知错误",
+      data: null as unknown as FileProcessProgressDTO,
+      timestamp: Date.now(),
+    }
+  }
+}
+
+// 获取数据集文件处理进度列表
+export async function getDatasetFilesProgress(datasetId: string): Promise<ApiResponse<FileProcessProgressDTO[]>> {
+  try {
+    console.log(`Getting dataset files progress: ${datasetId}`)
+    
+    const response = await httpClient.get<ApiResponse<FileProcessProgressDTO[]>>(
+      API_ENDPOINTS.RAG_DATASET_FILES_PROGRESS(datasetId)
+    )
+    
+    return response
+  } catch (error) {
+    console.error("获取数据集文件处理进度错误:", error)
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : "未知错误",
+      data: [],
+      timestamp: Date.now(),
+    }
+  }
+}
+
+// RAG搜索文档
+export async function ragSearch(request: RagSearchRequest): Promise<ApiResponse<DocumentUnitDTO[]>> {
+  try {
+    console.log("RAG searching documents:", request)
+    
+    const response = await httpClient.post<ApiResponse<DocumentUnitDTO[]>>(
+      API_ENDPOINTS.RAG_SEARCH,
+      request
+    )
+    
+    return response
+  } catch (error) {
+    console.error("RAG搜索文档错误:", error)
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : "未知错误",
+      data: [],
+      timestamp: Date.now(),
+    }
+  }
+}
+
 // 使用 withToast 包装器的API函数
 export const getDatasetsWithToast = withToast(getDatasets, {
   showSuccessToast: false,
@@ -303,4 +395,26 @@ export const getAllDatasetFilesWithToast = withToast(getAllDatasetFiles, {
 export const deleteFileWithToast = withToast(deleteFile, {
   successTitle: "删除文件成功",
   errorTitle: "删除文件失败"
+})
+
+// ========== 新增API方法的withToast包装器 ==========
+
+export const processFileWithToast = withToast(processFile, {
+  successTitle: "启动文件预处理成功",
+  errorTitle: "启动文件预处理失败"
+})
+
+export const getFileProgressWithToast = withToast(getFileProgress, {
+  showSuccessToast: false,
+  errorTitle: "获取文件处理进度失败"
+})
+
+export const getDatasetFilesProgressWithToast = withToast(getDatasetFilesProgress, {
+  showSuccessToast: false,
+  errorTitle: "获取数据集文件处理进度失败"
+})
+
+export const ragSearchWithToast = withToast(ragSearch, {
+  showSuccessToast: false,
+  errorTitle: "RAG搜索失败"
 })

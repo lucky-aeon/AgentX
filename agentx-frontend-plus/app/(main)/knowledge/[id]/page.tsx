@@ -17,7 +17,13 @@ import {
   CheckCircle,
   Clock,
   AlertCircle,
-  Download
+  Download,
+  Play,
+  Pause,
+  Loader2,
+  Settings,
+  FileSearch,
+  BookOpen
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -50,6 +56,8 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination"
 import { Badge } from "@/components/ui/badge"
+import { Progress } from "@/components/ui/progress"
+import { Textarea } from "@/components/ui/textarea"
 import { toast } from "@/hooks/use-toast"
 
 import {
@@ -57,8 +65,18 @@ import {
   getDatasetFilesWithToast,
   uploadFileWithToast,
   deleteFileWithToast,
+  processFileWithToast,
+  getDatasetFilesProgressWithToast,
+  ragSearchWithToast,
 } from "@/lib/rag-dataset-service"
-import type { RagDataset, FileDetail, PageResponse } from "@/types/rag-dataset"
+import type { 
+  RagDataset, 
+  FileDetail, 
+  PageResponse,
+  FileProcessProgressDTO,
+  ProcessType,
+  DocumentUnitDTO 
+} from "@/types/rag-dataset"
 import { FileInitializeStatus, FileEmbeddingStatus } from "@/types/rag-dataset"
 
 export default function DatasetDetailPage() {
@@ -76,6 +94,16 @@ export default function DatasetDetailPage() {
   const [fileToDelete, setFileToDelete] = useState<FileDetail | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
+  
+  // 新增状态：文件处理进度
+  const [filesProgress, setFilesProgress] = useState<FileProcessProgressDTO[]>([])
+  const [isProcessing, setIsProcessing] = useState<{ [fileId: string]: boolean }>({})
+  
+  // 新增状态：RAG搜索
+  const [searchDocuments, setSearchDocuments] = useState<DocumentUnitDTO[]>([])
+  const [ragSearchQuery, setRagSearchQuery] = useState("")
+  const [isRagSearching, setIsRagSearching] = useState(false)
+  const [showRagResults, setShowRagResults] = useState(false)
 
   // 分页状态
   const [pageData, setPageData] = useState<PageResponse<FileDetail>>({
@@ -106,8 +134,20 @@ export default function DatasetDetailPage() {
   useEffect(() => {
     if (datasetId) {
       loadFiles(1, debouncedQuery)
+      loadFilesProgress() // 同时加载文件处理进度
     }
   }, [datasetId, debouncedQuery])
+
+  // 定期刷新文件处理进度
+  useEffect(() => {
+    if (!datasetId) return
+
+    const interval = setInterval(() => {
+      loadFilesProgress()
+    }, 5000) // 每5秒刷新一次
+
+    return () => clearInterval(interval)
+  }, [datasetId])
 
   // 加载数据集详情
   const loadDatasetDetail = async () => {
@@ -316,6 +356,91 @@ export default function DatasetDetailPage() {
     setSearchQuery("")
   }
 
+  // ========== 新增方法：文件处理进度相关 ==========
+
+  // 加载文件处理进度
+  const loadFilesProgress = async () => {
+    try {
+      const response = await getDatasetFilesProgressWithToast(datasetId)
+      if (response.code === 200) {
+        setFilesProgress(response.data)
+      }
+    } catch (error) {
+      console.error("加载文件处理进度失败:", error)
+    }
+  }
+
+  // 启动文件预处理
+  const handleProcessFile = async (fileId: string, processType: ProcessType) => {
+    try {
+      setIsProcessing(prev => ({ ...prev, [fileId]: true }))
+      
+      const response = await processFileWithToast({
+        fileId,
+        datasetId,
+        processType
+      })
+      
+      if (response.code === 200) {
+        // 立即刷新进度
+        setTimeout(() => {
+          loadFilesProgress()
+        }, 1000)
+      }
+    } catch (error) {
+      console.error("启动文件预处理失败:", error)
+    } finally {
+      setIsProcessing(prev => ({ ...prev, [fileId]: false }))
+    }
+  }
+
+  // 获取文件处理进度信息
+  const getFileProgressInfo = (fileId: string) => {
+    return filesProgress.find(progress => progress.fileId === fileId)
+  }
+
+  // ========== 新增方法：RAG搜索相关 ==========
+
+  // 执行RAG搜索
+  const handleRagSearch = async () => {
+    if (!ragSearchQuery.trim()) {
+      toast({
+        title: "请输入搜索内容",
+        variant: "destructive",
+      })
+      return
+    }
+
+    try {
+      setIsRagSearching(true)
+      setShowRagResults(true)
+      
+      const response = await ragSearchWithToast({
+        datasetIds: [datasetId],
+        question: ragSearchQuery.trim(),
+        maxResults: 15
+      })
+      
+      if (response.code === 200) {
+        setSearchDocuments(response.data)
+      } else {
+        setSearchDocuments([])
+      }
+    } catch (error) {
+      console.error("RAG搜索失败:", error)
+      setSearchDocuments([])
+    } finally {
+      setIsRagSearching(false)
+    }
+  }
+
+  // 清除RAG搜索
+  const clearRagSearch = () => {
+    setRagSearchQuery("")
+    setSearchDocuments([])
+    setShowRagResults(false)
+  }
+
   if (loading) {
     return (
       <div className="container py-6">
@@ -427,6 +552,51 @@ export default function DatasetDetailPage() {
                 <p className="text-sm">{formatDate(dataset.updatedAt)}</p>
               </div>
 
+              {/* RAG搜索 */}
+              <div className="pt-4 border-t">
+                <label className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
+                  <FileSearch className="h-4 w-4" />
+                  RAG搜索
+                </label>
+                <div className="space-y-2">
+                  <Textarea
+                    placeholder="输入问题进行文档搜索..."
+                    value={ragSearchQuery}
+                    onChange={(e) => setRagSearchQuery(e.target.value)}
+                    className="min-h-[80px] resize-none"
+                  />
+                  <div className="flex gap-2">
+                    <Button 
+                      onClick={handleRagSearch}
+                      disabled={isRagSearching || !ragSearchQuery.trim()}
+                      className="flex-1"
+                      size="sm"
+                    >
+                      {isRagSearching ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          搜索中...
+                        </>
+                      ) : (
+                        <>
+                          <Search className="mr-2 h-4 w-4" />
+                          搜索文档
+                        </>
+                      )}
+                    </Button>
+                    {ragSearchQuery && (
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={clearRagSearch}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               {/* 文件上传 */}
               <div className="pt-4 border-t">
                 <label htmlFor="file-upload" className="block">
@@ -524,13 +694,17 @@ export default function DatasetDetailPage() {
                         <TableHead>大小</TableHead>
                         <TableHead>初始化状态</TableHead>
                         <TableHead>向量化状态</TableHead>
+                        <TableHead>处理进度</TableHead>
                         <TableHead>上传时间</TableHead>
-                        <TableHead className="w-12"></TableHead>
+                        <TableHead className="w-20">操作</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {files.map((file) => {
                         const statusConfig = getFileStatusConfig(file)
+                        const progressInfo = getFileProgressInfo(file.id)
+                        const processing = isProcessing[file.id]
+                        
                         return (
                           <TableRow key={file.id}>
                             <TableCell>
@@ -554,6 +728,21 @@ export default function DatasetDetailPage() {
                                 >
                                   {statusConfig.initialize.text}
                                 </Badge>
+                                {file.isInitialize === 0 && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-6 px-2 text-xs"
+                                    onClick={() => handleProcessFile(file.id, 1)}
+                                    disabled={processing}
+                                  >
+                                    {processing ? (
+                                      <Loader2 className="h-3 w-3 animate-spin" />
+                                    ) : (
+                                      <Play className="h-3 w-3" />
+                                    )}
+                                  </Button>
+                                )}
                               </div>
                             </TableCell>
                             <TableCell>
@@ -565,7 +754,46 @@ export default function DatasetDetailPage() {
                                 >
                                   {statusConfig.embedding.text}
                                 </Badge>
+                                {file.isInitialize === 1 && file.isEmbedding === 0 && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-6 px-2 text-xs"
+                                    onClick={() => handleProcessFile(file.id, 2)}
+                                    disabled={processing}
+                                  >
+                                    {processing ? (
+                                      <Loader2 className="h-3 w-3 animate-spin" />
+                                    ) : (
+                                      <Play className="h-3 w-3" />
+                                    )}
+                                  </Button>
+                                )}
                               </div>
+                            </TableCell>
+                            <TableCell>
+                              {progressInfo && progressInfo.processProgress !== undefined ? (
+                                <div className="space-y-1">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-xs text-muted-foreground">
+                                      {Math.round(progressInfo.processProgress)}%
+                                    </span>
+                                    {progressInfo.currentPageNumber && progressInfo.filePageSize && (
+                                      <span className="text-xs text-muted-foreground">
+                                        {progressInfo.currentPageNumber}/{progressInfo.filePageSize}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <Progress value={progressInfo.processProgress} className="h-2" />
+                                  {progressInfo.statusDescription && (
+                                    <p className="text-xs text-muted-foreground">
+                                      {progressInfo.statusDescription}
+                                    </p>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">-</span>
+                              )}
                             </TableCell>
                             <TableCell className="text-sm">
                               {formatDate(file.createdAt)}
@@ -640,6 +868,94 @@ export default function DatasetDetailPage() {
           </Card>
         </div>
       </div>
+
+      {/* RAG搜索结果对话框 */}
+      <Dialog open={showRagResults} onOpenChange={(open) => !open && clearRagSearch()}>
+        <DialogContent className="max-w-4xl max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <BookOpen className="h-5 w-5" />
+              搜索结果
+            </DialogTitle>
+            <DialogDescription>
+              针对问题 "{ragSearchQuery}" 的文档搜索结果
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="max-h-[60vh] overflow-y-auto">
+            {isRagSearching ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin" />
+                <span className="ml-2">搜索中...</span>
+              </div>
+            ) : searchDocuments.length === 0 ? (
+              <div className="text-center py-8">
+                <FileSearch className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                <h3 className="text-lg font-medium mb-2">未找到相关文档</h3>
+                <p className="text-muted-foreground">
+                  尝试使用不同的关键词或检查文档是否已完成向量化处理
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {searchDocuments.map((doc, index) => (
+                  <Card key={doc.id} className="p-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-xs">
+                          第 {doc.page} 页
+                        </Badge>
+                        <Badge variant={doc.isVector ? "default" : "secondary"} className="text-xs">
+                          {doc.isVector ? "已向量化" : "未向量化"}
+                        </Badge>
+                        {doc.isOcr && (
+                          <Badge variant="outline" className="text-xs">
+                            OCR处理
+                          </Badge>
+                        )}
+                      </div>
+                      <span className="text-xs text-muted-foreground">
+                        #{index + 1}
+                      </span>
+                    </div>
+                    <div className="text-sm leading-relaxed">
+                      {doc.content.length > 500 
+                        ? `${doc.content.substring(0, 500)}...` 
+                        : doc.content}
+                    </div>
+                    <div className="flex items-center justify-between mt-3 pt-3 border-t">
+                      <span className="text-xs text-muted-foreground">
+                        文档ID: {doc.fileId}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {formatDate(doc.updatedAt)}
+                      </span>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={clearRagSearch}>
+              关闭
+            </Button>
+            {searchDocuments.length > 0 && (
+              <Button onClick={() => {
+                // 可以添加导出功能
+                toast({
+                  title: "搜索完成",
+                  description: `找到 ${searchDocuments.length} 个相关文档片段`,
+                })
+              }}>
+                <Download className="mr-2 h-4 w-4" />
+                导出结果
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* 删除文件确认对话框 */}
       <Dialog open={!!fileToDelete} onOpenChange={(open) => !open && setFileToDelete(null)}>
