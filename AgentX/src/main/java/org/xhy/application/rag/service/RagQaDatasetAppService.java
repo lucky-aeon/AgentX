@@ -704,7 +704,7 @@ public class RagQaDatasetAppService {
                         }
                         
                         // 发送思考进行中的状态（可选择是否发送思考内容）
-                        sendSseData(emitter, RagStreamResponse.thinkingProgress("思考中..."));
+                        sendSseData(emitter, RagStreamResponse.thinkingProgress(reasoning));
                     })
                     .onCompleteReasoning(completeReasoning -> {
                         log.info("思维链生成完成，长度: {}", completeReasoning.length());
