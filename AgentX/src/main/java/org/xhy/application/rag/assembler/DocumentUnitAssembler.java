@@ -2,6 +2,7 @@ package org.xhy.application.rag.assembler;
 
 import org.springframework.beans.BeanUtils;
 import org.xhy.application.rag.dto.DocumentUnitDTO;
+import org.xhy.application.rag.dto.UpdateDocumentUnitRequest;
 import org.xhy.domain.rag.model.DocumentUnitEntity;
 
 import java.util.Collections;
@@ -32,6 +33,21 @@ public class DocumentUnitAssembler {
         }
         
         return dto;
+    }
+    
+    /** Convert Update request to Entity for partial update */
+    public static DocumentUnitEntity toEntity(UpdateDocumentUnitRequest request, String userId) {
+        if (request == null) {
+            return null;
+        }
+        DocumentUnitEntity entity = new DocumentUnitEntity();
+        entity.setId(request.getDocumentUnitId());
+        entity.setContent(request.getContent());
+        // 如果需要重新向量化，设置向量化状态为false
+        if (Boolean.TRUE.equals(request.getReEmbedding())) {
+            entity.setIsVector(false);
+        }
+        return entity;
     }
     
     /** Convert Entity list to DTO list */

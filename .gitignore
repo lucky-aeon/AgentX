@@ -55,6 +55,7 @@ coverage/
 .env.*.local
 application-prod.yml
 application-secrets.yml
+application-dev.env
 /*.rej
 /*/*.mo
 /*/*.meta
