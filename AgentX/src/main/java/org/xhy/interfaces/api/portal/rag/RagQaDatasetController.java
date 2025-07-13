@@ -184,15 +184,4 @@ public class RagQaDatasetController {
         List<FileProcessProgressDTO> progressList = ragQaDatasetAppService.getDatasetFilesProgress(datasetId, userId);
         return Result.success(progressList);
     }
-
-    /** RAG搜索文档
-     * 
-     * @param request RAG搜索请求
-     * @return 搜索结果 */
-    @PostMapping("/search")
-    public Result<List<DocumentUnitDTO>> ragSearch(@RequestBody @Validated RagSearchRequest request) {
-        String userId = UserContext.getCurrentUserId();
-        List<DocumentUnitDTO> searchResults = ragQaDatasetAppService.ragSearch(request, userId);
-        return Result.success(searchResults);
-    }
 }

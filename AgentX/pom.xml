@@ -28,7 +28,7 @@
         <fastjson.version>2.0.47</fastjson.version>
         <hutool.version>5.8.26</hutool.version>
         <httpclient.version>4.5.14</httpclient.version>
-        <langchain4j.version>1.0.1-beta7-SNAPSHOT</langchain4j.version>
+        <langchain4j.version>1.0.4.3-beta7-SNAPSHOT</langchain4j.version>
         <spotless.version>2.37.0</spotless.version>
         <x-file-storage.version>2.2.0</x-file-storage.version>
         <pdf-box>3.0.2</pdf-box>

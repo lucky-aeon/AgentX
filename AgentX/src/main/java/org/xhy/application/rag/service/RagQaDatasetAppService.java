@@ -4,9 +4,13 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import dev.langchain4j.data.message.SystemMessage;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.xhy.application.rag.assembler.DocumentUnitAssembler;
 import org.xhy.application.rag.assembler.FileDetailAssembler;
 import org.xhy.application.rag.assembler.RagQaDatasetAssembler;
@@ -19,14 +23,33 @@ import org.xhy.domain.rag.model.DocumentUnitEntity;
 import org.xhy.domain.rag.model.FileDetailEntity;
 import org.xhy.domain.rag.model.RagQaDatasetEntity;
 import org.xhy.domain.rag.repository.DocumentUnitRepository;
+import org.xhy.domain.rag.repository.FileDetailRepository;
 import org.xhy.domain.rag.service.EmbeddingDomainService;
 import org.xhy.domain.rag.service.FileDetailDomainService;
 import org.xhy.domain.rag.service.RagQaDatasetDomainService;
 import org.xhy.infrastructure.mq.enums.EventType;
 import org.xhy.infrastructure.mq.events.RagDocSyncOcrEvent;
 import org.xhy.infrastructure.mq.events.RagDocSyncStorageEvent;
+import org.xhy.infrastructure.llm.LLMServiceFactory;
+import org.xhy.domain.llm.service.LLMDomainService;
+import org.xhy.domain.llm.service.HighAvailabilityDomainService;
+import org.xhy.domain.user.service.UserSettingsDomainService;
+import org.xhy.domain.llm.model.HighAvailabilityResult;
+import org.xhy.domain.llm.model.ModelEntity;
+import org.xhy.domain.llm.model.ProviderEntity;
+import dev.langchain4j.model.chat.StreamingChatModel;
+import dev.langchain4j.service.AiServices;
+import dev.langchain4j.service.TokenStream;
+import dev.langchain4j.memory.chat.MessageWindowChatMemory;
+import dev.langchain4j.store.memory.chat.InMemoryChatMemoryStore;
+import dev.langchain4j.data.message.UserMessage;
+import org.xhy.application.conversation.service.message.Agent;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.List;
+import java.util.ArrayList;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 /**
  * RAG数据集应用服务
@@ -36,22 +59,42 @@ import java.util.List;
 @Service
 public class RagQaDatasetAppService {
 
+    private static final Logger log = LoggerFactory.getLogger(RagQaDatasetAppService.class);
+
     private final RagQaDatasetDomainService ragQaDatasetDomainService;
     private final FileDetailDomainService fileDetailDomainService;
     private final DocumentUnitRepository documentUnitRepository;
+    private final FileDetailRepository fileDetailRepository;
     private final ApplicationEventPublisher applicationEventPublisher;
     private final EmbeddingDomainService embeddingDomainService;
+    private final ObjectMapper objectMapper;
+    private final LLMServiceFactory llmServiceFactory;
+    private final LLMDomainService llmDomainService;
+    private final UserSettingsDomainService userSettingsDomainService;
+    private final HighAvailabilityDomainService highAvailabilityDomainService;
 
     public RagQaDatasetAppService(RagQaDatasetDomainService ragQaDatasetDomainService,
                                   FileDetailDomainService fileDetailDomainService,
                                   DocumentUnitRepository documentUnitRepository,
+                                  FileDetailRepository fileDetailRepository,
                                   ApplicationEventPublisher applicationEventPublisher,
-                                  EmbeddingDomainService embeddingDomainService) {
+                                  EmbeddingDomainService embeddingDomainService,
+                                  ObjectMapper objectMapper,
+                                  LLMServiceFactory llmServiceFactory,
+                                  LLMDomainService llmDomainService,
+                                  UserSettingsDomainService userSettingsDomainService,
+                                  HighAvailabilityDomainService highAvailabilityDomainService) {
         this.ragQaDatasetDomainService = ragQaDatasetDomainService;
         this.fileDetailDomainService = fileDetailDomainService;
         this.documentUnitRepository = documentUnitRepository;
+        this.fileDetailRepository = fileDetailRepository;
         this.applicationEventPublisher = applicationEventPublisher;
         this.embeddingDomainService = embeddingDomainService;
+        this.objectMapper = objectMapper;
+        this.llmServiceFactory = llmServiceFactory;
+        this.llmDomainService = llmDomainService;
+        this.userSettingsDomainService = userSettingsDomainService;
+        this.highAvailabilityDomainService = highAvailabilityDomainService;
     }
 
     /**
@@ -368,7 +411,7 @@ public class RagQaDatasetAppService {
     }
 
     /**
-     * RAG搜索文档
+     * RAG搜索文档（使用智能参数优化）
      * @param request 搜索请求
      * @param userId 用户ID
      * @return 搜索结果
@@ -379,10 +422,414 @@ public class RagQaDatasetAppService {
             ragQaDatasetDomainService.checkDatasetExists(datasetId, userId);
         }
         
-        // 调用领域服务进行RAG搜索
-        List<DocumentUnitEntity> entities = embeddingDomainService.ragDoc(request.getDatasetIds(), request.getQuestion(), request.getMaxResults());
+        // 使用智能调整后的参数进行RAG搜索
+        Double adjustedMinScore = request.getAdjustedMinScore();
+        Integer adjustedCandidateMultiplier = request.getAdjustedCandidateMultiplier();
+        
+        // 调用领域服务进行RAG搜索，使用智能优化的参数
+        List<DocumentUnitEntity> entities = embeddingDomainService.ragDoc(
+            request.getDatasetIds(), 
+            request.getQuestion(),
+            request.getMaxResults(),
+            adjustedMinScore, // 使用智能调整的相似度阈值
+            request.getEnableRerank(),
+            adjustedCandidateMultiplier // 使用智能调整的候选结果倍数
+        );
         
         // 转换为DTO并返回
         return DocumentUnitAssembler.toDTOs(entities);
+    }
+
+    /**
+     * RAG流式问答
+     * @param request 流式问答请求
+     * @param userId 用户ID
+     * @return SSE流式响应
+     */
+    public SseEmitter ragStreamChat(RagStreamChatRequest request, String userId) {
+        SseEmitter emitter = new SseEmitter(Long.MAX_VALUE);
+        
+        // 设置连接关闭回调
+        emitter.onCompletion(() -> log.info("RAG stream chat completed for user: {}", userId));
+        emitter.onTimeout(() -> {
+            log.warn("RAG stream chat timeout for user: {}", userId);
+            sendSseData(emitter, RagStreamResponse.error("连接超时"));
+        });
+        emitter.onError((ex) -> {
+            log.error("RAG stream chat connection error for user: {}", userId, ex);
+        });
+        
+        // 异步处理流式问答
+        CompletableFuture.runAsync(() -> {
+            try {
+                processRagStreamChat(request, userId, emitter);
+            } catch (Exception e) {
+                log.error("RAG stream chat error", e);
+                sendSseData(emitter, RagStreamResponse.error("处理过程中发生错误: " + e.getMessage()));
+            } finally {
+                // 确保连接被正确关闭
+                try {
+                    emitter.complete();
+                } catch (Exception e) {
+                    log.warn("Error completing SSE emitter", e);
+                }
+            }
+        });
+        
+        return emitter;
+    }
+
+    /**
+     * 处理RAG流式问答的核心逻辑
+     */
+    private void processRagStreamChat(RagStreamChatRequest request, String userId, SseEmitter emitter) {
+        try {
+            // 第一阶段：检索文档
+            log.info("Starting RAG stream chat for user: {}, question: '{}'", userId, request.getQuestion());
+            
+            // 发送检索开始信号
+            sendSseData(emitter, RagStreamResponse.retrievalStart("开始检索相关文档..."));
+            Thread.sleep(500);
+            
+            // 确定检索范围
+            List<String> searchDatasetIds = new ArrayList<>();
+            List<String> searchFileIds = new ArrayList<>();
+            
+            if (request.getFileId() != null && !request.getFileId().trim().isEmpty()) {
+                FileDetailEntity fileEntity = fileDetailDomainService.getFileById(request.getFileId(), userId);
+                searchFileIds.add(request.getFileId());
+                searchDatasetIds.add(fileEntity.getDataSetId());
+                sendSseData(emitter, RagStreamResponse.retrievalProgress("正在指定文件中检索..."));
+            } else if (request.getDatasetIds() != null && !request.getDatasetIds().isEmpty()) {
+                for (String datasetId : request.getDatasetIds()) {
+                    ragQaDatasetDomainService.checkDatasetExists(datasetId, userId);
+                }
+                searchDatasetIds.addAll(request.getDatasetIds());
+                sendSseData(emitter, RagStreamResponse.retrievalProgress("正在数据集中检索..."));
+            } else {
+                throw new IllegalArgumentException("必须指定文件ID或数据集ID");
+            }
+            
+            // 执行RAG检索
+            List<DocumentUnitEntity> retrievedDocuments;
+            if (request.getFileId() != null && !request.getFileId().trim().isEmpty()) {
+                retrievedDocuments = retrieveFromFile(request.getFileId(), request.getQuestion(), request.getMaxResults());
+            } else {
+                retrievedDocuments = embeddingDomainService.ragDoc(
+                    searchDatasetIds,
+                    request.getQuestion(),
+                    request.getMaxResults(),
+                    request.getMinScore(),
+                    request.getEnableRerank(),
+                    2
+                );
+            }
+            
+            // 构建检索结果
+            List<RagStreamResponse.RetrievedDocument> retrievedDocs = new ArrayList<>();
+            for (DocumentUnitEntity doc : retrievedDocuments) {
+                FileDetailEntity fileDetail = fileDetailRepository.selectById(doc.getFileId());
+                retrievedDocs.add(new RagStreamResponse.RetrievedDocument(
+                    doc.getFileId(),
+                    fileDetail != null ? fileDetail.getOriginalFilename() : "未知文件",
+                    doc.getId(),
+                    0.85
+                ));
+            }
+            
+            // 发送检索完成信号
+            String retrievalMessage = String.format("检索完成，找到 %d 个相关文档", retrievedDocs.size());
+            sendSseData(emitter, RagStreamResponse.retrievalEnd(retrievalMessage, retrievedDocs));
+            Thread.sleep(1000);
+            
+            // 第二阶段：生成回答
+            sendSseData(emitter, RagStreamResponse.answerStart("开始生成回答..."));
+            Thread.sleep(500);
+            
+            // 构建LLM上下文
+            String context = buildContextFromDocuments(retrievedDocuments);
+            String prompt = buildRagPrompt(request.getQuestion(), context);
+            
+            // 调用流式LLM - 使用同步等待确保流式处理完成
+            generateStreamAnswerAndWait(prompt, userId, emitter);
+            
+            // 在LLM流式处理完成后发送完成信号
+            sendSseData(emitter, RagStreamResponse.answerEnd("回答生成完成"));
+            
+        } catch (Exception e) {
+            log.error("Error in RAG stream chat processing", e);
+            sendSseData(emitter, RagStreamResponse.error("处理过程中发生错误: " + e.getMessage()));
+        } finally {
+            emitter.complete();
+        }
+    }
+
+    /**
+     * 从指定文件中检索相关文档
+     */
+    private List<DocumentUnitEntity> retrieveFromFile(String fileId, String question, Integer maxResults) {
+        // 查询文件下的所有文档单元
+        List<DocumentUnitEntity> fileDocuments = documentUnitRepository.selectList(
+            Wrappers.lambdaQuery(DocumentUnitEntity.class)
+                .eq(DocumentUnitEntity::getFileId, fileId)
+                .eq(DocumentUnitEntity::getIsVector, true)
+        );
+        
+        if (fileDocuments.isEmpty()) {
+            return new ArrayList<>();
+        }
+        
+        // 获取文档ID列表
+        List<String> documentIds = fileDocuments.stream()
+            .map(DocumentUnitEntity::getId)
+            .collect(Collectors.toList());
+        
+        // 使用向量搜索在这些文档中检索
+        FileDetailEntity fileEntity = fileDetailRepository.selectById(fileId);
+        List<String> datasetIds = List.of(fileEntity.getDataSetId());
+        
+        return embeddingDomainService.ragDoc(datasetIds, question, maxResults, 0.5, true, 2);
+    }
+
+    /**
+     * 构建检索文档的上下文
+     */
+    private String buildContextFromDocuments(List<DocumentUnitEntity> documents) {
+        if (documents.isEmpty()) {
+            return "暂无相关文档信息。";
+        }
+        
+        StringBuilder context = new StringBuilder();
+        context.append("以下是相关的文档片段：\n\n");
+        
+        for (int i = 0; i < documents.size(); i++) {
+            DocumentUnitEntity doc = documents.get(i);
+            context.append(String.format("文档片段 %d：\n", i + 1));
+            context.append(doc.getContent());
+            context.append("\n\n");
+        }
+        
+        return context.toString();
+    }
+
+    /**
+     * 构建RAG提示词
+     */
+    private String buildRagPrompt(String question, String context) {
+        return String.format(
+            "请基于以下提供的文档内容回答用户的问题。如果文档中没有相关信息，请诚实地告知用户。\n\n" +
+            "文档内容：\n%s\n\n" +
+            "用户问题：%s\n\n" +
+            "请提供准确、有帮助的回答：",
+            context, question
+        );
+    }
+
+    /**
+     * 生成流式回答并等待完成
+     * @param prompt RAG提示词
+     * @param userId 用户ID
+     * @param emitter SSE连接
+     */
+    private void generateStreamAnswerAndWait(String prompt, String userId, SseEmitter emitter) {
+        try {
+            log.info("开始生成RAG回答，用户: {}, 提示词长度: {}", userId, prompt.length());
+            
+            // 获取用户默认模型配置
+            String userDefaultModelId = userSettingsDomainService.getUserDefaultModelId(userId);
+            if (userDefaultModelId == null) {
+                log.warn("用户 {} 未配置默认模型，使用临时简化响应", userId);
+                generateMockStreamAnswer(emitter);
+                return;
+            }
+            
+            ModelEntity model = llmDomainService.getModelById(userDefaultModelId);
+            List<String> fallbackChain = userSettingsDomainService.getUserFallbackChain(userId);
+            
+            // 获取最佳服务商（支持高可用、降级）
+            HighAvailabilityResult result = highAvailabilityDomainService.selectBestProvider(
+                model, userId, "rag-session-" + userId, fallbackChain);
+            ProviderEntity provider = result.getProvider();
+            ModelEntity selectedModel = result.getModel();
+            
+            // 创建流式LLM客户端
+            StreamingChatModel streamingClient = llmServiceFactory.getStreamingClient(provider, selectedModel);
+            
+            // 创建Agent并启动流式处理
+            Agent agent = buildStreamingAgent(streamingClient);
+            TokenStream tokenStream = agent.chat(prompt);
+            
+            // 记录调用开始时间
+            long startTime = System.currentTimeMillis();
+            
+            // 使用CompletableFuture来等待流式处理完成
+            CompletableFuture<Void> streamComplete = new CompletableFuture<>();
+
+            // 思维链状态跟踪
+            final boolean[] thinkingStarted = {false};
+            final boolean[] thinkingEnded = {false};
+            final boolean[] hasThinkingProcess = {false};
+
+            // 普通模型的流式处理方式
+            tokenStream
+                    .onPartialResponse(fragment -> {
+                        log.debug("收到响应片段: {}", fragment);
+                        
+                        // 如果有思考过程但还没结束思考，先结束思考阶段
+                        if (hasThinkingProcess[0] && !thinkingEnded[0]) {
+                            sendSseData(emitter, RagStreamResponse.thinkingEnd("思考完成"));
+                            thinkingEnded[0] = true;
+                        }
+                        
+                        // 如果没有思考过程且还没开始过思考，先发送思考开始和结束
+                        if (!hasThinkingProcess[0] && !thinkingStarted[0]) {
+                            sendSseData(emitter, RagStreamResponse.thinkingStart("开始思考..."));
+                            sendSseData(emitter, RagStreamResponse.thinkingEnd("思考完成"));
+                            thinkingStarted[0] = true;
+                            thinkingEnded[0] = true;
+                        }
+                        
+                        sendSseData(emitter, RagStreamResponse.answerProgress(fragment));
+                    })
+                    .onPartialReasoning(reasoning -> {
+                        log.debug("收到思维链片段: {}", reasoning);
+                        
+                        // 标记有思考过程
+                        hasThinkingProcess[0] = true;
+                        
+                        // 如果还没开始思考，发送思考开始
+                        if (!thinkingStarted[0]) {
+                            sendSseData(emitter, RagStreamResponse.thinkingStart("开始思考..."));
+                            thinkingStarted[0] = true;
+                        }
+                        
+                        // 发送思考进行中的状态（可选择是否发送思考内容）
+                        sendSseData(emitter, RagStreamResponse.thinkingProgress("思考中..."));
+                    })
+                    .onCompleteReasoning(completeReasoning -> {
+                        log.info("思维链生成完成，长度: {}", completeReasoning.length());
+                        log.info("完整思维链内容:\n{}", completeReasoning);
+                    })
+                    .onCompleteResponse(chatResponse -> {
+                        String fullAnswer = chatResponse.aiMessage().text();
+                        log.info("RAG回答生成完成，用户: {}, 响应长度: {}", userId, fullAnswer.length());
+                        log.info("完整RAG回答内容:\n{}", fullAnswer);
+
+                        // 上报调用成功结果
+                        long latency = System.currentTimeMillis() - startTime;
+                        highAvailabilityDomainService.reportCallResult(result.getInstanceId(), selectedModel.getId(),
+                                true, latency, null);
+
+                        streamComplete.complete(null);
+                    })
+                    .onError(throwable -> {
+                        log.error("RAG stream answer generation error for user: {}", userId, throwable);
+                        sendSseData(emitter, RagStreamResponse.error("回答生成失败: " + throwable.getMessage()));
+
+                        long latency = System.currentTimeMillis() - startTime;
+                        highAvailabilityDomainService.reportCallResult(result.getInstanceId(), selectedModel.getId(),
+                                false, latency, throwable.getMessage());
+
+                        streamComplete.completeExceptionally(throwable);
+                    });
+
+            // 启动流处理
+            tokenStream.start();
+
+            // 等待流式处理完成，最多等待30分钟
+            try {
+                streamComplete.get(30, java.util.concurrent.TimeUnit.MINUTES);
+            } catch (java.util.concurrent.TimeoutException e) {
+                log.warn("LLM流式响应超时，用户: {}", userId);
+                sendSseData(emitter, RagStreamResponse.error("响应超时"));
+            } catch (Exception e) {
+                log.error("等待LLM流式响应时发生错误，用户: {}", userId, e);
+            }
+
+        } catch (Exception e) {
+            log.error("Error in RAG stream answer generation for user: {}", userId, e);
+            sendSseData(emitter, RagStreamResponse.error("回答生成失败: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * 生成模拟流式回答（备用方案）
+     */
+    private void generateMockStreamAnswer(SseEmitter emitter) {
+        try {
+            // 模拟流式回答生成
+            String[] responseFragments = {
+                "根据检索到的文档内容，",
+                "我可以为您提供以下回答：\n\n",
+                "这是基于文档内容生成的回答。",
+                "\n\n如需更详细的信息，",
+                "请提供更具体的问题。"
+            };
+
+            // 用于拼接完整回答
+            StringBuilder fullMockAnswer = new StringBuilder();
+
+            for (String fragment : responseFragments) {
+                fullMockAnswer.append(fragment);
+                sendSseData(emitter, RagStreamResponse.answerProgress(fragment));
+                Thread.sleep(200);
+            }
+
+            log.info("完整模拟RAG回答内容:\n{}", fullMockAnswer);
+
+        } catch (Exception e) {
+            log.error("Error generating mock stream answer", e);
+            sendSseData(emitter, RagStreamResponse.error("回答生成失败: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * 构建流式Agent
+     */
+    private Agent buildStreamingAgent(StreamingChatModel streamingClient) {
+        MessageWindowChatMemory memory = MessageWindowChatMemory.builder()
+            .maxMessages(10)
+            .chatMemoryStore(new InMemoryChatMemoryStore())
+            .build();
+        memory.add(new SystemMessage("""
+                你是一位专业的文档问答助手，你的任务是基于提供的文档回答用户问题。
+            你需要遵循以下Markdown格式要求：
+            1. 使用标准Markdown语法
+            2. 列表项使用 ' - ' 而不是 '*'，确保破折号后有一个空格
+            3. 引用页码使用方括号，例如：[页码: 1]
+            4. 在每个主要段落之间添加一个空行
+            5. 加粗使用 **文本** 格式
+            6. 保持一致的缩进，列表项不要过度缩进
+            7. 确保列表项之间没有多余的空行
+            8. 该加## 这种标题的时候要加上
+            
+            回答结构应该是：
+            1. 首先是简短的介绍语
+            2. 然后是主要内容（使用列表形式）
+            3. 最后是"信息来源"部分，总结使用的页面及其贡献
+            """));
+
+        return AiServices.builder(Agent.class)
+            .streamingChatModel(streamingClient)
+            .chatMemory(memory)
+            .build();
+    }
+
+    /**
+     * 发送SSE数据（带状态检查）
+     */
+    private void sendSseData(SseEmitter emitter, RagStreamResponse response) {
+        try {
+            String jsonData = objectMapper.writeValueAsString(response);
+            emitter.send(SseEmitter.event().data(jsonData));
+        } catch (IllegalStateException e) {
+            if (e.getMessage() != null && e.getMessage().contains("already completed")) {
+                log.warn("SSE连接已关闭，跳过数据发送: {}", response.getStage());
+            } else {
+                log.error("SSE状态错误", e);
+            }
+        } catch (Exception e) {
+            log.error("发送SSE数据失败", e);
+        }
     }
 }
