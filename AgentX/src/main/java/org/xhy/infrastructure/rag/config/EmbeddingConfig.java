@@ -51,19 +51,19 @@ public class EmbeddingConfig {
      */
     @Bean
     public EmbeddingStore<TextSegment> initEmbeddingStore() {
-
+        EmbeddingProperties.VectorStore vectorStoreConfig = embeddingProperties.getVectorStore();
+        
         return PgVectorEmbeddingStore.builder()
-                .table("agent.document")
-                .dropTableFirst(false)
-                .createTable(false)
-                .host("124.220.234.136")
-                .port(5432)
-                .user("agent")
-                .password("cE6ekwea3sZE")
-                .dimension(1024)
-                .database("agent")
+                .table(vectorStoreConfig.getTable())
+                .dropTableFirst(vectorStoreConfig.isDropTableFirst())
+                .createTable(vectorStoreConfig.isCreateTable())
+                .host(vectorStoreConfig.getHost())
+                .port(vectorStoreConfig.getPort())
+                .user(vectorStoreConfig.getUser())
+                .password(vectorStoreConfig.getPassword())
+                .dimension(vectorStoreConfig.getDimension())
+                .database(vectorStoreConfig.getDatabase())
                 .build();
-
     }
 
 

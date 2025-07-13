@@ -38,6 +38,133 @@ public class EmbeddingProperties {
     private int timeout;
 
     /**
+     * 向量存储配置
+     */
+    private VectorStore vectorStore = new VectorStore();
+
+    /**
+     * 向量存储配置内部类
+     */
+    public static class VectorStore {
+        /**
+         * 数据库主机地址
+         */
+        private String host;
+
+        /**
+         * 数据库端口
+         */
+        private int port = 5432;
+
+        /**
+         * 数据库用户名
+         */
+        private String user;
+
+        /**
+         * 数据库密码
+         */
+        private String password;
+
+        /**
+         * 数据库名
+         */
+        private String database;
+
+        /**
+         * 向量表名
+         */
+        private String table = "public.vector_store";
+
+        /**
+         * 向量维度
+         */
+        private int dimension = 1024;
+
+        /**
+         * 是否先删除表
+         */
+        private boolean dropTableFirst = false;
+
+        /**
+         * 是否创建表
+         */
+        private boolean createTable = false;
+
+        public String getHost() {
+            return host;
+        }
+
+        public void setHost(String host) {
+            this.host = host;
+        }
+
+        public int getPort() {
+            return port;
+        }
+
+        public void setPort(int port) {
+            this.port = port;
+        }
+
+        public String getUser() {
+            return user;
+        }
+
+        public void setUser(String user) {
+            this.user = user;
+        }
+
+        public String getPassword() {
+            return password;
+        }
+
+        public void setPassword(String password) {
+            this.password = password;
+        }
+
+        public String getDatabase() {
+            return database;
+        }
+
+        public void setDatabase(String database) {
+            this.database = database;
+        }
+
+        public String getTable() {
+            return table;
+        }
+
+        public void setTable(String table) {
+            this.table = table;
+        }
+
+        public int getDimension() {
+            return dimension;
+        }
+
+        public void setDimension(int dimension) {
+            this.dimension = dimension;
+        }
+
+        public boolean isDropTableFirst() {
+            return dropTableFirst;
+        }
+
+        public void setDropTableFirst(boolean dropTableFirst) {
+            this.dropTableFirst = dropTableFirst;
+        }
+
+        public boolean isCreateTable() {
+            return createTable;
+        }
+
+        public void setCreateTable(boolean createTable) {
+            this.createTable = createTable;
+        }
+    }
+
+    /**
      * 获取嵌入服务名称
      * @return 嵌入服务名称
      */
@@ -115,5 +242,21 @@ public class EmbeddingProperties {
      */
     public void setTimeout(int timeout) {
         this.timeout = timeout;
+    }
+
+    /**
+     * 获取向量存储配置
+     * @return 向量存储配置
+     */
+    public VectorStore getVectorStore() {
+        return vectorStore;
+    }
+
+    /**
+     * 设置向量存储配置
+     * @param vectorStore 向量存储配置
+     */
+    public void setVectorStore(VectorStore vectorStore) {
+        this.vectorStore = vectorStore;
     }
 }
