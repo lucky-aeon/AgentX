@@ -19,8 +19,7 @@ import org.apache.pdfbox.rendering.PDFRenderer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * @author shilong.zang
+/** @author shilong.zang
  * @date 09:08 <br/>
  */
 public class PdfToBase64Converter {
@@ -32,11 +31,7 @@ public class PdfToBase64Converter {
     // 默认图像压缩质量 (0.0-1.0)
     private static final float DEFAULT_COMPRESSION_QUALITY = 0.7f;
 
-    /**
-     * 转换PDF文件为base64图像列表(批量处理方式)
-     * 注意：此方法将整个PDF加载到内存中，可能导致内存溢出
-     * 推荐使用 processPdfPageByPage 方法进行流式处理
-     */
+    /** 转换PDF文件为base64图像列表(批量处理方式) 注意：此方法将整个PDF加载到内存中，可能导致内存溢出 推荐使用 processPdfPageByPage 方法进行流式处理 */
     public static List<String> convertPdfToBase64Images(byte[] pdfData, String imageFormat) throws IOException {
         List<String> base64Images = new ArrayList<>();
 
@@ -60,8 +55,7 @@ public class PdfToBase64Converter {
                 image.flush();
                 image = null;
 
-                log.info("已处理第{}页，当前内存使用: {}MB",
-                        (pageIndex + 1),
+                log.info("已处理第{}页，当前内存使用: {}MB", (pageIndex + 1),
                         (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / (1024 * 1024));
             }
         }
@@ -69,15 +63,12 @@ public class PdfToBase64Converter {
         return base64Images;
     }
 
-    /**
-     * 流式处理PDF文件的单页并转换为base64
-     * 此方法每次只处理一页，大大减少内存占用
+    /** 流式处理PDF文件的单页并转换为base64 此方法每次只处理一页，大大减少内存占用
      *
-     * @param pdfData     PDF文件字节数组
-     * @param pageIndex   要处理的页码（从0开始）
+     * @param pdfData PDF文件字节数组
+     * @param pageIndex 要处理的页码（从0开始）
      * @param imageFormat 图像格式（如"jpg"）
-     * @return 指定页面的base64编码字符串
-     */
+     * @return 指定页面的base64编码字符串 */
     public static String processPdfPageToBase64(byte[] pdfData, int pageIndex, String imageFormat) throws IOException {
         // 加载PDF文档
         try (PDDocument document = Loader.loadPDF(pdfData)) {
@@ -99,18 +90,14 @@ public class PdfToBase64Converter {
         }
     }
 
-    /**
-     * 获取PDF总页数
-     */
+    /** 获取PDF总页数 */
     public static int getPdfPageCount(byte[] pdfData) throws IOException {
         try (PDDocument document = Loader.loadPDF(pdfData)) {
             return document.getNumberOfPages();
         }
     }
 
-    /**
-     * 将图像转换为压缩的base64字符串
-     */
+    /** 将图像转换为压缩的base64字符串 */
     private static String convertImageToBase64Compressed(BufferedImage image, String formatName) throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
@@ -136,9 +123,7 @@ public class PdfToBase64Converter {
         return Base64.getEncoder().encodeToString(imageBytes);
     }
 
-    /**
-     * 原始未压缩转换方法 - 保留用于兼容性
-     */
+    /** 原始未压缩转换方法 - 保留用于兼容性 */
     private static String convertImageToBase64(BufferedImage image, String formatName) throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         ImageIO.write(image, formatName, baos);

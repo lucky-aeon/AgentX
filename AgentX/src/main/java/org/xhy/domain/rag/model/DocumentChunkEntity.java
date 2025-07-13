@@ -7,8 +7,7 @@ import java.io.Serializable;
 
 import org.xhy.infrastructure.entity.BaseEntity;
 
-/**
- * 此类为文档分片实体类，映射数据库表，不进行任何操作传参使用
+/** 此类为文档分片实体类，映射数据库表，不进行任何操作传参使用
  * @author shilong.zang
  * @date 19:20 <br/>
  */
@@ -17,20 +16,14 @@ public class DocumentChunkEntity extends BaseEntity implements Serializable {
     @Serial
     private static final long serialVersionUID = 5264446804791048406L;
 
-    /**
-     * id
-     */
+    /** id */
     @TableId(type = IdType.ASSIGN_UUID)
     private String embeddingId;
 
-    /**
-     * 内容
-     */
+    /** 内容 */
     private String text;
 
-    /**
-     * 元数据
-     */
+    /** 元数据 */
     private String metadata;
 
     public String getEmbeddingId() {

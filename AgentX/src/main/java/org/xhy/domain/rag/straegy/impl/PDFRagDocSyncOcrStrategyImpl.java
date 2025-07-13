@@ -34,15 +34,13 @@ import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.chat.response.ChatResponse;
 import jakarta.annotation.Resource;
 
-/**
- * @author shilong.zang
+/** @author shilong.zang
  * @date 10:20 <br/>
  */
 @Service(value = "ragDocSyncOcr-PDF")
 public class PDFRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl implements RAGSystemPrompt {
 
     private static final Logger log = LoggerFactory.getLogger(PDFRagDocSyncOcrStrategyImpl.class);
-
 
     private final DocumentUnitRepository documentUnitRepository;
 
@@ -54,43 +52,39 @@ public class PDFRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl impl
     // 用于存储当前处理的文件ID，以便更新进度
     private String currentProcessingFileId;
 
-    public PDFRagDocSyncOcrStrategyImpl(DocumentUnitRepository documentUnitRepository, FileDetailRepository fileDetailRepository) {
+    public PDFRagDocSyncOcrStrategyImpl(DocumentUnitRepository documentUnitRepository,
+            FileDetailRepository fileDetailRepository) {
         this.documentUnitRepository = documentUnitRepository;
         this.fileDetailRepository = fileDetailRepository;
     }
 
-    /**
-     * 处理消息，增加进度更新功能
+    /** 处理消息，增加进度更新功能
      * @param ragDocSyncOcrMessage 消息数据
-     * @param strategy 当前策略
-     */
+     * @param strategy 当前策略 */
     @Override
     public void handle(RagDocSyncOcrMessage ragDocSyncOcrMessage, String strategy) throws Exception {
         // 设置当前处理的文件ID，用于进度更新
         this.currentProcessingFileId = ragDocSyncOcrMessage.getFileId();
-        
+
         // 调用父类处理逻辑
         super.handle(ragDocSyncOcrMessage, strategy);
     }
 
-    /**
-     * 获取文件页数
-     *
-     */
+    /** 获取文件页数 */
     @Override
-    public void pushPageSize(byte[] bytes,RagDocSyncOcrMessage ragDocSyncOcrMessage) {
+    public void pushPageSize(byte[] bytes, RagDocSyncOcrMessage ragDocSyncOcrMessage) {
 
         try {
             final int pdfPageCount = PdfToBase64Converter.getPdfPageCount(bytes);
             ragDocSyncOcrMessage.setPageSize(pdfPageCount);
-            
+
             // 更新数据库中的总页数
             if (currentProcessingFileId != null) {
                 LambdaUpdateWrapper<FileDetailEntity> wrapper = Wrappers.<FileDetailEntity>lambdaUpdate()
                         .eq(FileDetailEntity::getId, currentProcessingFileId)
                         .set(FileDetailEntity::getFilePageSize, pdfPageCount);
                 fileDetailRepository.update(wrapper);
-                
+
                 log.info("Updated total pages for file {}: {} pages", currentProcessingFileId, pdfPageCount);
             }
         } catch (IOException e) {
@@ -99,12 +93,10 @@ public class PDFRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl impl
 
     }
 
-    /**
-     * 获取文件
+    /** 获取文件
      *
      * @param ragDocSyncOcrMessage 消息数据
-     * @param strategy             当前策略
-     */
+     * @param strategy 当前策略 */
     @Override
     public byte[] getFileData(RagDocSyncOcrMessage ragDocSyncOcrMessage, String strategy) {
 
@@ -113,11 +105,9 @@ public class PDFRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl impl
         return fileStorageService.download(fileDetailEntity.getUrl()).bytes();
     }
 
-    /**
-     * 处理PDF文件 - 按页处理逻辑
-     */
+    /** 处理PDF文件 - 按页处理逻辑 */
     @Override
-    public Map<Integer,String> processFile(byte[] fileBytes, int totalPages) {
+    public Map<Integer, String> processFile(byte[] fileBytes, int totalPages) {
 
         final HashMap<Integer, String> ocrData = new HashMap<>();
         for (int pageIndex = 0; pageIndex < totalPages; pageIndex++) {
@@ -127,21 +117,13 @@ public class PDFRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl impl
 
                 final UserMessage userMessage = UserMessage.userMessage(
                         ImageContent.from(base64, TikaFileTypeDetector.detectFileType(Base64.decode(base64))),
-                        TextContent.from(OCR_PROMPT)
-                );
+                        TextContent.from(OCR_PROMPT));
 
-
-                /**
-                 * 创建OCR处理的默认配置
-                 * TODO: 这里应该从系统配置中获取OCR专用的模型配置
-                 */
+                /** 创建OCR处理的默认配置 TODO: 这里应该从系统配置中获取OCR专用的模型配置 */
                 ProviderConfig ocrProviderConfig = new ProviderConfig(
-                    "sk-cxdmubeuwhayavsalqgmkrljfplhharyrociewxaikfmqkwm",
-                    "https://api.siliconflow.cn/v1",
-                    "Qwen/Qwen2.5-VL-72B-Instruct",
-                    ProviderProtocol.OPENAI
-                );
-                
+                        "sk-cxdmubeuwhayavsalqgmkrljfplhharyrociewxaikfmqkwm", "https://api.siliconflow.cn/v1",
+                        "Qwen/Qwen2.5-VL-72B-Instruct", ProviderProtocol.OPENAI);
+
                 ChatModel ocrModel = LLMProviderService.getStrand(ProviderProtocol.OPENAI, ocrProviderConfig);
 
                 final ChatResponse chat = ocrModel.chat(userMessage);
@@ -151,9 +133,7 @@ public class PDFRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl impl
                 // 实时更新处理进度
                 updateProcessProgress(pageIndex + 1, totalPages);
 
-                log.info("Processing request page {}/{}, current memory usage: {} MB",
-                        (pageIndex + 1),
-                        totalPages,
+                log.info("Processing request page {}/{}, current memory usage: {} MB", (pageIndex + 1), totalPages,
                         (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / (1024 * 1024));
 
                 if ((pageIndex + 1) % 10 == 0) {
@@ -177,18 +157,16 @@ public class PDFRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl impl
 
     }
 
-    /**
-     * 保存数据
+    /** 保存数据
      *
      * @param ragDocSyncOcrMessage 消息数据
-     * @param ocrData ocr数据
-     */
+     * @param ocrData ocr数据 */
     @Override
     public void insertData(RagDocSyncOcrMessage ragDocSyncOcrMessage, Map<Integer, String> ocrData) {
 
         for (int pageIndex = 0; pageIndex < ragDocSyncOcrMessage.getPageSize(); pageIndex++) {
 
-            String content = ocrData.getOrDefault(pageIndex,null);
+            String content = ocrData.getOrDefault(pageIndex, null);
 
             final DocumentUnitEntity documentUnitDO = new DocumentUnitEntity();
 
@@ -207,15 +185,9 @@ public class PDFRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl impl
         }
     }
 
-    private static final Pattern[] PATTERNS = {
-            Pattern.compile("\\\\（"),
-            Pattern.compile("\\\\）"),
-            Pattern.compile("\n{3,}"),
-            Pattern.compile("([^\n])\n([^\n])"),
-            Pattern.compile("\\$\\s+"),
-            Pattern.compile("\\s+\\$"),
-            Pattern.compile("\\$\\$")
-    };
+    private static final Pattern[] PATTERNS = {Pattern.compile("\\\\（"), Pattern.compile("\\\\）"),
+            Pattern.compile("\n{3,}"), Pattern.compile("([^\n])\n([^\n])"), Pattern.compile("\\$\\s+"),
+            Pattern.compile("\\s+\\$"), Pattern.compile("\\$\\$")};
 
     public String processText(String input) {
         String result = input;
@@ -229,28 +201,26 @@ public class PDFRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl impl
         return result.trim();
     }
 
-    /**
-     * 更新处理进度
+    /** 更新处理进度
      * @param currentPage 当前页数
-     * @param totalPages 总页数
-     */
+     * @param totalPages 总页数 */
     private void updateProcessProgress(int currentPage, int totalPages) {
         if (currentProcessingFileId == null) {
             return;
         }
-        
+
         try {
             double progress = (double) currentPage / totalPages * 100.0;
-            
+
             LambdaUpdateWrapper<FileDetailEntity> wrapper = Wrappers.<FileDetailEntity>lambdaUpdate()
                     .eq(FileDetailEntity::getId, currentProcessingFileId)
                     .set(FileDetailEntity::getCurrentPageNumber, currentPage)
                     .set(FileDetailEntity::getProcessProgress, progress);
-            
+
             fileDetailRepository.update(wrapper);
-            
-            log.debug("Updated progress for file {}: {}/{} pages ({}%)", 
-                     currentProcessingFileId, currentPage, totalPages, String.format("%.1f", progress));
+
+            log.debug("Updated progress for file {}: {}/{} pages ({}%)", currentProcessingFileId, currentPage,
+                    totalPages, String.format("%.1f", progress));
         } catch (Exception e) {
             log.warn("Failed to update progress for file {}: {}", currentProcessingFileId, e.getMessage());
         }

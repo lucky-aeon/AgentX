@@ -1,50 +1,32 @@
 package org.xhy.application.rag.dto;
 
-/**
- * 文件处理进度响应
+/** 文件处理进度响应
  * @author zang
- * @date 2025-01-10
- */
+ * @date 2025-01-10 */
 public class FileProcessProgressDTO {
 
-    /**
-     * 文件ID
-     */
+    /** 文件ID */
     private String fileId;
 
-    /**
-     * 文件名
-     */
+    /** 文件名 */
     private String filename;
 
-    /**
-     * 初始化状态
-     */
+    /** 初始化状态 */
     private Integer isInitialize;
 
-    /**
-     * 向量化状态
-     */
+    /** 向量化状态 */
     private Integer isEmbedding;
 
-    /**
-     * 当前处理页数
-     */
+    /** 当前处理页数 */
     private Integer currentPageNumber;
 
-    /**
-     * 总页数
-     */
+    /** 总页数 */
     private Integer filePageSize;
 
-    /**
-     * 处理进度百分比
-     */
+    /** 处理进度百分比 */
     private Double processProgress;
 
-    /**
-     * 状态描述
-     */
+    /** 状态描述 */
     private String statusDescription;
 
     public String getFileId() {

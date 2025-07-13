@@ -27,20 +27,16 @@ import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.rabbitmq.client.Channel;
 
-/**
- * @author shilong.zang
+/** @author shilong.zang
  * @date 20:51 <br/>
  */
-@RabbitListener(bindings = @QueueBinding(value = @Queue(RagDocSyncStorageEvent.QUEUE_NAME),
-        exchange = @Exchange(value = RagDocSyncStorageEvent.EXCHANGE_NAME , type = ExchangeTypes.TOPIC),
-        key = RagDocSyncStorageEvent.ROUTE_KEY))
+@RabbitListener(bindings = @QueueBinding(value = @Queue(RagDocSyncStorageEvent.QUEUE_NAME), exchange = @Exchange(value = RagDocSyncStorageEvent.EXCHANGE_NAME, type = ExchangeTypes.TOPIC), key = RagDocSyncStorageEvent.ROUTE_KEY))
 @Component
 public class RagDocStorageConsumer {
 
     private static final Logger log = LoggerFactory.getLogger(RagDocStorageConsumer.class);
 
     private final EmbeddingDomainService embeddingService;
-
 
     public RagDocStorageConsumer(EmbeddingDomainService embeddingService) {
         this.embeddingService = embeddingService;
@@ -50,16 +46,18 @@ public class RagDocStorageConsumer {
     public void receiveMessage(Message message, String msg, Channel channel) throws IOException {
         MqMessage mqMessageBody = JSONObject.parseObject(msg, MqMessage.class);
 
-        MDC.put(HEADER_NAME_TRACE_ID, Objects.nonNull(mqMessageBody.getTraceId())
-                ? mqMessageBody.getTraceId() : IdWorker.getTimeId());
+        MDC.put(HEADER_NAME_TRACE_ID,
+                Objects.nonNull(mqMessageBody.getTraceId()) ? mqMessageBody.getTraceId() : IdWorker.getTimeId());
         MessageProperties messageProperties = message.getMessageProperties();
         long deliveryTag = messageProperties.getDeliveryTag();
         RagDocSyncStorageMessage mqRecordReqDTO = JSON.parseObject(JSON.toJSONString(mqMessageBody.getData()),
                 RagDocSyncStorageMessage.class);
         try {
-            log.info("Current file {} Page {} ———— Starting vectorization",mqRecordReqDTO.getFileName(),mqRecordReqDTO.getPage());
+            log.info("Current file {} Page {} ———— Starting vectorization", mqRecordReqDTO.getFileName(),
+                    mqRecordReqDTO.getPage());
             embeddingService.syncStorage(mqRecordReqDTO);
-            log.info("Current file {} Page {} ———— Vectorization finished",mqRecordReqDTO.getFileName(),mqRecordReqDTO.getPage());
+            log.info("Current file {} Page {} ———— Vectorization finished", mqRecordReqDTO.getFileName(),
+                    mqRecordReqDTO.getPage());
         } catch (Exception e) {
             log.error("Exception occurred during vectorization", e);
         } finally {

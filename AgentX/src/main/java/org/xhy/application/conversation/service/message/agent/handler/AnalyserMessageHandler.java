@@ -19,23 +19,16 @@ import org.xhy.infrastructure.llm.LLMServiceFactory;
 import org.xhy.infrastructure.utils.ModelResponseToJsonUtils;
 import java.util.Collections;
 
-
-/**
- * 分析用户消息是普通消息还是任务消息
- * 发送给大模型的消息会拥有俩个 systemPrompt
- */
+/** 分析用户消息是普通消息还是任务消息 发送给大模型的消息会拥有俩个 systemPrompt */
 @Component
 public class AnalyserMessageHandler extends AbstractAgentHandler {
 
     private static final String extraAnalyzerMessageKey = "analyzerMessage";
-    
-    protected AnalyserMessageHandler(
-            LLMServiceFactory llmServiceFactory,
-            TaskManager taskManager,
-            ContextDomainService contextDomainService,
-            InfoRequirementService infoRequirementService,
+
+    protected AnalyserMessageHandler(LLMServiceFactory llmServiceFactory, TaskManager taskManager,
+            ContextDomainService contextDomainService, InfoRequirementService infoRequirementService,
             MessageDomainService messageDomainService) {
-        super(llmServiceFactory, taskManager,  contextDomainService,messageDomainService);
+        super(llmServiceFactory, taskManager, contextDomainService, messageDomainService);
     }
 
     @Override
@@ -47,21 +40,15 @@ public class AnalyserMessageHandler extends AbstractAgentHandler {
     protected void transitionToNextState(AgentWorkflowContext<?> context) {
         AnalyzerMessageDTO analyzerMessageDTO = (AnalyzerMessageDTO) context.getExtraData(extraAnalyzerMessageKey);
         // 问答消息直接 break，任务消息转向任务拆分
-        if (analyzerMessageDTO.getIsQuestion()){
+        if (analyzerMessageDTO.getIsQuestion()) {
             this.setBreak(analyzerMessageDTO.getIsQuestion());
         } else {
             context.transitionTo(AgentWorkflowState.TASK_SPLITTING);
         }
     }
 
-    /**
-     * 保存消息策略：
-     * 如果是问答消息，则都要保存
-     * 如果是任务消息，则放行，后续会通过任务拆分进行保存
-     * 问题：
-     * 如果是任务消息，但是被识别到缺少信息，则就没有保存消息了，如何解决？
-     * @param <T>
-     */
+    /** 保存消息策略： 如果是问答消息，则都要保存 如果是任务消息，则放行，后续会通过任务拆分进行保存 问题： 如果是任务消息，但是被识别到缺少信息，则就没有保存消息了，如何解决？
+     * @param <T> */
     @Override
     @SuppressWarnings("unchecked")
     protected <T> void processEvent(AgentWorkflowContext<?> contextObj) {
@@ -85,20 +72,20 @@ public class AnalyserMessageHandler extends AbstractAgentHandler {
                 context.sendEndMessage(analyzerMessageDTO.getReply(), MessageType.TEXT);
                 // 保存消息
                 context.getLlmMessageEntity().setContent(analyzerMessageDTO.getReply());
-                saveMessageAndUpdateContext(Collections.singletonList(context.getLlmMessageEntity()),context.getChatContext());
+                saveMessageAndUpdateContext(Collections.singletonList(context.getLlmMessageEntity()),
+                        context.getChatContext());
                 // 关闭连接
                 context.completeConnection();
                 return;
             }
-            saveMessageAndUpdateContext(Collections.singletonList(context.getUserMessageEntity()),context.getChatContext());
+            saveMessageAndUpdateContext(Collections.singletonList(context.getUserMessageEntity()),
+                    context.getChatContext());
         } catch (Exception e) {
             context.handleError(e);
         }
     }
 
-    /**
-     * 构建任务拆分请求
-     */
+    /** 构建任务拆分请求 */
     private <T> ChatRequest buildRequest(AgentWorkflowContext<T> context) {
         ChatContext chatContext = context.getChatContext();
         String userMessage = chatContext.getUserMessage();

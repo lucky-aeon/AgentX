@@ -2,8 +2,7 @@ package org.xhy.infrastructure.mq.model;
 
 import org.springframework.amqp.core.ExchangeTypes;
 
-/**
- * 广播MQ消息发送事件
+/** 广播MQ消息发送事件
  * @author zang
  * @date 14:20 <br/>
  */
@@ -38,11 +37,9 @@ public abstract class MQFanoutSendEventModel<T> extends MQSendEventModel<T> {
         return "fanout.plss.record.base.info.exchange";
     }
 
-
     @Override
     public String routeKey() {
         return "fanout.record.base.info";
     }
-
 
 }

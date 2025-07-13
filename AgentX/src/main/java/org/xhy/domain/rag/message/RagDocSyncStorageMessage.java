@@ -3,44 +3,31 @@ package org.xhy.domain.rag.message;
 import java.io.Serial;
 import java.io.Serializable;
 
-/**
- * @author shilong.zang
+/** @author shilong.zang
  * @date 20:54 <br/>
  */
 public class RagDocSyncStorageMessage implements Serializable {
 
     @Serial
     private static final long serialVersionUID = -5764144581856293209L;
-    /**
-     * 主键
-     */
+    /** 主键 */
     private String id;
 
-    /**
-     * 文件ID
-     */
+    /** 文件ID */
     private String fileId;
 
-    /**
-     * 页码
-     */
+    /** 页码 */
     private Integer page;
 
-    /**
-     * 当前页内容
-     */
+    /** 当前页内容 */
     private String content;
 
-    /**
-     * 是否进行向量化
-     */
+    /** 是否进行向量化 */
     private Boolean isVector;
 
     private String fileName;
 
-    /**
-     * 数据集ID
-     */
+    /** 数据集ID */
     private String datasetId;
 
     public String getId() {

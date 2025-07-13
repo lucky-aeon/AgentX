@@ -13,10 +13,7 @@ import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * Agent工作流上下文
- * 维护工作流执行过程中的状态和数据
- */
+/** Agent工作流上下文 维护工作流执行过程中的状态和数据 */
 public class AgentWorkflowContext<T> {
     // 工作流上下文的唯一标识符
     private final String id = UUID.randomUUID().toString();
@@ -62,12 +59,9 @@ public class AgentWorkflowContext<T> {
 
     private CountDownLatch countDownLatch = new CountDownLatch(1);
 
-    private Map<String,Object> extraData = new HashMap<>();
+    private Map<String, Object> extraData = new HashMap<>();
 
-
-    /**
-     * 转换状态并发布事件
-     */
+    /** 转换状态并发布事件 */
     public void transitionTo(AgentWorkflowState newState) {
         AgentWorkflowState oldState = this.state;
         this.previousState = this.state;
@@ -75,75 +69,57 @@ public class AgentWorkflowContext<T> {
         AgentWorkflowEvent event = new AgentWorkflowEvent(this, oldState, newState);
         AgentEventBus.publish(event);
     }
-    
-    /**
-     * 发送消息到前端
-     */
+
+    /** 发送消息到前端 */
     public void sendMessage(String content, MessageType messageType) {
         AgentChatResponse response = AgentChatResponse.build(content, messageType);
         messageTransport.sendMessage(connection, response);
     }
-    
-    /**
-     * 发送终止消息到前端
-     */
+
+    /** 发送终止消息到前端 */
     public void sendEndMessage(String content, MessageType messageType) {
         AgentChatResponse response = AgentChatResponse.buildEndMessage(content, messageType);
         messageTransport.sendMessage(connection, response);
     }
-    
-    /**
-     * 发送终止消息到前端（无内容）
-     */
+
+    /** 发送终止消息到前端（无内容） */
     public void sendEndMessage(MessageType messageType) {
         AgentChatResponse response = AgentChatResponse.buildEndMessage(messageType);
         messageTransport.sendMessage(connection, response);
     }
-    /**
-     * 发送终止消息到前端（无内容）
-     */
-    public void sendEndWithTaskIdMessage(String taskId,MessageType messageType) {
+    /** 发送终止消息到前端（无内容） */
+    public void sendEndWithTaskIdMessage(String taskId, MessageType messageType) {
         AgentChatResponse response = AgentChatResponse.buildEndMessage(messageType);
         response.setTaskId(taskId);
         messageTransport.sendMessage(connection, response);
     }
-    
-    /**
-     * 处理错误
-     */
+
+    /** 处理错误 */
     public void handleError(Throwable error) {
         String errorMessage = "任务执行过程中发生错误: " + error.getMessage();
         sendEndMessage(errorMessage, MessageType.TEXT);
         messageTransport.handleError(connection, error);
         transitionTo(AgentWorkflowState.FAILED);
     }
-    
-    /**
-     * 添加子任务
-     */
+
+    /** 添加子任务 */
     public void addSubTask(String taskName, TaskEntity taskEntity) {
         tasks.add(taskName);
         subTaskMap.put(taskName, taskEntity);
     }
-    
-    /**
-     * 添加任务结果
-     */
+
+    /** 添加任务结果 */
     public void addTaskResult(String taskName, String result) {
         taskResults.put(taskName, result);
         completedTaskCount++;
     }
-    
-    /**
-     * 是否所有任务都已完成
-     */
+
+    /** 是否所有任务都已完成 */
     public boolean areAllTasksCompleted() {
         return completedTaskCount >= tasks.size();
     }
-    
-    /**
-     * 获取下一个要执行的任务
-     */
+
+    /** 获取下一个要执行的任务 */
     public String getNextTask() {
         int index = currentTaskIndex.getAndIncrement();
         if (index < tasks.size()) {
@@ -151,36 +127,29 @@ public class AgentWorkflowContext<T> {
         }
         return null;
     }
-    
-    /**
-     * 是否还有下一个任务
-     */
+
+    /** 是否还有下一个任务 */
     public boolean hasNextTask() {
         return currentTaskIndex.get() < tasks.size();
     }
-    
-    /**
-     * 构建任务结果汇总文本
-     */
+
+    /** 构建任务结果汇总文本 */
     public String buildTaskSummary() {
         StringBuilder taskSummaryBuilder = new StringBuilder();
         for (Map.Entry<String, String> entry : taskResults.entrySet()) {
-            taskSummaryBuilder.append("任务: ").append(entry.getKey())
-                    .append("\n结果: ").append(entry.getValue())
+            taskSummaryBuilder.append("任务: ").append(entry.getKey()).append("\n结果: ").append(entry.getValue())
                     .append("\n\n");
         }
         return taskSummaryBuilder.toString();
     }
-    
-    /**
-     * 完成连接
-     */
+
+    /** 完成连接 */
     public void completeConnection() {
         messageTransport.completeConnection(connection);
     }
 
     // Getters and Setters
-    
+
     public String getId() {
         return id;
     }

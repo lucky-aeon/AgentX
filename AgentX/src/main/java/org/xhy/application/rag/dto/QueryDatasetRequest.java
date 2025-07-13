@@ -1,25 +1,17 @@
 package org.xhy.application.rag.dto;
 
-/**
- * 数据集查询请求
+/** 数据集查询请求
  * @author shilong.zang
- * @date 2024-12-09
- */
+ * @date 2024-12-09 */
 public class QueryDatasetRequest {
 
-    /**
-     * 页码，默认1
-     */
+    /** 页码，默认1 */
     private Integer page = 1;
 
-    /**
-     * 每页大小，默认15
-     */
+    /** 每页大小，默认15 */
     private Integer pageSize = 15;
 
-    /**
-     * 搜索关键词
-     */
+    /** 搜索关键词 */
     private String keyword;
 
     public Integer getPage() {

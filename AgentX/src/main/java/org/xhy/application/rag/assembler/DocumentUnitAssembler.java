@@ -9,13 +9,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * 文档单元转换器
+/** 文档单元转换器
  * 
- * @author shilong.zang
- */
+ * @author shilong.zang */
 public class DocumentUnitAssembler {
-    
+
     /** Convert Entity to DTO using BeanUtils */
     public static DocumentUnitDTO toDTO(DocumentUnitEntity entity) {
         if (entity == null) {
@@ -23,7 +21,7 @@ public class DocumentUnitAssembler {
         }
         DocumentUnitDTO dto = new DocumentUnitDTO();
         BeanUtils.copyProperties(entity, dto);
-        
+
         // 时间格式化
         if (entity.getCreatedAt() != null) {
             dto.setCreatedAt(entity.getCreatedAt().toString());
@@ -31,10 +29,10 @@ public class DocumentUnitAssembler {
         if (entity.getUpdatedAt() != null) {
             dto.setUpdatedAt(entity.getUpdatedAt().toString());
         }
-        
+
         return dto;
     }
-    
+
     /** Convert Update request to Entity for partial update */
     public static DocumentUnitEntity toEntity(UpdateDocumentUnitRequest request, String userId) {
         if (request == null) {
@@ -49,7 +47,7 @@ public class DocumentUnitAssembler {
         }
         return entity;
     }
-    
+
     /** Convert Entity list to DTO list */
     public static List<DocumentUnitDTO> toDTOs(List<DocumentUnitEntity> entities) {
         if (entities == null || entities.isEmpty()) {

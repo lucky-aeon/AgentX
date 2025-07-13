@@ -30,14 +30,10 @@ import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.rabbitmq.client.Channel;
 
-/**
- * OCR预处理消费者
+/** OCR预处理消费者
  * @author zang
- * @date 2025-01-10
- */
-@RabbitListener(bindings = @QueueBinding(value = @Queue(RagDocSyncOcrEvent.QUEUE_NAME),
-        exchange = @Exchange(value = RagDocSyncOcrEvent.EXCHANGE_NAME , type = ExchangeTypes.TOPIC),
-        key = RagDocSyncOcrEvent.ROUTE_KEY))
+ * @date 2025-01-10 */
+@RabbitListener(bindings = @QueueBinding(value = @Queue(RagDocSyncOcrEvent.QUEUE_NAME), exchange = @Exchange(value = RagDocSyncOcrEvent.EXCHANGE_NAME, type = ExchangeTypes.TOPIC), key = RagDocSyncOcrEvent.ROUTE_KEY))
 @Component
 public class RagDocOcrConsumer {
 
@@ -47,7 +43,7 @@ public class RagDocOcrConsumer {
     private final FileDetailDomainService fileDetailDomainService;
 
     public RagDocOcrConsumer(RagDocSyncOcrContext ragDocSyncOcrContext,
-                            FileDetailDomainService fileDetailDomainService) {
+            FileDetailDomainService fileDetailDomainService) {
         this.ragDocSyncOcrContext = ragDocSyncOcrContext;
         this.fileDetailDomainService = fileDetailDomainService;
     }
@@ -56,43 +52,46 @@ public class RagDocOcrConsumer {
     public void receiveMessage(Message message, String msg, Channel channel) throws IOException {
         MqMessage mqMessageBody = JSONObject.parseObject(msg, MqMessage.class);
 
-        MDC.put(HEADER_NAME_TRACE_ID, Objects.nonNull(mqMessageBody.getTraceId())
-                ? mqMessageBody.getTraceId() : IdWorker.getTimeId());
+        MDC.put(HEADER_NAME_TRACE_ID,
+                Objects.nonNull(mqMessageBody.getTraceId()) ? mqMessageBody.getTraceId() : IdWorker.getTimeId());
         MessageProperties messageProperties = message.getMessageProperties();
         long deliveryTag = messageProperties.getDeliveryTag();
         RagDocSyncOcrMessage ocrMessage = JSON.parseObject(JSON.toJSONString(mqMessageBody.getData()),
                 RagDocSyncOcrMessage.class);
-        
+
         try {
             log.info("Starting OCR processing for file: {}", ocrMessage.getFileId());
-            
+
             // 更新文件状态为初始化中
-            fileDetailDomainService.updateFileInitializeStatus(ocrMessage.getFileId(), FileInitializeStatus.INITIALIZING);
+            fileDetailDomainService.updateFileInitializeStatus(ocrMessage.getFileId(),
+                    FileInitializeStatus.INITIALIZING);
             fileDetailDomainService.updateFileProgress(ocrMessage.getFileId(), 0, 0.0);
-            
+
             // 获取文件扩展名并选择处理策略
             String fileExt = fileDetailDomainService.getFileExtension(ocrMessage.getFileId());
             if (fileExt == null) {
                 throw new RuntimeException("文件扩展名不能为空");
             }
-            
+
             RagDocSyncOcrStrategy strategy = ragDocSyncOcrContext.getTaskExportStrategy(fileExt.toUpperCase());
             if (strategy == null) {
                 throw new RuntimeException("不支持的文件类型: " + fileExt);
             }
-            
+
             // 执行OCR处理
             strategy.handle(ocrMessage, fileExt.toUpperCase());
-            
+
             // 完成初始化
-            fileDetailDomainService.updateFileInitializeStatus(ocrMessage.getFileId(), FileInitializeStatus.INITIALIZED);
-            
+            fileDetailDomainService.updateFileInitializeStatus(ocrMessage.getFileId(),
+                    FileInitializeStatus.INITIALIZED);
+
             log.info("OCR processing completed for file: {}", ocrMessage.getFileId());
-            
+
         } catch (Exception e) {
             log.error("OCR processing failed for file: {}", ocrMessage.getFileId(), e);
             // 处理失败
-            fileDetailDomainService.updateFileInitializeStatus(ocrMessage.getFileId(), FileInitializeStatus.INITIALIZATION_FAILED);
+            fileDetailDomainService.updateFileInitializeStatus(ocrMessage.getFileId(),
+                    FileInitializeStatus.INITIALIZATION_FAILED);
             fileDetailDomainService.updateFileProgress(ocrMessage.getFileId(), 0, 0.0);
         } finally {
             channel.basicAck(deliveryTag, false);

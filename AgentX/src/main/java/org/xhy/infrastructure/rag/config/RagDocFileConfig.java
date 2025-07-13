@@ -22,8 +22,7 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.lang.Dict;
 import cn.hutool.core.util.StrUtil;
 
-/**
- * 文件上传服务服务配置
+/** 文件上传服务服务配置
  * @author shilong.zang
  * @date 22:51 <br/>
  */
@@ -38,10 +37,7 @@ public class RagDocFileConfig implements FileRecorder {
         this.fileDetailRepository = fileDetailRepository;
     }
 
-
-    /**
-     * 保存文件信息到数据库
-     */
+    /** 保存文件信息到数据库 */
     @Override
     public boolean save(FileInfo info) {
         FileDetailEntity detail = null;
@@ -51,7 +47,7 @@ public class RagDocFileConfig implements FileRecorder {
             throw new RuntimeException(e);
         }
 
-        //detail.setUserId(StpUtil.getLoginIdAsLong());
+        // detail.setUserId(StpUtil.getLoginIdAsLong());
         fileDetailRepository.checkInsert(detail);
 
         info.setId(detail.getId());
@@ -59,10 +55,7 @@ public class RagDocFileConfig implements FileRecorder {
         return Boolean.TRUE;
     }
 
-    /**
-     * 更新文件记录，可以根据文件 ID 或 URL 来更新文件记录，
-     * 主要用在手动分片上传文件-完成上传，作用是更新文件信息
-     */
+    /** 更新文件记录，可以根据文件 ID 或 URL 来更新文件记录， 主要用在手动分片上传文件-完成上传，作用是更新文件信息 */
     @Override
     public void update(FileInfo info) {
         FileDetailEntity detail = null;
@@ -77,21 +70,18 @@ public class RagDocFileConfig implements FileRecorder {
         fileDetailRepository.checkedUpdate(detail, qw);
     }
 
-    /**
-     * 根据 url 查询文件信息
-     */
+    /** 根据 url 查询文件信息 */
     @Override
     public FileInfo getByUrl(String url) {
         try {
-            return toFileInfo(fileDetailRepository.selectOne(Wrappers.<FileDetailEntity>lambdaQuery().eq(FileDetailEntity::getUrl, url)));
+            return toFileInfo(fileDetailRepository
+                    .selectOne(Wrappers.<FileDetailEntity>lambdaQuery().eq(FileDetailEntity::getUrl, url)));
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
     }
 
-    /**
-     * 根据 url 删除文件信息
-     */
+    /** 根据 url 删除文件信息 */
     @Override
     public boolean delete(String url) {
         fileDetailRepository.delete(Wrappers.lambdaQuery(FileDetailEntity.class).eq(FileDetailEntity::getUrl, url));
@@ -108,13 +98,10 @@ public class RagDocFileConfig implements FileRecorder {
 
     }
 
-
-    /**
-     * 将 FileInfo 转为 FileDetailDO
-     */
+    /** 将 FileInfo 转为 FileDetailDO */
     public FileDetailEntity toFileDetailDO(FileInfo info) throws JsonProcessingException {
-        FileDetailEntity detail = BeanUtil.copyProperties(
-                info, FileDetailEntity.class, "metadata", "userMetadata", "thMetadata", "thUserMetadata", "attr", "hashInfo");
+        FileDetailEntity detail = BeanUtil.copyProperties(info, FileDetailEntity.class, "metadata", "userMetadata",
+                "thMetadata", "thUserMetadata", "attr", "hashInfo");
 
         detail.setDataSetId(info.getMetadata().get("dataset"));
         detail.setUserId(info.getMetadata().get("userid"));
@@ -132,12 +119,10 @@ public class RagDocFileConfig implements FileRecorder {
         return detail;
     }
 
-    /**
-     * 将 FileDetailDO 转为 FileInfo
-     */
+    /** 将 FileDetailDO 转为 FileInfo */
     public FileInfo toFileInfo(FileDetailEntity detail) throws JsonProcessingException {
-        FileInfo info = BeanUtil.copyProperties(
-                detail, FileInfo.class, "metadata", "userMetadata", "thMetadata", "thUserMetadata", "attr", "hashInfo");
+        FileInfo info = BeanUtil.copyProperties(detail, FileInfo.class, "metadata", "userMetadata", "thMetadata",
+                "thUserMetadata", "attr", "hashInfo");
 
         // 这里手动获取数据库中的 json 字符串 并转成 元数据，方便使用
         info.setMetadata(jsonToMetadata(detail.getMetadata()));
@@ -152,9 +137,7 @@ public class RagDocFileConfig implements FileRecorder {
         return info;
     }
 
-    /**
-     * 将指定值转换成 json 字符串
-     */
+    /** 将指定值转换成 json 字符串 */
     public String valueToJson(Object value) throws JsonProcessingException {
         if (value == null) {
             return null;
@@ -162,9 +145,7 @@ public class RagDocFileConfig implements FileRecorder {
         return objectMapper.writeValueAsString(value);
     }
 
-    /**
-     * 将 json 字符串转换成元数据对象
-     */
+    /** 将 json 字符串转换成元数据对象 */
     public Map<String, String> jsonToMetadata(String json) throws JsonProcessingException {
         if (StrUtil.isBlank(json)) {
             return null;
@@ -173,9 +154,7 @@ public class RagDocFileConfig implements FileRecorder {
         });
     }
 
-    /**
-     * 将 json 字符串转换成字典对象
-     */
+    /** 将 json 字符串转换成字典对象 */
     public Dict jsonToDict(String json) throws JsonProcessingException {
         if (StrUtil.isBlank(json)) {
             return null;
@@ -183,9 +162,7 @@ public class RagDocFileConfig implements FileRecorder {
         return objectMapper.readValue(json, Dict.class);
     }
 
-    /**
-     * 将 json 字符串转换成哈希信息对象
-     */
+    /** 将 json 字符串转换成哈希信息对象 */
     public HashInfo jsonToHashInfo(String json) throws JsonProcessingException {
         if (StrUtil.isBlank(json)) {
             return null;

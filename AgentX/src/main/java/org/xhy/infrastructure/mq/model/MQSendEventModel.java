@@ -12,8 +12,7 @@ import org.xhy.infrastructure.mq.enums.EventType;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
 
-/**
- * MQ消息发送事件
+/** MQ消息发送事件
  * @author zang
  * @date 14:16 <br/>
  */

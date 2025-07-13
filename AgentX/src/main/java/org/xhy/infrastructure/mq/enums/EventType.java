@@ -1,14 +1,11 @@
 package org.xhy.infrastructure.mq.enums;
 
-/**
- * @author zang
+/** @author zang
  * @date 13:39 <br/>
  */
 public enum EventType {
 
-    DOC_SYNC_RAG(4000, "文件入库"),
-    DOC_REFRESH_ORG(4001, "文件ocr")
-    ;
+    DOC_SYNC_RAG(4000, "文件入库"), DOC_REFRESH_ORG(4001, "文件ocr");
 
     private final Integer code;
     private final String desc;
@@ -18,9 +15,7 @@ public enum EventType {
         this.desc = desc;
     }
 
-    /**
-     * 按key获取枚举
-     */
+    /** 按key获取枚举 */
     public static EventType getEnum(Integer code) {
         for (EventType e : values()) {
             if (e.getCode().equals(code)) {

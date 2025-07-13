@@ -7,27 +7,21 @@ import org.slf4j.LoggerFactory;
 import org.xhy.domain.rag.message.RagDocSyncOcrMessage;
 import org.xhy.domain.rag.straegy.RagDocSyncOcrStrategy;
 
-/**
- * @author shilong.zang
+/** @author shilong.zang
  * @date 17:32 <br/>
  */
 public abstract class RagDocSyncOcrStrategyImpl implements RagDocSyncOcrStrategy {
 
-
     private static final Logger LOG = LoggerFactory.getLogger(RagDocSyncOcrStrategyImpl.class);
 
-    /**
-     * 处理消息
+    /** 处理消息
      * @param ragDocSyncOcrMessage 消息数据
-     * @param strategy 当前策略
-     */
+     * @param strategy 当前策略 */
     @Override
     public void handle(RagDocSyncOcrMessage ragDocSyncOcrMessage, String strategy) throws Exception {
 
-
-
         final byte[] fileData = getFileData(ragDocSyncOcrMessage, strategy);
-        pushPageSize(fileData,ragDocSyncOcrMessage);
+        pushPageSize(fileData, ragDocSyncOcrMessage);
         if (fileData == null) {
             LOG.error("File data is empty");
             return;
@@ -37,29 +31,22 @@ public abstract class RagDocSyncOcrStrategyImpl implements RagDocSyncOcrStrategy
 
         LOG.info("Successfully retrieved {} pages of data from the current file", ocrData.size());
 
-        insertData(ragDocSyncOcrMessage,ocrData);
+        insertData(ragDocSyncOcrMessage, ocrData);
 
     };
 
-    /**
-     * 获取文件页数
-     */
+    /** 获取文件页数 */
     abstract public void pushPageSize(byte[] bytes, RagDocSyncOcrMessage ragDocSyncOcrMessage);
 
-    /**
-     * 获取文件
+    /** 获取文件
      * @param ragDocSyncOcrMessage 消息数据
-     * @param strategy 当前策略
-     */
+     * @param strategy 当前策略 */
     abstract public byte[] getFileData(RagDocSyncOcrMessage ragDocSyncOcrMessage, String strategy);
 
-    /**
-     * ocr数据
-     */
-    abstract public Map<Integer,String> processFile(byte[] fileBytes, int totalPages);
+    /** ocr数据 */
+    abstract public Map<Integer, String> processFile(byte[] fileBytes, int totalPages);
 
-    /**
-     * 保存数据
-     */
-    abstract public void insertData(RagDocSyncOcrMessage ragDocSyncOcrMessage, Map<Integer, String> ocrData) throws Exception;
+    /** 保存数据 */
+    abstract public void insertData(RagDocSyncOcrMessage ragDocSyncOcrMessage, Map<Integer, String> ocrData)
+            throws Exception;
 }

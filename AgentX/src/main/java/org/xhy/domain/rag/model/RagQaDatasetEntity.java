@@ -7,8 +7,7 @@ import java.io.Serial;
 import java.io.Serializable;
 import org.xhy.infrastructure.entity.BaseEntity;
 
-/**
- * RAG知识库数据集实体
+/** RAG知识库数据集实体
  * @author shilong.zang
  * @date 17:27 <br/>
  */
@@ -18,30 +17,20 @@ public class RagQaDatasetEntity extends BaseEntity implements Serializable {
     @Serial
     private static final long serialVersionUID = -5803685552931418952L;
 
-    /**
-     * 数据集ID
-     */
+    /** 数据集ID */
     @TableId(type = IdType.ASSIGN_UUID)
     private String id;
 
-    /**
-     * 数据集名称
-     */
+    /** 数据集名称 */
     private String name;
 
-    /**
-     * 数据集图标
-     */
+    /** 数据集图标 */
     private String icon;
 
-    /**
-     * 数据集说明
-     */
+    /** 数据集说明 */
     private String description;
 
-    /**
-     * 用户ID
-     */
+    /** 用户ID */
     private String userId;
 
     public String getId() {

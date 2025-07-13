@@ -3,37 +3,26 @@ package org.xhy.infrastructure.rag.config;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
-/**
- * @author shilong.zang
+/** @author shilong.zang
  * @date 13:58 <br/>
  */
 @Configuration
 @ConfigurationProperties(prefix = "rerank")
 public class RerankProperties {
 
-    /**
-     * 嵌入服务名称
-     */
+    /** 嵌入服务名称 */
     private String name;
 
-    /**
-     * API密钥
-     */
+    /** API密钥 */
     private String apiKey;
 
-    /**
-     * API URL
-     */
+    /** API URL */
     private String apiUrl;
 
-    /**
-     * 使用的模型名称
-     */
+    /** 使用的模型名称 */
     private String model;
 
-    /**
-     * 请求超时时间(毫秒)
-     */
+    /** 请求超时时间(毫秒) */
     private int timeout;
 
     public String getName() {

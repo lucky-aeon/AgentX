@@ -5,8 +5,7 @@ import org.xhy.domain.rag.model.FileDetailEntity;
 import org.xhy.domain.rag.model.RagQaDatasetEntity;
 import org.xhy.infrastructure.repository.MyBatisPlusExtRepository;
 
-/**
- * @author shilong.zang
+/** @author shilong.zang
  * @date 17:44 <br/>
  */
 @Mapper

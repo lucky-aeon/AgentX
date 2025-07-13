@@ -7,10 +7,7 @@ import java.util.List;
 import org.xhy.infrastructure.mq.enums.EventType;
 import org.xhy.infrastructure.mq.model.MQSendEventModel;
 
-
-/**
- * @author zang
- */
+/** @author zang */
 public class RagDocSyncStorageEvent<T> extends MQSendEventModel<T> {
 
     @Serial
@@ -27,7 +24,7 @@ public class RagDocSyncStorageEvent<T> extends MQSendEventModel<T> {
         super(data);
         this.eventType = eventType;
     }
-//
+    //
     public static final String EXCHANGE_NAME = "rag.doc.task.syncStorage.exchange1";
     public static final String QUEUE_NAME = "rag.doc.task.syncStorage.queue1";
     public static final String ROUTE_KEY = "rag.doc.task.syncStorage1";

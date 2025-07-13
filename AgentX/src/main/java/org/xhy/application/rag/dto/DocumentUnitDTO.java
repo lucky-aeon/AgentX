@@ -1,50 +1,32 @@
 package org.xhy.application.rag.dto;
 
-/**
- * 文档单元响应DTO
+/** 文档单元响应DTO
  * 
- * @author shilong.zang
- */
+ * @author shilong.zang */
 public class DocumentUnitDTO {
-    
-    /**
-     * 主键
-     */
+
+    /** 主键 */
     private String id;
-    
-    /**
-     * 文件ID
-     */
+
+    /** 文件ID */
     private String fileId;
-    
-    /**
-     * 页码
-     */
+
+    /** 页码 */
     private Integer page;
-    
-    /**
-     * 内容
-     */
+
+    /** 内容 */
     private String content;
-    
-    /**
-     * 是否OCR处理
-     */
+
+    /** 是否OCR处理 */
     private Boolean isOcr;
-    
-    /**
-     * 是否向量化
-     */
+
+    /** 是否向量化 */
     private Boolean isVector;
-    
-    /**
-     * 创建时间
-     */
+
+    /** 创建时间 */
     private String createdAt;
-    
-    /**
-     * 更新时间
-     */
+
+    /** 更新时间 */
     private String updatedAt;
 
     public String getId() {

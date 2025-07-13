@@ -20,32 +20,20 @@ public class MCPStandTest {
 
     public static void main(String[] args) throws Exception {
 
-        OpenAiStreamingChatModel model = OpenAiStreamingChatModel.builder()
-                .apiKey(System.getenv("API_KEY"))
-                .modelName("Qwen/QwQ-32B")
-                .baseUrl("https://api.siliconflow.cn/v1")
-                .logRequests(true)
-                .logResponses(true)
+        OpenAiStreamingChatModel model = OpenAiStreamingChatModel.builder().apiKey(System.getenv("API_KEY"))
+                .modelName("Qwen/QwQ-32B").baseUrl("https://api.siliconflow.cn/v1").logRequests(true).logResponses(true)
                 .build();
         // npx -y @smithery/cli@latest run @smithery-ai/github --key def1f067-c5b7-443f-af21-2a80c5f176d9
-        McpTransport transport = new HttpMcpTransport.Builder()
-                .sseUrl("http://127.0.0.1:8006/time/sse")
+        McpTransport transport = new HttpMcpTransport.Builder().sseUrl("http://127.0.0.1:8006/time/sse")
                 .logRequests(true) // if you want to see the traffic in the log
-                .logResponses(true)
-                .build();
+                .logResponses(true).build();
 
-        McpClient mcpClient = new DefaultMcpClient.Builder()
-                .transport(transport)
-                .build();
+        McpClient mcpClient = new DefaultMcpClient.Builder().transport(transport).build();
 
-        ToolProvider toolProvider = McpToolProvider.builder()
-                .mcpClients(List.of(mcpClient))
-                .build();
+        ToolProvider toolProvider = McpToolProvider.builder().mcpClients(List.of(mcpClient)).build();
 
-        AgentStandTest agent = AiServices.builder(AgentStandTest.class)
-                .streamingChatModel(model)
-                .toolProvider(toolProvider)
-                .build();
+        AgentStandTest agent = AiServices.builder(AgentStandTest.class).streamingChatModel(model)
+                .toolProvider(toolProvider).build();
 
         AiMessage aiMessage = agent.chat("获取时区");
         if (aiMessage.hasToolExecutionRequests()) {
@@ -53,10 +41,9 @@ public class MCPStandTest {
                 String toolName = toolExecutionRequest.name();
                 System.out.println(toolName);
             });
-        }else {
+        } else {
             System.out.println(aiMessage.text());
         }
-
 
     }
 

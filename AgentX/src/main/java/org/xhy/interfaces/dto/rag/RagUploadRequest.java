@@ -7,8 +7,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import jakarta.validation.constraints.NotNull;
 
-/**
- * @author shilong.zang
+/** @author shilong.zang
  * @date 14:16 <br/>
  */
 public class RagUploadRequest implements Serializable {
@@ -19,9 +18,7 @@ public class RagUploadRequest implements Serializable {
     @NotNull(message = "文件不能为空")
     private MultipartFile file;
 
-    /**
-     * 数据集id
-     */
+    /** 数据集id */
     @NotNull(message = "数据集id不能为空")
     private String dataSetId;
 

@@ -2,8 +2,7 @@ package org.xhy.domain.rag.dto.resp;
 
 import java.util.ArrayList;
 
-/**
- * @author shilong.zang
+/** @author shilong.zang
  * @date 14:44 <br/>
  */
 public class EmbeddingRespDTO {

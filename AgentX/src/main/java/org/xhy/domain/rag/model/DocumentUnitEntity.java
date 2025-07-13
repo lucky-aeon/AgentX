@@ -9,8 +9,7 @@ import org.xhy.infrastructure.entity.BaseEntity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
 
-/**
- * @author shilong.zang
+/** @author shilong.zang
  * @date 20:24 <br/>
  */
 @TableName("document_unit")
@@ -19,35 +18,23 @@ public class DocumentUnitEntity extends BaseEntity implements Serializable {
     @Serial
     private static final long serialVersionUID = 7001509997040094844L;
 
-    /**
-     * 主键
-     */
+    /** 主键 */
     @TableId(type = IdType.ASSIGN_UUID)
     private String id;
 
-    /**
-     * 文档ID
-     */
+    /** 文档ID */
     private String fileId;
 
-    /**
-     * 页码
-     */
+    /** 页码 */
     private Integer page;
 
-    /**
-     * 当前页内容
-     */
+    /** 当前页内容 */
     private String content;
 
-    /**
-     * 是否进行向量化
-     */
+    /** 是否进行向量化 */
     private Boolean isVector;
 
-    /**
-     * ocr识别状态
-     */
+    /** ocr识别状态 */
     private Boolean isOcr;
 
     public Boolean getIsOcr() {

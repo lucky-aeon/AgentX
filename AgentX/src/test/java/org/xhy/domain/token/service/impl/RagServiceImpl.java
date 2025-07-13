@@ -16,8 +16,7 @@ import org.xhy.infrastructure.rag.config.EmbeddingProperties;
 import org.xhy.domain.rag.dto.req.EmbeddingReqDTO;
 import org.xhy.infrastructure.rag.config.RerankProperties;
 
-/**
- * @author shilong.zang
+/** @author shilong.zang
  * @date 14:31 <br/>
  */
 @SpringBootTest
@@ -30,7 +29,6 @@ public class RagServiceImpl {
     @Resource
     private RerankProperties rerankProperties;
 
-
     @Test
     public void testEmbedding() {
 
@@ -38,13 +36,10 @@ public class RagServiceImpl {
         embeddingReqDTO.setModel(embeddingProperties.getModel());
         embeddingReqDTO.setInput("nihao");
 
-        final HttpRequest build = HttpRequest.builder()
-                .addHeader("accept", "application/json")
+        final HttpRequest build = HttpRequest.builder().addHeader("accept", "application/json")
                 .addHeader("Content-Type", "application/json; charset=utf-8")
-                .addHeader("Authorization", embeddingProperties.getApiKey())
-                .method(HttpMethod.POST)
-                .url(embeddingProperties.getApiUrl())
-                .body(JSONObject.toJSONString(embeddingReqDTO)).build();
+                .addHeader("Authorization", embeddingProperties.getApiKey()).method(HttpMethod.POST)
+                .url(embeddingProperties.getApiUrl()).body(JSONObject.toJSONString(embeddingReqDTO)).build();
 
         HttpClient httpClient = new JdkHttpClient(new JdkHttpClientBuilder());
         String response = httpClient.execute(build).body();
@@ -58,15 +53,12 @@ public class RagServiceImpl {
         final RerankRequest rerankRequest = new RerankRequest();
         rerankRequest.setModel(rerankProperties.getModel());
         rerankRequest.setQuery("nihao");
-        rerankRequest.setDocuments(Arrays.asList("nihaoya","wobuhao"));
+        rerankRequest.setDocuments(Arrays.asList("nihaoya", "wobuhao"));
 
-        final HttpRequest build = HttpRequest.builder()
-                .addHeader("accept", "application/json")
+        final HttpRequest build = HttpRequest.builder().addHeader("accept", "application/json")
                 .addHeader("Content-Type", "application/json; charset=utf-8")
-                .addHeader("Authorization", rerankProperties.getApiKey())
-                .method(HttpMethod.POST)
-                .url(rerankProperties.getApiUrl())
-                .body(JSONObject.toJSONString(rerankRequest)).build();
+                .addHeader("Authorization", rerankProperties.getApiKey()).method(HttpMethod.POST)
+                .url(rerankProperties.getApiUrl()).body(JSONObject.toJSONString(rerankRequest)).build();
 
         HttpClient httpClient = new JdkHttpClient(new JdkHttpClientBuilder());
         String response = httpClient.execute(build).body();

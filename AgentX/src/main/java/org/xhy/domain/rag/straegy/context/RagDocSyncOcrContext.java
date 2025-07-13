@@ -8,13 +8,11 @@ import org.xhy.domain.rag.straegy.RagDocSyncOcrStrategy;
 
 import jakarta.annotation.Resource;
 
-/**
- * @author shilong.zang
+/** @author shilong.zang
  * @date 09:39 <br/>
  */
 @Service
 public class RagDocSyncOcrContext {
-
 
     @Resource
     private Map<String, RagDocSyncOcrStrategy> taskExportStrategyMap;

@@ -8,8 +8,7 @@ import org.xhy.infrastructure.mq.enums.EventType;
 
 import com.alibaba.fastjson2.JSONObject;
 
-/**
- * @author zang
+/** @author zang
  * @date 14:17 <br/>
  */
 public class MqMessage<T> implements Serializable {
@@ -57,31 +56,20 @@ public class MqMessage<T> implements Serializable {
         this.eventTypes = eventTypes;
     }
 
-    /**
-     * 链路id
-     */
+    /** 链路id */
     private String traceId;
-    /**
-     * 描述
-     */
+    /** 描述 */
     private String description;
-    /**
-     * 操作的数据对象
-     */
+    /** 操作的数据对象 */
     private T data;
-    /**
-     * 当前发送时间戳
-     */
+    /** 当前发送时间戳 */
     private Long timestamp;
-    /**
-     * 事件类型
-     */
+    /** 事件类型 */
     private List<EventType> eventTypes;
 
     @Override
     public String toString() {
         return JSONObject.toJSONString(this);
     }
-
 
 }

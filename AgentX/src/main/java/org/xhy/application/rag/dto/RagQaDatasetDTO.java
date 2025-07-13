@@ -2,51 +2,33 @@ package org.xhy.application.rag.dto;
 
 import java.time.LocalDateTime;
 
-/**
- * RAG知识库数据集数据传输对象
+/** RAG知识库数据集数据传输对象
  * @author shilong.zang
- * @date 2024-12-09
- */
+ * @date 2024-12-09 */
 public class RagQaDatasetDTO {
 
-    /**
-     * 数据集ID
-     */
+    /** 数据集ID */
     private String id;
 
-    /**
-     * 数据集名称
-     */
+    /** 数据集名称 */
     private String name;
 
-    /**
-     * 数据集图标
-     */
+    /** 数据集图标 */
     private String icon;
 
-    /**
-     * 数据集说明
-     */
+    /** 数据集说明 */
     private String description;
 
-    /**
-     * 用户ID
-     */
+    /** 用户ID */
     private String userId;
 
-    /**
-     * 文件数量
-     */
+    /** 文件数量 */
     private Long fileCount;
 
-    /**
-     * 创建时间
-     */
+    /** 创建时间 */
     private LocalDateTime createdAt;
 
-    /**
-     * 更新时间
-     */
+    /** 更新时间 */
     private LocalDateTime updatedAt;
 
     public String getId() {

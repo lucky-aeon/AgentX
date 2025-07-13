@@ -28,13 +28,11 @@ import dev.langchain4j.data.document.splitter.DocumentBySentenceSplitter;
 import dev.langchain4j.data.segment.TextSegment;
 import jakarta.annotation.Resource;
 
-/**
- * @author shilong.zang
+/** @author shilong.zang
  * @date 19:07 <br/>
  */
 @Service("ragDocSyncOcr-TXT")
-public class TXTRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl{
-
+public class TXTRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl {
 
     private static final Logger log = LoggerFactory.getLogger(TXTRagDocSyncOcrStrategyImpl.class);
 
@@ -45,29 +43,25 @@ public class TXTRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl{
     @Resource
     private FileStorageService fileStorageService;
 
-    public TXTRagDocSyncOcrStrategyImpl(DocumentUnitRepository documentUnitRepository, FileDetailRepository fileDetailRepository) {
+    public TXTRagDocSyncOcrStrategyImpl(DocumentUnitRepository documentUnitRepository,
+            FileDetailRepository fileDetailRepository) {
         this.documentUnitRepository = documentUnitRepository;
         this.fileDetailRepository = fileDetailRepository;
     }
 
-
-    /**
-     * 获取文件页数
+    /** 获取文件页数
      *
      * @param bytes
-     * @param ragDocSyncOcrMessage
-     */
+     * @param ragDocSyncOcrMessage */
     @Override
     public void pushPageSize(byte[] bytes, RagDocSyncOcrMessage ragDocSyncOcrMessage) {
 
     }
 
-    /**
-     * 获取文件
+    /** 获取文件
      *
      * @param ragDocSyncOcrMessage 消息数据
-     * @param strategy             当前策略
-     */
+     * @param strategy 当前策略 */
     @Override
     public byte[] getFileData(RagDocSyncOcrMessage ragDocSyncOcrMessage, String strategy) {
         // 从数据库中获取文件详情
@@ -82,15 +76,14 @@ public class TXTRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl{
         return fileStorageService.download(fileDetailEntity.getUrl()).bytes();
     }
 
-    /**
-     * ocr数据
+    /** ocr数据
      *
      * @param fileBytes
-     * @param totalPages
-     */
+     * @param totalPages */
     @Override
     public Map<Integer, String> processFile(byte[] fileBytes, int totalPages) {
-        log.info("Current type is non-PDF file, directly extract text ——————> Does not include page numbers, page number concept is index");
+        log.info(
+                "Current type is non-PDF file, directly extract text ——————> Does not include page numbers, page number concept is index");
 
         DocumentParser parser = new TextDocumentParser();
         // 使用ByteArrayInputStream将字节数组转换为输入流
@@ -128,12 +121,10 @@ public class TXTRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl{
         return null;
     }
 
-    /**
-     * 保存数据
+    /** 保存数据
      *
      * @param ragDocSyncOcrMessage
-     * @param ocrData
-     */
+     * @param ocrData */
     @Override
     public void insertData(RagDocSyncOcrMessage ragDocSyncOcrMessage, Map<Integer, String> ocrData) throws Exception {
 

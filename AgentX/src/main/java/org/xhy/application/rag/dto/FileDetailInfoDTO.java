@@ -1,55 +1,35 @@
 package org.xhy.application.rag.dto;
 
-/**
- * 文件详细信息DTO（包含文件路径）
+/** 文件详细信息DTO（包含文件路径）
  * 
- * @author shilong.zang
- */
+ * @author shilong.zang */
 public class FileDetailInfoDTO {
-    
-    /**
-     * 文件ID
-     */
+
+    /** 文件ID */
     private String fileId;
-    
-    /**
-     * 原始文件名
-     */
+
+    /** 原始文件名 */
     private String originalFilename;
-    
-    /**
-     * 文件访问地址
-     */
+
+    /** 文件访问地址 */
     private String url;
-    
-    /**
-     * 文件存储路径
-     */
+
+    /** 文件存储路径 */
     private String path;
-    
-    /**
-     * 基础存储路径
-     */
+
+    /** 基础存储路径 */
     private String basePath;
-    
-    /**
-     * 文件大小
-     */
+
+    /** 文件大小 */
     private Long size;
-    
-    /**
-     * 文件扩展名
-     */
+
+    /** 文件扩展名 */
     private String ext;
-    
-    /**
-     * 总页数
-     */
+
+    /** 总页数 */
     private Integer filePageSize;
-    
-    /**
-     * 数据集ID
-     */
+
+    /** 数据集ID */
     private String dataSetId;
 
     public String getFileId() {

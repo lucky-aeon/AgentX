@@ -18,54 +18,33 @@ import org.xhy.domain.llm.model.ProviderEntity;
 import java.util.ArrayList;
 import java.util.List;
 
-
-/**
- * chat 上下文，包含对话所需的所有信息
- */
+/** chat 上下文，包含对话所需的所有信息 */
 public class ChatContext {
-    /**
-     * 会话ID
-     */
+    /** 会话ID */
     private String sessionId;
-    
-    /**
-     * 用户ID
-     */
+
+    /** 用户ID */
     private String userId;
-    
-    /**
-     * 用户消息
-     */
+
+    /** 用户消息 */
     private String userMessage;
-    
-    /**
-     * 智能体实体
-     */
+
+    /** 智能体实体 */
     private AgentEntity agent;
-    
-    /**
-     * 模型实体
-     */
+
+    /** 模型实体 */
     private ModelEntity model;
-    
-    /**
-     * 服务商实体
-     */
+
+    /** 服务商实体 */
     private ProviderEntity provider;
-    
-    /**
-     * 大模型配置
-     */
+
+    /** 大模型配置 */
     private LLMModelConfig llmModelConfig;
-    
-    /**
-     * 上下文实体
-     */
+
+    /** 上下文实体 */
     private ContextEntity contextEntity;
-    
-    /**
-     * 历史消息列表
-     */
+
+    /** 历史消息列表 */
     private List<MessageEntity> messageHistory;
 
     public String getSessionId() {
@@ -143,8 +122,7 @@ public class ChatContext {
     public dev.langchain4j.model.chat.request.ChatRequest.Builder prepareChatRequest() {
         // 构建聊天消息列表
         List<ChatMessage> chatMessages = new ArrayList<>();
-        dev.langchain4j.model.chat.request.ChatRequest.Builder chatRequestBuilder =
-                new dev.langchain4j.model.chat.request.ChatRequest.Builder();
+        dev.langchain4j.model.chat.request.ChatRequest.Builder chatRequestBuilder = new dev.langchain4j.model.chat.request.ChatRequest.Builder();
 
         // 1. 首先添加系统提示(如果有)
         if (StringUtils.isNotEmpty(this.getAgent().getSystemPrompt())) {
@@ -154,7 +132,8 @@ public class ChatContext {
         // 2. 有条件地添加摘要信息(作为AI消息，但有明确的前缀标识)
         if (StringUtils.isNotEmpty(this.getContextEntity().getSummary())) {
             // 添加为AI消息，但明确标识这是摘要
-            chatMessages.add(new AiMessage(AgentPromptTemplates.getSummaryPrefix() + this.getContextEntity().getSummary()));
+            chatMessages
+                    .add(new AiMessage(AgentPromptTemplates.getSummaryPrefix() + this.getContextEntity().getSummary()));
         }
 
         // 3. 添加对话历史
@@ -175,8 +154,7 @@ public class ChatContext {
         // 构建请求参数
         OpenAiChatRequestParameters.Builder parameters = new OpenAiChatRequestParameters.Builder();
         parameters.modelName(this.getModel().getModelId());
-        parameters.topP(this.getLlmModelConfig().getTopP())
-                .temperature(this.getLlmModelConfig().getTemperature());
+        parameters.topP(this.getLlmModelConfig().getTopP()).temperature(this.getLlmModelConfig().getTemperature());
 
         // 设置消息和参数
         chatRequestBuilder.messages(chatMessages);
@@ -184,4 +162,4 @@ public class ChatContext {
 
         return chatRequestBuilder;
     }
-} 
+}

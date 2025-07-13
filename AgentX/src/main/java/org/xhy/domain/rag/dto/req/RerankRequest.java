@@ -5,15 +5,13 @@ import java.io.Serial;
 import java.io.Serializable;
 import java.util.List;
 
-/**
- * @author shilong.zang
+/** @author shilong.zang
  * @date 15:15 <br/>
  */
 public class RerankRequest implements Serializable {
 
     @Serial
     private static final long serialVersionUID = -1272322443949808505L;
-
 
     private String model;
 
@@ -77,6 +75,5 @@ public class RerankRequest implements Serializable {
     public void setOverlapTokens(Integer overlapTokens) {
         this.overlapTokens = overlapTokens;
     }
-
 
 }

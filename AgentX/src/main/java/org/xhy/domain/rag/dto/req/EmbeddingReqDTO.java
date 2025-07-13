@@ -1,19 +1,14 @@
 package org.xhy.domain.rag.dto.req;
 
-/**
- * @author shilong.zang
+/** @author shilong.zang
  * @date 14:41 <br/>
  */
 public class EmbeddingReqDTO {
 
-    /**
-     * 模型
-     */
+    /** 模型 */
     private String model;
 
-    /**
-     * 语料
-     */
+    /** 语料 */
     private String input;
 
     private String encoding_format = "float";

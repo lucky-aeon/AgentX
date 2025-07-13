@@ -4,8 +4,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.xhy.domain.rag.model.DocumentUnitEntity;
 import org.xhy.infrastructure.repository.MyBatisPlusExtRepository;
 
-/**
- * @author shilong.zang
+/** @author shilong.zang
  * @date 21:07 <br/>
  */
 @Mapper

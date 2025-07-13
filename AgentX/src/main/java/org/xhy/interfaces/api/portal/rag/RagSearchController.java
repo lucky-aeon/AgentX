@@ -12,11 +12,9 @@ import org.xhy.interfaces.api.common.Result;
 
 import java.util.List;
 
-/**
- * RAG搜索控制器
+/** RAG搜索控制器
  * @author shilong.zang
- * @date 2024-12-09
- */
+ * @date 2024-12-09 */
 @RestController
 @RequestMapping("/rag/search")
 public class RagSearchController {

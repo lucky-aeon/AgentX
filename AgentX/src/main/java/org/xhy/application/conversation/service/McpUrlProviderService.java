@@ -288,14 +288,14 @@ public class McpUrlProviderService {
 
                 // 检查容器是否已经健康运行
                 if (isContainerHealthy(container)) {
-                    logger.info("审核容器准备就绪: containerId={}, ip={}, port={}", containerId,
-                            container.getIpAddress(), container.getExternalPort());
+                    logger.info("审核容器准备就绪: containerId={}, ip={}, port={}", containerId, container.getIpAddress(),
+                            container.getExternalPort());
                     return container;
                 }
 
                 retryCount++;
-                logger.debug("等待审核容器准备就绪: containerId={}, retry={}/{}, status={}, ip={}", containerId,
-                        retryCount, maxRetries, container.getStatus(), container.getIpAddress());
+                logger.debug("等待审核容器准备就绪: containerId={}, retry={}/{}, status={}, ip={}", containerId, retryCount,
+                        maxRetries, container.getStatus(), container.getIpAddress());
 
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();

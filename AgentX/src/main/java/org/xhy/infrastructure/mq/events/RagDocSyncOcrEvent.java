@@ -7,11 +7,8 @@ import java.util.List;
 import org.xhy.infrastructure.mq.enums.EventType;
 import org.xhy.infrastructure.mq.model.MQSendEventModel;
 
-
-/**
- * @author zang
- */
-public class RagDocSyncOcrEvent <T> extends MQSendEventModel<T> {
+/** @author zang */
+public class RagDocSyncOcrEvent<T> extends MQSendEventModel<T> {
 
     @Serial
     private static final long serialVersionUID = -8799365828172646170L;

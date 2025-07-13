@@ -110,8 +110,7 @@ public class ContainerDomainService {
     public ContainerEntity findReviewContainer() {
         LambdaQueryWrapper<ContainerEntity> wrapper = Wrappers.<ContainerEntity>lambdaQuery()
                 .eq(ContainerEntity::getType, ContainerType.REVIEW)
-                .ne(ContainerEntity::getStatus, ContainerStatus.DELETED)
-                .orderByDesc(ContainerEntity::getCreatedAt);
+                .ne(ContainerEntity::getStatus, ContainerStatus.DELETED).orderByDesc(ContainerEntity::getCreatedAt);
 
         List<ContainerEntity> containers = containerRepository.selectList(wrapper);
         return containers.isEmpty() ? null : containers.get(0);
