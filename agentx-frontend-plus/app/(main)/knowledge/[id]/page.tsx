@@ -23,7 +23,8 @@ import {
   Loader2,
   Settings,
   FileSearch,
-  BookOpen
+  BookOpen,
+  MessageSquare
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -78,6 +79,8 @@ import type {
   DocumentUnitDTO 
 } from "@/types/rag-dataset"
 import { FileInitializeStatus, FileEmbeddingStatus } from "@/types/rag-dataset"
+import { RagChatDialog } from "@/components/knowledge/RagChatDialog"
+import { DocumentUnitsDialog } from "@/components/knowledge/DocumentUnitsDialog"
 
 export default function DatasetDetailPage() {
   const params = useParams()
@@ -104,6 +107,12 @@ export default function DatasetDetailPage() {
   const [ragSearchQuery, setRagSearchQuery] = useState("")
   const [isRagSearching, setIsRagSearching] = useState(false)
   const [showRagResults, setShowRagResults] = useState(false)
+  
+  // RAG聊天对话框状态
+  const [showRagChat, setShowRagChat] = useState(false)
+  
+  // 文档单元对话框状态
+  const [selectedFileForUnits, setSelectedFileForUnits] = useState<FileDetail | null>(null)
 
   // 分页状态
   const [pageData, setPageData] = useState<PageResponse<FileDetail>>({
@@ -552,47 +561,66 @@ export default function DatasetDetailPage() {
                 <p className="text-sm">{formatDate(dataset.updatedAt)}</p>
               </div>
 
-              {/* RAG搜索 */}
-              <div className="pt-4 border-t">
-                <label className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
-                  <FileSearch className="h-4 w-4" />
-                  RAG搜索
-                </label>
-                <div className="space-y-2">
-                  <Textarea
-                    placeholder="输入问题进行文档搜索..."
-                    value={ragSearchQuery}
-                    onChange={(e) => setRagSearchQuery(e.target.value)}
-                    className="min-h-[80px] resize-none"
-                  />
-                  <div className="flex gap-2">
-                    <Button 
-                      onClick={handleRagSearch}
-                      disabled={isRagSearching || !ragSearchQuery.trim()}
-                      className="flex-1"
-                      size="sm"
-                    >
-                      {isRagSearching ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          搜索中...
-                        </>
-                      ) : (
-                        <>
-                          <Search className="mr-2 h-4 w-4" />
-                          搜索文档
-                        </>
-                      )}
-                    </Button>
-                    {ragSearchQuery && (
+              {/* RAG功能区 */}
+              <div className="pt-4 border-t space-y-4">
+                {/* RAG智能问答 */}
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
+                    <MessageSquare className="h-4 w-4" />
+                    智能问答
+                  </label>
+                  <Button 
+                    onClick={() => setShowRagChat(true)}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    <MessageSquare className="mr-2 h-4 w-4" />
+                    开始对话
+                  </Button>
+                </div>
+
+                {/* RAG搜索 */}
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
+                    <FileSearch className="h-4 w-4" />
+                    文档搜索
+                  </label>
+                  <div className="space-y-2">
+                    <Textarea
+                      placeholder="输入问题进行文档搜索..."
+                      value={ragSearchQuery}
+                      onChange={(e) => setRagSearchQuery(e.target.value)}
+                      className="min-h-[80px] resize-none"
+                    />
+                    <div className="flex gap-2">
                       <Button 
-                        variant="outline" 
+                        onClick={handleRagSearch}
+                        disabled={isRagSearching || !ragSearchQuery.trim()}
+                        className="flex-1"
                         size="sm"
-                        onClick={clearRagSearch}
                       >
-                        <X className="h-4 w-4" />
+                        {isRagSearching ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            搜索中...
+                          </>
+                        ) : (
+                          <>
+                            <Search className="mr-2 h-4 w-4" />
+                            搜索文档
+                          </>
+                        )}
                       </Button>
-                    )}
+                      {ragSearchQuery && (
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={clearRagSearch}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -800,11 +828,23 @@ export default function DatasetDetailPage() {
                             </TableCell>
                             <TableCell>
                               <div className="flex items-center gap-1">
+                                {file.isInitialize === 1 && (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    onClick={() => setSelectedFileForUnits(file)}
+                                    title="查看语料"
+                                  >
+                                    <FileText className="h-4 w-4" />
+                                  </Button>
+                                )}
                                 <Button
                                   variant="ghost"
                                   size="icon"
                                   className="h-8 w-8"
                                   onClick={() => window.open(file.url, '_blank')}
+                                  title="下载文件"
                                 >
                                   <Download className="h-4 w-4" />
                                 </Button>
@@ -813,6 +853,7 @@ export default function DatasetDetailPage() {
                                   size="icon"
                                   className="h-8 w-8 text-red-600 hover:text-red-700"
                                   onClick={() => setFileToDelete(file)}
+                                  title="删除文件"
                                 >
                                   <Trash className="h-4 w-4" />
                                 </Button>
@@ -976,6 +1017,22 @@ export default function DatasetDetailPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* RAG聊天对话框 */}
+      <RagChatDialog 
+        open={showRagChat}
+        onOpenChange={setShowRagChat}
+        dataset={dataset}
+      />
+
+      {/* 文档单元对话框 */}
+      {selectedFileForUnits && (
+        <DocumentUnitsDialog
+          open={!!selectedFileForUnits}
+          onOpenChange={(open) => !open && setSelectedFileForUnits(null)}
+          file={selectedFileForUnits}
+        />
+      )}
     </div>
   )
 }

@@ -121,7 +121,16 @@ export const API_ENDPOINTS = {
   RAG_PROCESS_FILE: "/rag/datasets/files/process", // 启动文件预处理
   RAG_FILE_PROGRESS: (fileId: string) => `/rag/datasets/files/${fileId}/progress`, // 获取文件处理进度
   RAG_DATASET_FILES_PROGRESS: (datasetId: string) => `/rag/datasets/${datasetId}/files/progress`, // 获取数据集文件处理进度列表
-  RAG_SEARCH: "/rag/datasets/search", // RAG搜索文档
+  RAG_SEARCH: "/rag/search", // RAG搜索文档
+  
+  // RAG 文件操作相关
+  RAG_FILE_INFO: (fileId: string) => `/rag/files/${fileId}/info`, // 获取文件详细信息
+  RAG_DOCUMENT_UNITS: "/rag/files/document-units/list", // 分页查询文件的语料
+  RAG_UPDATE_DOCUMENT_UNIT: "/rag/files/document-units", // 更新语料内容
+  RAG_DELETE_DOCUMENT_UNIT: (documentUnitId: string) => `/rag/files/document-units/${documentUnitId}`, // 删除语料
+  
+  // RAG 流式聊天相关
+  RAG_STREAM_CHAT: "/rag/search/stream-chat", // RAG流式问答
 }
 
 // 构建完整的API URL

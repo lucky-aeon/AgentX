@@ -162,3 +162,70 @@ export interface ProcessProgressStatus {
   processProgress: number;
   statusDescription: string;
 }
+
+// ========== 文件操作相关类型定义 ==========
+
+// 文件详细信息（包含文件路径）
+export interface FileDetailInfoDTO {
+  id: string;
+  url: string;
+  size: number;
+  filename: string;
+  originalFilename: string;
+  ext: string;
+  contentType: string;
+  dataSetId: string;
+  filePageSize?: number;
+  isInitialize: number;
+  isEmbedding: number;
+  userId: string;
+  createdAt: string;
+  updatedAt: string;
+  filePath?: string; // 文件路径
+}
+
+// 查询文档单元请求
+export interface QueryDocumentUnitsRequest {
+  fileId: string;
+  page?: number;
+  pageSize?: number;
+  keyword?: string;
+}
+
+// 更新文档单元请求
+export interface UpdateDocumentUnitRequest {
+  id: string;
+  content: string;
+}
+
+// ========== RAG流式聊天相关类型定义 ==========
+
+// RAG流式聊天请求
+export interface RagStreamChatRequest {
+  datasetIds: string[]; // 数据集ID列表
+  question: string; // 用户问题
+  stream?: boolean; // 是否流式返回，默认true
+}
+
+// SSE消息类型
+export interface SSEMessage {
+  type: 'thinking' | 'content' | 'error' | 'done';
+  data?: any;
+  content?: string;
+  error?: string;
+}
+
+// RAG思考过程数据
+export interface RagThinkingData {
+  type: 'retrieval' | 'thinking' | 'answer';
+  status: 'start' | 'progress' | 'end';
+  message?: string;
+  retrievedCount?: number;
+  documents?: Array<{
+    fileId: string;
+    fileName: string;
+    documentId: string;
+    score: number;
+  }>;
+  content?: string; // 思考过程的内容
+}
