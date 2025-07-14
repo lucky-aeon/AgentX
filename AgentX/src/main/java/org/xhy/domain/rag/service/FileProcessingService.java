@@ -36,7 +36,7 @@ public class FileProcessingService {
         try {
             // 更新状态为初始化中
             updateFileInitializeStatus(fileId, FileInitializeStatus.INITIALIZING);
-            updateFileProgress(fileId, 0, 0.0);
+            updateFileOcrProgress(fileId, 0, 0.0);
 
             FileDetailEntity fileEntity = getFileById(fileId, userId);
 
@@ -65,49 +65,7 @@ public class FileProcessingService {
         } catch (Exception e) {
             // 处理失败
             updateFileInitializeStatus(fileId, FileInitializeStatus.INITIALIZATION_FAILED);
-            updateFileProgress(fileId, 0, 0.0);
-        }
-    }
-
-    /** 异步处理文件向量化
-     * @param fileId 文件ID
-     * @param userId 用户ID */
-    @Async
-    public void processFileEmbedding(String fileId, String userId) {
-        try {
-            FileDetailEntity fileEntity = getFileById(fileId, userId);
-
-            // 模拟向量化处理过程
-            simulateEmbeddingProcessing(fileId);
-
-            // 完成向量化
-            updateFileEmbeddingStatus(fileId, EmbeddingStatus.INITIALIZED);
-            updateFileProgress(fileId, fileEntity.getFilePageSize(), 100.0);
-
-        } catch (Exception e) {
-            // 处理失败
-            updateFileEmbeddingStatus(fileId, EmbeddingStatus.INITIALIZATION_FAILED);
-            updateFileProgress(fileId, 0, 0.0);
-        }
-    }
-
-    /** 模拟向量化处理过程，实时更新进度
-     * @param fileId 文件ID */
-    private void simulateEmbeddingProcessing(String fileId) throws InterruptedException {
-        FileDetailEntity fileEntity = getFileById(fileId, null);
-        Integer totalPages = fileEntity.getFilePageSize();
-
-        if (totalPages == null || totalPages <= 0) {
-            totalPages = 1;
-            updateFilePageSize(fileId, totalPages);
-        }
-
-        // 模拟向量化处理
-        for (int currentPage = 1; currentPage <= totalPages; currentPage++) {
-            Thread.sleep(1000); // 每页处理1秒
-
-            double progress = (double) currentPage / totalPages * 100.0;
-            updateFileProgress(fileId, currentPage, progress);
+            updateFileOcrProgress(fileId, 0, 0.0);
         }
     }
 
@@ -146,14 +104,41 @@ public class FileProcessingService {
         fileDetailRepository.update(wrapper);
     }
 
-    /** 更新文件处理进度
+    /** 更新文件处理进度（已弃用，使用分离的OCR/向量化进度方法）
      * @param fileId 文件ID
      * @param currentPage 当前处理页数
-     * @param progress 进度百分比 */
+     * @param progress 进度百分比
+     * @deprecated 请使用 updateFileOcrProgress 或 updateFileEmbeddingProgress */
+    @Deprecated
     private void updateFileProgress(String fileId, Integer currentPage, Double progress) {
         LambdaUpdateWrapper<FileDetailEntity> wrapper = Wrappers.<FileDetailEntity>lambdaUpdate()
-                .eq(FileDetailEntity::getId, fileId).set(FileDetailEntity::getCurrentPageNumber, currentPage)
-                .set(FileDetailEntity::getProcessProgress, progress);
+                .eq(FileDetailEntity::getId, fileId)
+                .set(FileDetailEntity::getCurrentOcrPageNumber, currentPage)
+                .set(FileDetailEntity::getOcrProcessProgress, progress);
+        fileDetailRepository.update(wrapper);
+    }
+
+    /** 更新文件OCR处理进度
+     * @param fileId 文件ID
+     * @param currentOcrPage 当前OCR处理页数
+     * @param ocrProgress OCR进度百分比 */
+    private void updateFileOcrProgress(String fileId, Integer currentOcrPage, Double ocrProgress) {
+        LambdaUpdateWrapper<FileDetailEntity> wrapper = Wrappers.<FileDetailEntity>lambdaUpdate()
+                .eq(FileDetailEntity::getId, fileId)
+                .set(FileDetailEntity::getCurrentOcrPageNumber, currentOcrPage)
+                .set(FileDetailEntity::getOcrProcessProgress, ocrProgress);
+        fileDetailRepository.update(wrapper);
+    }
+
+    /** 更新文件向量化处理进度
+     * @param fileId 文件ID
+     * @param currentEmbeddingPage 当前向量化处理页数
+     * @param embeddingProgress 向量化进度百分比 */
+    private void updateFileEmbeddingProgress(String fileId, Integer currentEmbeddingPage, Double embeddingProgress) {
+        LambdaUpdateWrapper<FileDetailEntity> wrapper = Wrappers.<FileDetailEntity>lambdaUpdate()
+                .eq(FileDetailEntity::getId, fileId)
+                .set(FileDetailEntity::getCurrentEmbeddingPageNumber, currentEmbeddingPage)
+                .set(FileDetailEntity::getEmbeddingProcessProgress, embeddingProgress);
         fileDetailRepository.update(wrapper);
     }
 
@@ -175,31 +160,46 @@ public class FileProcessingService {
 
         Integer initStatus = fileEntity.getIsInitialize();
         Integer embeddingStatus = fileEntity.getIsEmbedding();
-        Integer currentPage = fileEntity.getCurrentPageNumber();
+        Integer currentOcrPage = fileEntity.getCurrentOcrPageNumber();
+        Integer currentEmbeddingPage = fileEntity.getCurrentEmbeddingPageNumber();
         Integer totalPages = fileEntity.getFilePageSize();
-        Double progress = fileEntity.getProcessProgress();
+        Double ocrProgress = fileEntity.getOcrProcessProgress();
+        Double embeddingProgress = fileEntity.getEmbeddingProcessProgress();
 
         StringBuilder status = new StringBuilder();
         status.append("文件: ").append(fileEntity.getOriginalFilename()).append("\n");
 
         if (initStatus != null && initStatus == FileInitializeStatus.INITIALIZING) {
             status.append("状态: 初始化中\n");
-            if (currentPage != null && totalPages != null) {
-                status.append("进度: ").append(currentPage).append("/").append(totalPages).append(" 页");
-                if (progress != null) {
-                    status.append(" (").append(String.format("%.1f", progress)).append("%)");
+            if (currentOcrPage != null && totalPages != null) {
+                status.append("OCR进度: ").append(currentOcrPage).append("/").append(totalPages).append(" 页");
+                if (ocrProgress != null) {
+                    status.append(" (").append(String.format("%.1f", ocrProgress)).append("%)");
                 }
             }
         } else if (embeddingStatus != null && embeddingStatus == EmbeddingStatus.INITIALIZING) {
             status.append("状态: 向量化中\n");
-            if (currentPage != null && totalPages != null) {
-                status.append("进度: ").append(currentPage).append("/").append(totalPages).append(" 页");
-                if (progress != null) {
-                    status.append(" (").append(String.format("%.1f", progress)).append("%)");
+            if (currentEmbeddingPage != null && totalPages != null) {
+                status.append("向量化进度: ").append(currentEmbeddingPage).append("/").append(totalPages).append(" 页");
+                if (embeddingProgress != null) {
+                    status.append(" (").append(String.format("%.1f", embeddingProgress)).append("%)");
                 }
             }
         } else {
             status.append("状态: 处理完成或待处理");
+            // 显示分离的进度信息
+            if (currentOcrPage != null && totalPages != null) {
+                status.append("\nOCR进度: ").append(currentOcrPage).append("/").append(totalPages).append(" 页");
+                if (ocrProgress != null) {
+                    status.append(" (").append(String.format("%.1f", ocrProgress)).append("%)");
+                }
+            }
+            if (currentEmbeddingPage != null && totalPages != null) {
+                status.append("\n向量化进度: ").append(currentEmbeddingPage).append("/").append(totalPages).append(" 页");
+                if (embeddingProgress != null) {
+                    status.append(" (").append(String.format("%.1f", embeddingProgress)).append("%)");
+                }
+            }
         }
 
         return status.toString();

@@ -247,7 +247,7 @@ public class RagQaDatasetAppService {
         if (request.getProcessType() == 1) {
             // OCR预处理
             fileDetailDomainService.updateFileInitializeStatus(request.getFileId(), FileInitializeStatus.INITIALIZING);
-            fileDetailDomainService.updateFileProgress(request.getFileId(), 0, 0.0);
+            fileDetailDomainService.updateFileOcrProgress(request.getFileId(), 0, 0.0);
 
             // 发送OCR处理MQ消息
             RagDocSyncOcrMessage ocrMessage = new RagDocSyncOcrMessage();
@@ -266,7 +266,7 @@ public class RagQaDatasetAppService {
             }
 
             fileDetailDomainService.updateFileEmbeddingStatus(request.getFileId(), EmbeddingStatus.INITIALIZING);
-            fileDetailDomainService.updateFileProgress(request.getFileId(), 0, 0.0);
+            fileDetailDomainService.updateFileEmbeddingProgress(request.getFileId(), 0, 0.0);
 
             List<DocumentUnitEntity> documentUnits = documentUnitRepository.selectList(Wrappers
                     .lambdaQuery(DocumentUnitEntity.class).eq(DocumentUnitEntity::getFileId, request.getFileId())
@@ -326,11 +326,24 @@ public class RagQaDatasetAppService {
         FileProcessProgressDTO dto = new FileProcessProgressDTO();
         dto.setFileId(entity.getId());
         dto.setFilename(entity.getOriginalFilename());
+        
+        // 设置新的中文状态字段
+        dto.setInitializeStatus(org.xhy.domain.rag.constant.FileProcessStatusEnum.getInitStatusDescription(entity.getIsInitialize()));
+        dto.setEmbeddingStatus(org.xhy.domain.rag.constant.FileProcessStatusEnum.getEmbeddingStatusDescription(entity.getIsEmbedding()));
+        
+        // 设置分离的页数和进度
+        dto.setCurrentOcrPageNumber(entity.getCurrentOcrPageNumber() != null ? entity.getCurrentOcrPageNumber() : 0);
+        dto.setCurrentEmbeddingPageNumber(entity.getCurrentEmbeddingPageNumber() != null ? entity.getCurrentEmbeddingPageNumber() : 0);
+        dto.setFilePageSize(entity.getFilePageSize() != null ? entity.getFilePageSize() : 0);
+        dto.setOcrProcessProgress(entity.getOcrProcessProgress() != null ? entity.getOcrProcessProgress() : 0.0);
+        dto.setEmbeddingProcessProgress(entity.getEmbeddingProcessProgress() != null ? entity.getEmbeddingProcessProgress() : 0.0);
+        
+        // 设置兼容性字段
         dto.setIsInitialize(entity.getIsInitialize());
         dto.setIsEmbedding(entity.getIsEmbedding());
-        dto.setCurrentPageNumber(entity.getCurrentPageNumber() != null ? entity.getCurrentPageNumber() : 0);
-        dto.setFilePageSize(entity.getFilePageSize() != null ? entity.getFilePageSize() : 0);
-        dto.setProcessProgress(entity.getProcessProgress() != null ? entity.getProcessProgress() : 0.0);
+        dto.setCurrentPageNumber(entity.getCurrentOcrPageNumber() != null ? entity.getCurrentOcrPageNumber() : 0);
+        dto.setProcessProgress(entity.getOcrProcessProgress() != null ? entity.getOcrProcessProgress() : 0.0);
+        
         dto.setStatusDescription(getStatusDescription(entity));
         return dto;
     }

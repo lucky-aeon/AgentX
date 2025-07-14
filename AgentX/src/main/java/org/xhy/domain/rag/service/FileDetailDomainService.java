@@ -237,14 +237,41 @@ public class FileDetailDomainService {
         return fileEntity;
     }
 
-    /** 更新文件处理进度
+    /** 更新文件处理进度（已弃用，使用分离的OCR/向量化进度方法）
      * @param fileId 文件ID
      * @param currentPage 当前处理页数
-     * @param progress 进度百分比 */
+     * @param progress 进度百分比
+     * @deprecated 请使用 updateFileOcrProgress 或 updateFileEmbeddingProgress */
+    @Deprecated
     public void updateFileProgress(String fileId, Integer currentPage, Double progress) {
         LambdaUpdateWrapper<FileDetailEntity> wrapper = Wrappers.<FileDetailEntity>lambdaUpdate()
-                .eq(FileDetailEntity::getId, fileId).set(FileDetailEntity::getCurrentPageNumber, currentPage)
-                .set(FileDetailEntity::getProcessProgress, progress);
+                .eq(FileDetailEntity::getId, fileId)
+                .set(FileDetailEntity::getCurrentOcrPageNumber, currentPage)
+                .set(FileDetailEntity::getOcrProcessProgress, progress);
+        fileDetailRepository.update(wrapper);
+    }
+
+    /** 更新文件OCR处理进度
+     * @param fileId 文件ID
+     * @param currentOcrPage 当前OCR处理页数
+     * @param ocrProgress OCR进度百分比 */
+    public void updateFileOcrProgress(String fileId, Integer currentOcrPage, Double ocrProgress) {
+        LambdaUpdateWrapper<FileDetailEntity> wrapper = Wrappers.<FileDetailEntity>lambdaUpdate()
+                .eq(FileDetailEntity::getId, fileId)
+                .set(FileDetailEntity::getCurrentOcrPageNumber, currentOcrPage)
+                .set(FileDetailEntity::getOcrProcessProgress, ocrProgress);
+        fileDetailRepository.update(wrapper);
+    }
+
+    /** 更新文件向量化处理进度
+     * @param fileId 文件ID
+     * @param currentEmbeddingPage 当前向量化处理页数
+     * @param embeddingProgress 向量化进度百分比 */
+    public void updateFileEmbeddingProgress(String fileId, Integer currentEmbeddingPage, Double embeddingProgress) {
+        LambdaUpdateWrapper<FileDetailEntity> wrapper = Wrappers.<FileDetailEntity>lambdaUpdate()
+                .eq(FileDetailEntity::getId, fileId)
+                .set(FileDetailEntity::getCurrentEmbeddingPageNumber, currentEmbeddingPage)
+                .set(FileDetailEntity::getEmbeddingProcessProgress, embeddingProgress);
         fileDetailRepository.update(wrapper);
     }
 

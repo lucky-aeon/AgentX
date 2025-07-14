@@ -118,11 +118,17 @@ public class FileDetailEntity extends BaseEntity implements Serializable {
      * @see org.xhy.domain.rag.constant.EmbeddingStatus */
     private Integer isEmbedding;
 
-    /** 当前处理页数 */
-    private Integer currentPageNumber;
+    /** 当前OCR处理页数 */
+    private Integer currentOcrPageNumber;
 
-    /** 处理进度百分比 */
-    private Double processProgress;
+    /** 当前向量化处理页数 */
+    private Integer currentEmbeddingPageNumber;
+
+    /** OCR处理进度百分比 */
+    private Double ocrProcessProgress;
+
+    /** 向量化处理进度百分比 */
+    private Double embeddingProcessProgress;
 
     @TableField(exist = false)
     private MultipartFile multipartFile;
@@ -383,20 +389,60 @@ public class FileDetailEntity extends BaseEntity implements Serializable {
         this.isEmbedding = isEmbedding;
     }
 
+    public Integer getCurrentOcrPageNumber() {
+        return currentOcrPageNumber;
+    }
+
+    public void setCurrentOcrPageNumber(Integer currentOcrPageNumber) {
+        this.currentOcrPageNumber = currentOcrPageNumber;
+    }
+
+    public Integer getCurrentEmbeddingPageNumber() {
+        return currentEmbeddingPageNumber;
+    }
+
+    public void setCurrentEmbeddingPageNumber(Integer currentEmbeddingPageNumber) {
+        this.currentEmbeddingPageNumber = currentEmbeddingPageNumber;
+    }
+
+    public Double getOcrProcessProgress() {
+        return ocrProcessProgress;
+    }
+
+    public void setOcrProcessProgress(Double ocrProcessProgress) {
+        this.ocrProcessProgress = ocrProcessProgress;
+    }
+
+    public Double getEmbeddingProcessProgress() {
+        return embeddingProcessProgress;
+    }
+
+    public void setEmbeddingProcessProgress(Double embeddingProcessProgress) {
+        this.embeddingProcessProgress = embeddingProcessProgress;
+    }
+
+    /** 兼容性方法：获取当前页数（映射到OCR页数）
+     * @return 当前页数 */
     public Integer getCurrentPageNumber() {
-        return currentPageNumber;
+        return this.currentOcrPageNumber;
     }
 
+    /** 兼容性方法：设置当前页数（映射到OCR页数）
+     * @param currentPageNumber 当前页数 */
     public void setCurrentPageNumber(Integer currentPageNumber) {
-        this.currentPageNumber = currentPageNumber;
+        this.currentOcrPageNumber = currentPageNumber;
     }
 
+    /** 兼容性方法：获取处理进度（映射到OCR进度）
+     * @return 处理进度 */
     public Double getProcessProgress() {
-        return processProgress;
+        return this.ocrProcessProgress;
     }
 
+    /** 兼容性方法：设置处理进度（映射到OCR进度）
+     * @param processProgress 处理进度 */
     public void setProcessProgress(Double processProgress) {
-        this.processProgress = processProgress;
+        this.ocrProcessProgress = processProgress;
     }
 
     @Override
@@ -420,8 +466,10 @@ public class FileDetailEntity extends BaseEntity implements Serializable {
                 && Objects.equals(uploadStatus, that.uploadStatus) && Objects.equals(userId, that.userId)
                 && Objects.equals(dataSetId, that.dataSetId) && Objects.equals(filePageSize, that.filePageSize)
                 && Objects.equals(isInitialize, that.isInitialize) && Objects.equals(isEmbedding, that.isEmbedding)
-                && Objects.equals(currentPageNumber, that.currentPageNumber)
-                && Objects.equals(processProgress, that.processProgress);
+                && Objects.equals(currentOcrPageNumber, that.currentOcrPageNumber) 
+                && Objects.equals(currentEmbeddingPageNumber, that.currentEmbeddingPageNumber)
+                && Objects.equals(ocrProcessProgress, that.ocrProcessProgress)
+                && Objects.equals(embeddingProcessProgress, that.embeddingProcessProgress);
     }
 
     @Override
@@ -429,6 +477,7 @@ public class FileDetailEntity extends BaseEntity implements Serializable {
         return Objects.hash(id, url, size, filename, originalFilename, basePath, path, ext, contentType, platform,
                 thUrl, thFilename, thSize, thContentType, objectId, objectType, metadata, userMetadata, thMetadata,
                 thUserMetadata, attr, fileAcl, thFileAcl, hashInfo, uploadId, uploadStatus, userId, dataSetId,
-                filePageSize, isInitialize, isEmbedding, currentPageNumber, processProgress);
+                filePageSize, isInitialize, isEmbedding, currentOcrPageNumber, currentEmbeddingPageNumber, 
+                ocrProcessProgress, embeddingProcessProgress);
     }
 }

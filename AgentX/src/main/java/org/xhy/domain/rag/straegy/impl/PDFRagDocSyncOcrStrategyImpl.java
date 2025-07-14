@@ -212,17 +212,18 @@ public class PDFRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl impl
         try {
             double progress = (double) currentPage / totalPages * 100.0;
 
+            // 使用新的OCR专用进度字段
             LambdaUpdateWrapper<FileDetailEntity> wrapper = Wrappers.<FileDetailEntity>lambdaUpdate()
                     .eq(FileDetailEntity::getId, currentProcessingFileId)
-                    .set(FileDetailEntity::getCurrentPageNumber, currentPage)
-                    .set(FileDetailEntity::getProcessProgress, progress);
+                    .set(FileDetailEntity::getCurrentOcrPageNumber, currentPage)
+                    .set(FileDetailEntity::getOcrProcessProgress, progress);
 
             fileDetailRepository.update(wrapper);
 
-            log.debug("Updated progress for file {}: {}/{} pages ({}%)", currentProcessingFileId, currentPage,
+            log.debug("Updated OCR progress for file {}: {}/{} pages ({}%)", currentProcessingFileId, currentPage,
                     totalPages, String.format("%.1f", progress));
         } catch (Exception e) {
-            log.warn("Failed to update progress for file {}: {}", currentProcessingFileId, e.getMessage());
+            log.warn("Failed to update OCR progress for file {}: {}", currentProcessingFileId, e.getMessage());
         }
     }
 }

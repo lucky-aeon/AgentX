@@ -65,7 +65,6 @@ public class RagDocOcrConsumer {
             // 更新文件状态为初始化中
             fileDetailDomainService.updateFileInitializeStatus(ocrMessage.getFileId(),
                     FileInitializeStatus.INITIALIZING);
-            fileDetailDomainService.updateFileProgress(ocrMessage.getFileId(), 0, 0.0);
 
             // 获取文件扩展名并选择处理策略
             String fileExt = fileDetailDomainService.getFileExtension(ocrMessage.getFileId());
@@ -81,7 +80,15 @@ public class RagDocOcrConsumer {
             // 执行OCR处理
             strategy.handle(ocrMessage, fileExt.toUpperCase());
 
-            // 完成初始化
+
+
+            // 完成初始化，设置进度为100%
+            var fileEntity = fileDetailDomainService.getFileByIdWithoutUserCheck(ocrMessage.getFileId());
+            Integer totalPages = fileEntity.getFilePageSize();
+            if (totalPages != null && totalPages > 0) {
+                fileDetailDomainService.updateFileOcrProgress(ocrMessage.getFileId(), totalPages, 100.0);
+            }
+            
             fileDetailDomainService.updateFileInitializeStatus(ocrMessage.getFileId(),
                     FileInitializeStatus.INITIALIZED);
 
@@ -92,7 +99,7 @@ public class RagDocOcrConsumer {
             // 处理失败
             fileDetailDomainService.updateFileInitializeStatus(ocrMessage.getFileId(),
                     FileInitializeStatus.INITIALIZATION_FAILED);
-            fileDetailDomainService.updateFileProgress(ocrMessage.getFileId(), 0, 0.0);
+            fileDetailDomainService.updateFileOcrProgress(ocrMessage.getFileId(), 0, 0.0);
         } finally {
             channel.basicAck(deliveryTag, false);
         }
