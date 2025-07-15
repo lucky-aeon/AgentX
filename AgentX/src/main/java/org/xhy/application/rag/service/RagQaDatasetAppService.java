@@ -688,8 +688,10 @@ public class RagQaDatasetAppService {
             List<RetrievedDocument> retrievedDocs = new ArrayList<>();
             for (DocumentUnitEntity doc : retrievedDocuments) {
                 FileDetailEntity fileDetail = fileDetailRepository.selectById(doc.getFileId());
+                double similarityScore = doc.getSimilarityScore() != null ? doc.getSimilarityScore() : 0.0;
                 retrievedDocs.add(new RetrievedDocument(doc.getFileId(),
-                        fileDetail != null ? fileDetail.getOriginalFilename() : "未知文件", doc.getId(), 0.85));
+                        fileDetail != null ? fileDetail.getOriginalFilename() : "未知文件", 
+                        doc.getId(), similarityScore));
             }
 
             // 发送检索完成信号

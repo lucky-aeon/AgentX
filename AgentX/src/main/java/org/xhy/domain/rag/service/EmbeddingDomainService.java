@@ -4,7 +4,9 @@ import static dev.langchain4j.store.embedding.filter.MetadataFilterBuilder.metad
 
 import dev.langchain4j.store.embedding.EmbeddingMatch;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.dromara.streamquery.stream.core.stream.Steam;
 import org.slf4j.Logger;
@@ -146,11 +148,13 @@ public class EmbeddingDomainService implements MetadataConstant {
                 log.debug("Fallback search found {} matches with lower threshold", embeddingMatches.size());
             }
 
-            // 提取文档ID - 限制最终返回数量并记录相关性分数
+            // 提取文档ID并创建ID到分数的映射
+            final Map<String, Double> documentScores = new HashMap<>();
             final List<String> documentIds = embeddingMatches.stream().limit(finalMaxResults) // 在重排序后限制数量
                     .map(match -> {
                         if (match.embedded().metadata().containsKey(DOCUMENT_ID)) {
                             String documentId = match.embedded().metadata().getString(DOCUMENT_ID);
+                            documentScores.put(documentId, match.score());
                             log.debug("Found document: {} with score: {:.4f}", documentId, match.score());
                             return documentId;
                         }
@@ -166,9 +170,19 @@ public class EmbeddingDomainService implements MetadataConstant {
             List<DocumentUnitEntity> documents = documentUnitRepository.selectList(
                     Wrappers.lambdaQuery(DocumentUnitEntity.class).in(DocumentUnitEntity::getId, documentIds));
 
-            // 按照检索相关性顺序重新排列结果
+            // 按照检索相关性顺序重新排列结果，并设置相似度分数
             List<DocumentUnitEntity> sortedResults = documentIds.stream()
-                    .map(id -> documents.stream().filter(doc -> id.equals(doc.getId())).findFirst().orElse(null))
+                    .map(id -> {
+                        DocumentUnitEntity doc = documents.stream()
+                                .filter(d -> id.equals(d.getId()))
+                                .findFirst()
+                                .orElse(null);
+                        if (doc != null) {
+                            // 设置相似度分数
+                            doc.setSimilarityScore(documentScores.get(id));
+                        }
+                        return doc;
+                    })
                     .filter(java.util.Objects::nonNull).toList();
 
             // 记录搜索性能统计

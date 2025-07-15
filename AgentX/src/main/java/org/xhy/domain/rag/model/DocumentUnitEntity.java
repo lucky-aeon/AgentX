@@ -1,6 +1,7 @@
 package org.xhy.domain.rag.model;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import java.io.Serial;
 import java.io.Serializable;
@@ -36,6 +37,18 @@ public class DocumentUnitEntity extends BaseEntity implements Serializable {
 
     /** ocr识别状态 */
     private Boolean isOcr;
+
+    /** 相似度分数（非持久化字段，用于RAG搜索结果） */
+    @TableField(exist = false)
+    private Double similarityScore;
+
+    public Double getSimilarityScore() {
+        return similarityScore;
+    }
+
+    public void setSimilarityScore(Double similarityScore) {
+        this.similarityScore = similarityScore;
+    }
 
     public Boolean getIsOcr() {
         return isOcr;
