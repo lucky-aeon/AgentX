@@ -74,7 +74,7 @@ export async function ragStreamChat(
 
           try {
             const message = JSON.parse(data);
-            console.log('RAG SSE message:', message);
+            
             
             // 根据后端的messageType处理不同类型的消息
             switch (message.messageType) {

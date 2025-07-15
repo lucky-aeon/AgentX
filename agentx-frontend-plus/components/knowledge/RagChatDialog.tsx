@@ -62,20 +62,50 @@ export function RagChatDialog({ open, onOpenChange, dataset }: RagChatDialogProp
   const processedTimestamps = useRef<Set<number>>(new Set())
   const isUserScrolling = useRef(false)
   const lastScrollTop = useRef(0)
+  const scrollingTimeout = useRef<NodeJS.Timeout>()
+  const autoScrollTimeout = useRef<NodeJS.Timeout>()
+  const isAutoScrolling = useRef(false)
 
-  // 检查是否在底部附近（阈值50px）
+  // 检查是否在底部附近（阈值30px）
   const isNearBottom = (element: Element) => {
-    const threshold = 50
+    const threshold = 30
     return element.scrollHeight - element.scrollTop - element.clientHeight < threshold
   }
 
-  // 自动滚动到底部（只在用户没有主动滚动时）
+  // 智能滚动到底部
   const scrollToBottom = () => {
+   
+    
     if (scrollAreaRef.current && !isUserScrolling.current) {
       const scrollElement = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]')
       if (scrollElement) {
+        const beforeScroll = {
+          scrollTop: scrollElement.scrollTop,
+          scrollHeight: scrollElement.scrollHeight,
+          clientHeight: scrollElement.clientHeight
+        };
+        
+       
+        
+        // 设置自动滚动标志
+        isAutoScrolling.current = true
         scrollElement.scrollTop = scrollElement.scrollHeight
+        
+        // 验证滚动是否成功
+        setTimeout(() => {
+          const afterScroll = {
+            scrollTop: scrollElement.scrollTop,
+            scrollHeight: scrollElement.scrollHeight,
+            clientHeight: scrollElement.clientHeight
+          };
+         
+          isAutoScrolling.current = false
+        }, 100)
+      } else {
+       
       }
+    } else {
+     
     }
   }
 
@@ -84,17 +114,46 @@ export function RagChatDialog({ open, onOpenChange, dataset }: RagChatDialogProp
     const scrollElement = event.target as Element
     const currentScrollTop = scrollElement.scrollTop
     
-    // 判断是否是用户主动滚动（向上滚动或不在底部）
-    if (currentScrollTop < lastScrollTop.current || !isNearBottom(scrollElement)) {
-      isUserScrolling.current = true
-      setShowScrollToBottom(true)
-    } else if (isNearBottom(scrollElement)) {
-      // 如果滚动到底部附近，恢复自动滚动
-      isUserScrolling.current = false
-      setShowScrollToBottom(false)
+   
+    
+    // 如果是自动滚动触发的事件，忽略
+    if (isAutoScrolling.current) {
+     
+      lastScrollTop.current = currentScrollTop
+      return
     }
     
-    lastScrollTop.current = currentScrollTop
+    // 防抖处理，避免频繁触发
+    if (scrollingTimeout.current) {
+      clearTimeout(scrollingTimeout.current)
+    }
+    
+    scrollingTimeout.current = setTimeout(() => {
+      // 检测用户主动滚动的几种情况：
+      // 1. 向上滚动
+      // 2. 不在底部附近
+      // 3. 滚动速度较快（表示用户主动操作）
+      const scrollDelta = Math.abs(currentScrollTop - lastScrollTop.current)
+      const isScrollingUp = currentScrollTop < lastScrollTop.current
+      const isAwayFromBottom = !isNearBottom(scrollElement)
+      const isFastScrolling = scrollDelta > 10 // 快速滚动阈值
+      
+     
+      
+      if (isScrollingUp || isAwayFromBottom || isFastScrolling) {
+        // 用户主动滚动
+       
+        isUserScrolling.current = true
+        setShowScrollToBottom(true)
+      } else if (isNearBottom(scrollElement)) {
+        // 用户滚动到底部附近，恢复自动滚动
+       
+        isUserScrolling.current = false
+        setShowScrollToBottom(false)
+      }
+      
+      lastScrollTop.current = currentScrollTop
+    }, 100) // 100ms防抖延迟
   }
 
   // 手动滚动到底部
@@ -104,6 +163,7 @@ export function RagChatDialog({ open, onOpenChange, dataset }: RagChatDialogProp
     if (scrollAreaRef.current) {
       const scrollElement = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]')
       if (scrollElement) {
+       
         scrollElement.scrollTo({
           top: scrollElement.scrollHeight,
           behavior: 'smooth'
@@ -125,11 +185,18 @@ export function RagChatDialog({ open, onOpenChange, dataset }: RagChatDialogProp
     }
   }, [])
 
-  // 清理聊天会话
+  // 清理聊天会话和定时器
   useEffect(() => {
     return () => {
       if (chatSessionRef.current) {
         chatSessionRef.current.abort()
+      }
+      // 清理所有定时器
+      if (scrollingTimeout.current) {
+        clearTimeout(scrollingTimeout.current)
+      }
+      if (autoScrollTimeout.current) {
+        clearTimeout(autoScrollTimeout.current)
       }
     }
   }, [])
@@ -146,6 +213,8 @@ export function RagChatDialog({ open, onOpenChange, dataset }: RagChatDialogProp
   const handleSend = async () => {
     const question = input.trim()
     if (!question || isLoading) return
+    
+    
 
     // 创建用户消息
     const userMessage: Message = {
@@ -174,8 +243,7 @@ export function RagChatDialog({ open, onOpenChange, dataset }: RagChatDialogProp
     
     // 重置滚动状态，确保新对话会自动滚动
     isUserScrolling.current = false
-    // 立即滚动到底部
-    setTimeout(scrollToBottom, 100)
+    // 新对话的滚动将由首次内容到达时触发
 
     // 确保聊天会话已初始化
     if (!chatSessionRef.current) {
@@ -222,7 +290,32 @@ export function RagChatDialog({ open, onOpenChange, dataset }: RagChatDialogProp
             thinkingContentRef.current += content
             setCurrentThinkingContent(thinkingContentRef.current)
             
-            // 思考内容更新时不触发滚动，避免抢夺用户滚动条
+           
+            
+            // 思考内容更新时的滚动策略：只有当用户确实在底部时才滚动
+            if (!isUserScrolling.current) {
+              const scrollElement = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]');
+              if (scrollElement) {
+                const nearBottom = isNearBottom(scrollElement);
+                
+                if (nearBottom) {
+                  
+                  // 清除之前的自动滚动定时器
+                  if (autoScrollTimeout.current) {
+                    clearTimeout(autoScrollTimeout.current);
+                  }
+                  // 思考内容滚动延迟稍长，避免过于频繁
+                  autoScrollTimeout.current = setTimeout(() => {
+                    scrollToBottom();
+                  }, 100);
+                } else {
+                 
+                }
+              }
+            } else {
+              
+            }
+            
             setMessages(prev => {
               if (prev.length > 0) {
                 const lastMessage = prev[prev.length - 1];
@@ -259,7 +352,7 @@ export function RagChatDialog({ open, onOpenChange, dataset }: RagChatDialogProp
           onContent: (content, timestamp) => {
             // 检查是否已处理过这个时间戳的消息
             if (timestamp && processedTimestamps.current.has(timestamp)) {
-              console.log('Skipping duplicate message with timestamp:', timestamp);
+             
               return;
             }
             if (timestamp) {
@@ -277,12 +370,38 @@ export function RagChatDialog({ open, onOpenChange, dataset }: RagChatDialogProp
                     content: lastMessage.content + content
                   };
                   
-                  // 滚动策略：1) 第一次接收内容时滚动 2) 用户在底部附近且没有主动滚动时继续跟随
-                  if (isFirstContent && !isUserScrolling.current) {
-                    setTimeout(scrollToBottom, 50);
-                  } else if (!isUserScrolling.current) {
-                    // 如果用户没有主动滚动，继续自动滚动到底部
-                    setTimeout(scrollToBottom, 10);
+                  // 优化后的滚动策略：智能判断是否应该自动滚动
+                 
+                  
+                  if (!isUserScrolling.current) {
+                    // 清除之前的自动滚动定时器
+                    if (autoScrollTimeout.current) {
+                      clearTimeout(autoScrollTimeout.current);
+                    }
+                    
+                    if (isFirstContent) {
+                      // 首次内容到达时，立即滚动到底部
+                     
+                      scrollToBottom();
+                    } else {
+                      // 后续内容到达时，只有当用户在底部附近时才自动滚动
+                      const scrollElement = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]');
+                      if (scrollElement) {
+                        const nearBottom = isNearBottom(scrollElement);
+                        
+                        
+                        if (nearBottom) {
+                         
+                          autoScrollTimeout.current = setTimeout(() => {
+                            scrollToBottom();
+                          }, 50);
+                        } else {
+                          
+                        }
+                      }
+                    }
+                  } else {
+                      
                   }
                   
                   return [
@@ -375,6 +494,13 @@ export function RagChatDialog({ open, onOpenChange, dataset }: RagChatDialogProp
     if (chatSessionRef.current) {
       chatSessionRef.current.abort()
     }
+    // 清理所有定时器
+    if (scrollingTimeout.current) {
+      clearTimeout(scrollingTimeout.current)
+    }
+    if (autoScrollTimeout.current) {
+      clearTimeout(autoScrollTimeout.current)
+    }
     setMessages([])
     setCurrentThinking(null)
     setCurrentThinkingContent("")
@@ -384,6 +510,7 @@ export function RagChatDialog({ open, onOpenChange, dataset }: RagChatDialogProp
     setExpandedThinking({})
     setShowScrollToBottom(false)
     isUserScrolling.current = false
+    isAutoScrolling.current = false
   }
 
   return (
