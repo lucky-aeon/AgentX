@@ -18,8 +18,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xhy.application.rag.assembler.DocumentUnitAssembler;
 import org.xhy.application.rag.assembler.FileDetailAssembler;
+import org.xhy.application.rag.assembler.FileProcessProgressAssembler;
 import org.xhy.application.rag.assembler.RagQaDatasetAssembler;
 import org.xhy.application.rag.dto.*;
+import org.xhy.domain.rag.constant.*;
 import org.xhy.domain.rag.constant.FileInitializeStatus;
 import org.xhy.domain.rag.constant.EmbeddingStatus;
 import org.xhy.domain.rag.constant.MetadataConstant;
@@ -58,6 +60,8 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
+
+import static org.xhy.domain.rag.constant.FileProcessStatusEnum.getEmbeddingStatusDescription;
 
 /** RAG数据集应用服务
  * @author shilong.zang
@@ -192,10 +196,10 @@ public class RagQaDatasetAppService {
         // 上传文件
         FileDetailEntity entity = FileDetailAssembler.toEntity(request, userId);
         FileDetailEntity uploadedEntity = fileDetailDomainService.uploadFileToDataset(entity);
-        
+
         // 自动启动预处理流程
         autoStartPreprocessing(uploadedEntity.getId(), request.getDatasetId(), userId);
-        
+
         return FileDetailAssembler.toDTO(uploadedEntity);
     }
 
@@ -206,10 +210,10 @@ public class RagQaDatasetAppService {
     private void autoStartPreprocessing(String fileId, String datasetId, String userId) {
         try {
             log.info("Auto-starting preprocessing for file: {}", fileId);
-            
+
             // 清理已有的语料和向量数据
             cleanupExistingDocumentUnits(fileId);
-            
+
             // 设置初始状态为初始化中
             fileDetailDomainService.updateFileInitializeStatus(fileId, FileInitializeStatus.INITIALIZING);
             fileDetailDomainService.updateFileOcrProgress(fileId, 0, 0.0);
@@ -229,9 +233,9 @@ public class RagQaDatasetAppService {
                     EventType.DOC_REFRESH_ORG);
             ocrEvent.setDescription("文件自动预处理任务");
             applicationEventPublisher.publishEvent(ocrEvent);
-            
+
             log.info("Auto-preprocessing started for file: {}", fileId);
-            
+
         } catch (Exception e) {
             log.error("Failed to auto-start preprocessing for file: {}", fileId, e);
             // 如果自动启动失败，重置状态
@@ -298,10 +302,10 @@ public class RagQaDatasetAppService {
         if (request.getProcessType() == 1) {
             // OCR预处理 - 检查是否可以启动预处理
             validateOcrProcessing(fileEntity);
-            
+
             // 清理已有的语料和向量数据
             cleanupExistingDocumentUnits(request.getFileId());
-            
+
             fileDetailDomainService.updateFileInitializeStatus(request.getFileId(), FileInitializeStatus.INITIALIZING);
             fileDetailDomainService.updateFileOcrProgress(request.getFileId(), 0, 0.0);
             // 重置向量化状态
@@ -360,12 +364,12 @@ public class RagQaDatasetAppService {
     private void validateOcrProcessing(FileDetailEntity fileEntity) {
         Integer initStatus = fileEntity.getIsInitialize();
         Integer embeddingStatus = fileEntity.getIsEmbedding();
-        
+
         // 如果正在初始化，不能重复启动
         if (initStatus != null && initStatus.equals(FileInitializeStatus.INITIALIZING)) {
             throw new IllegalStateException("文件正在预处理中，请等待处理完成");
         }
-        
+
         // 如果正在向量化，不能重新预处理
         if (embeddingStatus != null && embeddingStatus.equals(EmbeddingStatus.INITIALIZING)) {
             throw new IllegalStateException("文件正在向量化中，无法重新预处理");
@@ -377,12 +381,12 @@ public class RagQaDatasetAppService {
     private void validateEmbeddingProcessing(FileDetailEntity fileEntity) {
         Integer initStatus = fileEntity.getIsInitialize();
         Integer embeddingStatus = fileEntity.getIsEmbedding();
-        
+
         // 必须先完成初始化
         if (initStatus == null || !initStatus.equals(FileInitializeStatus.INITIALIZED)) {
             throw new IllegalStateException("文件需要先完成预处理才能进行向量化");
         }
-        
+
         // 如果正在向量化，不能重复启动
         if (embeddingStatus != null && embeddingStatus.equals(EmbeddingStatus.INITIALIZING)) {
             throw new IllegalStateException("文件正在向量化中，请等待处理完成");
@@ -395,7 +399,7 @@ public class RagQaDatasetAppService {
     @Transactional
     public void reprocessFile(ProcessFileRequest request, String userId) {
         log.warn("Force reprocessing file: {}, type: {}, user: {}", request.getFileId(), request.getProcessType(), userId);
-        
+
         // 检查数据集是否存在
         ragQaDatasetDomainService.checkDatasetExists(request.getDatasetId(), userId);
 
@@ -405,10 +409,10 @@ public class RagQaDatasetAppService {
         if (request.getProcessType() == 1) {
             // 强制重新OCR预处理
             log.info("Force restarting OCR preprocessing for file: {}", request.getFileId());
-            
+
             // 清理已有的语料和向量数据
             cleanupExistingDocumentUnits(request.getFileId());
-            
+
             // 重置状态
             fileDetailDomainService.updateFileInitializeStatus(request.getFileId(), FileInitializeStatus.INITIALIZING);
             fileDetailDomainService.updateFileOcrProgress(request.getFileId(), 0, 0.0);
@@ -429,7 +433,7 @@ public class RagQaDatasetAppService {
         } else if (request.getProcessType() == 2) {
             // 强制重新向量化处理
             log.info("Force restarting vectorization for file: {}", request.getFileId());
-            
+
             // 检查是否已完成初始化
             if (fileEntity.getIsInitialize() == null || !fileEntity.getIsInitialize().equals(FileInitializeStatus.INITIALIZED)) {
                 throw new IllegalStateException("文件需要先完成预处理才能进行向量化");
@@ -484,7 +488,7 @@ public class RagQaDatasetAppService {
                 Wrappers.<DocumentUnitEntity>lambdaQuery()
                     .eq(DocumentUnitEntity::getFileId, fileId)
             );
-            
+
             if (!existingUnits.isEmpty()) {
                 log.info("Cleaning up {} existing document units for file: {}", existingUnits.size(), fileId);
 
@@ -509,7 +513,7 @@ public class RagQaDatasetAppService {
      * @return 处理进度 */
     public FileProcessProgressDTO getFileProgress(String fileId, String userId) {
         FileDetailEntity fileEntity = fileDetailDomainService.getFileById(fileId, userId);
-        return buildFileProgressDTO(fileEntity);
+        return FileProcessProgressAssembler.toDTO(fileEntity);
     }
 
     /** 获取数据集文件处理进度列表
@@ -521,67 +525,7 @@ public class RagQaDatasetAppService {
         ragQaDatasetDomainService.checkDatasetExists(datasetId, userId);
 
         List<FileDetailEntity> entities = fileDetailDomainService.listAllFilesByDataset(datasetId, userId);
-        return entities.stream().map(this::buildFileProgressDTO).toList();
-    }
-
-    /** 构建文件处理进度DTO
-     * @param entity 文件实体
-     * @return 处理进度DTO */
-    private FileProcessProgressDTO buildFileProgressDTO(FileDetailEntity entity) {
-        FileProcessProgressDTO dto = new FileProcessProgressDTO();
-        dto.setFileId(entity.getId());
-        dto.setFilename(entity.getOriginalFilename());
-        
-        // 设置新的枚举状态字段
-        dto.setInitializeStatusEnum(org.xhy.domain.rag.constant.FileInitializeStatusEnum.fromCode(entity.getIsInitialize()));
-        dto.setEmbeddingStatusEnum(org.xhy.domain.rag.constant.EmbeddingStatusEnum.fromCode(entity.getIsEmbedding()));
-        
-        // 设置中文状态字段（保持兼容性）
-        dto.setInitializeStatus(org.xhy.domain.rag.constant.FileProcessStatusEnum.getInitStatusDescription(entity.getIsInitialize()));
-        dto.setEmbeddingStatus(org.xhy.domain.rag.constant.FileProcessStatusEnum.getEmbeddingStatusDescription(entity.getIsEmbedding()));
-        
-        // 设置分离的页数和进度
-        dto.setCurrentOcrPageNumber(entity.getCurrentOcrPageNumber() != null ? entity.getCurrentOcrPageNumber() : 0);
-        dto.setCurrentEmbeddingPageNumber(entity.getCurrentEmbeddingPageNumber() != null ? entity.getCurrentEmbeddingPageNumber() : 0);
-        dto.setFilePageSize(entity.getFilePageSize() != null ? entity.getFilePageSize() : 0);
-        dto.setOcrProcessProgress(entity.getOcrProcessProgress() != null ? entity.getOcrProcessProgress() : 0.0);
-        dto.setEmbeddingProcessProgress(entity.getEmbeddingProcessProgress() != null ? entity.getEmbeddingProcessProgress() : 0.0);
-        
-        // 设置兼容性字段
-        dto.setIsInitialize(entity.getIsInitialize());
-        dto.setIsEmbedding(entity.getIsEmbedding());
-        dto.setCurrentPageNumber(entity.getCurrentOcrPageNumber() != null ? entity.getCurrentOcrPageNumber() : 0);
-        dto.setProcessProgress(entity.getOcrProcessProgress() != null ? entity.getOcrProcessProgress() : 0.0);
-        
-        dto.setStatusDescription(getStatusDescription(entity));
-        return dto;
-    }
-
-    /** 获取状态描述
-     * @param entity 文件实体
-     * @return 状态描述 */
-    private String getStatusDescription(FileDetailEntity entity) {
-        Integer initStatus = entity.getIsInitialize();
-        Integer embeddingStatus = entity.getIsEmbedding();
-
-        if (initStatus == null || initStatus == 0) {
-            return "待初始化";
-        } else if (initStatus == 1) {
-            return "初始化中";
-        } else if (initStatus == 3) {
-            return "初始化失败";
-        } else if (initStatus == 2) {
-            if (embeddingStatus == null || embeddingStatus == 0) {
-                return "初始化完成，待向量化";
-            } else if (embeddingStatus == 1) {
-                return "向量化中";
-            } else if (embeddingStatus == 3) {
-                return "向量化失败";
-            } else if (embeddingStatus == 2) {
-                return "处理完成";
-            }
-        }
-        return "未知状态";
+        return FileProcessProgressAssembler.toDTOs(entities);
     }
 
     /** RAG搜索文档（使用智能参数优化）
@@ -690,7 +634,7 @@ public class RagQaDatasetAppService {
                 FileDetailEntity fileDetail = fileDetailRepository.selectById(doc.getFileId());
                 double similarityScore = doc.getSimilarityScore() != null ? doc.getSimilarityScore() : 0.0;
                 retrievedDocs.add(new RetrievedDocument(doc.getFileId(),
-                        fileDetail != null ? fileDetail.getOriginalFilename() : "未知文件", 
+                        fileDetail != null ? fileDetail.getOriginalFilename() : "未知文件",
                         doc.getId(), similarityScore));
             }
 
