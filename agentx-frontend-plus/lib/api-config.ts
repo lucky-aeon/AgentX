@@ -131,6 +131,10 @@ export const API_ENDPOINTS = {
   
   // RAG 流式聊天相关
   RAG_STREAM_CHAT: "/rag/search/stream-chat", // RAG流式问答
+  
+  // RAG 文件详情相关
+  RAG_FILE_DETAIL: "/rag/files/detail", // 获取文件详情
+  RAG_FILE_CONTENT: "/rag/files/content", // 获取文件内容
 }
 
 // 构建完整的API URL

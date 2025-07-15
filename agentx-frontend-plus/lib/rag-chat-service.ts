@@ -110,7 +110,6 @@ export async function ragStreamChat(
                 break;
               case 'RAG_ANSWER_PROGRESS':
                 // 这是实际的回答内容
-                console.log('RAG_ANSWER_PROGRESS:', message.content, 'timestamp:', message.timestamp);
                 onContent?.(message.content || '', message.timestamp);
                 break;
               case 'RAG_ANSWER_END':

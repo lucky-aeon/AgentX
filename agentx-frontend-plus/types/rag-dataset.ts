@@ -128,6 +128,9 @@ export interface FileProcessProgressDTO {
   filePageSize?: number; // 总页数
   processProgress?: number; // 处理进度百分比
   statusDescription?: string; // 状态描述
+  // 新增：状态枚举字段
+  initializeStatusEnum?: 'UNINITIALIZED' | 'INITIALIZED' | 'PROCESSING';
+  embeddingStatusEnum?: 'UNINITIALIZED' | 'INITIALIZED' | 'PROCESSING';
 }
 
 // RAG搜索请求（对应 RagSearchRequest）
@@ -230,4 +233,58 @@ export interface RagThinkingData {
     score: number;
   }>;
   content?: string; // 思考过程的内容
+}
+
+// ========== 文件详情查看相关类型定义 ==========
+
+// 检索到的文件信息（从RAG_RETRIEVAL_END消息中解析）
+export interface RetrievedFileInfo {
+  fileId: string;
+  fileName: string;
+  documentId: string;
+  score: number;
+}
+
+// 文件详情请求
+export interface GetFileDetailRequest {
+  fileId: string;
+  documentId?: string;
+}
+
+// 文件详情响应
+export interface FileDetailResponse {
+  fileId: string;
+  fileName: string;
+  content: string;
+  pageCount: number;
+  fileSize: number;
+  fileType: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// 文件内容数据
+export interface FileContentData {
+  fileId: string;
+  documentId?: string;
+  fileName: string;
+  content: string;
+  pageCount: number;
+  fileSize: number;
+  fileType: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// 聊天布局类型
+export type ChatLayout = 'single' | 'split';
+
+// 聊天界面状态
+export interface ChatUIState {
+  layout: ChatLayout;
+  selectedFile: RetrievedFileInfo | null;
+  showFileDetail: boolean;
+  fileDetailData: FileContentData | null;
+  fileDetailLoading: boolean;
+  fileDetailError: string | null;
 }
