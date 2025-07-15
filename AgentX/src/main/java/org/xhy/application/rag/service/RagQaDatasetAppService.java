@@ -1,10 +1,15 @@
 package org.xhy.application.rag.service;
 
+import static dev.langchain4j.store.embedding.filter.MetadataFilterBuilder.metadataKey;
+
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import dev.langchain4j.data.message.SystemMessage;
+import java.util.Arrays;
+import java.util.Collections;
+import org.dromara.streamquery.stream.core.stream.Steam;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,6 +22,7 @@ import org.xhy.application.rag.assembler.RagQaDatasetAssembler;
 import org.xhy.application.rag.dto.*;
 import org.xhy.domain.rag.constant.FileInitializeStatus;
 import org.xhy.domain.rag.constant.EmbeddingStatus;
+import org.xhy.domain.rag.constant.MetadataConstant;
 import org.xhy.domain.rag.message.RagDocSyncOcrMessage;
 import org.xhy.domain.rag.message.RagDocSyncStorageMessage;
 import org.xhy.domain.rag.model.DocumentUnitEntity;
@@ -186,7 +192,52 @@ public class RagQaDatasetAppService {
         // 上传文件
         FileDetailEntity entity = FileDetailAssembler.toEntity(request, userId);
         FileDetailEntity uploadedEntity = fileDetailDomainService.uploadFileToDataset(entity);
+        
+        // 自动启动预处理流程
+        autoStartPreprocessing(uploadedEntity.getId(), request.getDatasetId(), userId);
+        
         return FileDetailAssembler.toDTO(uploadedEntity);
+    }
+
+    /** 自动启动预处理流程
+     * @param fileId 文件ID
+     * @param datasetId 数据集ID
+     * @param userId 用户ID */
+    private void autoStartPreprocessing(String fileId, String datasetId, String userId) {
+        try {
+            log.info("Auto-starting preprocessing for file: {}", fileId);
+            
+            // 清理已有的语料和向量数据
+            cleanupExistingDocumentUnits(fileId);
+            
+            // 设置初始状态为初始化中
+            fileDetailDomainService.updateFileInitializeStatus(fileId, FileInitializeStatus.INITIALIZING);
+            fileDetailDomainService.updateFileOcrProgress(fileId, 0, 0.0);
+            // 重置向量化状态
+            fileDetailDomainService.updateFileEmbeddingStatus(fileId, EmbeddingStatus.UNINITIALIZED);
+            fileDetailDomainService.updateFileEmbeddingProgress(fileId, 0, 0.0);
+
+            // 获取文件实体
+            FileDetailEntity fileEntity = fileDetailDomainService.getFileByIdWithoutUserCheck(fileId);
+
+            // 发送OCR处理MQ消息
+            RagDocSyncOcrMessage ocrMessage = new RagDocSyncOcrMessage();
+            ocrMessage.setFileId(fileId);
+            ocrMessage.setPageSize(fileEntity.getFilePageSize());
+
+            RagDocSyncOcrEvent<RagDocSyncOcrMessage> ocrEvent = new RagDocSyncOcrEvent<>(ocrMessage,
+                    EventType.DOC_REFRESH_ORG);
+            ocrEvent.setDescription("文件自动预处理任务");
+            applicationEventPublisher.publishEvent(ocrEvent);
+            
+            log.info("Auto-preprocessing started for file: {}", fileId);
+            
+        } catch (Exception e) {
+            log.error("Failed to auto-start preprocessing for file: {}", fileId, e);
+            // 如果自动启动失败，重置状态
+            fileDetailDomainService.updateFileInitializeStatus(fileId, FileInitializeStatus.INITIALIZE_WAIT);
+            fileDetailDomainService.updateFileOcrProgress(fileId, 0, 0.0);
+        }
     }
 
     /** 删除数据集文件
@@ -245,9 +296,17 @@ public class RagQaDatasetAppService {
         FileDetailEntity fileEntity = fileDetailDomainService.getFileById(request.getFileId(), userId);
 
         if (request.getProcessType() == 1) {
-            // OCR预处理
+            // OCR预处理 - 检查是否可以启动预处理
+            validateOcrProcessing(fileEntity);
+            
+            // 清理已有的语料和向量数据
+            cleanupExistingDocumentUnits(request.getFileId());
+            
             fileDetailDomainService.updateFileInitializeStatus(request.getFileId(), FileInitializeStatus.INITIALIZING);
             fileDetailDomainService.updateFileOcrProgress(request.getFileId(), 0, 0.0);
+            // 重置向量化状态
+            fileDetailDomainService.updateFileEmbeddingStatus(request.getFileId(), EmbeddingStatus.UNINITIALIZED);
+            fileDetailDomainService.updateFileEmbeddingProgress(request.getFileId(), 0, 0.0);
 
             // 发送OCR处理MQ消息
             RagDocSyncOcrMessage ocrMessage = new RagDocSyncOcrMessage();
@@ -260,10 +319,8 @@ public class RagQaDatasetAppService {
             applicationEventPublisher.publishEvent(ocrEvent);
 
         } else if (request.getProcessType() == 2) {
-            // 向量化处理
-            if (!fileEntity.getIsInitialize().equals(FileInitializeStatus.INITIALIZED)) {
-                throw new IllegalStateException("文件需要先完成初始化才能进行向量化");
-            }
+            // 向量化处理 - 检查是否可以启动向量化
+            validateEmbeddingProcessing(fileEntity);
 
             fileDetailDomainService.updateFileEmbeddingStatus(request.getFileId(), EmbeddingStatus.INITIALIZING);
             fileDetailDomainService.updateFileEmbeddingProgress(request.getFileId(), 0, 0.0);
@@ -295,6 +352,154 @@ public class RagQaDatasetAppService {
 
         } else {
             throw new IllegalArgumentException("不支持的处理类型: " + request.getProcessType());
+        }
+    }
+
+    /** 验证OCR预处理是否可以启动
+     * @param fileEntity 文件实体 */
+    private void validateOcrProcessing(FileDetailEntity fileEntity) {
+        Integer initStatus = fileEntity.getIsInitialize();
+        Integer embeddingStatus = fileEntity.getIsEmbedding();
+        
+        // 如果正在初始化，不能重复启动
+        if (initStatus != null && initStatus.equals(FileInitializeStatus.INITIALIZING)) {
+            throw new IllegalStateException("文件正在预处理中，请等待处理完成");
+        }
+        
+        // 如果正在向量化，不能重新预处理
+        if (embeddingStatus != null && embeddingStatus.equals(EmbeddingStatus.INITIALIZING)) {
+            throw new IllegalStateException("文件正在向量化中，无法重新预处理");
+        }
+    }
+
+    /** 验证向量化处理是否可以启动
+     * @param fileEntity 文件实体 */
+    private void validateEmbeddingProcessing(FileDetailEntity fileEntity) {
+        Integer initStatus = fileEntity.getIsInitialize();
+        Integer embeddingStatus = fileEntity.getIsEmbedding();
+        
+        // 必须先完成初始化
+        if (initStatus == null || !initStatus.equals(FileInitializeStatus.INITIALIZED)) {
+            throw new IllegalStateException("文件需要先完成预处理才能进行向量化");
+        }
+        
+        // 如果正在向量化，不能重复启动
+        if (embeddingStatus != null && embeddingStatus.equals(EmbeddingStatus.INITIALIZING)) {
+            throw new IllegalStateException("文件正在向量化中，请等待处理完成");
+        }
+    }
+
+    /** 重新启动文件处理（强制重启，仅用于调试）
+     * @param request 预处理请求
+     * @param userId 用户ID */
+    @Transactional
+    public void reprocessFile(ProcessFileRequest request, String userId) {
+        log.warn("Force reprocessing file: {}, type: {}, user: {}", request.getFileId(), request.getProcessType(), userId);
+        
+        // 检查数据集是否存在
+        ragQaDatasetDomainService.checkDatasetExists(request.getDatasetId(), userId);
+
+        // 验证文件存在性和权限
+        FileDetailEntity fileEntity = fileDetailDomainService.getFileById(request.getFileId(), userId);
+
+        if (request.getProcessType() == 1) {
+            // 强制重新OCR预处理
+            log.info("Force restarting OCR preprocessing for file: {}", request.getFileId());
+            
+            // 清理已有的语料和向量数据
+            cleanupExistingDocumentUnits(request.getFileId());
+            
+            // 重置状态
+            fileDetailDomainService.updateFileInitializeStatus(request.getFileId(), FileInitializeStatus.INITIALIZING);
+            fileDetailDomainService.updateFileOcrProgress(request.getFileId(), 0, 0.0);
+            // 也重置向量化状态
+            fileDetailDomainService.updateFileEmbeddingStatus(request.getFileId(), EmbeddingStatus.UNINITIALIZED);
+            fileDetailDomainService.updateFileEmbeddingProgress(request.getFileId(), 0, 0.0);
+
+            // 发送OCR处理MQ消息
+            RagDocSyncOcrMessage ocrMessage = new RagDocSyncOcrMessage();
+            ocrMessage.setFileId(request.getFileId());
+            ocrMessage.setPageSize(fileEntity.getFilePageSize());
+
+            RagDocSyncOcrEvent<RagDocSyncOcrMessage> ocrEvent = new RagDocSyncOcrEvent<>(ocrMessage,
+                    EventType.DOC_REFRESH_ORG);
+            ocrEvent.setDescription("文件强制重新OCR预处理任务");
+            applicationEventPublisher.publishEvent(ocrEvent);
+
+        } else if (request.getProcessType() == 2) {
+            // 强制重新向量化处理
+            log.info("Force restarting vectorization for file: {}", request.getFileId());
+            
+            // 检查是否已完成初始化
+            if (fileEntity.getIsInitialize() == null || !fileEntity.getIsInitialize().equals(FileInitializeStatus.INITIALIZED)) {
+                throw new IllegalStateException("文件需要先完成预处理才能进行向量化");
+            }
+
+            // 重置向量化状态
+            fileDetailDomainService.updateFileEmbeddingStatus(request.getFileId(), EmbeddingStatus.INITIALIZING);
+            fileDetailDomainService.updateFileEmbeddingProgress(request.getFileId(), 0, 0.0);
+
+            List<DocumentUnitEntity> documentUnits = documentUnitRepository.selectList(Wrappers
+                    .lambdaQuery(DocumentUnitEntity.class).eq(DocumentUnitEntity::getFileId, request.getFileId())
+                    .eq(DocumentUnitEntity::getIsOcr, true));
+
+            if (documentUnits.isEmpty()) {
+                throw new IllegalStateException("文件没有找到可用于向量化的语料数据");
+            }
+
+            // 重置所有文档单元的向量化状态
+            for (DocumentUnitEntity documentUnit : documentUnits) {
+                documentUnit.setIsVector(false);
+                documentUnitRepository.updateById(documentUnit);
+            }
+
+            // 为每个DocumentUnit发送向量化MQ消息
+            for (DocumentUnitEntity documentUnit : documentUnits) {
+                RagDocSyncStorageMessage storageMessage = new RagDocSyncStorageMessage();
+                storageMessage.setId(documentUnit.getId());
+                storageMessage.setFileId(request.getFileId());
+                storageMessage.setFileName(fileEntity.getOriginalFilename());
+                storageMessage.setPage(documentUnit.getPage());
+                storageMessage.setContent(documentUnit.getContent());
+                storageMessage.setVector(true);
+                storageMessage.setDatasetId(request.getDatasetId());
+
+                RagDocSyncStorageEvent<RagDocSyncStorageMessage> storageEvent = new RagDocSyncStorageEvent<>(
+                        storageMessage, EventType.DOC_SYNC_RAG);
+                storageEvent.setDescription("文件强制重新向量化处理任务 - 页面 " + documentUnit.getPage());
+                applicationEventPublisher.publishEvent(storageEvent);
+            }
+
+        } else {
+            throw new IllegalArgumentException("不支持的处理类型: " + request.getProcessType());
+        }
+    }
+
+    /** 清理文件的已有语料和向量数据
+     * @param fileId 文件ID */
+    private void cleanupExistingDocumentUnits(String fileId) {
+        try {
+            // 查询该文件的所有文档单元
+            List<DocumentUnitEntity> existingUnits = documentUnitRepository.selectList(
+                Wrappers.<DocumentUnitEntity>lambdaQuery()
+                    .eq(DocumentUnitEntity::getFileId, fileId)
+            );
+            
+            if (!existingUnits.isEmpty()) {
+                log.info("Cleaning up {} existing document units for file: {}", existingUnits.size(), fileId);
+
+                final List<String> documentUnitEntities = Steam.of(existingUnits).map(DocumentUnitEntity::getId).toList();
+                // 删除所有文档单元（包括语料和向量数据）
+                documentUnitRepository.deleteByIds(documentUnitEntities);
+
+                embeddingDomainService.deleteEmbedding(Collections.singletonList(fileId));
+                log.info("Successfully cleaned up document units for file: {}", fileId);
+            } else {
+                log.debug("No existing document units found for file: {}", fileId);
+            }
+        } catch (Exception e) {
+            log.error("Failed to cleanup existing document units for file: {}", fileId, e);
+            throw new RuntimeException("清理已有语料数据失败: " + e.getMessage());
         }
     }
 

@@ -127,13 +127,23 @@ public class RagQaDatasetController {
         return Result.success(files);
     }
 
-    /** 启动文件预处理
+    /** 启动文件预处理（手动触发，会进行状态检查）
      * @param request 预处理请求
      * @return 操作结果 */
     @PostMapping("/files/process")
     public Result<Void> processFile(@RequestBody @Validated ProcessFileRequest request) {
         String userId = UserContext.getCurrentUserId();
         ragQaDatasetAppService.processFile(request, userId);
+        return Result.success();
+    }
+
+    /** 重新启动文件预处理（强制重启，仅用于调试）
+     * @param request 预处理请求
+     * @return 操作结果 */
+    @PostMapping("/files/reprocess")
+    public Result<Void> reprocessFile(@RequestBody @Validated ProcessFileRequest request) {
+        String userId = UserContext.getCurrentUserId();
+        ragQaDatasetAppService.reprocessFile(request, userId);
         return Result.success();
     }
 

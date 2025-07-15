@@ -1,5 +1,7 @@
 package org.xhy.domain.rag.service;
 
+import static dev.langchain4j.store.embedding.filter.MetadataFilterBuilder.metadataKey;
+
 import dev.langchain4j.store.embedding.EmbeddingMatch;
 import java.util.ArrayList;
 import java.util.List;
@@ -192,9 +194,10 @@ public class EmbeddingDomainService implements MetadataConstant {
 
     /** 批量删除向量数据
      *
-     * @param embeddingIds 向量数据id */
-    public void deleteEmbedding(List<String> embeddingIds) {
-        embeddingStore.removeAll(embeddingIds);
+     * @param fileIds 文件id集合 */
+    public void deleteEmbedding(List<String> fileIds) {
+
+        embeddingStore.removeAll(metadataKey(MetadataConstant.FILE_ID).isIn(fileIds));
     }
 
     /** 重新向量入库
