@@ -123,9 +123,8 @@ public class FileDetailDomainService {
         }
 
         // 从数据库删除记录
-        LambdaUpdateWrapper<FileDetailEntity> wrapper = Wrappers.<FileDetailEntity>lambdaUpdate()
-                .eq(FileDetailEntity::getId, fileId).eq(FileDetailEntity::getUserId, userId);
-        fileDetailRepository.checkedDelete(wrapper);
+        fileDetailRepository.delete(Wrappers.<FileDetailEntity>lambdaQuery()
+                .eq(FileDetailEntity::getId, fileId).eq(FileDetailEntity::getUserId, userId));
     }
 
     /** 更新文件信息

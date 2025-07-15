@@ -134,9 +134,8 @@ public class DockerService {
             dockerClient.stopContainerCmd(containerId).withTimeout(10) // 10秒超时
                     .exec();
             logger.info("容器已停止: {}", containerId);
-        } catch (DockerException e) {
+        } catch (Exception e) {
             logger.error("停止容器失败: {}", containerId, e);
-            throw new BusinessException("停止容器失败: " + e.getMessage());
         }
     }
 
@@ -172,7 +171,6 @@ public class DockerService {
             logger.info("容器已删除: {}", containerId);
         } catch (DockerException e) {
             logger.error("删除容器失败: {}", containerId, e);
-            throw new BusinessException("删除容器失败: " + e.getMessage());
         }
     }
 

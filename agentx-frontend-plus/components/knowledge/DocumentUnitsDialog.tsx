@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import ReactMarkdown from 'react-markdown'
 import { 
   FileText, 
   Edit, 
@@ -247,7 +248,7 @@ export function DocumentUnitsDialog({ open, onOpenChange, file }: DocumentUnitsD
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-5xl max-h-[85vh] p-0 flex flex-col">
-          <DialogHeader className="px-6 py-4 border-b">
+          <DialogHeader className="px-6 py-4 border-b shrink-0">
             <div className="flex items-center gap-3">
               <FileText className="h-5 w-5" />
               <div>
@@ -259,7 +260,7 @@ export function DocumentUnitsDialog({ open, onOpenChange, file }: DocumentUnitsD
             </div>
           </DialogHeader>
 
-          <div className="px-6 py-3 border-b">
+          <div className="px-6 py-3 border-b shrink-0">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <Badge variant="outline" className="text-xs">
@@ -292,7 +293,7 @@ export function DocumentUnitsDialog({ open, onOpenChange, file }: DocumentUnitsD
             </div>
           </div>
 
-          <ScrollArea className="flex-1 px-6 py-4">
+          <ScrollArea className="flex-1 px-6 py-4 overflow-y-auto" style={{ maxHeight: 'calc(85vh - 160px)' }}>
             {loading ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="h-8 w-8 animate-spin" />
@@ -316,7 +317,7 @@ export function DocumentUnitsDialog({ open, onOpenChange, file }: DocumentUnitsD
                       <div className="flex items-start justify-between">
                         <div className="flex items-center gap-2">
                           <Badge variant="outline" className="text-xs">
-                            第 {unit.page} 页
+                            第 {unit.page + 1} 页
                           </Badge>
                           {unit.isVector && (
                             <Badge variant="default" className="text-xs">
@@ -338,6 +339,7 @@ export function DocumentUnitsDialog({ open, onOpenChange, file }: DocumentUnitsD
                                 size="sm"
                                 onClick={() => saveEdit(unit.id)}
                                 disabled={savingUnit === unit.id}
+                                title="保存修改"
                               >
                                 {savingUnit === unit.id ? (
                                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -350,6 +352,7 @@ export function DocumentUnitsDialog({ open, onOpenChange, file }: DocumentUnitsD
                                 size="sm"
                                 onClick={cancelEdit}
                                 disabled={savingUnit === unit.id}
+                                title="取消编辑"
                               >
                                 <X className="h-4 w-4" />
                               </Button>
@@ -359,7 +362,11 @@ export function DocumentUnitsDialog({ open, onOpenChange, file }: DocumentUnitsD
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => startEdit(unit)}
+                                onClick={() => {
+                                  console.log('编辑语料单元:', unit);
+                                  startEdit(unit);
+                                }}
+                                title="编辑语料"
                               >
                                 <Edit className="h-4 w-4" />
                               </Button>
@@ -367,7 +374,11 @@ export function DocumentUnitsDialog({ open, onOpenChange, file }: DocumentUnitsD
                                 variant="ghost"
                                 size="sm"
                                 className="text-red-600 hover:text-red-700"
-                                onClick={() => setDeletingUnit(unit)}
+                                onClick={() => {
+                                  console.log('删除语料单元:', unit);
+                                  setDeletingUnit(unit);
+                                }}
+                                title="删除语料"
                               >
                                 <Trash className="h-4 w-4" />
                               </Button>
@@ -385,8 +396,30 @@ export function DocumentUnitsDialog({ open, onOpenChange, file }: DocumentUnitsD
                             disabled={savingUnit === unit.id}
                           />
                         ) : (
-                          <div className="whitespace-pre-wrap leading-relaxed">
-                            {unit.content}
+                          <div className="leading-relaxed whitespace-pre-wrap">
+                            <ReactMarkdown 
+                              components={{
+                                h1: ({ children }) => <h1 className="text-xl font-bold mb-2">{children}</h1>,
+                                h2: ({ children }) => <h2 className="text-lg font-semibold mb-2">{children}</h2>,
+                                h3: ({ children }) => <h3 className="text-md font-medium mb-1">{children}</h3>,
+                                p: ({ children }) => <p className="mb-2">{children}</p>,
+                                ul: ({ children }) => <ul className="list-disc list-inside mb-2">{children}</ul>,
+                                ol: ({ children }) => <ol className="list-decimal list-inside mb-2">{children}</ol>,
+                                li: ({ children }) => <li className="mb-1">{children}</li>,
+                                strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                                em: ({ children }) => <em className="italic">{children}</em>,
+                                code: ({ children }) => <code className="bg-gray-100 px-1 py-0.5 rounded text-sm font-mono">{children}</code>,
+                                pre: ({ children }) => <pre className="bg-gray-100 p-2 rounded text-sm font-mono overflow-x-auto mb-2">{children}</pre>,
+                                blockquote: ({ children }) => <blockquote className="border-l-4 border-gray-300 pl-4 italic mb-2">{children}</blockquote>,
+                                a: ({ children, href }) => <a href={href} className="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">{children}</a>,
+                                hr: () => <hr className="my-4 border-gray-200" />,
+                                table: ({ children }) => <table className="border-collapse border border-gray-300 w-full mb-2">{children}</table>,
+                                th: ({ children }) => <th className="border border-gray-300 px-2 py-1 bg-gray-50 font-semibold">{children}</th>,
+                                td: ({ children }) => <td className="border border-gray-300 px-2 py-1">{children}</td>,
+                              }}
+                            >
+                              {unit.content}
+                            </ReactMarkdown>
                           </div>
                         )}
                       </div>
@@ -407,7 +440,7 @@ export function DocumentUnitsDialog({ open, onOpenChange, file }: DocumentUnitsD
           </ScrollArea>
 
           {pageData.pages > 1 && (
-            <div className="px-6 py-4 border-t">
+            <div className="px-6 py-4 border-t shrink-0">
               <Pagination>
                 <PaginationContent>
                   <PaginationItem>

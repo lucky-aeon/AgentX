@@ -86,11 +86,13 @@ export interface ApiResponse<T> {
 export enum FileInitializeStatus {
   NOT_INITIALIZED = 0,
   INITIALIZED = 1,
+  PROCESSING = 2, // 添加处理中状态
 }
 
 export enum FileEmbeddingStatus {
   NOT_EMBEDDED = 0,
   EMBEDDED = 1,
+  PROCESSING = 2, // 添加处理中状态
 }
 
 // 文件状态显示配置

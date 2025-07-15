@@ -147,16 +147,37 @@ export default function DatasetDetailPage() {
     }
   }, [datasetId, debouncedQuery])
 
-  // 定期刷新文件处理进度
+  // 定期刷新文件处理进度（智能刷新）
   useEffect(() => {
     if (!datasetId) return
 
     const interval = setInterval(() => {
-      loadFilesProgress()
-    }, 5000) // 每5秒刷新一次
+      // 只有当有文件正在处理时才刷新进度
+      const hasProcessingFiles = filesProgress.some(p => 
+        p.processProgress !== undefined && p.processProgress < 100
+      )
+      
+      if (hasProcessingFiles || Object.keys(isProcessing).some(key => isProcessing[key])) {
+        loadFilesProgress()
+      }
+    }, 3000) // 缩短为3秒刷新一次
 
     return () => clearInterval(interval)
-  }, [datasetId])
+  }, [datasetId, filesProgress, isProcessing])
+
+  // 监控进度变化，智能刷新文件列表
+  useEffect(() => {
+    // 检查是否有刚完成的文件（进度从<100变为100）
+    const completedFiles = filesProgress.filter(p => p.processProgress === 100)
+    if (completedFiles.length > 0) {
+      // 延迟刷新文件列表，避免频繁刷新
+      const timeoutId = setTimeout(() => {
+        loadFiles(pageData.current, debouncedQuery)
+      }, 1000)
+      
+      return () => clearTimeout(timeoutId)
+    }
+  }, [filesProgress, pageData.current, debouncedQuery])
 
   // 加载数据集详情
   const loadDatasetDetail = async () => {
@@ -314,44 +335,49 @@ export default function DatasetDetailPage() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
   }
 
-  // 获取文件状态配置
+  // 获取文件状态配置（结合进度信息）
   const getFileStatusConfig = (file: FileDetail) => {
-    const initializeStatus = file.isInitialize as FileInitializeStatus
-    const embeddingStatus = file.isEmbedding as FileEmbeddingStatus
+    const progressInfo = getFileProgressInfo(file.id)
+    
+    // 优先使用进度信息的状态枚举
+    let initializeText = "待初始化"
+    let embeddingText = "待向量化"
+    
+    if (progressInfo) {
+      if (progressInfo.initializeStatusEnum === 'INITIALIZED') {
+        initializeText = "已初始化"
+      } else if (progressInfo.initializeStatusEnum === 'UNINITIALIZED') {
+        initializeText = "待初始化"
+      }
+      
+      if (progressInfo.embeddingStatusEnum === 'INITIALIZED') {
+        embeddingText = "已向量化"
+      } else if (progressInfo.embeddingStatusEnum === 'UNINITIALIZED') {
+        embeddingText = "待向量化"
+      }
+    } else {
+      // 如果没有进度信息，使用文件基本信息
+      initializeText = file.isInitialize === 1 ? "已初始化" : "待初始化"
+      embeddingText = file.isEmbedding === 1 ? "已向量化" : "待向量化"
+    }
 
     const initializeConfig = {
-      [FileInitializeStatus.NOT_INITIALIZED]: {
-        text: "待初始化",
-        variant: "outline" as const,
-        color: "text-yellow-600",
-        icon: <Clock className="h-3 w-3" />
-      },
-      [FileInitializeStatus.INITIALIZED]: {
-        text: "已初始化",
-        variant: "default" as const,
-        color: "text-green-600",
-        icon: <CheckCircle className="h-3 w-3" />
-      }
+      text: initializeText,
+      variant: (initializeText === "已初始化" ? "default" : "outline") as const,
+      color: initializeText === "已初始化" ? "text-green-600" : "text-yellow-600",
+      icon: initializeText === "已初始化" ? <CheckCircle className="h-3 w-3" /> : <Clock className="h-3 w-3" />
     }
 
     const embeddingConfig = {
-      [FileEmbeddingStatus.NOT_EMBEDDED]: {
-        text: "待向量化",
-        variant: "outline" as const,
-        color: "text-yellow-600",
-        icon: <Clock className="h-3 w-3" />
-      },
-      [FileEmbeddingStatus.EMBEDDED]: {
-        text: "已向量化",
-        variant: "default" as const,
-        color: "text-green-600",
-        icon: <CheckCircle className="h-3 w-3" />
-      }
+      text: embeddingText,
+      variant: (embeddingText === "已向量化" ? "default" : "outline") as const,
+      color: embeddingText === "已向量化" ? "text-green-600" : "text-yellow-600",
+      icon: embeddingText === "已向量化" ? <CheckCircle className="h-3 w-3" /> : <Clock className="h-3 w-3" />
     }
 
     return {
-      initialize: initializeConfig[initializeStatus] || initializeConfig[FileInitializeStatus.NOT_INITIALIZED],
-      embedding: embeddingConfig[embeddingStatus] || embeddingConfig[FileEmbeddingStatus.NOT_EMBEDDED]
+      initialize: initializeConfig,
+      embedding: embeddingConfig
     }
   }
 
@@ -372,7 +398,14 @@ export default function DatasetDetailPage() {
     try {
       const response = await getDatasetFilesProgressWithToast(datasetId)
       if (response.code === 200) {
-        setFilesProgress(response.data)
+        // 避免不必要的状态更新
+        const newProgress = response.data
+        const hasChanged = JSON.stringify(newProgress) !== JSON.stringify(filesProgress)
+        
+        if (hasChanged) {
+          setFilesProgress(newProgress)
+          console.log('文件进度已更新:', newProgress)
+        }
       }
     } catch (error) {
       console.error("加载文件处理进度失败:", error)
@@ -395,12 +428,71 @@ export default function DatasetDetailPage() {
         setTimeout(() => {
           loadFilesProgress()
         }, 1000)
+        
+        // 重新加载文件列表以更新状态
+        setTimeout(() => {
+          loadFiles(pageData.current, debouncedQuery)
+        }, 2000)
       }
     } catch (error) {
       console.error("启动文件预处理失败:", error)
     } finally {
       setIsProcessing(prev => ({ ...prev, [fileId]: false }))
     }
+  }
+  
+  // 检查文件是否已初始化（结合进度信息）
+  const isFileInitialized = (file: FileDetail) => {
+    const progressInfo = getFileProgressInfo(file.id)
+    
+    if (progressInfo && progressInfo.initializeStatusEnum) {
+      return progressInfo.initializeStatusEnum === 'INITIALIZED'
+    }
+    
+    // 如果没有进度信息，使用文件基本信息
+    return file.isInitialize === 1
+  }
+  
+  // 检查文件是否需要显示初始化按钮
+  const shouldShowInitializeButton = (file: FileDetail) => {
+    const progressInfo = getFileProgressInfo(file.id)
+    
+    if (progressInfo && progressInfo.initializeStatusEnum) {
+      return progressInfo.initializeStatusEnum === 'UNINITIALIZED'
+    }
+    
+    // 如果没有进度信息，使用文件基本信息
+    return file.isInitialize === 0
+  }
+  
+  // 检查文件是否需要显示向量化按钮
+  const shouldShowEmbeddingButton = (file: FileDetail) => {
+    const progressInfo = getFileProgressInfo(file.id)
+    
+    let isInitialized = false
+    let isNotEmbedded = false
+    
+    if (progressInfo && progressInfo.initializeStatusEnum && progressInfo.embeddingStatusEnum) {
+      isInitialized = progressInfo.initializeStatusEnum === 'INITIALIZED'
+      isNotEmbedded = progressInfo.embeddingStatusEnum === 'UNINITIALIZED'
+    } else {
+      // 如果没有进度信息，使用文件基本信息
+      isInitialized = file.isInitialize === 1
+      isNotEmbedded = file.isEmbedding === 0
+    }
+    
+    const shouldShow = isInitialized && isNotEmbedded
+    
+    // 添加调试日志
+    console.log(`文件 ${file.originalFilename} 向量化按钮检查:`, {
+      fileId: file.id,
+      progressInfo: progressInfo,
+      isInitialized: isInitialized,
+      isNotEmbedded: isNotEmbedded,
+      shouldShow: shouldShow
+    })
+    
+    return shouldShow
   }
 
   // 获取文件处理进度信息
@@ -756,7 +848,7 @@ export default function DatasetDetailPage() {
                                 >
                                   {statusConfig.initialize.text}
                                 </Badge>
-                                {file.isInitialize === 0 && (
+                                {shouldShowInitializeButton(file) && (
                                   <Button
                                     variant="ghost"
                                     size="sm"
@@ -782,7 +874,7 @@ export default function DatasetDetailPage() {
                                 >
                                   {statusConfig.embedding.text}
                                 </Badge>
-                                {file.isInitialize === 1 && file.isEmbedding === 0 && (
+                                {shouldShowEmbeddingButton(file) && (
                                   <Button
                                     variant="ghost"
                                     size="sm"
@@ -828,7 +920,7 @@ export default function DatasetDetailPage() {
                             </TableCell>
                             <TableCell>
                               <div className="flex items-center gap-1">
-                                {file.isInitialize === 1 && (
+                                {isFileInitialized(file) && (
                                   <Button
                                     variant="ghost"
                                     size="icon"
