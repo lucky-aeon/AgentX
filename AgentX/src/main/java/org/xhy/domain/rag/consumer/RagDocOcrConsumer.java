@@ -102,7 +102,7 @@ public class RagDocOcrConsumer {
             if (totalPages != null && totalPages > 0) {
                 fileDetailDomainService.updateFileOcrProgress(ocrMessage.getFileId(), totalPages, 100.0);
             }
-            
+
             fileDetailDomainService.updateFileInitializeStatus(ocrMessage.getFileId(),
                     FileInitializeStatus.INITIALIZED);
 

@@ -245,8 +245,7 @@ public class FileDetailDomainService {
     @Deprecated
     public void updateFileProgress(String fileId, Integer currentPage, Double progress) {
         LambdaUpdateWrapper<FileDetailEntity> wrapper = Wrappers.<FileDetailEntity>lambdaUpdate()
-                .eq(FileDetailEntity::getId, fileId)
-                .set(FileDetailEntity::getCurrentOcrPageNumber, currentPage)
+                .eq(FileDetailEntity::getId, fileId).set(FileDetailEntity::getCurrentOcrPageNumber, currentPage)
                 .set(FileDetailEntity::getOcrProcessProgress, progress);
         fileDetailRepository.update(wrapper);
     }
@@ -257,8 +256,7 @@ public class FileDetailDomainService {
      * @param ocrProgress OCR进度百分比 */
     public void updateFileOcrProgress(String fileId, Integer currentOcrPage, Double ocrProgress) {
         LambdaUpdateWrapper<FileDetailEntity> wrapper = Wrappers.<FileDetailEntity>lambdaUpdate()
-                .eq(FileDetailEntity::getId, fileId)
-                .set(FileDetailEntity::getCurrentOcrPageNumber, currentOcrPage)
+                .eq(FileDetailEntity::getId, fileId).set(FileDetailEntity::getCurrentOcrPageNumber, currentOcrPage)
                 .set(FileDetailEntity::getOcrProcessProgress, ocrProgress);
         fileDetailRepository.update(wrapper);
     }

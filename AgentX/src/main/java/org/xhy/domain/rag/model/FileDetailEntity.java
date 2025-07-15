@@ -466,7 +466,7 @@ public class FileDetailEntity extends BaseEntity implements Serializable {
                 && Objects.equals(uploadStatus, that.uploadStatus) && Objects.equals(userId, that.userId)
                 && Objects.equals(dataSetId, that.dataSetId) && Objects.equals(filePageSize, that.filePageSize)
                 && Objects.equals(isInitialize, that.isInitialize) && Objects.equals(isEmbedding, that.isEmbedding)
-                && Objects.equals(currentOcrPageNumber, that.currentOcrPageNumber) 
+                && Objects.equals(currentOcrPageNumber, that.currentOcrPageNumber)
                 && Objects.equals(currentEmbeddingPageNumber, that.currentEmbeddingPageNumber)
                 && Objects.equals(ocrProcessProgress, that.ocrProcessProgress)
                 && Objects.equals(embeddingProcessProgress, that.embeddingProcessProgress);
@@ -477,7 +477,7 @@ public class FileDetailEntity extends BaseEntity implements Serializable {
         return Objects.hash(id, url, size, filename, originalFilename, basePath, path, ext, contentType, platform,
                 thUrl, thFilename, thSize, thContentType, objectId, objectType, metadata, userMetadata, thMetadata,
                 thUserMetadata, attr, fileAcl, thFileAcl, hashInfo, uploadId, uploadStatus, userId, dataSetId,
-                filePageSize, isInitialize, isEmbedding, currentOcrPageNumber, currentEmbeddingPageNumber, 
+                filePageSize, isInitialize, isEmbedding, currentOcrPageNumber, currentEmbeddingPageNumber,
                 ocrProcessProgress, embeddingProcessProgress);
     }
 }
