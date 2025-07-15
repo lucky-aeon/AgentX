@@ -327,7 +327,11 @@ public class RagQaDatasetAppService {
         dto.setFileId(entity.getId());
         dto.setFilename(entity.getOriginalFilename());
         
-        // 设置新的中文状态字段
+        // 设置新的枚举状态字段
+        dto.setInitializeStatusEnum(org.xhy.domain.rag.constant.FileInitializeStatusEnum.fromCode(entity.getIsInitialize()));
+        dto.setEmbeddingStatusEnum(org.xhy.domain.rag.constant.EmbeddingStatusEnum.fromCode(entity.getIsEmbedding()));
+        
+        // 设置中文状态字段（保持兼容性）
         dto.setInitializeStatus(org.xhy.domain.rag.constant.FileProcessStatusEnum.getInitStatusDescription(entity.getIsInitialize()));
         dto.setEmbeddingStatus(org.xhy.domain.rag.constant.FileProcessStatusEnum.getEmbeddingStatusDescription(entity.getIsEmbedding()));
         

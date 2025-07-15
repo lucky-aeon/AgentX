@@ -1,5 +1,8 @@
 package org.xhy.application.rag.dto;
 
+import org.xhy.domain.rag.constant.FileInitializeStatusEnum;
+import org.xhy.domain.rag.constant.EmbeddingStatusEnum;
+
 /** 文件处理进度响应
  * @author zang
  * @date 2025-01-10 */
@@ -10,6 +13,12 @@ public class FileProcessProgressDTO {
 
     /** 文件名 */
     private String filename;
+
+    /** 初始化状态枚举 */
+    private FileInitializeStatusEnum initializeStatusEnum;
+
+    /** 向量化状态枚举 */
+    private EmbeddingStatusEnum embeddingStatusEnum;
 
     /** 初始化状态（中文） */
     private String initializeStatus;
@@ -62,6 +71,22 @@ public class FileProcessProgressDTO {
 
     public void setFilename(String filename) {
         this.filename = filename;
+    }
+
+    public FileInitializeStatusEnum getInitializeStatusEnum() {
+        return initializeStatusEnum;
+    }
+
+    public void setInitializeStatusEnum(FileInitializeStatusEnum initializeStatusEnum) {
+        this.initializeStatusEnum = initializeStatusEnum;
+    }
+
+    public EmbeddingStatusEnum getEmbeddingStatusEnum() {
+        return embeddingStatusEnum;
+    }
+
+    public void setEmbeddingStatusEnum(EmbeddingStatusEnum embeddingStatusEnum) {
+        this.embeddingStatusEnum = embeddingStatusEnum;
     }
 
     public String getInitializeStatus() {
