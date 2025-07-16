@@ -40,7 +40,8 @@
       "Bash(rg:*)",
       "Bash(docker inspect:*)",
       "Bash(docker stop:*)",
-      "Bash(docker rm:*)"
+      "Bash(docker rm:*)",
+      "Bash(cp:*)"
     ],
     "deny": []
   }

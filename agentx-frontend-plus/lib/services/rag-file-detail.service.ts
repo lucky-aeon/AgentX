@@ -7,22 +7,57 @@ import type {
   ApiResponse 
 } from '@/types/rag-dataset';
 
-// 获取文件详情
+// 获取文件详情（使用现有的后端接口）
 export async function getFileDetail(request: GetFileDetailRequest): Promise<ApiResponse<FileDetailResponse>> {
   try {
     console.log('获取文件详情:', request);
     
-    const response = await httpClient.get<ApiResponse<FileDetailResponse>>(
-      API_ENDPOINTS.RAG_FILE_DETAIL,
-      { 
-        params: {
-          fileId: request.fileId,
-          documentId: request.documentId
-        }
+    // 1. 获取文件基本信息
+    const fileInfoResponse = await httpClient.get<ApiResponse<any>>(
+      API_ENDPOINTS.RAG_FILE_INFO(request.fileId)
+    );
+    
+    if (fileInfoResponse.code !== 200) {
+      throw new Error(fileInfoResponse.message || '获取文件信息失败');
+    }
+    
+    // 2. 获取文件语料内容
+    const documentUnitsResponse = await httpClient.post<ApiResponse<any>>(
+      API_ENDPOINTS.RAG_DOCUMENT_UNITS,
+      {
+        fileId: request.fileId,
+        page: 1,
+        pageSize: 999, // 获取所有语料
+        keyword: ''
       }
     );
     
-    return response;
+    let content = '';
+    if (documentUnitsResponse.code === 200 && documentUnitsResponse.data.records) {
+      // 按页码排序并合并内容
+      const sortedUnits = documentUnitsResponse.data.records.sort((a: any, b: any) => a.page - b.page);
+      content = sortedUnits.map((unit: any) => unit.content).join('\n\n');
+    }
+    
+    // 3. 构建FileDetailResponse格式的数据
+    const fileInfo = fileInfoResponse.data;
+    const fileDetailResponse: FileDetailResponse = {
+      fileId: fileInfo.fileId,
+      fileName: fileInfo.originalFilename,
+      content: content,
+      pageCount: fileInfo.filePageSize || 0,
+      fileSize: fileInfo.size || 0,
+      fileType: fileInfo.ext || 'pdf',
+      createdAt: new Date().toISOString(), // 暂时使用当前时间
+      updatedAt: new Date().toISOString()
+    };
+    
+    return {
+      code: 200,
+      message: '获取文件详情成功',
+      data: fileDetailResponse,
+      timestamp: Date.now(),
+    };
   } catch (error) {
     console.error('获取文件详情错误:', error);
     return {
@@ -248,7 +283,7 @@ function hashCode(str: string): number {
 }
 
 // 使用 withToast 包装器的API函数
-export const getFileDetailWithToast = withToast(mockGetFileDetail, {
+export const getFileDetailWithToast = withToast(getFileDetail, {
   showSuccessToast: false,
   errorTitle: '获取文件详情失败'
 });
