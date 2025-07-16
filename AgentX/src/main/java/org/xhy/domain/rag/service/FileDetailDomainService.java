@@ -122,9 +122,6 @@ public class FileDetailDomainService {
             // log.warn("删除存储文件失败: {}", file.getUrl(), e);
         }
 
-        // 从数据库删除记录
-        fileDetailRepository.delete(Wrappers.<FileDetailEntity>lambdaQuery()
-                .eq(FileDetailEntity::getId, fileId).eq(FileDetailEntity::getUserId, userId));
     }
 
     /** 更新文件信息

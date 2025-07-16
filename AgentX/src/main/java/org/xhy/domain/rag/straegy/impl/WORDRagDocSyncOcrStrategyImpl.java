@@ -7,6 +7,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import org.dromara.streamquery.stream.core.bean.BeanHelper;
 import org.dromara.streamquery.stream.core.stream.Steam;
 import org.dromara.x.file.storage.core.FileInfo;
@@ -44,10 +46,25 @@ public class WORDRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl imp
     @Resource
     private FileStorageService fileStorageService;
 
+    // 用于存储当前处理的文件ID，以便更新页数
+    private String currentProcessingFileId;
+
     public WORDRagDocSyncOcrStrategyImpl(DocumentUnitRepository documentUnitRepository,
             FileDetailRepository fileDetailRepository) {
         this.documentUnitRepository = documentUnitRepository;
         this.fileDetailRepository = fileDetailRepository;
+    }
+
+    /** 处理消息，设置当前处理的文件ID
+     * @param ragDocSyncOcrMessage 消息数据
+     * @param strategy 当前策略 */
+    @Override
+    public void handle(RagDocSyncOcrMessage ragDocSyncOcrMessage, String strategy) throws Exception {
+        // 设置当前处理的文件ID，用于更新页数
+        this.currentProcessingFileId = ragDocSyncOcrMessage.getFileId();
+        
+        // 调用父类处理逻辑
+        super.handle(ragDocSyncOcrMessage, strategy);
     }
 
     /** 获取文件页数
@@ -56,7 +73,33 @@ public class WORDRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl imp
      * @param ragDocSyncOcrMessage 消息数据 */
     @Override
     public void pushPageSize(byte[] bytes, RagDocSyncOcrMessage ragDocSyncOcrMessage) {
-
+        try {
+            DocumentParser parser = new ApachePoiDocumentParser();
+            InputStream inputStream = new ByteArrayInputStream(bytes);
+            Document document = parser.parse(inputStream);
+            
+            final DocumentBySentenceSplitter documentByCharacterSplitter = new DocumentBySentenceSplitter(500, 0);
+            final List<TextSegment> split = documentByCharacterSplitter.split(document);
+            
+            int segmentCount = split.size();
+            ragDocSyncOcrMessage.setPageSize(segmentCount);
+            log.info("Word document split into {} segments", segmentCount);
+            
+            // 更新数据库中的总页数
+            if (currentProcessingFileId != null) {
+                LambdaUpdateWrapper<FileDetailEntity> wrapper = Wrappers.<FileDetailEntity>lambdaUpdate()
+                        .eq(FileDetailEntity::getId, currentProcessingFileId)
+                        .set(FileDetailEntity::getFilePageSize, segmentCount);
+                fileDetailRepository.update(wrapper);
+                
+                log.info("Updated total pages for Word file {}: {} segments", currentProcessingFileId, segmentCount);
+            }
+            
+            inputStream.close();
+        } catch (Exception e) {
+            log.error("Failed to calculate page size for Word document", e);
+            ragDocSyncOcrMessage.setPageSize(0);
+        }
     }
 
     /** 获取文件数据
@@ -129,10 +172,10 @@ public class WORDRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl imp
      * @param ocrData 按页索引分组的内容Map */
     @Override
     public void insertData(RagDocSyncOcrMessage ragDocSyncOcrMessage, Map<Integer, String> ocrData) throws Exception {
-        log.info("开始保存文档内容，共拆分{}段", ragDocSyncOcrMessage.getPageSize());
+        log.info("开始保存文档内容，共拆分{}段", ocrData.size());
 
         // 遍历每一页，将内容保存到数据库
-        for (int pageIndex = 0; pageIndex < ragDocSyncOcrMessage.getPageSize(); pageIndex++) {
+        for (int pageIndex = 0; pageIndex < ocrData.size(); pageIndex++) {
             String content = ocrData.getOrDefault(pageIndex, null);
 
             DocumentUnitEntity documentUnitEntity = new DocumentUnitEntity();

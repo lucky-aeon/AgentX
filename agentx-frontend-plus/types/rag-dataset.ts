@@ -129,8 +129,8 @@ export interface FileProcessProgressDTO {
   processProgress?: number; // 处理进度百分比
   statusDescription?: string; // 状态描述
   // 新增：状态枚举字段
-  initializeStatusEnum?: 'UNINITIALIZED' | 'INITIALIZED' | 'PROCESSING';
-  embeddingStatusEnum?: 'UNINITIALIZED' | 'INITIALIZED' | 'PROCESSING';
+  initializeStatusEnum?: 'UNINITIALIZED' | 'INITIALIZING' | 'INITIALIZED' | 'INITIALIZATION_FAILED';
+  embeddingStatusEnum?: 'UNINITIALIZED' | 'INITIALIZING' | 'INITIALIZED' | 'INITIALIZATION_FAILED';
 }
 
 // RAG搜索请求（对应 RagSearchRequest）

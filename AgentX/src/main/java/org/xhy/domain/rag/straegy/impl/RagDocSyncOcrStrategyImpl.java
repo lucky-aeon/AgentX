@@ -27,7 +27,12 @@ public abstract class RagDocSyncOcrStrategyImpl implements RagDocSyncOcrStrategy
             return;
         }
 
-        final Map<Integer, String> ocrData = processFile(fileData, ragDocSyncOcrMessage.getPageSize());
+        Integer pageSize = ragDocSyncOcrMessage.getPageSize();
+        if (pageSize == null) {
+            LOG.warn("Page size is null, using default value 1 for txt/word files");
+            pageSize = 1;
+        }
+        final Map<Integer, String> ocrData = processFile(fileData, pageSize);
 
         LOG.info("Successfully retrieved {} pages of data from the current file", ocrData.size());
 

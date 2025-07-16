@@ -348,31 +348,64 @@ export default function DatasetDetailPage() {
         initializeText = "已初始化"
       } else if (progressInfo.initializeStatusEnum === 'UNINITIALIZED') {
         initializeText = "待初始化"
+      } else if (progressInfo.initializeStatusEnum === 'INITIALIZING') {
+        initializeText = "初始化中"
+      } else if (progressInfo.initializeStatusEnum === 'INITIALIZATION_FAILED') {
+        initializeText = "初始化失败"
       }
       
       if (progressInfo.embeddingStatusEnum === 'INITIALIZED') {
         embeddingText = "已向量化"
       } else if (progressInfo.embeddingStatusEnum === 'UNINITIALIZED') {
         embeddingText = "待向量化"
+      } else if (progressInfo.embeddingStatusEnum === 'INITIALIZING') {
+        embeddingText = "向量化中"
+      } else if (progressInfo.embeddingStatusEnum === 'INITIALIZATION_FAILED') {
+        embeddingText = "向量化失败"
       }
     } else {
       // 如果没有进度信息，使用文件基本信息
-      initializeText = file.isInitialize === 1 ? "已初始化" : "待初始化"
-      embeddingText = file.isEmbedding === 1 ? "已向量化" : "待向量化"
+      if (file.isInitialize === 0) {
+        initializeText = "待初始化"
+      } else if (file.isInitialize === 1) {
+        initializeText = "初始化中"
+      } else if (file.isInitialize === 2) {
+        initializeText = "已初始化"
+      } else if (file.isInitialize === 3) {
+        initializeText = "初始化失败"
+      }
+      
+      if (file.isEmbedding === 0) {
+        embeddingText = "待向量化"
+      } else if (file.isEmbedding === 1) {
+        embeddingText = "向量化中"
+      } else if (file.isEmbedding === 2) {
+        embeddingText = "已向量化"
+      } else if (file.isEmbedding === 3) {
+        embeddingText = "向量化失败"
+      }
     }
 
     const initializeConfig = {
       text: initializeText,
-      variant: (initializeText === "已初始化" ? "default" : "outline") as const,
-      color: initializeText === "已初始化" ? "text-green-600" : "text-yellow-600",
-      icon: initializeText === "已初始化" ? <CheckCircle className="h-3 w-3" /> : <Clock className="h-3 w-3" />
+      variant: initializeText === "已初始化" ? "default" : "outline",
+      color: initializeText === "已初始化" ? "text-green-600" : 
+             initializeText === "初始化失败" ? "text-red-600" :
+             initializeText === "初始化中" ? "text-blue-600" : "text-yellow-600",
+      icon: initializeText === "已初始化" ? <CheckCircle className="h-3 w-3" /> : 
+            initializeText === "初始化失败" ? <AlertCircle className="h-3 w-3" /> :
+            initializeText === "初始化中" ? <Loader2 className="h-3 w-3 animate-spin" /> : <Clock className="h-3 w-3" />
     }
 
     const embeddingConfig = {
       text: embeddingText,
-      variant: (embeddingText === "已向量化" ? "default" : "outline") as const,
-      color: embeddingText === "已向量化" ? "text-green-600" : "text-yellow-600",
-      icon: embeddingText === "已向量化" ? <CheckCircle className="h-3 w-3" /> : <Clock className="h-3 w-3" />
+      variant: embeddingText === "已向量化" ? "default" : "outline",
+      color: embeddingText === "已向量化" ? "text-green-600" : 
+             embeddingText === "向量化失败" ? "text-red-600" :
+             embeddingText === "向量化中" ? "text-blue-600" : "text-yellow-600",
+      icon: embeddingText === "已向量化" ? <CheckCircle className="h-3 w-3" /> : 
+            embeddingText === "向量化失败" ? <AlertCircle className="h-3 w-3" /> :
+            embeddingText === "向量化中" ? <Loader2 className="h-3 w-3 animate-spin" /> : <Clock className="h-3 w-3" />
     }
 
     return {
@@ -458,11 +491,13 @@ export default function DatasetDetailPage() {
     const progressInfo = getFileProgressInfo(file.id)
     
     if (progressInfo && progressInfo.initializeStatusEnum) {
-      return progressInfo.initializeStatusEnum === 'UNINITIALIZED'
+      // 待初始化或初始化失败的文件都应该显示预处理按钮
+      return progressInfo.initializeStatusEnum === 'UNINITIALIZED' || progressInfo.initializeStatusEnum === 'INITIALIZATION_FAILED'
     }
     
     // 如果没有进度信息，使用文件基本信息
-    return file.isInitialize === 0
+    // isInitialize: 0=待初始化, 3=初始化失败，都应该显示预处理按钮
+    return file.isInitialize === 0 || file.isInitialize === 3
   }
   
   // 检查文件是否需要显示向量化按钮
