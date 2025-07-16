@@ -1,5 +1,9 @@
 package org.xhy.infrastructure.rag.config;
 
+import static dev.langchain4j.store.embedding.filter.MetadataFilterBuilder.metadataKey;
+
+import dev.langchain4j.data.segment.TextSegment;
+import dev.langchain4j.store.embedding.EmbeddingStore;
 import java.util.Map;
 
 import org.dromara.x.file.storage.core.FileInfo;
@@ -9,7 +13,10 @@ import org.dromara.x.file.storage.core.upload.FilePartInfo;
 import org.springframework.stereotype.Service;
 import org.xhy.domain.rag.constant.EmbeddingStatus;
 import org.xhy.domain.rag.constant.FileInitializeStatus;
+import org.xhy.domain.rag.constant.MetadataConstant;
+import org.xhy.domain.rag.model.DocumentUnitEntity;
 import org.xhy.domain.rag.model.FileDetailEntity;
+import org.xhy.domain.rag.repository.DocumentUnitRepository;
 import org.xhy.domain.rag.repository.FileDetailRepository;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -33,8 +40,15 @@ public class RagDocFileConfig implements FileRecorder {
 
     private final FileDetailRepository fileDetailRepository;
 
-    public RagDocFileConfig(FileDetailRepository fileDetailRepository) {
+    private final DocumentUnitRepository documentUnitRepository;
+
+    private final EmbeddingStore<TextSegment> embeddingStore;
+
+
+    public RagDocFileConfig(FileDetailRepository fileDetailRepository, DocumentUnitRepository documentUnitRepository, EmbeddingStore<TextSegment> embeddingStore) {
         this.fileDetailRepository = fileDetailRepository;
+        this.documentUnitRepository = documentUnitRepository;
+        this.embeddingStore = embeddingStore;
     }
 
     /** 保存文件信息到数据库 */
@@ -84,7 +98,16 @@ public class RagDocFileConfig implements FileRecorder {
     /** 根据 url 删除文件信息 */
     @Override
     public boolean delete(String url) {
-        fileDetailRepository.delete(Wrappers.lambdaQuery(FileDetailEntity.class).eq(FileDetailEntity::getUrl, url));
+        final FileDetailEntity fileDetailEntity = fileDetailRepository.selectOne(
+                Wrappers.lambdaQuery(FileDetailEntity.class).eq(FileDetailEntity::getUrl, url));
+
+        // 删除文件
+        fileDetailRepository.deleteById(fileDetailEntity.getId());
+        // 删除语料数据
+        documentUnitRepository.delete(Wrappers.lambdaQuery(DocumentUnitEntity.class).eq(DocumentUnitEntity::getFileId, fileDetailEntity.getId()));
+        // 删除文件向量数据
+        embeddingStore.removeAll(metadataKey(MetadataConstant.FILE_ID).isIn(fileDetailEntity.getId()));
+
         return true;
     }
 

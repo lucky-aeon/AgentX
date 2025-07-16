@@ -109,7 +109,7 @@ public class RagDocOcrConsumer {
             log.info("OCR processing completed for file: {}", ocrMessage.getFileId());
             
             // 自动启动向量化处理
-            //autoStartVectorization(ocrMessage.getFileId(), fileEntity);
+            autoStartVectorization(ocrMessage.getFileId(), fileEntity);
 
         } catch (Exception e) {
             log.error("OCR processing failed for file: {}", ocrMessage.getFileId(), e);

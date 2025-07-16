@@ -198,10 +198,6 @@ public class FileDetailDomainService {
             }
         }
 
-        // 批量删除数据库记录
-        LambdaUpdateWrapper<FileDetailEntity> wrapper = Wrappers.<FileDetailEntity>lambdaUpdate()
-                .eq(FileDetailEntity::getDataSetId, datasetId).eq(FileDetailEntity::getUserId, userId);
-        fileDetailRepository.delete(wrapper);
     }
 
     /** 更新文件的初始化状态

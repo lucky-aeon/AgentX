@@ -33,6 +33,17 @@ public class FileOperationController {
         return Result.success(fileInfo);
     }
 
+    /** 批量删除文件
+     * 
+     * @param request 批量删除请求
+     * @return 操作结果 */
+    @PostMapping("/batch-delete")
+    public Result<Void> batchDeleteFiles(@RequestBody @Validated BatchDeleteFilesRequest request) {
+        String userId = UserContext.getCurrentUserId();
+        fileOperationAppService.batchDeleteFiles(request, userId);
+        return Result.success();
+    }
+
     /** 分页查询文件的语料
      * 
      * @param request 查询请求

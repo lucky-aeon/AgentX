@@ -15,6 +15,7 @@ import org.xhy.domain.rag.service.DocumentUnitDomainService;
 import org.xhy.domain.rag.service.FileDetailDomainService;
 import org.xhy.infrastructure.mq.enums.EventType;
 import org.xhy.infrastructure.mq.events.RagDocSyncStorageEvent;
+import org.dromara.x.file.storage.core.FileStorageService;
 
 import java.util.List;
 
@@ -27,12 +28,15 @@ public class FileOperationAppService {
     private final FileDetailDomainService fileDetailDomainService;
     private final DocumentUnitDomainService documentUnitDomainService;
     private final ApplicationEventPublisher applicationEventPublisher;
+    private final FileStorageService fileStorageService;
 
     public FileOperationAppService(FileDetailDomainService fileDetailDomainService,
-            DocumentUnitDomainService documentUnitDomainService, ApplicationEventPublisher applicationEventPublisher) {
+            DocumentUnitDomainService documentUnitDomainService, ApplicationEventPublisher applicationEventPublisher,
+            FileStorageService fileStorageService) {
         this.fileDetailDomainService = fileDetailDomainService;
         this.documentUnitDomainService = documentUnitDomainService;
         this.applicationEventPublisher = applicationEventPublisher;
+        this.fileStorageService = fileStorageService;
     }
 
     /** 根据文件ID获取文件详细信息
@@ -102,6 +106,22 @@ public class FileOperationAppService {
 
         // 删除语料
         documentUnitDomainService.deleteDocumentUnit(documentUnitId, userId);
+    }
+
+    /** 批量删除文件
+     * 
+     * @param request 批量删除请求
+     * @param userId 用户ID */
+    @Transactional
+    public void batchDeleteFiles(BatchDeleteFilesRequest request, String userId) {
+        for (String fileUrl : request.getFileUrls()) {
+            try {
+                fileStorageService.delete(fileUrl);
+            } catch (Exception e) {
+                // 记录日志但继续删除其他文件
+                System.err.println("删除文件失败: " + fileUrl + ", 错误: " + e.getMessage());
+            }
+        }
     }
 
     /** 触发重新向量化
