@@ -16,8 +16,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.xhy.domain.rag.message.RagDocSyncStorageMessage;
-import org.xhy.domain.rag.constant.EmbeddingStatus;
-import org.xhy.domain.rag.constant.FileInitializeStatus;
+import org.xhy.domain.rag.constant.FileProcessingStatusEnum;
 import org.xhy.domain.rag.constant.MetadataConstant;
 import org.xhy.domain.rag.model.DocumentUnitEntity;
 import org.xhy.domain.rag.model.FileDetailEntity;
@@ -234,12 +233,20 @@ public class EmbeddingDomainService implements MetadataConstant {
                 return false;
             }
 
-            if (ObjectUtil.notEqual(fileDetail.getIsInitialize(), FileInitializeStatus.INITIALIZED)) {
-                log.warn("The file with ID {} has no data", fileId);
+            // 检查文件OCR状态
+            Integer processingStatus = fileDetail.getProcessingStatus();
+            if (processingStatus == null || 
+                (!processingStatus.equals(FileProcessingStatusEnum.OCR_COMPLETED.getCode()) &&
+                 !processingStatus.equals(FileProcessingStatusEnum.EMBEDDING_PROCESSING.getCode()) &&
+                 !processingStatus.equals(FileProcessingStatusEnum.COMPLETED.getCode()) &&
+                 !processingStatus.equals(FileProcessingStatusEnum.EMBEDDING_FAILED.getCode()))) {
+                log.warn("The file with ID {} has no OCR data", fileId);
+                return false;
             }
 
-            // 更新文件状态为入库中
-            fileDetail.setIsEmbedding(EmbeddingStatus.INITIALIZING);
+            // 使用状态机开始向量化处理
+            // 这里直接操作状态，因为这是领域服务层
+            fileDetail.setProcessingStatus(FileProcessingStatusEnum.EMBEDDING_PROCESSING.getCode());
             fileDetailRepository.updateById(fileDetail);
 
             // 删除旧向量数据
@@ -258,7 +265,8 @@ public class EmbeddingDomainService implements MetadataConstant {
             try {
                 FileDetailEntity fileDetail = fileDetailRepository.selectById(fileId);
                 if (fileDetail != null) {
-                    fileDetail.setIsEmbedding(EmbeddingStatus.INITIALIZATION_FAILED);
+                    // 使用状态机设置失败状态
+                    fileDetail.setProcessingStatus(FileProcessingStatusEnum.EMBEDDING_FAILED.getCode());
                     fileDetailRepository.updateById(fileDetail);
                 }
             } catch (Exception ex) {
@@ -320,9 +328,10 @@ public class EmbeddingDomainService implements MetadataConstant {
         final Integer anInt = Convert.toInt(isVector);
 
         if (anInt >= pageSize) {
+            // 使用状态机设置完成状态
             fileDetailRepository.update(
                     Wrappers.lambdaUpdate(FileDetailEntity.class).eq(FileDetailEntity::getId, fileDetailEntity.getId())
-                            .set(FileDetailEntity::getIsEmbedding, EmbeddingStatus.INITIALIZED));
+                            .set(FileDetailEntity::getProcessingStatus, FileProcessingStatusEnum.COMPLETED.getCode()));
         }
 
     }

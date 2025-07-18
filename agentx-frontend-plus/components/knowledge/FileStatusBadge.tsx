@@ -1,77 +1,40 @@
-import { CheckCircle, Clock, AlertCircle } from "lucide-react"
+import { CheckCircle, Clock, AlertCircle, Loader2 } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
-import type { FileDetail } from "@/types/rag-dataset"
-import { FileInitializeStatus, FileEmbeddingStatus } from "@/types/rag-dataset"
+import type { FileDetail, FileProcessProgressDTO } from "@/types/rag-dataset"
+import { getFileStatusConfig, type FileStatusDisplayConfig } from "@/lib/file-status-utils"
 
 interface FileStatusBadgeProps {
   file: FileDetail
-  type: "initialize" | "embedding"
+  progressInfo?: FileProcessProgressDTO
 }
 
-export function FileStatusBadge({ file, type }: FileStatusBadgeProps) {
-  const getStatusConfig = () => {
-    if (type === "initialize") {
-      switch (file.isInitialize as FileInitializeStatus) {
-        case FileInitializeStatus.NOT_INITIALIZED:
-          return {
-            text: "待初始化",
-            variant: "outline" as const,
-            icon: <Clock className="h-3 w-3" />,
-            className: "text-yellow-600 border-yellow-300"
-          }
-        case FileInitializeStatus.INITIALIZED:
-          return {
-            text: "已初始化",
-            variant: "default" as const,
-            icon: <CheckCircle className="h-3 w-3" />,
-            className: "text-green-600 bg-green-50 border-green-300"
-          }
-        default:
-          return {
-            text: "未知状态",
-            variant: "destructive" as const,
-            icon: <AlertCircle className="h-3 w-3" />,
-            className: "text-red-600"
-          }
-      }
-    } else {
-      switch (file.isEmbedding as FileEmbeddingStatus) {
-        case FileEmbeddingStatus.NOT_EMBEDDED:
-          return {
-            text: "待向量化",
-            variant: "outline" as const,
-            icon: <Clock className="h-3 w-3" />,
-            className: "text-yellow-600 border-yellow-300"
-          }
-        case FileEmbeddingStatus.EMBEDDED:
-          return {
-            text: "已向量化",
-            variant: "default" as const,
-            icon: <CheckCircle className="h-3 w-3" />,
-            className: "text-green-600 bg-green-50 border-green-300"
-          }
-        default:
-          return {
-            text: "未知状态",
-            variant: "destructive" as const,
-            icon: <AlertCircle className="h-3 w-3" />,
-            className: "text-red-600"
-          }
-      }
+export function FileStatusBadge({ file, progressInfo }: FileStatusBadgeProps) {
+  const { status } = getFileStatusConfig(file, progressInfo)
+  
+  const getIcon = (iconType: FileStatusDisplayConfig['iconType']) => {
+    switch (iconType) {
+      case "check":
+        return <CheckCircle className="h-3 w-3" />
+      case "clock":
+        return <Clock className="h-3 w-3" />
+      case "alert":
+        return <AlertCircle className="h-3 w-3" />
+      case "loading":
+        return <Loader2 className="h-3 w-3 animate-spin" />
+      default:
+        return <Clock className="h-3 w-3" />
     }
   }
 
-  const config = getStatusConfig()
-
   return (
     <div className="flex items-center gap-1">
-      {config.icon}
+      {getIcon(status.iconType)}
       <Badge 
-        variant={config.variant}
-        className={`text-xs ${config.className}`}
+        variant={status.variant}
+        className={`text-xs ${status.color}`}
       >
-        {config.text}
+        {status.text}
       </Badge>
     </div>
   )

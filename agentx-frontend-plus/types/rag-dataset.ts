@@ -13,6 +13,17 @@ export interface RagDataset {
   updatedAt: string;
 }
 
+// 文件处理状态枚举（对应后端 FileProcessingStatusEnum）
+export enum FileProcessingStatusEnum {
+  UPLOADED = "UPLOADED",                    // 已上传，待开始处理
+  OCR_PROCESSING = "OCR_PROCESSING",        // OCR处理中
+  OCR_COMPLETED = "OCR_COMPLETED",          // OCR处理完成，待向量化
+  EMBEDDING_PROCESSING = "EMBEDDING_PROCESSING", // 向量化处理中
+  COMPLETED = "COMPLETED",                  // 全部处理完成
+  OCR_FAILED = "OCR_FAILED",               // OCR处理失败
+  EMBEDDING_FAILED = "EMBEDDING_FAILED"    // 向量化处理失败
+}
+
 // 文件详情接口（对应 FileDetailDTO）
 export interface FileDetail {
   id: string;
@@ -24,6 +35,7 @@ export interface FileDetail {
   contentType: string;
   dataSetId: string;
   filePageSize?: number;
+  // 保留旧字段以兼容
   isInitialize: number; // 初始化状态: 0-未初始化, 1-已初始化
   isEmbedding: number;  // 向量化状态: 0-未向量化, 1-已向量化
   userId: string;
@@ -122,15 +134,24 @@ export interface ProcessFileRequest {
 export interface FileProcessProgressDTO {
   fileId: string;
   filename: string;
+  // 新的统一状态字段
+  processingStatusEnum: FileProcessingStatusEnum; // 处理状态枚举
+  processingStatus: number; // 处理状态码
+  processingStatusDescription: string; // 处理状态描述
+  // 分项进度字段
+  currentOcrPageNumber?: number; // 当前OCR处理页数
+  currentEmbeddingPageNumber?: number; // 当前向量化处理页数
+  filePageSize?: number; // 总页数
+  ocrProcessProgress?: number; // OCR处理进度百分比
+  embeddingProcessProgress?: number; // 向量化处理进度百分比
+  statusDescription?: string; // 状态描述
+  // 保留旧字段以兼容
   isInitialize: number; // 初始化状态
   isEmbedding: number; // 向量化状态
+  initializeStatus?: string; // 初始化状态描述
+  embeddingStatus?: string; // 向量化状态描述
   currentPageNumber?: number; // 当前处理页数
-  filePageSize?: number; // 总页数
   processProgress?: number; // 处理进度百分比
-  statusDescription?: string; // 状态描述
-  // 新增：状态枚举字段
-  initializeStatusEnum?: 'UNINITIALIZED' | 'INITIALIZING' | 'INITIALIZED' | 'INITIALIZATION_FAILED';
-  embeddingStatusEnum?: 'UNINITIALIZED' | 'INITIALIZING' | 'INITIALIZED' | 'INITIALIZATION_FAILED';
 }
 
 // RAG搜索请求（对应 RagSearchRequest）

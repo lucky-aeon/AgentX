@@ -111,9 +111,8 @@ public class RagDocStorageConsumer {
                 if (currentCompletedPages >= totalPages) {
                     // 确保进度为100%
                     fileDetailDomainService.updateFileEmbeddingProgress(fileId, totalPages, 100.0);
-                    // 更新向量化状态为已完成
-                    fileDetailDomainService.updateFileEmbeddingStatus(fileId,
-                            org.xhy.domain.rag.constant.EmbeddingStatus.INITIALIZED);
+                    // 通过状态机完成向量化处理
+                    fileDetailDomainService.completeFileEmbeddingProcessing(fileId, fileEntity.getUserId());
                     log.info("All pages vectorized for file {}, marking as completed", fileId);
                 }
             }

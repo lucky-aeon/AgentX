@@ -5,6 +5,7 @@ import java.io.Serializable;
 import java.util.Objects;
 
 import org.springframework.web.multipart.MultipartFile;
+import org.xhy.domain.rag.constant.FileProcessingStatusEnum;
 import org.xhy.infrastructure.entity.BaseEntity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
@@ -110,13 +111,9 @@ public class FileDetailEntity extends BaseEntity implements Serializable {
     /** 总页数 */
     private Integer filePageSize;
 
-    /** 初始化状态
-     * @see org.xhy.domain.rag.constant.FileInitializeStatus */
-    private Integer isInitialize;
-
-    /** 向量化状态
-     * @see org.xhy.domain.rag.constant.EmbeddingStatus */
-    private Integer isEmbedding;
+    /** 文件处理状态
+     * @see org.xhy.domain.rag.constant.FileProcessingStatusEnum */
+    private Integer processingStatus;
 
     /** 当前OCR处理页数 */
     private Integer currentOcrPageNumber;
@@ -373,20 +370,12 @@ public class FileDetailEntity extends BaseEntity implements Serializable {
         this.filePageSize = filePageSize;
     }
 
-    public Integer getIsInitialize() {
-        return isInitialize;
+    public Integer getProcessingStatus() {
+        return processingStatus;
     }
 
-    public void setIsInitialize(Integer isInitialize) {
-        this.isInitialize = isInitialize;
-    }
-
-    public Integer getIsEmbedding() {
-        return isEmbedding;
-    }
-
-    public void setIsEmbedding(Integer isEmbedding) {
-        this.isEmbedding = isEmbedding;
+    public void setProcessingStatus(Integer processingStatus) {
+        this.processingStatus = processingStatus;
     }
 
     public Integer getCurrentOcrPageNumber() {
@@ -419,6 +408,57 @@ public class FileDetailEntity extends BaseEntity implements Serializable {
 
     public void setEmbeddingProcessProgress(Double embeddingProcessProgress) {
         this.embeddingProcessProgress = embeddingProcessProgress;
+    }
+
+    /** 兼容性方法：获取初始化状态（基于新的统一状态判断）
+     * @return 初始化状态 */
+    @Deprecated
+    public Integer getIsInitialize() {
+        if (processingStatus == null) {
+            return 0; // 待初始化
+        }
+        FileProcessingStatusEnum status = FileProcessingStatusEnum.fromCode(processingStatus);
+        switch (status) {
+            case UPLOADED:
+                return 0; // 待初始化
+            case OCR_PROCESSING:
+                return 1; // 初始化中
+            case OCR_COMPLETED:
+            case EMBEDDING_PROCESSING:
+            case EMBEDDING_FAILED:
+            case COMPLETED:
+                return 2; // 已初始化
+            case OCR_FAILED:
+                return 3; // 初始化失败
+            default:
+                return 0;
+        }
+    }
+
+    /** 兼容性方法：获取向量化状态（基于新的统一状态判断）
+     * @return 向量化状态 */
+    @Deprecated
+    public Integer getIsEmbedding() {
+        if (processingStatus == null) {
+            return 0; // 未初始化
+        }
+        FileProcessingStatusEnum status = FileProcessingStatusEnum.fromCode(processingStatus);
+        switch (status) {
+            case UPLOADED:
+            case OCR_PROCESSING:
+            case OCR_FAILED:
+                return 0; // 未初始化
+            case OCR_COMPLETED:
+                return 0; // 待向量化（未初始化向量化）
+            case EMBEDDING_PROCESSING:
+                return 1; // 初始化中
+            case COMPLETED:
+                return 2; // 已初始化
+            case EMBEDDING_FAILED:
+                return 3; // 初始化失败
+            default:
+                return 0;
+        }
     }
 
     /** 兼容性方法：获取当前页数（映射到OCR页数）
@@ -465,7 +505,7 @@ public class FileDetailEntity extends BaseEntity implements Serializable {
                 && Objects.equals(hashInfo, that.hashInfo) && Objects.equals(uploadId, that.uploadId)
                 && Objects.equals(uploadStatus, that.uploadStatus) && Objects.equals(userId, that.userId)
                 && Objects.equals(dataSetId, that.dataSetId) && Objects.equals(filePageSize, that.filePageSize)
-                && Objects.equals(isInitialize, that.isInitialize) && Objects.equals(isEmbedding, that.isEmbedding)
+                && Objects.equals(processingStatus, that.processingStatus)
                 && Objects.equals(currentOcrPageNumber, that.currentOcrPageNumber)
                 && Objects.equals(currentEmbeddingPageNumber, that.currentEmbeddingPageNumber)
                 && Objects.equals(ocrProcessProgress, that.ocrProcessProgress)
@@ -477,7 +517,7 @@ public class FileDetailEntity extends BaseEntity implements Serializable {
         return Objects.hash(id, url, size, filename, originalFilename, basePath, path, ext, contentType, platform,
                 thUrl, thFilename, thSize, thContentType, objectId, objectType, metadata, userMetadata, thMetadata,
                 thUserMetadata, attr, fileAcl, thFileAcl, hashInfo, uploadId, uploadStatus, userId, dataSetId,
-                filePageSize, isInitialize, isEmbedding, currentOcrPageNumber, currentEmbeddingPageNumber,
+                filePageSize, processingStatus, currentOcrPageNumber, currentEmbeddingPageNumber,
                 ocrProcessProgress, embeddingProcessProgress);
     }
 }

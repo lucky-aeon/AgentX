@@ -79,6 +79,7 @@ import type {
   DocumentUnitDTO 
 } from "@/types/rag-dataset"
 import { FileInitializeStatus, FileEmbeddingStatus } from "@/types/rag-dataset"
+import { getFileStatusConfig as getFileStatusInfo } from "@/lib/file-status-utils"
 import { RagChatDialog } from "@/components/knowledge/RagChatDialog"
 import { DocumentUnitsDialog } from "@/components/knowledge/DocumentUnitsDialog"
 
@@ -335,83 +336,10 @@ export default function DatasetDetailPage() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
   }
 
-  // 获取文件状态配置（结合进度信息）
-  const getFileStatusConfig = (file: FileDetail) => {
+  // 获取文件状态配置（使用新的统一状态逻辑）
+  const getFileStatusDisplay = (file: FileDetail) => {
     const progressInfo = getFileProgressInfo(file.id)
-    
-    // 优先使用进度信息的状态枚举
-    let initializeText = "待初始化"
-    let embeddingText = "待向量化"
-    
-    if (progressInfo) {
-      if (progressInfo.initializeStatusEnum === 'INITIALIZED') {
-        initializeText = "已初始化"
-      } else if (progressInfo.initializeStatusEnum === 'UNINITIALIZED') {
-        initializeText = "待初始化"
-      } else if (progressInfo.initializeStatusEnum === 'INITIALIZING') {
-        initializeText = "初始化中"
-      } else if (progressInfo.initializeStatusEnum === 'INITIALIZATION_FAILED') {
-        initializeText = "初始化失败"
-      }
-      
-      if (progressInfo.embeddingStatusEnum === 'INITIALIZED') {
-        embeddingText = "已向量化"
-      } else if (progressInfo.embeddingStatusEnum === 'UNINITIALIZED') {
-        embeddingText = "待向量化"
-      } else if (progressInfo.embeddingStatusEnum === 'INITIALIZING') {
-        embeddingText = "向量化中"
-      } else if (progressInfo.embeddingStatusEnum === 'INITIALIZATION_FAILED') {
-        embeddingText = "向量化失败"
-      }
-    } else {
-      // 如果没有进度信息，使用文件基本信息
-      if (file.isInitialize === 0) {
-        initializeText = "待初始化"
-      } else if (file.isInitialize === 1) {
-        initializeText = "初始化中"
-      } else if (file.isInitialize === 2) {
-        initializeText = "已初始化"
-      } else if (file.isInitialize === 3) {
-        initializeText = "初始化失败"
-      }
-      
-      if (file.isEmbedding === 0) {
-        embeddingText = "待向量化"
-      } else if (file.isEmbedding === 1) {
-        embeddingText = "向量化中"
-      } else if (file.isEmbedding === 2) {
-        embeddingText = "已向量化"
-      } else if (file.isEmbedding === 3) {
-        embeddingText = "向量化失败"
-      }
-    }
-
-    const initializeConfig = {
-      text: initializeText,
-      variant: initializeText === "已初始化" ? "default" : "outline",
-      color: initializeText === "已初始化" ? "text-green-600" : 
-             initializeText === "初始化失败" ? "text-red-600" :
-             initializeText === "初始化中" ? "text-blue-600" : "text-yellow-600",
-      icon: initializeText === "已初始化" ? <CheckCircle className="h-3 w-3" /> : 
-            initializeText === "初始化失败" ? <AlertCircle className="h-3 w-3" /> :
-            initializeText === "初始化中" ? <Loader2 className="h-3 w-3 animate-spin" /> : <Clock className="h-3 w-3" />
-    }
-
-    const embeddingConfig = {
-      text: embeddingText,
-      variant: embeddingText === "已向量化" ? "default" : "outline",
-      color: embeddingText === "已向量化" ? "text-green-600" : 
-             embeddingText === "向量化失败" ? "text-red-600" :
-             embeddingText === "向量化中" ? "text-blue-600" : "text-yellow-600",
-      icon: embeddingText === "已向量化" ? <CheckCircle className="h-3 w-3" /> : 
-            embeddingText === "向量化失败" ? <AlertCircle className="h-3 w-3" /> :
-            embeddingText === "向量化中" ? <Loader2 className="h-3 w-3 animate-spin" /> : <Clock className="h-3 w-3" />
-    }
-
-    return {
-      initialize: initializeConfig,
-      embedding: embeddingConfig
-    }
+    return getFileStatusInfo(file, progressInfo)
   }
 
   // 格式化时间
@@ -474,65 +402,27 @@ export default function DatasetDetailPage() {
     }
   }
   
-  // 检查文件是否已初始化（结合进度信息）
-  const isFileInitialized = (file: FileDetail) => {
-    const progressInfo = getFileProgressInfo(file.id)
-    
-    if (progressInfo && progressInfo.initializeStatusEnum) {
-      return progressInfo.initializeStatusEnum === 'INITIALIZED'
-    }
-    
-    // 如果没有进度信息，使用文件基本信息
-    return file.isInitialize === 1
-  }
-  
-  // 检查文件是否需要显示初始化按钮
-  const shouldShowInitializeButton = (file: FileDetail) => {
-    const progressInfo = getFileProgressInfo(file.id)
-    
-    if (progressInfo && progressInfo.initializeStatusEnum) {
-      // 待初始化或初始化失败的文件都应该显示预处理按钮
-      return progressInfo.initializeStatusEnum === 'UNINITIALIZED' || progressInfo.initializeStatusEnum === 'INITIALIZATION_FAILED'
-    }
-    
-    // 如果没有进度信息，使用文件基本信息
-    // isInitialize: 0=待初始化, 3=初始化失败，都应该显示预处理按钮
-    return file.isInitialize === 0 || file.isInitialize === 3
-  }
-  
-  // 检查文件是否需要显示向量化按钮
-  const shouldShowEmbeddingButton = (file: FileDetail) => {
-    const progressInfo = getFileProgressInfo(file.id)
-    
-    let isInitialized = false
-    let isNotEmbedded = false
-    
-    if (progressInfo && progressInfo.initializeStatusEnum && progressInfo.embeddingStatusEnum) {
-      isInitialized = progressInfo.initializeStatusEnum === 'INITIALIZED'
-      isNotEmbedded = progressInfo.embeddingStatusEnum === 'UNINITIALIZED'
-    } else {
-      // 如果没有进度信息，使用文件基本信息
-      isInitialized = file.isInitialize === 1
-      isNotEmbedded = file.isEmbedding === 0
-    }
-    
-    const shouldShow = isInitialized && isNotEmbedded
-    
-    // 添加调试日志
-    console.log(`文件 ${file.originalFilename} 向量化按钮检查:`, {
-      fileId: file.id,
-      progressInfo: progressInfo,
-      isInitialized: isInitialized,
-      isNotEmbedded: isNotEmbedded,
-      shouldShow: shouldShow
-    })
-    
-    return shouldShow
-  }
+  // 这些函数已经被新的统一状态逻辑替代，不再需要
 
   // 获取文件处理进度信息
   const getFileProgressInfo = (fileId: string) => {
     return filesProgress.find(progress => progress.fileId === fileId)
+  }
+
+  // 获取状态图标
+  const getStatusIcon = (iconType: string) => {
+    switch (iconType) {
+      case "check":
+        return <CheckCircle className="h-3 w-3" />
+      case "clock":
+        return <Clock className="h-3 w-3" />
+      case "alert":
+        return <AlertCircle className="h-3 w-3" />
+      case "loading":
+        return <Loader2 className="h-3 w-3 animate-spin" />
+      default:
+        return <Clock className="h-3 w-3" />
+    }
   }
 
   // ========== 新增方法：RAG搜索相关 ==========
@@ -847,8 +737,8 @@ export default function DatasetDetailPage() {
                         <TableHead className="w-12"></TableHead>
                         <TableHead>文件名</TableHead>
                         <TableHead>大小</TableHead>
-                        <TableHead>初始化状态</TableHead>
-                        <TableHead>向量化状态</TableHead>
+                        <TableHead>处理状态</TableHead>
+                        <TableHead>操作</TableHead>
                         <TableHead>处理进度</TableHead>
                         <TableHead>上传时间</TableHead>
                         <TableHead className="w-20">操作</TableHead>
@@ -856,7 +746,7 @@ export default function DatasetDetailPage() {
                     </TableHeader>
                     <TableBody>
                       {files.map((file) => {
-                        const statusConfig = getFileStatusConfig(file)
+                        const fileStatusDisplay = getFileStatusDisplay(file)
                         const progressInfo = getFileProgressInfo(file.id)
                         const processing = isProcessing[file.id]
                         
@@ -876,14 +766,18 @@ export default function DatasetDetailPage() {
                             </TableCell>
                             <TableCell>
                               <div className="flex items-center gap-1">
-                                {statusConfig.initialize.icon}
+                                {getStatusIcon(fileStatusDisplay.status.iconType)}
                                 <Badge 
-                                  variant={statusConfig.initialize.variant}
-                                  className={`text-xs ${statusConfig.initialize.color}`}
+                                  variant={fileStatusDisplay.status.variant}
+                                  className={`text-xs ${fileStatusDisplay.status.color}`}
                                 >
-                                  {statusConfig.initialize.text}
+                                  {fileStatusDisplay.status.text}
                                 </Badge>
-                                {shouldShowInitializeButton(file) && (
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                {fileStatusDisplay.canStartOcr && (
                                   <Button
                                     variant="ghost"
                                     size="sm"
@@ -896,20 +790,10 @@ export default function DatasetDetailPage() {
                                     ) : (
                                       <Play className="h-3 w-3" />
                                     )}
+                                    OCR
                                   </Button>
                                 )}
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-1">
-                                {statusConfig.embedding.icon}
-                                <Badge 
-                                  variant={statusConfig.embedding.variant}
-                                  className={`text-xs ${statusConfig.embedding.color}`}
-                                >
-                                  {statusConfig.embedding.text}
-                                </Badge>
-                                {shouldShowEmbeddingButton(file) && (
+                                {fileStatusDisplay.canStartEmbedding && (
                                   <Button
                                     variant="ghost"
                                     size="sm"
@@ -922,6 +806,7 @@ export default function DatasetDetailPage() {
                                     ) : (
                                       <Play className="h-3 w-3" />
                                     )}
+                                    向量化
                                   </Button>
                                 )}
                               </div>
@@ -955,7 +840,7 @@ export default function DatasetDetailPage() {
                             </TableCell>
                             <TableCell>
                               <div className="flex items-center gap-1">
-                                {isFileInitialized(file) && (
+                                {(fileStatusDisplay.status.text === "处理完成" || fileStatusDisplay.status.text === "OCR处理完成") && (
                                   <Button
                                     variant="ghost"
                                     size="icon"

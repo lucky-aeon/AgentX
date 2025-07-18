@@ -25,9 +25,9 @@ public class RagDocSyncOcrEvent<T> extends MQSendEventModel<T> {
         this.eventType = eventType;
     }
     //
-    public static final String EXCHANGE_NAME = "rag.doc.task.syncOcr.exchange";
-    public static final String QUEUE_NAME = "rag.doc.task.syncOcr.queue";
-    public static final String ROUTE_KEY = "rag.doc.task.syncOcr";
+    public static final String EXCHANGE_NAME = "rag.doc.task.syncOcr.exchange-1";
+    public static final String QUEUE_NAME = "rag.doc.task.syncOcr.queue-1";
+    public static final String ROUTE_KEY = "rag.doc.task.syncOcr-1";
 
     @Override
     public String description() {
@@ -36,17 +36,17 @@ public class RagDocSyncOcrEvent<T> extends MQSendEventModel<T> {
 
     @Override
     public String exchangeName() {
-        return "rag.doc.task.syncOcr.exchange";
+        return "rag.doc.task.syncOcr.exchange-1";
     }
 
     @Override
     public String queueName() {
-        return "rag.doc.task.syncOcr.queue";
+        return "rag.doc.task.syncOcr.queue-1";
     }
 
     @Override
     public String routeKey() {
-        return "rag.doc.task.syncOcr";
+        return "rag.doc.task.syncOcr-1";
     }
 
     @Override

@@ -10,6 +10,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.dromara.x.file.storage.core.FileInfo;
 import org.dromara.x.file.storage.core.FileStorageService;
 import org.springframework.stereotype.Service;
+import org.xhy.domain.rag.constant.FileProcessingEventEnum;
+import org.xhy.domain.rag.constant.FileProcessingStatusEnum;
 import org.xhy.domain.rag.model.FileDetailEntity;
 import org.xhy.domain.rag.repository.FileDetailRepository;
 import org.xhy.infrastructure.exception.BusinessException;
@@ -26,10 +28,14 @@ public class FileDetailDomainService {
 
     private final FileStorageService fileStorageService;
     private final FileDetailRepository fileDetailRepository;
+    private final FileProcessingStateMachineService stateMachineService;
 
-    public FileDetailDomainService(FileStorageService fileStorageService, FileDetailRepository fileDetailRepository) {
+    public FileDetailDomainService(FileStorageService fileStorageService, 
+                                   FileDetailRepository fileDetailRepository,
+                                   FileProcessingStateMachineService stateMachineService) {
         this.fileStorageService = fileStorageService;
         this.fileDetailRepository = fileDetailRepository;
+        this.stateMachineService = stateMachineService;
     }
 
     /** 上传文件到指定数据集
@@ -58,6 +64,12 @@ public class FileDetailDomainService {
         fileDetailEntity.setExt(upload.getExt());
         fileDetailEntity.setContentType(upload.getContentType());
         fileDetailEntity.setPlatform(upload.getPlatform());
+        
+        // 设置初始状态为已上传
+        fileDetailEntity.setProcessingStatus(FileProcessingStatusEnum.UPLOADED.getCode());
+        
+        // 初始化状态机
+        stateMachineService.processFileState(fileDetailEntity);
 
         // 保存文件记录
         // fileDetailRepository.insert(fileDetailEntity);
@@ -197,22 +209,95 @@ public class FileDetailDomainService {
 
     }
 
-    /** 更新文件的初始化状态
+    /** 开始文件OCR处理
      * @param fileId 文件ID
-     * @param status 初始化状态 */
-    public void updateFileInitializeStatus(String fileId, Integer status) {
-        LambdaUpdateWrapper<FileDetailEntity> wrapper = Wrappers.<FileDetailEntity>lambdaUpdate()
-                .eq(FileDetailEntity::getId, fileId).set(FileDetailEntity::getIsInitialize, status);
-        fileDetailRepository.update(wrapper);
+     * @param userId 用户ID
+     * @return 是否成功开始处理 */
+    public boolean startFileOcrProcessing(String fileId, String userId) {
+        FileDetailEntity fileEntity = getFile(fileId, userId);
+        boolean success = stateMachineService.handleEvent(fileEntity, FileProcessingEventEnum.START_OCR_PROCESSING);
+        if (success) {
+            updateFile(fileEntity);
+        }
+        return success;
     }
 
-    /** 更新文件的向量化状态
+    /** 完成文件OCR处理
      * @param fileId 文件ID
-     * @param status 向量化状态 */
-    public void updateFileEmbeddingStatus(String fileId, Integer status) {
-        LambdaUpdateWrapper<FileDetailEntity> wrapper = Wrappers.<FileDetailEntity>lambdaUpdate()
-                .eq(FileDetailEntity::getId, fileId).set(FileDetailEntity::getIsEmbedding, status);
-        fileDetailRepository.update(wrapper);
+     * @param userId 用户ID
+     * @return 是否成功完成处理 */
+    public boolean completeFileOcrProcessing(String fileId, String userId) {
+        FileDetailEntity fileEntity = getFile(fileId, userId);
+        boolean success = stateMachineService.handleEvent(fileEntity, FileProcessingEventEnum.COMPLETE_OCR_PROCESSING);
+        if (success) {
+            updateFile(fileEntity);
+        }
+        return success;
+    }
+
+    /** OCR处理失败
+     * @param fileId 文件ID
+     * @param userId 用户ID
+     * @return 是否成功设置失败状态 */
+    public boolean failFileOcrProcessing(String fileId, String userId) {
+        FileDetailEntity fileEntity = getFile(fileId, userId);
+        boolean success = stateMachineService.handleEvent(fileEntity, FileProcessingEventEnum.FAIL_OCR_PROCESSING);
+        if (success) {
+            updateFile(fileEntity);
+        }
+        return success;
+    }
+
+    /** 开始文件向量化处理
+     * @param fileId 文件ID
+     * @param userId 用户ID
+     * @return 是否成功开始处理 */
+    public boolean startFileEmbeddingProcessing(String fileId, String userId) {
+        FileDetailEntity fileEntity = getFile(fileId, userId);
+        boolean success = stateMachineService.handleEvent(fileEntity, FileProcessingEventEnum.START_EMBEDDING_PROCESSING);
+        if (success) {
+            updateFile(fileEntity);
+        }
+        return success;
+    }
+
+    /** 完成文件向量化处理
+     * @param fileId 文件ID
+     * @param userId 用户ID
+     * @return 是否成功完成处理 */
+    public boolean completeFileEmbeddingProcessing(String fileId, String userId) {
+        FileDetailEntity fileEntity = getFile(fileId, userId);
+        boolean success = stateMachineService.handleEvent(fileEntity, FileProcessingEventEnum.COMPLETE_EMBEDDING_PROCESSING);
+        if (success) {
+            updateFile(fileEntity);
+        }
+        return success;
+    }
+
+    /** 向量化处理失败
+     * @param fileId 文件ID
+     * @param userId 用户ID
+     * @return 是否成功设置失败状态 */
+    public boolean failFileEmbeddingProcessing(String fileId, String userId) {
+        FileDetailEntity fileEntity = getFile(fileId, userId);
+        boolean success = stateMachineService.handleEvent(fileEntity, FileProcessingEventEnum.FAIL_EMBEDDING_PROCESSING);
+        if (success) {
+            updateFile(fileEntity);
+        }
+        return success;
+    }
+
+    /** 重置文件处理状态
+     * @param fileId 文件ID
+     * @param userId 用户ID
+     * @return 是否成功重置 */
+    public boolean resetFileProcessing(String fileId, String userId) {
+        FileDetailEntity fileEntity = getFile(fileId, userId);
+        boolean success = stateMachineService.handleEvent(fileEntity, FileProcessingEventEnum.RESET_PROCESSING);
+        if (success) {
+            updateFile(fileEntity);
+        }
+        return success;
     }
 
     /** 根据文件ID获取文件详情
@@ -245,7 +330,39 @@ public class FileDetailDomainService {
     /** 更新文件OCR处理进度
      * @param fileId 文件ID
      * @param currentOcrPage 当前OCR处理页数
-     * @param ocrProgress OCR进度百分比 */
+     * @param totalPages 总页数
+     * @param userId 用户ID
+     * @return 是否更新成功 */
+    public boolean updateFileOcrProgress(String fileId, Integer currentOcrPage, Integer totalPages, String userId) {
+        FileDetailEntity fileEntity = getFile(fileId, userId);
+        boolean success = stateMachineService.updateOcrProgress(fileEntity, currentOcrPage, totalPages);
+        if (success) {
+            updateFile(fileEntity);
+        }
+        return success;
+    }
+
+    /** 更新文件向量化处理进度
+     * @param fileId 文件ID
+     * @param currentEmbeddingPage 当前向量化处理页数
+     * @param totalPages 总页数
+     * @param userId 用户ID
+     * @return 是否更新成功 */
+    public boolean updateFileEmbeddingProgress(String fileId, Integer currentEmbeddingPage, Integer totalPages, String userId) {
+        FileDetailEntity fileEntity = getFile(fileId, userId);
+        boolean success = stateMachineService.updateEmbeddingProgress(fileEntity, currentEmbeddingPage, totalPages);
+        if (success) {
+            updateFile(fileEntity);
+        }
+        return success;
+    }
+
+    /** 更新文件OCR处理进度（简化版本，兼容旧接口）
+     * @param fileId 文件ID
+     * @param currentOcrPage 当前OCR处理页数
+     * @param ocrProgress OCR进度百分比
+     * @deprecated 建议使用 updateFileOcrProgress(fileId, currentOcrPage, totalPages, userId) */
+    @Deprecated
     public void updateFileOcrProgress(String fileId, Integer currentOcrPage, Double ocrProgress) {
         LambdaUpdateWrapper<FileDetailEntity> wrapper = Wrappers.<FileDetailEntity>lambdaUpdate()
                 .eq(FileDetailEntity::getId, fileId).set(FileDetailEntity::getCurrentOcrPageNumber, currentOcrPage)
@@ -253,10 +370,12 @@ public class FileDetailDomainService {
         fileDetailRepository.update(wrapper);
     }
 
-    /** 更新文件向量化处理进度
+    /** 更新文件向量化处理进度（简化版本，兼容旧接口）
      * @param fileId 文件ID
      * @param currentEmbeddingPage 当前向量化处理页数
-     * @param embeddingProgress 向量化进度百分比 */
+     * @param embeddingProgress 向量化进度百分比
+     * @deprecated 建议使用 updateFileEmbeddingProgress(fileId, currentEmbeddingPage, totalPages, userId) */
+    @Deprecated
     public void updateFileEmbeddingProgress(String fileId, Integer currentEmbeddingPage, Double embeddingProgress) {
         LambdaUpdateWrapper<FileDetailEntity> wrapper = Wrappers.<FileDetailEntity>lambdaUpdate()
                 .eq(FileDetailEntity::getId, fileId)
@@ -287,7 +406,7 @@ public class FileDetailDomainService {
         return fileEntity.getExt();
     }
 
-    /** 根据文件ID获取文件详情（无用户权限检查，用于MQ消费）
+    /** 根据文件ID获取文件详情（无用户权限检查，用于MQ消费和状态机处理）
      * @param fileId 文件ID
      * @return 文件实体 */
     public FileDetailEntity getFileByIdWithoutUserCheck(String fileId) {
@@ -295,6 +414,18 @@ public class FileDetailDomainService {
         if (fileEntity == null) {
             throw new BusinessException("文件不存在");
         }
+        
+        // 确保文件有正确的状态
+        if (fileEntity.getProcessingStatus() == null) {
+            fileEntity.setProcessingStatus(FileProcessingStatusEnum.UPLOADED.getCode());
+            stateMachineService.processFileState(fileEntity);
+            // 更新到数据库
+            LambdaUpdateWrapper<FileDetailEntity> wrapper = Wrappers.<FileDetailEntity>lambdaUpdate()
+                    .eq(FileDetailEntity::getId, fileId)
+                    .set(FileDetailEntity::getProcessingStatus, fileEntity.getProcessingStatus());
+            fileDetailRepository.update(wrapper);
+        }
+        
         return fileEntity;
     }
 }

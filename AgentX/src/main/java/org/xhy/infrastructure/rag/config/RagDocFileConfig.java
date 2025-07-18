@@ -11,8 +11,7 @@ import org.dromara.x.file.storage.core.hash.HashInfo;
 import org.dromara.x.file.storage.core.recorder.FileRecorder;
 import org.dromara.x.file.storage.core.upload.FilePartInfo;
 import org.springframework.stereotype.Service;
-import org.xhy.domain.rag.constant.EmbeddingStatus;
-import org.xhy.domain.rag.constant.FileInitializeStatus;
+import org.xhy.domain.rag.constant.FileProcessingStatusEnum;
 import org.xhy.domain.rag.constant.MetadataConstant;
 import org.xhy.domain.rag.model.DocumentUnitEntity;
 import org.xhy.domain.rag.model.FileDetailEntity;
@@ -137,8 +136,8 @@ public class RagDocFileConfig implements FileRecorder {
         detail.setAttr(valueToJson(info.getAttr()));
         // 这里手动获 哈希信息 并转成 json 字符串，方便存储在数据库中
         detail.setHashInfo(valueToJson(info.getHashInfo()));
-        detail.setIsEmbedding(EmbeddingStatus.UNINITIALIZED);
-        detail.setIsInitialize(FileInitializeStatus.INITIALIZE_WAIT);
+        // 使用新的统一状态枚举
+        detail.setProcessingStatus(FileProcessingStatusEnum.UPLOADED.getCode());
         return detail;
     }
 

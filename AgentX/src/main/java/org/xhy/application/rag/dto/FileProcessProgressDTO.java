@@ -1,7 +1,6 @@
 package org.xhy.application.rag.dto;
 
-import org.xhy.domain.rag.constant.FileInitializeStatusEnum;
-import org.xhy.domain.rag.constant.EmbeddingStatusEnum;
+import org.xhy.domain.rag.constant.FileProcessingStatusEnum;
 
 /** 文件处理进度响应
  * @author zang
@@ -14,17 +13,14 @@ public class FileProcessProgressDTO {
     /** 文件名 */
     private String filename;
 
-    /** 初始化状态枚举 */
-    private FileInitializeStatusEnum initializeStatusEnum;
+    /** 统一处理状态枚举 */
+    private FileProcessingStatusEnum processingStatusEnum;
 
-    /** 向量化状态枚举 */
-    private EmbeddingStatusEnum embeddingStatusEnum;
+    /** 处理状态编码 */
+    private Integer processingStatus;
 
-    /** 初始化状态（中文） */
-    private String initializeStatus;
-
-    /** 向量化状态（中文） */
-    private String embeddingStatus;
+    /** 处理状态描述（中文） */
+    private String processingStatusDescription;
 
     /** 当前OCR处理页数 */
     private Integer currentOcrPageNumber;
@@ -45,11 +41,21 @@ public class FileProcessProgressDTO {
     private String statusDescription;
 
     // 为了兼容旧版本，保留原有字段
-    /** 初始化状态（数字） */
+    /** 初始化状态（数字） - 已弃用，使用processingStatus */
+    @Deprecated
     private Integer isInitialize;
 
-    /** 向量化状态（数字） */
+    /** 向量化状态（数字） - 已弃用，使用processingStatus */
+    @Deprecated
     private Integer isEmbedding;
+
+    /** 初始化状态（中文） - 已弃用，使用processingStatusDescription */
+    @Deprecated
+    private String initializeStatus;
+
+    /** 向量化状态（中文） - 已弃用，使用processingStatusDescription */
+    @Deprecated
+    private String embeddingStatus;
 
     /** 当前处理页数（兼容字段，指向OCR页数） */
     private Integer currentPageNumber;
@@ -73,36 +79,28 @@ public class FileProcessProgressDTO {
         this.filename = filename;
     }
 
-    public FileInitializeStatusEnum getInitializeStatusEnum() {
-        return initializeStatusEnum;
+    public FileProcessingStatusEnum getProcessingStatusEnum() {
+        return processingStatusEnum;
     }
 
-    public void setInitializeStatusEnum(FileInitializeStatusEnum initializeStatusEnum) {
-        this.initializeStatusEnum = initializeStatusEnum;
+    public void setProcessingStatusEnum(FileProcessingStatusEnum processingStatusEnum) {
+        this.processingStatusEnum = processingStatusEnum;
     }
 
-    public EmbeddingStatusEnum getEmbeddingStatusEnum() {
-        return embeddingStatusEnum;
+    public Integer getProcessingStatus() {
+        return processingStatus;
     }
 
-    public void setEmbeddingStatusEnum(EmbeddingStatusEnum embeddingStatusEnum) {
-        this.embeddingStatusEnum = embeddingStatusEnum;
+    public void setProcessingStatus(Integer processingStatus) {
+        this.processingStatus = processingStatus;
     }
 
-    public String getInitializeStatus() {
-        return initializeStatus;
+    public String getProcessingStatusDescription() {
+        return processingStatusDescription;
     }
 
-    public void setInitializeStatus(String initializeStatus) {
-        this.initializeStatus = initializeStatus;
-    }
-
-    public String getEmbeddingStatus() {
-        return embeddingStatus;
-    }
-
-    public void setEmbeddingStatus(String embeddingStatus) {
-        this.embeddingStatus = embeddingStatus;
+    public void setProcessingStatusDescription(String processingStatusDescription) {
+        this.processingStatusDescription = processingStatusDescription;
     }
 
     public Integer getCurrentOcrPageNumber() {
@@ -154,20 +152,44 @@ public class FileProcessProgressDTO {
     }
 
     // 兼容性字段的getter和setter
+    @Deprecated
     public Integer getIsInitialize() {
         return isInitialize;
     }
 
+    @Deprecated
     public void setIsInitialize(Integer isInitialize) {
         this.isInitialize = isInitialize;
     }
 
+    @Deprecated
     public Integer getIsEmbedding() {
         return isEmbedding;
     }
 
+    @Deprecated
     public void setIsEmbedding(Integer isEmbedding) {
         this.isEmbedding = isEmbedding;
+    }
+
+    @Deprecated
+    public String getInitializeStatus() {
+        return initializeStatus;
+    }
+
+    @Deprecated
+    public void setInitializeStatus(String initializeStatus) {
+        this.initializeStatus = initializeStatus;
+    }
+
+    @Deprecated
+    public String getEmbeddingStatus() {
+        return embeddingStatus;
+    }
+
+    @Deprecated
+    public void setEmbeddingStatus(String embeddingStatus) {
+        this.embeddingStatus = embeddingStatus;
     }
 
     public Integer getCurrentPageNumber() {

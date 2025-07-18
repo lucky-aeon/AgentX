@@ -19,8 +19,8 @@ import org.springframework.amqp.rabbit.annotation.RabbitHandler;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
-import org.xhy.domain.rag.constant.FileInitializeStatus;
-import org.xhy.domain.rag.constant.EmbeddingStatus;
+import org.xhy.domain.rag.constant.FileProcessingEventEnum;
+import org.xhy.domain.rag.constant.FileProcessingStatusEnum;
 import org.xhy.domain.rag.message.RagDocSyncOcrMessage;
 import org.xhy.domain.rag.message.RagDocSyncStorageMessage;
 import org.xhy.domain.rag.model.DocumentUnitEntity;
@@ -78,9 +78,13 @@ public class RagDocOcrConsumer {
         try {
             log.info("Starting OCR processing for file: {}", ocrMessage.getFileId());
 
-            // 更新文件状态为初始化中
-            fileDetailDomainService.updateFileInitializeStatus(ocrMessage.getFileId(),
-                    FileInitializeStatus.INITIALIZING);
+            // 获取文件并开始OCR处理
+            FileDetailEntity fileEntity = fileDetailDomainService.getFileByIdWithoutUserCheck(ocrMessage.getFileId());
+            boolean startSuccess = fileDetailDomainService.startFileOcrProcessing(ocrMessage.getFileId(), fileEntity.getUserId());
+            
+            if (!startSuccess) {
+                throw new RuntimeException("无法开始OCR处理，文件状态不允许");
+            }
 
             // 获取文件扩展名并选择处理策略
             String fileExt = fileDetailDomainService.getFileExtension(ocrMessage.getFileId());
@@ -96,15 +100,17 @@ public class RagDocOcrConsumer {
             // 执行OCR处理
             strategy.handle(ocrMessage, fileExt.toUpperCase());
 
-            // 完成初始化，设置进度为100%
-            var fileEntity = fileDetailDomainService.getFileByIdWithoutUserCheck(ocrMessage.getFileId());
+            // 完成OCR处理
+            fileEntity = fileDetailDomainService.getFileByIdWithoutUserCheck(ocrMessage.getFileId());
             Integer totalPages = fileEntity.getFilePageSize();
             if (totalPages != null && totalPages > 0) {
-                fileDetailDomainService.updateFileOcrProgress(ocrMessage.getFileId(), totalPages, 100.0);
+                fileDetailDomainService.updateFileOcrProgress(ocrMessage.getFileId(), totalPages, totalPages, fileEntity.getUserId());
             }
 
-            fileDetailDomainService.updateFileInitializeStatus(ocrMessage.getFileId(),
-                    FileInitializeStatus.INITIALIZED);
+            boolean completeSuccess = fileDetailDomainService.completeFileOcrProcessing(ocrMessage.getFileId(), fileEntity.getUserId());
+            if (!completeSuccess) {
+                log.warn("OCR处理完成但状态转换失败，文件ID: {}", ocrMessage.getFileId());
+            }
 
             log.info("OCR processing completed for file: {}", ocrMessage.getFileId());
             
@@ -114,9 +120,12 @@ public class RagDocOcrConsumer {
         } catch (Exception e) {
             log.error("OCR processing failed for file: {}", ocrMessage.getFileId(), e);
             // 处理失败
-            fileDetailDomainService.updateFileInitializeStatus(ocrMessage.getFileId(),
-                    FileInitializeStatus.INITIALIZATION_FAILED);
-            fileDetailDomainService.updateFileOcrProgress(ocrMessage.getFileId(), 0, 0.0);
+            try {
+                FileDetailEntity fileEntity = fileDetailDomainService.getFileByIdWithoutUserCheck(ocrMessage.getFileId());
+                fileDetailDomainService.failFileOcrProcessing(ocrMessage.getFileId(), fileEntity.getUserId());
+            } catch (Exception ex) {
+                log.error("Failed to update file status to failed for file: {}", ocrMessage.getFileId(), ex);
+            }
         } finally {
             channel.basicAck(deliveryTag, false);
         }
@@ -142,8 +151,11 @@ public class RagDocOcrConsumer {
             }
 
             // 更新向量化状态
-            fileDetailDomainService.updateFileEmbeddingStatus(fileId, EmbeddingStatus.INITIALIZING);
-            fileDetailDomainService.updateFileEmbeddingProgress(fileId, 0, 0.0);
+            boolean startSuccess = fileDetailDomainService.startFileEmbeddingProcessing(fileId, fileEntity.getUserId());
+            if (!startSuccess) {
+                log.warn("无法开始向量化处理，文件状态不允许，文件ID: {}", fileId);
+                return;
+            }
 
             // 为每个DocumentUnit发送向量化MQ消息
             for (DocumentUnitEntity documentUnit : documentUnits) {
@@ -167,8 +179,11 @@ public class RagDocOcrConsumer {
         } catch (Exception e) {
             log.error("Failed to auto-start vectorization for file: {}", fileId, e);
             // 如果自动启动失败，重置向量化状态
-            fileDetailDomainService.updateFileEmbeddingStatus(fileId, EmbeddingStatus.UNINITIALIZED);
-            fileDetailDomainService.updateFileEmbeddingProgress(fileId, 0, 0.0);
+            try {
+                fileDetailDomainService.failFileEmbeddingProcessing(fileId, fileEntity.getUserId());
+            } catch (Exception ex) {
+                log.error("Failed to update file embedding status to failed for file: {}", fileId, ex);
+            }
         }
     }
 }

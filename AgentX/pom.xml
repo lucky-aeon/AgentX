@@ -35,6 +35,7 @@
         <commons-io.version>2.16.1</commons-io.version>
         <poi.version>5.4.0</poi.version>
         <stream-query.version>3.0.0</stream-query.version>
+        <forest.version>1.7.1</forest.version>
 
     </properties>
 
@@ -185,6 +186,13 @@
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpclient</artifactId>
             <version>${httpclient.version}</version>
+        </dependency>
+
+        <!--HTTP 请求工具-->
+        <dependency>
+            <groupId>com.dtflys.forest</groupId>
+            <artifactId>forest-spring-boot3-starter</artifactId>
+            <version>${forest.version}</version>
         </dependency>
 
         <!-- 工具库 -->
