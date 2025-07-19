@@ -21,6 +21,10 @@ import org.xhy.application.rag.assembler.FileDetailAssembler;
 import org.xhy.application.rag.assembler.FileProcessProgressAssembler;
 import org.xhy.application.rag.assembler.RagQaDatasetAssembler;
 import org.xhy.application.rag.dto.*;
+import org.xhy.application.rag.RagPublishAppService;
+import org.xhy.application.rag.RagMarketAppService;
+import org.xhy.application.rag.request.PublishRagRequest;
+import org.xhy.application.rag.request.InstallRagRequest;
 import org.xhy.domain.rag.constant.FileProcessingStatusEnum;
 import org.xhy.domain.rag.constant.FileProcessingEventEnum;
 import org.xhy.domain.rag.constant.MetadataConstant;
@@ -34,6 +38,7 @@ import org.xhy.domain.rag.repository.FileDetailRepository;
 import org.xhy.domain.rag.service.EmbeddingDomainService;
 import org.xhy.domain.rag.service.FileDetailDomainService;
 import org.xhy.domain.rag.service.RagQaDatasetDomainService;
+import org.xhy.domain.rag.service.RagVersionDomainService;
 import org.xhy.infrastructure.mq.enums.EventType;
 import org.xhy.infrastructure.mq.events.RagDocSyncOcrEvent;
 import org.xhy.infrastructure.mq.events.RagDocSyncStorageEvent;
@@ -60,7 +65,6 @@ import java.util.ArrayList;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
-
 /** RAG数据集应用服务
  * @author shilong.zang
  * @date 2024-12-09 */
@@ -80,6 +84,11 @@ public class RagQaDatasetAppService {
     private final LLMDomainService llmDomainService;
     private final UserSettingsDomainService userSettingsDomainService;
     private final HighAvailabilityDomainService highAvailabilityDomainService;
+    
+    // 添加RAG发布和市场服务依赖
+    private final RagPublishAppService ragPublishAppService;
+    private final RagMarketAppService ragMarketAppService;
+    private final RagVersionDomainService ragVersionDomainService;
 
     public RagQaDatasetAppService(RagQaDatasetDomainService ragQaDatasetDomainService,
             FileDetailDomainService fileDetailDomainService, DocumentUnitRepository documentUnitRepository,
@@ -87,7 +96,9 @@ public class RagQaDatasetAppService {
             EmbeddingDomainService embeddingDomainService, ObjectMapper objectMapper,
             LLMServiceFactory llmServiceFactory, LLMDomainService llmDomainService,
             UserSettingsDomainService userSettingsDomainService,
-            HighAvailabilityDomainService highAvailabilityDomainService) {
+            HighAvailabilityDomainService highAvailabilityDomainService,
+            RagPublishAppService ragPublishAppService, RagMarketAppService ragMarketAppService,
+            RagVersionDomainService ragVersionDomainService) {
         this.ragQaDatasetDomainService = ragQaDatasetDomainService;
         this.fileDetailDomainService = fileDetailDomainService;
         this.documentUnitRepository = documentUnitRepository;
@@ -99,6 +110,9 @@ public class RagQaDatasetAppService {
         this.llmDomainService = llmDomainService;
         this.userSettingsDomainService = userSettingsDomainService;
         this.highAvailabilityDomainService = highAvailabilityDomainService;
+        this.ragPublishAppService = ragPublishAppService;
+        this.ragMarketAppService = ragMarketAppService;
+        this.ragVersionDomainService = ragVersionDomainService;
     }
 
     /** 创建数据集
@@ -109,7 +123,43 @@ public class RagQaDatasetAppService {
     public RagQaDatasetDTO createDataset(CreateDatasetRequest request, String userId) {
         RagQaDatasetEntity entity = RagQaDatasetAssembler.toEntity(request, userId);
         RagQaDatasetEntity createdEntity = ragQaDatasetDomainService.createDataset(entity);
+        
+        // 自动创建0.0.1版本并安装给用户
+        try {
+            createAndInstallInitialVersion(createdEntity.getId(), userId);
+        } catch (Exception e) {
+            log.warn("Failed to create initial version for dataset {}: {}", createdEntity.getId(), e.getMessage());
+            // 不影响数据集创建，只记录警告
+        }
+        
         return RagQaDatasetAssembler.toDTO(createdEntity, 0L);
+    }
+    
+    /** 创建并安装初始版本
+     * @param ragId 数据集ID
+     * @param userId 用户ID */
+    private void createAndInstallInitialVersion(String ragId, String userId) {
+        // 创建0.0.1版本的发布请求
+        PublishRagRequest publishRequest = new PublishRagRequest();
+        publishRequest.setRagId(ragId);
+        publishRequest.setVersion("0.0.1");
+        publishRequest.setChangeLog("初始版本");
+        
+        // 发布版本
+        RagVersionDTO versionDTO = ragPublishAppService.publishRagVersion(publishRequest, userId);
+        
+        // 直接将版本设置为已发布状态（跳过审核）
+        ragVersionDomainService.updateReviewStatus(versionDTO.getId(), 
+                org.xhy.domain.rag.constant.RagPublishStatus.PUBLISHED, null);
+        
+        // 自动安装给用户
+        InstallRagRequest installRequest = new InstallRagRequest();
+        installRequest.setRagVersionId(versionDTO.getId());
+        
+        ragMarketAppService.installRagVersion(installRequest, userId);
+        
+        log.info("Successfully created and installed initial version 0.0.1 for dataset {} by user {}", 
+                ragId, userId);
     }
 
     /** 更新数据集
@@ -133,11 +183,45 @@ public class RagQaDatasetAppService {
      * @param userId 用户ID */
     @Transactional
     public void deleteDataset(String datasetId, String userId) {
+        // 检查是否有已安装的版本
+        checkDatasetDeletionPermission(datasetId, userId);
+        
         // 先删除数据集下的所有文件
         fileDetailDomainService.deleteAllFilesByDataset(datasetId, userId);
 
         // 再删除数据集
         ragQaDatasetDomainService.deleteDataset(datasetId, userId);
+    }
+    
+    /** 检查数据集删除权限
+     * @param datasetId 数据集ID
+     * @param userId 用户ID */
+    private void checkDatasetDeletionPermission(String datasetId, String userId) {
+        // 检查该数据集是否有已安装的版本
+        List<RagVersionDTO> versions = ragPublishAppService.getRagVersionHistory(datasetId, userId);
+        
+        // 检查是否有任何已发布的版本（包括自动创建的0.0.1版本）
+        boolean hasPublishedVersion = false;
+        for (RagVersionDTO version : versions) {
+            if (org.xhy.domain.rag.constant.RagPublishStatus.PUBLISHED.getCode().equals(version.getPublishStatus())) {
+                hasPublishedVersion = true;
+                break;
+            }
+        }
+        
+        // 如果有已发布的版本，则不允许删除（因为用户创建知识库时会自动安装）
+        if (hasPublishedVersion) {
+            throw new org.xhy.infrastructure.exception.BusinessException(
+                "无法删除已发布的知识库，知识库一旦创建并自动安装后不可删除");
+        }
+        
+        // 额外检查：如果用户确实安装了该知识库的任何版本，也不允许删除
+        for (RagVersionDTO version : versions) {
+            if (ragMarketAppService.isRagVersionInstalled(version.getId(), userId)) {
+                throw new org.xhy.infrastructure.exception.BusinessException(
+                    "无法删除已安装的知识库，请先卸载后再删除");
+            }
+        }
     }
 
     /** 获取数据集详情
@@ -213,7 +297,7 @@ public class RagQaDatasetAppService {
             cleanupExistingDocumentUnits(fileId);
 
             // 设置初始状态为初始化中
-            //fileDetailDomainService.startFileOcrProcessing(fileId, userId);
+            // fileDetailDomainService.startFileOcrProcessing(fileId, userId);
             fileDetailDomainService.updateFileOcrProgress(fileId, 0, 0.0);
             // 重置向量化状态
             fileDetailDomainService.resetFileProcessing(fileId, userId);
@@ -302,7 +386,7 @@ public class RagQaDatasetAppService {
             // 清理已有的语料和向量数据
             cleanupExistingDocumentUnits(request.getFileId());
 
-            //fileDetailDomainService.startFileOcrProcessing(request.getFileId(), userId);
+            // fileDetailDomainService.startFileOcrProcessing(request.getFileId(), userId);
             fileDetailDomainService.updateFileOcrProgress(request.getFileId(), 0, 0.0);
             // 重置向量化状态
             fileDetailDomainService.resetFileProcessing(request.getFileId(), userId);
@@ -360,9 +444,8 @@ public class RagQaDatasetAppService {
         Integer processingStatus = fileEntity.getProcessingStatus();
 
         // 如果正在初始化，不能重复启动
-        if (processingStatus != null && 
-            (processingStatus.equals(FileProcessingStatusEnum.OCR_PROCESSING.getCode()) ||
-             processingStatus.equals(FileProcessingStatusEnum.EMBEDDING_PROCESSING.getCode()))) {
+        if (processingStatus != null && (processingStatus.equals(FileProcessingStatusEnum.OCR_PROCESSING.getCode())
+                || processingStatus.equals(FileProcessingStatusEnum.EMBEDDING_PROCESSING.getCode()))) {
             throw new IllegalStateException("文件正在处理中，请等待处理完成");
         }
     }
@@ -373,11 +456,10 @@ public class RagQaDatasetAppService {
         Integer processingStatus = fileEntity.getProcessingStatus();
 
         // 必须先完成OCR处理
-        if (processingStatus == null || 
-            (!processingStatus.equals(FileProcessingStatusEnum.OCR_COMPLETED.getCode()) &&
-             !processingStatus.equals(FileProcessingStatusEnum.EMBEDDING_PROCESSING.getCode()) &&
-             !processingStatus.equals(FileProcessingStatusEnum.COMPLETED.getCode()) &&
-             !processingStatus.equals(FileProcessingStatusEnum.EMBEDDING_FAILED.getCode()))) {
+        if (processingStatus == null || (!processingStatus.equals(FileProcessingStatusEnum.OCR_COMPLETED.getCode())
+                && !processingStatus.equals(FileProcessingStatusEnum.EMBEDDING_PROCESSING.getCode())
+                && !processingStatus.equals(FileProcessingStatusEnum.COMPLETED.getCode())
+                && !processingStatus.equals(FileProcessingStatusEnum.EMBEDDING_FAILED.getCode()))) {
             throw new IllegalStateException("文件需要先完成预处理才能进行向量化");
         }
 
@@ -392,7 +474,8 @@ public class RagQaDatasetAppService {
      * @param userId 用户ID */
     @Transactional
     public void reprocessFile(ProcessFileRequest request, String userId) {
-        log.warn("Force reprocessing file: {}, type: {}, user: {}", request.getFileId(), request.getProcessType(), userId);
+        log.warn("Force reprocessing file: {}, type: {}, user: {}", request.getFileId(), request.getProcessType(),
+                userId);
 
         // 检查数据集是否存在
         ragQaDatasetDomainService.checkDatasetExists(request.getDatasetId(), userId);
@@ -408,7 +491,7 @@ public class RagQaDatasetAppService {
             cleanupExistingDocumentUnits(request.getFileId());
 
             // 重置状态
-            //fileDetailDomainService.startFileOcrProcessing(request.getFileId(), userId);
+            // fileDetailDomainService.startFileOcrProcessing(request.getFileId(), userId);
             fileDetailDomainService.updateFileOcrProgress(request.getFileId(), 0, 0.0);
             // 也重置向量化状态
             fileDetailDomainService.resetFileProcessing(request.getFileId(), userId);
@@ -429,11 +512,10 @@ public class RagQaDatasetAppService {
 
             // 检查是否已完成OCR处理
             Integer processingStatus = fileEntity.getProcessingStatus();
-            if (processingStatus == null || 
-                (!processingStatus.equals(FileProcessingStatusEnum.OCR_COMPLETED.getCode()) &&
-                 !processingStatus.equals(FileProcessingStatusEnum.EMBEDDING_PROCESSING.getCode()) &&
-                 !processingStatus.equals(FileProcessingStatusEnum.COMPLETED.getCode()) &&
-                 !processingStatus.equals(FileProcessingStatusEnum.EMBEDDING_FAILED.getCode()))) {
+            if (processingStatus == null || (!processingStatus.equals(FileProcessingStatusEnum.OCR_COMPLETED.getCode())
+                    && !processingStatus.equals(FileProcessingStatusEnum.EMBEDDING_PROCESSING.getCode())
+                    && !processingStatus.equals(FileProcessingStatusEnum.COMPLETED.getCode())
+                    && !processingStatus.equals(FileProcessingStatusEnum.EMBEDDING_FAILED.getCode()))) {
                 throw new IllegalStateException("文件需要先完成预处理才能进行向量化");
             }
 
@@ -481,15 +563,14 @@ public class RagQaDatasetAppService {
     private void cleanupExistingDocumentUnits(String fileId) {
         try {
             // 查询该文件的所有文档单元
-            List<DocumentUnitEntity> existingUnits = documentUnitRepository.selectList(
-                Wrappers.<DocumentUnitEntity>lambdaQuery()
-                    .eq(DocumentUnitEntity::getFileId, fileId)
-            );
+            List<DocumentUnitEntity> existingUnits = documentUnitRepository
+                    .selectList(Wrappers.<DocumentUnitEntity>lambdaQuery().eq(DocumentUnitEntity::getFileId, fileId));
 
             if (!existingUnits.isEmpty()) {
                 log.info("Cleaning up {} existing document units for file: {}", existingUnits.size(), fileId);
 
-                final List<String> documentUnitEntities = Steam.of(existingUnits).map(DocumentUnitEntity::getId).toList();
+                final List<String> documentUnitEntities = Steam.of(existingUnits).map(DocumentUnitEntity::getId)
+                        .toList();
                 // 删除所有文档单元（包括语料和向量数据）
                 documentUnitRepository.deleteByIds(documentUnitEntities);
 
@@ -631,8 +712,7 @@ public class RagQaDatasetAppService {
                 FileDetailEntity fileDetail = fileDetailRepository.selectById(doc.getFileId());
                 double similarityScore = doc.getSimilarityScore() != null ? doc.getSimilarityScore() : 0.0;
                 retrievedDocs.add(new RetrievedDocument(doc.getFileId(),
-                        fileDetail != null ? fileDetail.getOriginalFilename() : "未知文件",
-                        doc.getId(), similarityScore));
+                        fileDetail != null ? fileDetail.getOriginalFilename() : "未知文件", doc.getId(), similarityScore));
             }
 
             // 发送检索完成信号

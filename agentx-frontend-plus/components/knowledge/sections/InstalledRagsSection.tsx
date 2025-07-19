@@ -29,12 +29,15 @@ import {
   uninstallRagVersionWithToast,
   updateRagStatusWithToast 
 } from "@/lib/rag-publish-service"
+import { getCurrentUserId, getCurrentUserIdAsync } from "@/lib/user-service"
 import type { UserRagDTO, PageResponse } from "@/types/rag-publish"
 import { InstalledRagCard } from "../cards/InstalledRagCard"
+import { InstalledRagDetailDialog } from "../dialogs/InstalledRagDetailDialog"
 
 export function InstalledRagsSection() {
   const [installedRags, setInstalledRags] = useState<UserRagDTO[]>([])
   const [loading, setLoading] = useState(true)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [debouncedQuery, setDebouncedQuery] = useState("")
@@ -50,6 +53,21 @@ export function InstalledRagsSection() {
     current: 1,
     pages: 0
   })
+
+  // 获取当前用户ID
+  useEffect(() => {
+    const initCurrentUserId = async () => {
+      // 先尝试从token解析
+      let userId = getCurrentUserId()
+      if (!userId) {
+        // 如果token解析失败，从API获取
+        userId = await getCurrentUserIdAsync()
+      }
+      setCurrentUserId(userId)
+    }
+    
+    initCurrentUserId()
+  }, [])
 
   // 防抖处理搜索查询
   useEffect(() => {
@@ -280,8 +298,8 @@ export function InstalledRagsSection() {
                 key={userRag.id}
                 userRag={userRag}
                 onUninstall={setRagToUninstall}
-                onToggleActive={handleToggleRagStatus}
-                onViewDetails={setRagToViewDetails}
+                onCardClick={setRagToViewDetails}
+                currentUserId={currentUserId}
               />
             ))}
           </div>
@@ -301,59 +319,14 @@ export function InstalledRagsSection() {
       )}
 
       {/* 详情对话框 */}
-      <Dialog open={!!ragToViewDetails} onOpenChange={(open) => !open && setRagToViewDetails(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>RAG详情</DialogTitle>
-            <DialogDescription>
-              查看已安装的RAG详细信息
-            </DialogDescription>
-          </DialogHeader>
-          {ragToViewDetails && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <div className="text-sm font-medium">名称</div>
-                  <div className="text-sm text-muted-foreground">{ragToViewDetails.name}</div>
-                </div>
-                <div>
-                  <div className="text-sm font-medium">版本</div>
-                  <div className="text-sm text-muted-foreground">v{ragToViewDetails.version}</div>
-                </div>
-                <div>
-                  <div className="text-sm font-medium">状态</div>
-                  <div className="text-sm text-muted-foreground">
-                    {ragToViewDetails.isActive ? "已激活" : "未激活"}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-sm font-medium">安装时间</div>
-                  <div className="text-sm text-muted-foreground">
-                    {new Date(ragToViewDetails.installedAt).toLocaleString('zh-CN')}
-                  </div>
-                </div>
-              </div>
-              {ragToViewDetails.description && (
-                <div>
-                  <div className="text-sm font-medium mb-1">描述</div>
-                  <div className="text-sm text-muted-foreground">{ragToViewDetails.description}</div>
-                </div>
-              )}
-              {ragToViewDetails.creatorNickname && (
-                <div>
-                  <div className="text-sm font-medium mb-1">作者</div>
-                  <div className="text-sm text-muted-foreground">{ragToViewDetails.creatorNickname}</div>
-                </div>
-              )}
-            </div>
-          )}
-          <DialogFooter>
-            <Button onClick={() => setRagToViewDetails(null)}>
-              关闭
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <InstalledRagDetailDialog
+        open={!!ragToViewDetails}
+        onOpenChange={(open) => !open && setRagToViewDetails(null)}
+        userRag={ragToViewDetails}
+        onToggleActive={handleToggleRagStatus}
+        onUninstall={setRagToUninstall}
+        currentUserId={currentUserId}
+      />
 
       {/* 卸载确认对话框 */}
       <Dialog open={!!ragToUninstall} onOpenChange={(open) => !open && setRagToUninstall(null)}>
