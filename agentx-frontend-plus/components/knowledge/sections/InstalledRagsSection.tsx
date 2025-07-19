@@ -26,8 +26,7 @@ import {
 
 import { 
   getUserInstalledRagsWithToast, 
-  uninstallRagVersionWithToast,
-  updateRagStatusWithToast 
+  uninstallRagVersionWithToast
 } from "@/lib/rag-publish-service"
 import { getCurrentUserId, getCurrentUserIdAsync } from "@/lib/user-service"
 import type { UserRagDTO, PageResponse } from "@/types/rag-publish"
@@ -129,25 +128,6 @@ export function InstalledRagsSection() {
     }
   }
 
-  // 处理切换RAG状态
-  const handleToggleRagStatus = async (userRag: UserRagDTO, isActive: boolean) => {
-    try {
-      const response = await updateRagStatusWithToast(userRag.ragVersionId, isActive)
-
-      if (response.code === 200) {
-        // 更新本地状态
-        setInstalledRags(rags => 
-          rags.map(rag => 
-            rag.id === userRag.id 
-              ? { ...rag, isActive } 
-              : rag
-          )
-        )
-      }
-    } catch (error) {
-      // 错误已由withToast处理
-    }
-  }
 
   // 分页处理
   const handlePageChange = (page: number) => {
@@ -323,7 +303,6 @@ export function InstalledRagsSection() {
         open={!!ragToViewDetails}
         onOpenChange={(open) => !open && setRagToViewDetails(null)}
         userRag={ragToViewDetails}
-        onToggleActive={handleToggleRagStatus}
         onUninstall={setRagToUninstall}
         currentUserId={currentUserId}
       />

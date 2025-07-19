@@ -346,6 +346,28 @@ export async function ragSearch(request: RagSearchRequest): Promise<ApiResponse<
   }
 }
 
+// 基于已安装知识库的RAG搜索
+export async function ragSearchByUserRag(userRagId: string, request: RagSearchRequest): Promise<ApiResponse<DocumentUnitDTO[]>> {
+  try {
+    console.log("RAG searching by user rag:", userRagId, request)
+    
+    const response = await httpClient.post<ApiResponse<DocumentUnitDTO[]>>(
+      API_ENDPOINTS.RAG_SEARCH_BY_USER_RAG(userRagId),
+      request
+    )
+    
+    return response
+  } catch (error) {
+    console.error("基于已安装知识库的RAG搜索错误:", error)
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : "未知错误",
+      data: [],
+      timestamp: Date.now(),
+    }
+  }
+}
+
 // 使用 withToast 包装器的API函数
 export const getDatasetsWithToast = withToast(getDatasets, {
   showSuccessToast: false,
@@ -417,4 +439,9 @@ export const getDatasetFilesProgressWithToast = withToast(getDatasetFilesProgres
 export const ragSearchWithToast = withToast(ragSearch, {
   showSuccessToast: false,
   errorTitle: "RAG搜索失败"
+})
+
+export const ragSearchByUserRagWithToast = withToast(ragSearchByUserRag, {
+  showSuccessToast: false,
+  errorTitle: "基于已安装知识库的RAG搜索失败"
 })

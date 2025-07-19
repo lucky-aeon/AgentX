@@ -122,6 +122,7 @@ export const API_ENDPOINTS = {
   RAG_FILE_PROGRESS: (fileId: string) => `/rag/datasets/files/${fileId}/progress`, // 获取文件处理进度
   RAG_DATASET_FILES_PROGRESS: (datasetId: string) => `/rag/datasets/${datasetId}/files/progress`, // 获取数据集文件处理进度列表
   RAG_SEARCH: "/rag/search", // RAG搜索文档
+  RAG_SEARCH_BY_USER_RAG: (userRagId: string) => `/rag/search/user-rag/${userRagId}`, // 基于已安装知识库的RAG搜索
   
   // RAG 文件操作相关
   RAG_FILE_INFO: (fileId: string) => `/rag/files/${fileId}/info`, // 获取文件详细信息
@@ -131,6 +132,7 @@ export const API_ENDPOINTS = {
   
   // RAG 流式聊天相关
   RAG_STREAM_CHAT: "/rag/search/stream-chat", // RAG流式问答
+  RAG_STREAM_CHAT_BY_USER_RAG: (userRagId: string) => `/rag/search/user-rag/${userRagId}/stream-chat`, // 基于已安装知识库的RAG流式问答
   
   // RAG 文件详情相关
   RAG_FILE_DETAIL: "/rag/files/detail", // 获取文件详情

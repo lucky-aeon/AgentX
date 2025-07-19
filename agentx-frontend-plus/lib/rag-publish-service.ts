@@ -290,41 +290,6 @@ export async function getUserAllInstalledRags(): Promise<ApiResponse<UserRagDTO[
   }
 }
 
-/** 更新安装的RAG状态 */
-export async function updateRagStatus(ragVersionId: string, isActive: boolean): Promise<ApiResponse<void>> {
-  try {
-    return await httpClient.put<ApiResponse<void>>(
-      `${API_ENDPOINTS.MARKET}/installed/${ragVersionId}/status?isActive=${isActive}`
-    )
-  } catch (error) {
-    return {
-      code: 500,
-      message: error instanceof Error ? error.message : "更新状态失败",
-      data: undefined,
-      timestamp: Date.now()
-    }
-  }
-}
-
-/** 更新安装的RAG状态（带Toast提示） */
-export async function updateRagStatusWithToast(ragVersionId: string, isActive: boolean): Promise<ApiResponse<void>> {
-  const response = await updateRagStatus(ragVersionId, isActive)
-  
-  if (response.code === 200) {
-    toast({
-      title: "状态更新成功",
-      description: `RAG已${isActive ? '激活' : '停用'}`,
-    })
-  } else {
-    toast({
-      title: "状态更新失败",
-      description: response.message,
-      variant: "destructive"
-    })
-  }
-  
-  return response
-}
 
 /** 检查RAG使用权限 */
 export async function checkRagPermission(ragId?: string, ragVersionId?: string): Promise<ApiResponse<boolean>> {

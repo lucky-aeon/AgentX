@@ -29,8 +29,6 @@ public class UserRagDTO {
     /** 版本号 */
     private String version;
 
-    /** 是否激活 */
-    private Boolean isActive;
 
     /** 安装时间 */
     private LocalDateTime installedAt;
@@ -112,13 +110,6 @@ public class UserRagDTO {
         this.version = version;
     }
 
-    public Boolean getIsActive() {
-        return isActive;
-    }
-
-    public void setIsActive(Boolean isActive) {
-        this.isActive = isActive;
-    }
 
     public LocalDateTime getInstalledAt() {
         return installedAt;

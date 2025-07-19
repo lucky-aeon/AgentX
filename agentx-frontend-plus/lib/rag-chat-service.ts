@@ -13,6 +13,116 @@ export interface RagChatOptions {
   signal?: AbortSignal;
 }
 
+// 基于已安装知识库的RAG流式问答
+export async function ragStreamChatByUserRag(
+  userRagId: string,
+  request: RagStreamChatRequest,
+  options: RagChatOptions = {}
+): Promise<void> {
+  const { onThinking, onThinkingContent, onThinkingEnd, onContent, onError, onDone, signal } = options;
+  
+  try {
+    console.log("Starting RAG stream chat by userRag:", userRagId, request)
+    
+    // 构建请求URL
+    const url = `${API_CONFIG.BASE_URL}${API_ENDPOINTS.RAG_STREAM_CHAT_BY_USER_RAG(userRagId)}`;
+    
+    // 获取认证token（与httpClient保持一致）
+    const token = localStorage.getItem("auth_token");
+    
+    // 发起SSE请求
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'text/event-stream',
+        'Authorization': token ? `Bearer ${token}` : '',
+      },
+      body: JSON.stringify(request),
+      signal,
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const reader = response.body?.getReader();
+    if (!reader) {
+      throw new Error("No response body");
+    }
+
+    const decoder = new TextDecoder();
+    
+    while (true) {
+      const { done, value } = await reader.read();
+      
+      if (done) {
+        onDone?.();
+        break;
+      }
+      
+      const chunk = decoder.decode(value, { stream: true });
+      const lines = chunk.split('\n');
+      
+      for (const line of lines) {
+        if (line.trim() === '') continue;
+        
+        // 处理SSE格式：data: {...}
+        if (line.startsWith('data: ')) {
+          const data = line.slice(6);
+          
+          if (data.trim() === '[DONE]') {
+            onDone?.();
+            return;
+          }
+          
+          try {
+            const message: SSEMessage = JSON.parse(data);
+            
+            // 根据消息类型处理
+            switch (message.type) {
+              case 'RAG_RETRIEVAL_START':
+              case 'RAG_RETRIEVAL_COMPLETE':
+                onThinking?.(message.data);
+                break;
+              case 'RAG_THINKING_START':
+              case 'RAG_THINKING_COMPLETE':
+                if (message.content) {
+                  onThinkingContent?.(message.content, message.timestamp);
+                }
+                if (message.type === 'RAG_THINKING_COMPLETE') {
+                  onThinkingEnd?.();
+                }
+                break;
+              case 'RAG_ANSWER_START':
+                // 开始回答
+                break;
+              case 'RAG_ANSWER_PART':
+                onContent?.(message.content || '', message.timestamp);
+                break;
+              case 'RAG_ANSWER_COMPLETE':
+                onDone?.();
+                break;
+              case 'ERROR':
+                onError?.(message.content || 'Unknown error');
+                break;
+            }
+          } catch (e) {
+            console.warn('Failed to parse SSE message:', data, e);
+          }
+        }
+      }
+    }
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.log('RAG stream chat by userRag aborted');
+    } else {
+      console.error('RAG stream chat by userRag error:', error);
+      onError?.(error instanceof Error ? error.message : 'Unknown error');
+    }
+  }
+}
+
 // RAG流式问答
 export async function ragStreamChat(
   request: RagStreamChatRequest,
@@ -141,6 +251,42 @@ export async function ragStreamChat(
 }
 
 // 创建一个更高级的聊天会话管理器
+// 基于已安装知识库的RAG聊天会话管理器
+export class UserRagChatSession {
+  private abortController: AbortController | null = null;
+
+  async start(userRagId: string, request: RagStreamChatRequest, options: RagChatOptions): Promise<void> {
+    // 如果有正在进行的会话，先取消
+    this.abort();
+    
+    // 创建新的AbortController
+    this.abortController = new AbortController();
+    
+    // 合并signal
+    const mergedOptions: RagChatOptions = {
+      ...options,
+      signal: this.abortController.signal,
+    };
+    
+    try {
+      await ragStreamChatByUserRag(userRagId, request, mergedOptions);
+    } finally {
+      this.abortController = null;
+    }
+  }
+
+  abort(): void {
+    if (this.abortController) {
+      this.abortController.abort();
+      this.abortController = null;
+    }
+  }
+
+  isActive(): boolean {
+    return this.abortController !== null;
+  }
+}
+
 export class RagChatSession {
   private abortController: AbortController | null = null;
 

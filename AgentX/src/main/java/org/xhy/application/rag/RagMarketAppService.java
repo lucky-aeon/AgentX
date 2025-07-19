@@ -141,15 +141,6 @@ public class RagMarketAppService {
         return dtoList;
     }
 
-    /** 更新安装的RAG状态
-     * 
-     * @param ragVersionId RAG版本ID
-     * @param isActive 是否激活
-     * @param userId 用户ID */
-    @Transactional
-    public void updateRagStatus(String ragVersionId, boolean isActive, String userId) {
-        userRagDomainService.updateRagStatus(userId, ragVersionId, isActive);
-    }
 
     /** 获取用户安装的RAG详情
      * 

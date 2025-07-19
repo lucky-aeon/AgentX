@@ -52,7 +52,6 @@ export interface UserRagDTO {
   description?: string
   icon?: string
   version: string
-  isActive: boolean
   installedAt: string
   createdAt: string
   updatedAt: string

@@ -420,4 +420,33 @@ public class RagVersionDomainService {
         
         return latestVersion != null ? latestVersion.getVersion() : null;
     }
+
+    /** 删除RAG版本
+     * 
+     * @param versionId 版本ID
+     * @param userId 用户ID */
+    @Transactional
+    public void deleteRagVersion(String versionId, String userId) {
+        // 验证版本是否存在且属于当前用户
+        RagVersionEntity ragVersion = getRagVersion(versionId);
+        if (!ragVersion.getUserId().equals(userId)) {
+            throw new BusinessException("无权限删除该RAG版本");
+        }
+
+        // 删除版本文件关联
+        LambdaQueryWrapper<RagVersionFileEntity> fileWrapper = Wrappers.<RagVersionFileEntity>lambdaQuery()
+                .eq(RagVersionFileEntity::getRagVersionId, versionId);
+        ragVersionFileRepository.delete(fileWrapper);
+
+        // 删除版本文档关联
+        LambdaQueryWrapper<RagVersionDocumentEntity> docWrapper = Wrappers.<RagVersionDocumentEntity>lambdaQuery()
+                .eq(RagVersionDocumentEntity::getRagVersionId, versionId);
+        ragVersionDocumentRepository.delete(docWrapper);
+
+        // 删除版本本身
+        LambdaQueryWrapper<RagVersionEntity> versionWrapper = Wrappers.<RagVersionEntity>lambdaQuery()
+                .eq(RagVersionEntity::getId, versionId)
+                .eq(RagVersionEntity::getUserId, userId);
+        ragVersionRepository.checkedDelete(versionWrapper);
+    }
 }

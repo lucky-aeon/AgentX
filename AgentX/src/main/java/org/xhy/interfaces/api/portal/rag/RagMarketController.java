@@ -86,17 +86,6 @@ public class RagMarketController {
         return Result.success(result);
     }
 
-    /** 更新安装的RAG状态
-     * 
-     * @param ragVersionId RAG版本ID
-     * @param isActive 是否激活
-     * @return 操作结果 */
-    @PutMapping("/installed/{ragVersionId}/status")
-    public Result<Void> updateRagStatus(@PathVariable String ragVersionId, @RequestParam Boolean isActive) {
-        String userId = UserContext.getCurrentUserId();
-        ragMarketAppService.updateRagStatus(ragVersionId, isActive, userId);
-        return Result.success();
-    }
 
     /** 获取用户安装的RAG详情
      * 
