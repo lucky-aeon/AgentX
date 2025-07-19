@@ -8,22 +8,22 @@ public enum FileProcessingStatusEnum {
 
     /** 已上传，待开始处理 */
     UPLOADED(0, "已上传"),
-    
+
     /** OCR处理中 */
     OCR_PROCESSING(1, "OCR处理中"),
-    
+
     /** OCR处理完成，待向量化 */
     OCR_COMPLETED(2, "OCR处理完成"),
-    
+
     /** 向量化处理中 */
     EMBEDDING_PROCESSING(3, "向量化处理中"),
-    
+
     /** 全部处理完成 */
     COMPLETED(4, "处理完成"),
-    
+
     /** OCR处理失败 */
     OCR_FAILED(5, "OCR处理失败"),
-    
+
     /** 向量化处理失败 */
     EMBEDDING_FAILED(6, "向量化处理失败");
 

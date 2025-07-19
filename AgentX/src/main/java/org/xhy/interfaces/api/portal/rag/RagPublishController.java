@@ -28,8 +28,7 @@ public class RagPublishController {
     /** 发布RAG版本
      * 
      * @param request 发布请求
-     * @return 发布的版本信息
-     */
+     * @return 发布的版本信息 */
     @PostMapping
     public Result<RagVersionDTO> publishRagVersion(@RequestBody @Validated PublishRagRequest request) {
         String userId = UserContext.getCurrentUserId();
@@ -42,13 +41,10 @@ public class RagPublishController {
      * @param page 页码
      * @param pageSize 每页大小
      * @param keyword 搜索关键词
-     * @return 版本列表
-     */
+     * @return 版本列表 */
     @GetMapping("/versions")
-    public Result<Page<RagVersionDTO>> getUserRagVersions(
-            @RequestParam(defaultValue = "1") Integer page,
-            @RequestParam(defaultValue = "15") Integer pageSize,
-            @RequestParam(required = false) String keyword) {
+    public Result<Page<RagVersionDTO>> getUserRagVersions(@RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "15") Integer pageSize, @RequestParam(required = false) String keyword) {
         String userId = UserContext.getCurrentUserId();
         Page<RagVersionDTO> result = ragPublishAppService.getUserRagVersions(userId, page, pageSize, keyword);
         return Result.success(result);
@@ -57,8 +53,7 @@ public class RagPublishController {
     /** 获取RAG的版本历史
      * 
      * @param ragId 原始RAG数据集ID
-     * @return 版本历史列表
-     */
+     * @return 版本历史列表 */
     @GetMapping("/versions/history/{ragId}")
     public Result<List<RagVersionDTO>> getRagVersionHistory(@PathVariable String ragId) {
         String userId = UserContext.getCurrentUserId();
@@ -69,12 +64,22 @@ public class RagPublishController {
     /** 获取RAG版本详情
      * 
      * @param versionId 版本ID
-     * @return 版本详情
-     */
+     * @return 版本详情 */
     @GetMapping("/versions/{versionId}")
     public Result<RagVersionDTO> getRagVersionDetail(@PathVariable String versionId) {
         String userId = UserContext.getCurrentUserId();
         RagVersionDTO result = ragPublishAppService.getRagVersionDetail(versionId, userId);
         return Result.success(result);
+    }
+
+    /** 获取RAG数据集的最新版本号
+     * 
+     * @param ragId 原始RAG数据集ID
+     * @return 最新版本号，如果没有版本则返回null */
+    @GetMapping("/versions/latest/{ragId}")
+    public Result<String> getLatestVersionNumber(@PathVariable String ragId) {
+        String userId = UserContext.getCurrentUserId();
+        String latestVersion = ragPublishAppService.getLatestVersionNumber(ragId, userId);
+        return Result.success(latestVersion);
     }
 }

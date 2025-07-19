@@ -22,7 +22,7 @@ public class UserRagAssembler {
 
         UserRagDTO dto = new UserRagDTO();
         BeanUtils.copyProperties(entity, dto);
-        
+
         return dto;
     }
 
@@ -35,11 +35,8 @@ public class UserRagAssembler {
     }
 
     /** Enrich UserRagDTO with version info */
-    public static UserRagDTO enrichWithVersionInfo(UserRagEntity entity, 
-                                                    String originalRagId,
-                                                    Integer fileCount,
-                                                    Integer documentCount,
-                                                    String creatorNickname) {
+    public static UserRagDTO enrichWithVersionInfo(UserRagEntity entity, String originalRagId, Integer fileCount,
+            Integer documentCount, String creatorNickname) {
         if (entity == null) {
             return null;
         }
@@ -49,7 +46,24 @@ public class UserRagAssembler {
         dto.setFileCount(fileCount);
         dto.setDocumentCount(documentCount);
         dto.setCreatorNickname(creatorNickname);
-        
+
+        return dto;
+    }
+
+    /** Enrich UserRagDTO with version info including creator ID */
+    public static UserRagDTO enrichWithVersionInfo(UserRagEntity entity, String originalRagId, Integer fileCount,
+            Integer documentCount, String creatorNickname, String creatorId) {
+        if (entity == null) {
+            return null;
+        }
+
+        UserRagDTO dto = toDTO(entity);
+        dto.setOriginalRagId(originalRagId);
+        dto.setFileCount(fileCount);
+        dto.setDocumentCount(documentCount);
+        dto.setCreatorNickname(creatorNickname);
+        dto.setCreatorId(creatorId);
+
         return dto;
     }
 }

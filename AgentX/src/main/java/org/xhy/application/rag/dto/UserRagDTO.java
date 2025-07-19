@@ -53,6 +53,9 @@ public class UserRagDTO {
     /** 创建者昵称 */
     private String creatorNickname;
 
+    /** 创建者ID */
+    private String creatorId;
+
     public String getId() {
         return id;
     }
@@ -171,5 +174,13 @@ public class UserRagDTO {
 
     public void setCreatorNickname(String creatorNickname) {
         this.creatorNickname = creatorNickname;
+    }
+
+    public String getCreatorId() {
+        return creatorId;
+    }
+
+    public void setCreatorId(String creatorId) {
+        this.creatorId = creatorId;
     }
 }

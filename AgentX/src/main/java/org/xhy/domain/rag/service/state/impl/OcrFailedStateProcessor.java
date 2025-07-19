@@ -24,7 +24,7 @@ public class OcrFailedStateProcessor implements FileProcessingStateProcessor {
     @Override
     public void process(FileDetailEntity fileEntity) {
         logger.warn("文件[{}]OCR处理失败", fileEntity.getId());
-        
+
         // 可以在这里添加失败处理逻辑，比如：
         // 1. 记录失败原因
         // 2. 发送失败通知
@@ -34,9 +34,8 @@ public class OcrFailedStateProcessor implements FileProcessingStateProcessor {
 
     @Override
     public Integer[] getNextPossibleStatuses() {
-        return new Integer[]{
-            FileProcessingStatusEnum.OCR_PROCESSING.getCode(), // 允许重试
-            FileProcessingStatusEnum.UPLOADED.getCode()        // 允许重置
+        return new Integer[]{FileProcessingStatusEnum.OCR_PROCESSING.getCode(), // 允许重试
+                FileProcessingStatusEnum.UPLOADED.getCode() // 允许重置
         };
     }
 }

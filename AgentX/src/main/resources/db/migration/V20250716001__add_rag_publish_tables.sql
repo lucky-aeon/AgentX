@@ -93,7 +93,6 @@ CREATE TABLE user_rags (
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP,
     
-    UNIQUE (user_id, rag_version_id)
 );
 
 

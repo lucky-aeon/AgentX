@@ -119,6 +119,22 @@ export async function getRagVersionDetail(versionId: string): Promise<ApiRespons
   }
 }
 
+/** 获取RAG数据集的最新版本号 */
+export async function getLatestVersionNumber(ragId: string): Promise<ApiResponse<string>> {
+  try {
+    return await httpClient.get<ApiResponse<string>>(
+      `${API_ENDPOINTS.PUBLISH}/versions/latest/${ragId}`
+    )
+  } catch (error) {
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : "获取最新版本号失败",
+      data: null,
+      timestamp: Date.now()
+    }
+  }
+}
+
 // ================================ RAG市场相关接口 ================================
 
 /** 获取市场上的RAG版本列表 */

@@ -43,8 +43,8 @@ public class RagDocFileConfig implements FileRecorder {
 
     private final EmbeddingStore<TextSegment> embeddingStore;
 
-
-    public RagDocFileConfig(FileDetailRepository fileDetailRepository, DocumentUnitRepository documentUnitRepository, EmbeddingStore<TextSegment> embeddingStore) {
+    public RagDocFileConfig(FileDetailRepository fileDetailRepository, DocumentUnitRepository documentUnitRepository,
+            EmbeddingStore<TextSegment> embeddingStore) {
         this.fileDetailRepository = fileDetailRepository;
         this.documentUnitRepository = documentUnitRepository;
         this.embeddingStore = embeddingStore;
@@ -97,13 +97,14 @@ public class RagDocFileConfig implements FileRecorder {
     /** 根据 url 删除文件信息 */
     @Override
     public boolean delete(String url) {
-        final FileDetailEntity fileDetailEntity = fileDetailRepository.selectOne(
-                Wrappers.lambdaQuery(FileDetailEntity.class).eq(FileDetailEntity::getUrl, url));
+        final FileDetailEntity fileDetailEntity = fileDetailRepository
+                .selectOne(Wrappers.lambdaQuery(FileDetailEntity.class).eq(FileDetailEntity::getUrl, url));
 
         // 删除文件
         fileDetailRepository.deleteById(fileDetailEntity.getId());
         // 删除语料数据
-        documentUnitRepository.delete(Wrappers.lambdaQuery(DocumentUnitEntity.class).eq(DocumentUnitEntity::getFileId, fileDetailEntity.getId()));
+        documentUnitRepository.delete(Wrappers.lambdaQuery(DocumentUnitEntity.class).eq(DocumentUnitEntity::getFileId,
+                fileDetailEntity.getId()));
         // 删除文件向量数据
         embeddingStore.removeAll(metadataKey(MetadataConstant.FILE_ID).isIn(fileDetailEntity.getId()));
 

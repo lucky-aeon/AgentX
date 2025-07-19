@@ -62,7 +62,7 @@ public class WORDRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl imp
     public void handle(RagDocSyncOcrMessage ragDocSyncOcrMessage, String strategy) throws Exception {
         // 设置当前处理的文件ID，用于更新页数
         this.currentProcessingFileId = ragDocSyncOcrMessage.getFileId();
-        
+
         // 调用父类处理逻辑
         super.handle(ragDocSyncOcrMessage, strategy);
     }
@@ -77,24 +77,24 @@ public class WORDRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl imp
             DocumentParser parser = new ApachePoiDocumentParser();
             InputStream inputStream = new ByteArrayInputStream(bytes);
             Document document = parser.parse(inputStream);
-            
+
             final DocumentBySentenceSplitter documentByCharacterSplitter = new DocumentBySentenceSplitter(500, 0);
             final List<TextSegment> split = documentByCharacterSplitter.split(document);
-            
+
             int segmentCount = split.size();
             ragDocSyncOcrMessage.setPageSize(segmentCount);
             log.info("Word document split into {} segments", segmentCount);
-            
+
             // 更新数据库中的总页数
             if (currentProcessingFileId != null) {
                 LambdaUpdateWrapper<FileDetailEntity> wrapper = Wrappers.<FileDetailEntity>lambdaUpdate()
                         .eq(FileDetailEntity::getId, currentProcessingFileId)
                         .set(FileDetailEntity::getFilePageSize, segmentCount);
                 fileDetailRepository.update(wrapper);
-                
+
                 log.info("Updated total pages for Word file {}: {} segments", currentProcessingFileId, segmentCount);
             }
-            
+
             inputStream.close();
         } catch (Exception e) {
             log.error("Failed to calculate page size for Word document", e);

@@ -32,7 +32,7 @@ AgentX is an intelligent agent platform built with Domain-Driven Design (DDD) ar
 # Navigate to backend directory
 cd AgentX
 
-# Run backend server (development)
+# 使用 mvn的方式运行 maven 命令
 ./mvn spring-boot:run
 
 # Build backend

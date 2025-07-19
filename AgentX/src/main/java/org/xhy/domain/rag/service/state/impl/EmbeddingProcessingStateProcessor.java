@@ -23,9 +23,8 @@ public class EmbeddingProcessingStateProcessor implements FileProcessingStatePro
 
     @Override
     public void process(FileDetailEntity fileEntity) {
-        logger.info("文件[{}]正在进行向量化处理，当前进度: {}%", 
-                fileEntity.getId(), fileEntity.getEmbeddingProcessProgress());
-        
+        logger.info("文件[{}]正在进行向量化处理，当前进度: {}%", fileEntity.getId(), fileEntity.getEmbeddingProcessProgress());
+
         // 可以在这里添加向量化处理的业务逻辑，比如：
         // 1. 检查向量化任务状态
         // 2. 更新处理进度
@@ -34,9 +33,7 @@ public class EmbeddingProcessingStateProcessor implements FileProcessingStatePro
 
     @Override
     public Integer[] getNextPossibleStatuses() {
-        return new Integer[]{
-            FileProcessingStatusEnum.COMPLETED.getCode(),
-            FileProcessingStatusEnum.EMBEDDING_FAILED.getCode()
-        };
+        return new Integer[]{FileProcessingStatusEnum.COMPLETED.getCode(),
+                FileProcessingStatusEnum.EMBEDDING_FAILED.getCode()};
     }
 }

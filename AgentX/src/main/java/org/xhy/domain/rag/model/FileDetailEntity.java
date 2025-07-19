@@ -419,18 +419,18 @@ public class FileDetailEntity extends BaseEntity implements Serializable {
         }
         FileProcessingStatusEnum status = FileProcessingStatusEnum.fromCode(processingStatus);
         switch (status) {
-            case UPLOADED:
+            case UPLOADED :
                 return 0; // 待初始化
-            case OCR_PROCESSING:
+            case OCR_PROCESSING :
                 return 1; // 初始化中
-            case OCR_COMPLETED:
-            case EMBEDDING_PROCESSING:
-            case EMBEDDING_FAILED:
-            case COMPLETED:
+            case OCR_COMPLETED :
+            case EMBEDDING_PROCESSING :
+            case EMBEDDING_FAILED :
+            case COMPLETED :
                 return 2; // 已初始化
-            case OCR_FAILED:
+            case OCR_FAILED :
                 return 3; // 初始化失败
-            default:
+            default :
                 return 0;
         }
     }
@@ -444,19 +444,19 @@ public class FileDetailEntity extends BaseEntity implements Serializable {
         }
         FileProcessingStatusEnum status = FileProcessingStatusEnum.fromCode(processingStatus);
         switch (status) {
-            case UPLOADED:
-            case OCR_PROCESSING:
-            case OCR_FAILED:
+            case UPLOADED :
+            case OCR_PROCESSING :
+            case OCR_FAILED :
                 return 0; // 未初始化
-            case OCR_COMPLETED:
+            case OCR_COMPLETED :
                 return 0; // 待向量化（未初始化向量化）
-            case EMBEDDING_PROCESSING:
+            case EMBEDDING_PROCESSING :
                 return 1; // 初始化中
-            case COMPLETED:
+            case COMPLETED :
                 return 2; // 已初始化
-            case EMBEDDING_FAILED:
+            case EMBEDDING_FAILED :
                 return 3; // 初始化失败
-            default:
+            default :
                 return 0;
         }
     }
@@ -517,7 +517,7 @@ public class FileDetailEntity extends BaseEntity implements Serializable {
         return Objects.hash(id, url, size, filename, originalFilename, basePath, path, ext, contentType, platform,
                 thUrl, thFilename, thSize, thContentType, objectId, objectType, metadata, userMetadata, thMetadata,
                 thUserMetadata, attr, fileAcl, thFileAcl, hashInfo, uploadId, uploadStatus, userId, dataSetId,
-                filePageSize, processingStatus, currentOcrPageNumber, currentEmbeddingPageNumber,
-                ocrProcessProgress, embeddingProcessProgress);
+                filePageSize, processingStatus, currentOcrPageNumber, currentEmbeddingPageNumber, ocrProcessProgress,
+                embeddingProcessProgress);
     }
 }

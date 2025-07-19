@@ -24,10 +24,10 @@ public class OcrCompletedStateProcessor implements FileProcessingStateProcessor 
     @Override
     public void process(FileDetailEntity fileEntity) {
         logger.info("文件[{}]OCR处理已完成，等待开始向量化处理", fileEntity.getId());
-        
+
         // 确保OCR进度为100%
         fileEntity.setOcrProcessProgress(100.0);
-        
+
         // 初始化向量化相关字段
         if (fileEntity.getCurrentEmbeddingPageNumber() == null) {
             fileEntity.setCurrentEmbeddingPageNumber(0);
@@ -39,8 +39,6 @@ public class OcrCompletedStateProcessor implements FileProcessingStateProcessor 
 
     @Override
     public Integer[] getNextPossibleStatuses() {
-        return new Integer[]{
-            FileProcessingStatusEnum.EMBEDDING_PROCESSING.getCode()
-        };
+        return new Integer[]{FileProcessingStatusEnum.EMBEDDING_PROCESSING.getCode()};
     }
 }

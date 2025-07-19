@@ -31,13 +31,10 @@ public class RagMarketController {
      * @param page 页码
      * @param pageSize 每页大小
      * @param keyword 搜索关键词
-     * @return RAG市场列表
-     */
+     * @return RAG市场列表 */
     @GetMapping
-    public Result<Page<RagMarketDTO>> getMarketRagVersions(
-            @RequestParam(defaultValue = "1") Integer page,
-            @RequestParam(defaultValue = "15") Integer pageSize,
-            @RequestParam(required = false) String keyword) {
+    public Result<Page<RagMarketDTO>> getMarketRagVersions(@RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "15") Integer pageSize, @RequestParam(required = false) String keyword) {
         String userId = UserContext.getCurrentUserId();
         Page<RagMarketDTO> result = ragMarketAppService.getMarketRagVersions(page, pageSize, keyword, userId);
         return Result.success(result);
@@ -46,8 +43,7 @@ public class RagMarketController {
     /** 安装RAG版本
      * 
      * @param request 安装请求
-     * @return 安装后的RAG信息
-     */
+     * @return 安装后的RAG信息 */
     @PostMapping("/install")
     public Result<UserRagDTO> installRagVersion(@RequestBody @Validated InstallRagRequest request) {
         String userId = UserContext.getCurrentUserId();
@@ -58,8 +54,7 @@ public class RagMarketController {
     /** 卸载RAG版本
      * 
      * @param ragVersionId RAG版本ID
-     * @return 操作结果
-     */
+     * @return 操作结果 */
     @DeleteMapping("/uninstall/{ragVersionId}")
     public Result<Void> uninstallRagVersion(@PathVariable String ragVersionId) {
         String userId = UserContext.getCurrentUserId();
@@ -72,13 +67,10 @@ public class RagMarketController {
      * @param page 页码
      * @param pageSize 每页大小
      * @param keyword 搜索关键词
-     * @return 用户安装的RAG列表
-     */
+     * @return 用户安装的RAG列表 */
     @GetMapping("/installed")
-    public Result<Page<UserRagDTO>> getUserInstalledRags(
-            @RequestParam(defaultValue = "1") Integer page,
-            @RequestParam(defaultValue = "15") Integer pageSize,
-            @RequestParam(required = false) String keyword) {
+    public Result<Page<UserRagDTO>> getUserInstalledRags(@RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "15") Integer pageSize, @RequestParam(required = false) String keyword) {
         String userId = UserContext.getCurrentUserId();
         Page<UserRagDTO> result = ragMarketAppService.getUserInstalledRags(userId, page, pageSize, keyword);
         return Result.success(result);
@@ -86,8 +78,7 @@ public class RagMarketController {
 
     /** 获取用户安装的所有RAG（用于对话中选择）
      * 
-     * @return 用户安装的RAG列表
-     */
+     * @return 用户安装的RAG列表 */
     @GetMapping("/installed/all")
     public Result<List<UserRagDTO>> getUserAllInstalledRags() {
         String userId = UserContext.getCurrentUserId();
@@ -99,12 +90,9 @@ public class RagMarketController {
      * 
      * @param ragVersionId RAG版本ID
      * @param isActive 是否激活
-     * @return 操作结果
-     */
+     * @return 操作结果 */
     @PutMapping("/installed/{ragVersionId}/status")
-    public Result<Void> updateRagStatus(
-            @PathVariable String ragVersionId,
-            @RequestParam Boolean isActive) {
+    public Result<Void> updateRagStatus(@PathVariable String ragVersionId, @RequestParam Boolean isActive) {
         String userId = UserContext.getCurrentUserId();
         ragMarketAppService.updateRagStatus(ragVersionId, isActive, userId);
         return Result.success();
@@ -113,8 +101,7 @@ public class RagMarketController {
     /** 获取用户安装的RAG详情
      * 
      * @param ragVersionId RAG版本ID
-     * @return 安装的RAG详情
-     */
+     * @return 安装的RAG详情 */
     @GetMapping("/installed/{ragVersionId}")
     public Result<UserRagDTO> getInstalledRagDetail(@PathVariable String ragVersionId) {
         String userId = UserContext.getCurrentUserId();
@@ -126,11 +113,9 @@ public class RagMarketController {
      * 
      * @param ragId 原始RAG数据集ID
      * @param ragVersionId RAG版本ID
-     * @return 是否有权限
-     */
+     * @return 是否有权限 */
     @GetMapping("/permission/check")
-    public Result<Boolean> canUseRag(
-            @RequestParam(required = false) String ragId,
+    public Result<Boolean> canUseRag(@RequestParam(required = false) String ragId,
             @RequestParam(required = false) String ragVersionId) {
         String userId = UserContext.getCurrentUserId();
         boolean result = ragMarketAppService.canUseRag(userId, ragId, ragVersionId);

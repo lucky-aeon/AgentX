@@ -1,19 +1,29 @@
 package org.xhy.application.rag.request;
 
-import jakarta.validation.constraints.NotNull;
+import java.util.List;
 
-/** 审核RAG版本请求
+/** 批量审核请求
  * @author xhy
- * @date 2025-07-16 <br/>
+ * @date 2025-07-18 <br/>
  */
-public class ReviewRagVersionRequest {
+public class BatchReviewRequest {
 
-    /** 审核状态：2:已发布, 3:拒绝 */
-    @NotNull(message = "审核状态不能为空")
+    /** 版本ID列表 */
+    private List<String> versionIds;
+
+    /** 审核状态：2:已发布, 3:拒绝, 4:已下架 */
     private Integer status;
 
     /** 拒绝原因（拒绝时必填） */
     private String rejectReason;
+
+    public List<String> getVersionIds() {
+        return versionIds;
+    }
+
+    public void setVersionIds(List<String> versionIds) {
+        this.versionIds = versionIds;
+    }
 
     public Integer getStatus() {
         return status;

@@ -24,7 +24,7 @@ public class UploadedStateProcessor implements FileProcessingStateProcessor {
     @Override
     public void process(FileDetailEntity fileEntity) {
         logger.info("文件[{}]处于已上传状态，等待开始OCR处理", fileEntity.getId());
-        
+
         // 初始化进度信息
         if (fileEntity.getCurrentOcrPageNumber() == null) {
             fileEntity.setCurrentOcrPageNumber(0);
@@ -42,8 +42,6 @@ public class UploadedStateProcessor implements FileProcessingStateProcessor {
 
     @Override
     public Integer[] getNextPossibleStatuses() {
-        return new Integer[]{
-            FileProcessingStatusEnum.OCR_PROCESSING.getCode()
-        };
+        return new Integer[]{FileProcessingStatusEnum.OCR_PROCESSING.getCode()};
     }
 }

@@ -24,11 +24,11 @@ public class CompletedStateProcessor implements FileProcessingStateProcessor {
     @Override
     public void process(FileDetailEntity fileEntity) {
         logger.info("文件[{}]处理已全部完成", fileEntity.getId());
-        
+
         // 确保所有进度都是100%
         fileEntity.setOcrProcessProgress(100.0);
         fileEntity.setEmbeddingProcessProgress(100.0);
-        
+
         // 可以在这里添加完成后的后置处理，比如：
         // 1. 发送通知
         // 2. 清理临时文件
@@ -38,8 +38,7 @@ public class CompletedStateProcessor implements FileProcessingStateProcessor {
     @Override
     public Integer[] getNextPossibleStatuses() {
         // 完成状态一般不再转换到其他状态，除非重置
-        return new Integer[]{
-            FileProcessingStatusEnum.UPLOADED.getCode() // 只允许重置
+        return new Integer[]{FileProcessingStatusEnum.UPLOADED.getCode() // 只允许重置
         };
     }
 }

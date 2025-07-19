@@ -60,6 +60,7 @@ export interface UserRagDTO {
   fileCount?: number
   documentCount?: number
   creatorNickname?: string
+  creatorId?: string
 }
 
 /** RAG市场DTO */

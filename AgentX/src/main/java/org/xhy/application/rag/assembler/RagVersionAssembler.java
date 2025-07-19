@@ -40,8 +40,8 @@ public class RagVersionAssembler {
         // 处理标签JSON
         if (StringUtils.isNotBlank(entity.getLabels())) {
             try {
-                List<String> labels = objectMapper.readValue(entity.getLabels(), 
-                    new TypeReference<List<String>>() {});
+                List<String> labels = objectMapper.readValue(entity.getLabels(), new TypeReference<List<String>>() {
+                });
                 dto.setLabels(labels);
             } catch (Exception e) {
                 dto.setLabels(Collections.emptyList());
@@ -73,8 +73,8 @@ public class RagVersionAssembler {
         // 处理标签JSON
         if (StringUtils.isNotBlank(entity.getLabels())) {
             try {
-                List<String> labels = objectMapper.readValue(entity.getLabels(), 
-                    new TypeReference<List<String>>() {});
+                List<String> labels = objectMapper.readValue(entity.getLabels(), new TypeReference<List<String>>() {
+                });
                 dto.setLabels(labels);
             } catch (Exception e) {
                 dto.setLabels(Collections.emptyList());
@@ -103,9 +103,9 @@ public class RagVersionAssembler {
             return "0 B";
         }
 
-        final String[] units = new String[] { "B", "KB", "MB", "GB", "TB" };
+        final String[] units = new String[]{"B", "KB", "MB", "GB", "TB"};
         int digitGroups = (int) (Math.log10(size) / Math.log10(1024));
-        
+
         DecimalFormat df = new DecimalFormat("#,##0.#");
         return df.format(size / Math.pow(1024, digitGroups)) + " " + units[digitGroups];
     }

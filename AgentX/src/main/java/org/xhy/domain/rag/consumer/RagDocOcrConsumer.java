@@ -54,10 +54,8 @@ public class RagDocOcrConsumer {
     private final DocumentUnitRepository documentUnitRepository;
     private final ApplicationEventPublisher applicationEventPublisher;
 
-    public RagDocOcrConsumer(RagDocSyncOcrContext ragDocSyncOcrContext,
-            FileDetailDomainService fileDetailDomainService,
-            DocumentUnitRepository documentUnitRepository,
-            ApplicationEventPublisher applicationEventPublisher) {
+    public RagDocOcrConsumer(RagDocSyncOcrContext ragDocSyncOcrContext, FileDetailDomainService fileDetailDomainService,
+            DocumentUnitRepository documentUnitRepository, ApplicationEventPublisher applicationEventPublisher) {
         this.ragDocSyncOcrContext = ragDocSyncOcrContext;
         this.fileDetailDomainService = fileDetailDomainService;
         this.documentUnitRepository = documentUnitRepository;
@@ -80,8 +78,9 @@ public class RagDocOcrConsumer {
 
             // 获取文件并开始OCR处理
             FileDetailEntity fileEntity = fileDetailDomainService.getFileByIdWithoutUserCheck(ocrMessage.getFileId());
-            boolean startSuccess = fileDetailDomainService.startFileOcrProcessing(ocrMessage.getFileId(), fileEntity.getUserId());
-            
+            boolean startSuccess = fileDetailDomainService.startFileOcrProcessing(ocrMessage.getFileId(),
+                    fileEntity.getUserId());
+
             if (!startSuccess) {
                 throw new RuntimeException("无法开始OCR处理，文件状态不允许");
             }
@@ -104,16 +103,18 @@ public class RagDocOcrConsumer {
             fileEntity = fileDetailDomainService.getFileByIdWithoutUserCheck(ocrMessage.getFileId());
             Integer totalPages = fileEntity.getFilePageSize();
             if (totalPages != null && totalPages > 0) {
-                fileDetailDomainService.updateFileOcrProgress(ocrMessage.getFileId(), totalPages, totalPages, fileEntity.getUserId());
+                fileDetailDomainService.updateFileOcrProgress(ocrMessage.getFileId(), totalPages, totalPages,
+                        fileEntity.getUserId());
             }
 
-            boolean completeSuccess = fileDetailDomainService.completeFileOcrProcessing(ocrMessage.getFileId(), fileEntity.getUserId());
+            boolean completeSuccess = fileDetailDomainService.completeFileOcrProcessing(ocrMessage.getFileId(),
+                    fileEntity.getUserId());
             if (!completeSuccess) {
                 log.warn("OCR处理完成但状态转换失败，文件ID: {}", ocrMessage.getFileId());
             }
 
             log.info("OCR processing completed for file: {}", ocrMessage.getFileId());
-            
+
             // 自动启动向量化处理
             autoStartVectorization(ocrMessage.getFileId(), fileEntity);
 
@@ -121,7 +122,8 @@ public class RagDocOcrConsumer {
             log.error("OCR processing failed for file: {}", ocrMessage.getFileId(), e);
             // 处理失败
             try {
-                FileDetailEntity fileEntity = fileDetailDomainService.getFileByIdWithoutUserCheck(ocrMessage.getFileId());
+                FileDetailEntity fileEntity = fileDetailDomainService
+                        .getFileByIdWithoutUserCheck(ocrMessage.getFileId());
                 fileDetailDomainService.failFileOcrProcessing(ocrMessage.getFileId(), fileEntity.getUserId());
             } catch (Exception ex) {
                 log.error("Failed to update file status to failed for file: {}", ocrMessage.getFileId(), ex);
@@ -137,13 +139,11 @@ public class RagDocOcrConsumer {
     private void autoStartVectorization(String fileId, FileDetailEntity fileEntity) {
         try {
             log.info("Auto-starting vectorization for file: {}", fileId);
-            
+
             // 检查是否有可用的文档单元进行向量化
-            List<DocumentUnitEntity> documentUnits = documentUnitRepository.selectList(Wrappers
-                    .lambdaQuery(DocumentUnitEntity.class)
-                    .eq(DocumentUnitEntity::getFileId, fileId)
-                    .eq(DocumentUnitEntity::getIsOcr, true)
-                    .eq(DocumentUnitEntity::getIsVector, false));
+            List<DocumentUnitEntity> documentUnits = documentUnitRepository
+                    .selectList(Wrappers.lambdaQuery(DocumentUnitEntity.class).eq(DocumentUnitEntity::getFileId, fileId)
+                            .eq(DocumentUnitEntity::getIsOcr, true).eq(DocumentUnitEntity::getIsVector, false));
 
             if (documentUnits.isEmpty()) {
                 log.warn("No document units found for vectorization for file: {}", fileId);
@@ -175,7 +175,7 @@ public class RagDocOcrConsumer {
             }
 
             log.info("Auto-vectorization started for file: {}, {} document units", fileId, documentUnits.size());
-            
+
         } catch (Exception e) {
             log.error("Failed to auto-start vectorization for file: {}", fileId, e);
             // 如果自动启动失败，重置向量化状态

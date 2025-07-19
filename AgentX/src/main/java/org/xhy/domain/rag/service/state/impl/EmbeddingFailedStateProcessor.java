@@ -24,7 +24,7 @@ public class EmbeddingFailedStateProcessor implements FileProcessingStateProcess
     @Override
     public void process(FileDetailEntity fileEntity) {
         logger.warn("文件[{}]向量化处理失败", fileEntity.getId());
-        
+
         // 可以在这里添加失败处理逻辑，比如：
         // 1. 记录失败原因
         // 2. 发送失败通知
@@ -34,10 +34,9 @@ public class EmbeddingFailedStateProcessor implements FileProcessingStateProcess
 
     @Override
     public Integer[] getNextPossibleStatuses() {
-        return new Integer[]{
-            FileProcessingStatusEnum.EMBEDDING_PROCESSING.getCode(), // 允许重试
-            FileProcessingStatusEnum.OCR_COMPLETED.getCode(),        // 回退到OCR完成状态
-            FileProcessingStatusEnum.UPLOADED.getCode()              // 允许完全重置
+        return new Integer[]{FileProcessingStatusEnum.EMBEDDING_PROCESSING.getCode(), // 允许重试
+                FileProcessingStatusEnum.OCR_COMPLETED.getCode(), // 回退到OCR完成状态
+                FileProcessingStatusEnum.UPLOADED.getCode() // 允许完全重置
         };
     }
 }

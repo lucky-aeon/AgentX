@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -18,7 +18,7 @@ import { X } from "lucide-react"
 
 import type { RagDataset } from "@/types/rag-dataset"
 import type { PublishRagRequest } from "@/types/rag-publish"
-import { publishRagVersionWithToast } from "@/lib/rag-publish-service"
+import { publishRagVersionWithToast, getLatestVersionNumber } from "@/lib/rag-publish-service"
 
 interface PublishRagDialogProps {
   open: boolean
@@ -40,6 +40,45 @@ export function PublishRagDialog({
     labels: [] as string[]
   })
   const [currentLabel, setCurrentLabel] = useState("")
+
+  // 版本号自动递增逻辑
+  useEffect(() => {
+    if (open && dataset) {
+      loadAndSetVersion()
+    }
+  }, [open, dataset])
+
+  const loadAndSetVersion = async () => {
+    if (!dataset) return
+    
+    try {
+      const response = await getLatestVersionNumber(dataset.id)
+      
+      if (response.code === 200 && response.data) {
+        // 有最新版本号，自动递增
+        const currentVersion = response.data
+        const nextVersion = incrementVersion(currentVersion)
+        setFormData(prev => ({ ...prev, version: nextVersion }))
+      } else {
+        // 没有版本号，使用默认的1.0.0
+        setFormData(prev => ({ ...prev, version: "1.0.0" }))
+      }
+    } catch (error) {
+      // 出错时使用默认版本号
+      setFormData(prev => ({ ...prev, version: "1.0.0" }))
+    }
+  }
+
+  const incrementVersion = (version: string): string => {
+    const parts = version.split('.')
+    if (parts.length >= 3) {
+      const major = parseInt(parts[0])
+      const minor = parseInt(parts[1])
+      const patch = parseInt(parts[2]) + 1
+      return `${major}.${minor}.${patch}`
+    }
+    return "1.0.0"
+  }
 
   // 重置表单
   const resetForm = () => {
@@ -142,6 +181,9 @@ export function PublishRagDialog({
               onChange={(e) => setFormData(prev => ({ ...prev, version: e.target.value }))}
               required
             />
+            <p className="text-xs text-muted-foreground">
+              版本号会自动递增，您也可以手动修改为更高的版本号
+            </p>
           </div>
 
           <div className="space-y-2">

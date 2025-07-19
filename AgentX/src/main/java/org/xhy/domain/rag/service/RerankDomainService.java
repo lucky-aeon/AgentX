@@ -39,10 +39,8 @@ public class RerankDomainService {
         rerankRequest.setDocuments(list);
 
         // 使用Forest接口调用Rerank API
-        final RerankResponse rerankResponse = rerankForestApi.rerank(
-                rerankProperties.getApiUrl(),
-                rerankProperties.getApiKey(),
-                rerankRequest);
+        final RerankResponse rerankResponse = rerankForestApi.rerank(rerankProperties.getApiUrl(),
+                rerankProperties.getApiKey(), rerankRequest);
 
         final List<RerankResponse.SearchResult> results = rerankResponse.getResults();
 

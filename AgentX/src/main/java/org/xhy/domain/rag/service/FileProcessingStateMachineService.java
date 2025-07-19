@@ -71,14 +71,12 @@ public class FileProcessingStateMachineService {
         Integer targetStatus = getTargetStatus(currentStatusEnum, event);
 
         if (targetStatus == null) {
-            logger.warn("文件[{}]当前状态[{}]不支持事件[{}]", 
-                    fileEntity.getId(), currentStatusEnum.getDescription(), event);
+            logger.warn("文件[{}]当前状态[{}]不支持事件[{}]", fileEntity.getId(), currentStatusEnum.getDescription(), event);
             return false;
         }
 
         if (!canTransition(currentStatus, targetStatus)) {
-            logger.warn("文件[{}]不能从状态[{}]转换到状态[{}]", 
-                    fileEntity.getId(), currentStatusEnum.getDescription(), 
+            logger.warn("文件[{}]不能从状态[{}]转换到状态[{}]", fileEntity.getId(), currentStatusEnum.getDescription(),
                     FileProcessingStatusEnum.fromCode(targetStatus).getDescription());
             return false;
         }
@@ -94,44 +92,44 @@ public class FileProcessingStateMachineService {
      * @return 目标状态 */
     private Integer getTargetStatus(FileProcessingStatusEnum currentStatus, FileProcessingEventEnum event) {
         switch (event) {
-            case START_OCR_PROCESSING:
-                if (currentStatus == FileProcessingStatusEnum.UPLOADED || 
-                    currentStatus == FileProcessingStatusEnum.OCR_FAILED) {
+            case START_OCR_PROCESSING :
+                if (currentStatus == FileProcessingStatusEnum.UPLOADED
+                        || currentStatus == FileProcessingStatusEnum.OCR_FAILED) {
                     return FileProcessingStatusEnum.OCR_PROCESSING.getCode();
                 }
                 break;
-            case COMPLETE_OCR_PROCESSING:
+            case COMPLETE_OCR_PROCESSING :
                 if (currentStatus == FileProcessingStatusEnum.OCR_PROCESSING) {
                     return FileProcessingStatusEnum.OCR_COMPLETED.getCode();
                 }
                 break;
-            case FAIL_OCR_PROCESSING:
+            case FAIL_OCR_PROCESSING :
                 if (currentStatus == FileProcessingStatusEnum.OCR_PROCESSING) {
                     return FileProcessingStatusEnum.OCR_FAILED.getCode();
                 }
                 break;
-            case START_EMBEDDING_PROCESSING:
-                if (currentStatus == FileProcessingStatusEnum.OCR_COMPLETED || 
-                    currentStatus == FileProcessingStatusEnum.EMBEDDING_FAILED) {
+            case START_EMBEDDING_PROCESSING :
+                if (currentStatus == FileProcessingStatusEnum.OCR_COMPLETED
+                        || currentStatus == FileProcessingStatusEnum.EMBEDDING_FAILED) {
                     return FileProcessingStatusEnum.EMBEDDING_PROCESSING.getCode();
                 }
                 break;
-            case COMPLETE_EMBEDDING_PROCESSING:
+            case COMPLETE_EMBEDDING_PROCESSING :
                 if (currentStatus == FileProcessingStatusEnum.EMBEDDING_PROCESSING) {
                     return FileProcessingStatusEnum.COMPLETED.getCode();
                 }
                 break;
-            case FAIL_EMBEDDING_PROCESSING:
+            case FAIL_EMBEDDING_PROCESSING :
                 if (currentStatus == FileProcessingStatusEnum.EMBEDDING_PROCESSING) {
                     return FileProcessingStatusEnum.EMBEDDING_FAILED.getCode();
                 }
                 break;
-            case RESET_PROCESSING:
+            case RESET_PROCESSING :
                 return FileProcessingStatusEnum.UPLOADED.getCode();
-            case UPDATE_OCR_PROGRESS:
-            case UPDATE_EMBEDDING_PROGRESS:
+            case UPDATE_OCR_PROGRESS :
+            case UPDATE_EMBEDDING_PROGRESS :
                 return currentStatus.getCode(); // 进度更新不改变状态
-            default:
+            default :
                 break;
         }
         return null;
@@ -163,13 +161,13 @@ public class FileProcessingStateMachineService {
      * @return 是否转换成功 */
     private boolean transitionTo(FileDetailEntity fileEntity, Integer targetStatus, FileProcessingEventEnum event) {
         Integer oldStatus = fileEntity.getProcessingStatus();
-        
+
         // 处理特殊事件
         if (event == FileProcessingEventEnum.UPDATE_OCR_PROGRESS) {
             // OCR进度更新不改变状态，只处理进度
             return processFileState(fileEntity);
         }
-        
+
         if (event == FileProcessingEventEnum.UPDATE_EMBEDDING_PROGRESS) {
             // 向量化进度更新不改变状态，只处理进度
             return processFileState(fileEntity);
@@ -177,25 +175,23 @@ public class FileProcessingStateMachineService {
 
         // 执行状态转换
         fileEntity.setProcessingStatus(targetStatus);
-        
+
         // 根据事件执行特定操作
         executeEventActions(fileEntity, event);
-        
+
         // 处理新状态
         boolean result = processFileState(fileEntity);
-        
+
         if (result) {
-            logger.info("文件[{}]状态转换成功: {} -> {} (事件: {})", 
-                    fileEntity.getId(), 
+            logger.info("文件[{}]状态转换成功: {} -> {} (事件: {})", fileEntity.getId(),
                     FileProcessingStatusEnum.fromCode(oldStatus).getDescription(),
-                    FileProcessingStatusEnum.fromCode(targetStatus).getDescription(),
-                    event);
+                    FileProcessingStatusEnum.fromCode(targetStatus).getDescription(), event);
         } else {
             // 转换失败，回滚状态
             fileEntity.setProcessingStatus(oldStatus);
             logger.error("文件[{}]状态转换失败，已回滚", fileEntity.getId());
         }
-        
+
         return result;
     }
 
@@ -205,27 +201,27 @@ public class FileProcessingStateMachineService {
      * @param event 事件 */
     private void executeEventActions(FileDetailEntity fileEntity, FileProcessingEventEnum event) {
         switch (event) {
-            case START_OCR_PROCESSING:
+            case START_OCR_PROCESSING :
                 fileEntity.setCurrentOcrPageNumber(0);
                 fileEntity.setOcrProcessProgress(0.0);
                 break;
-            case COMPLETE_OCR_PROCESSING:
+            case COMPLETE_OCR_PROCESSING :
                 fileEntity.setOcrProcessProgress(100.0);
                 break;
-            case START_EMBEDDING_PROCESSING:
+            case START_EMBEDDING_PROCESSING :
                 fileEntity.setCurrentEmbeddingPageNumber(0);
                 fileEntity.setEmbeddingProcessProgress(0.0);
                 break;
-            case COMPLETE_EMBEDDING_PROCESSING:
+            case COMPLETE_EMBEDDING_PROCESSING :
                 fileEntity.setEmbeddingProcessProgress(100.0);
                 break;
-            case RESET_PROCESSING:
+            case RESET_PROCESSING :
                 fileEntity.setCurrentOcrPageNumber(0);
                 fileEntity.setCurrentEmbeddingPageNumber(0);
                 fileEntity.setOcrProcessProgress(0.0);
                 fileEntity.setEmbeddingProcessProgress(0.0);
                 break;
-            default:
+            default :
                 // 其他事件不需要特殊处理
                 break;
         }

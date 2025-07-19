@@ -30,9 +30,8 @@ public class FileDetailDomainService {
     private final FileDetailRepository fileDetailRepository;
     private final FileProcessingStateMachineService stateMachineService;
 
-    public FileDetailDomainService(FileStorageService fileStorageService, 
-                                   FileDetailRepository fileDetailRepository,
-                                   FileProcessingStateMachineService stateMachineService) {
+    public FileDetailDomainService(FileStorageService fileStorageService, FileDetailRepository fileDetailRepository,
+            FileProcessingStateMachineService stateMachineService) {
         this.fileStorageService = fileStorageService;
         this.fileDetailRepository = fileDetailRepository;
         this.stateMachineService = stateMachineService;
@@ -64,10 +63,10 @@ public class FileDetailDomainService {
         fileDetailEntity.setExt(upload.getExt());
         fileDetailEntity.setContentType(upload.getContentType());
         fileDetailEntity.setPlatform(upload.getPlatform());
-        
+
         // 设置初始状态为已上传
         fileDetailEntity.setProcessingStatus(FileProcessingStatusEnum.UPLOADED.getCode());
-        
+
         // 初始化状态机
         stateMachineService.processFileState(fileDetailEntity);
 
@@ -254,7 +253,8 @@ public class FileDetailDomainService {
      * @return 是否成功开始处理 */
     public boolean startFileEmbeddingProcessing(String fileId, String userId) {
         FileDetailEntity fileEntity = getFile(fileId, userId);
-        boolean success = stateMachineService.handleEvent(fileEntity, FileProcessingEventEnum.START_EMBEDDING_PROCESSING);
+        boolean success = stateMachineService.handleEvent(fileEntity,
+                FileProcessingEventEnum.START_EMBEDDING_PROCESSING);
         if (success) {
             updateFile(fileEntity);
         }
@@ -267,7 +267,8 @@ public class FileDetailDomainService {
      * @return 是否成功完成处理 */
     public boolean completeFileEmbeddingProcessing(String fileId, String userId) {
         FileDetailEntity fileEntity = getFile(fileId, userId);
-        boolean success = stateMachineService.handleEvent(fileEntity, FileProcessingEventEnum.COMPLETE_EMBEDDING_PROCESSING);
+        boolean success = stateMachineService.handleEvent(fileEntity,
+                FileProcessingEventEnum.COMPLETE_EMBEDDING_PROCESSING);
         if (success) {
             updateFile(fileEntity);
         }
@@ -280,7 +281,8 @@ public class FileDetailDomainService {
      * @return 是否成功设置失败状态 */
     public boolean failFileEmbeddingProcessing(String fileId, String userId) {
         FileDetailEntity fileEntity = getFile(fileId, userId);
-        boolean success = stateMachineService.handleEvent(fileEntity, FileProcessingEventEnum.FAIL_EMBEDDING_PROCESSING);
+        boolean success = stateMachineService.handleEvent(fileEntity,
+                FileProcessingEventEnum.FAIL_EMBEDDING_PROCESSING);
         if (success) {
             updateFile(fileEntity);
         }
@@ -348,7 +350,8 @@ public class FileDetailDomainService {
      * @param totalPages 总页数
      * @param userId 用户ID
      * @return 是否更新成功 */
-    public boolean updateFileEmbeddingProgress(String fileId, Integer currentEmbeddingPage, Integer totalPages, String userId) {
+    public boolean updateFileEmbeddingProgress(String fileId, Integer currentEmbeddingPage, Integer totalPages,
+            String userId) {
         FileDetailEntity fileEntity = getFile(fileId, userId);
         boolean success = stateMachineService.updateEmbeddingProgress(fileEntity, currentEmbeddingPage, totalPages);
         if (success) {
@@ -414,7 +417,7 @@ public class FileDetailDomainService {
         if (fileEntity == null) {
             throw new BusinessException("文件不存在");
         }
-        
+
         // 确保文件有正确的状态
         if (fileEntity.getProcessingStatus() == null) {
             fileEntity.setProcessingStatus(FileProcessingStatusEnum.UPLOADED.getCode());
@@ -425,7 +428,7 @@ public class FileDetailDomainService {
                     .set(FileDetailEntity::getProcessingStatus, fileEntity.getProcessingStatus());
             fileDetailRepository.update(wrapper);
         }
-        
+
         return fileEntity;
     }
 }

@@ -23,9 +23,8 @@ public class OcrProcessingStateProcessor implements FileProcessingStateProcessor
 
     @Override
     public void process(FileDetailEntity fileEntity) {
-        logger.info("文件[{}]正在进行OCR处理，当前进度: {}%", 
-                fileEntity.getId(), fileEntity.getOcrProcessProgress());
-        
+        logger.info("文件[{}]正在进行OCR处理，当前进度: {}%", fileEntity.getId(), fileEntity.getOcrProcessProgress());
+
         // 可以在这里添加OCR处理的业务逻辑，比如：
         // 1. 检查OCR任务状态
         // 2. 更新处理进度
@@ -34,9 +33,7 @@ public class OcrProcessingStateProcessor implements FileProcessingStateProcessor
 
     @Override
     public Integer[] getNextPossibleStatuses() {
-        return new Integer[]{
-            FileProcessingStatusEnum.OCR_COMPLETED.getCode(),
-            FileProcessingStatusEnum.OCR_FAILED.getCode()
-        };
+        return new Integer[]{FileProcessingStatusEnum.OCR_COMPLETED.getCode(),
+                FileProcessingStatusEnum.OCR_FAILED.getCode()};
     }
 }

@@ -77,51 +77,51 @@ public class FileProcessProgressAssembler {
         }
 
         FileProcessingStatusEnum statusEnum = FileProcessingStatusEnum.fromCode(processingStatus);
-        
+
         switch (statusEnum) {
-            case UPLOADED:
+            case UPLOADED :
                 dto.setIsInitialize(0);
                 dto.setIsEmbedding(0);
                 dto.setInitializeStatus("待初始化");
                 dto.setEmbeddingStatus("待向量化");
                 break;
-            case OCR_PROCESSING:
+            case OCR_PROCESSING :
                 dto.setIsInitialize(1);
                 dto.setIsEmbedding(0);
                 dto.setInitializeStatus("初始化中");
                 dto.setEmbeddingStatus("待向量化");
                 break;
-            case OCR_COMPLETED:
+            case OCR_COMPLETED :
                 dto.setIsInitialize(2);
                 dto.setIsEmbedding(0);
                 dto.setInitializeStatus("初始化完成");
                 dto.setEmbeddingStatus("待向量化");
                 break;
-            case EMBEDDING_PROCESSING:
+            case EMBEDDING_PROCESSING :
                 dto.setIsInitialize(2);
                 dto.setIsEmbedding(1);
                 dto.setInitializeStatus("初始化完成");
                 dto.setEmbeddingStatus("向量化中");
                 break;
-            case COMPLETED:
+            case COMPLETED :
                 dto.setIsInitialize(2);
                 dto.setIsEmbedding(2);
                 dto.setInitializeStatus("初始化完成");
                 dto.setEmbeddingStatus("向量化完成");
                 break;
-            case OCR_FAILED:
+            case OCR_FAILED :
                 dto.setIsInitialize(3);
                 dto.setIsEmbedding(0);
                 dto.setInitializeStatus("初始化失败");
                 dto.setEmbeddingStatus("待向量化");
                 break;
-            case EMBEDDING_FAILED:
+            case EMBEDDING_FAILED :
                 dto.setIsInitialize(2);
                 dto.setIsEmbedding(3);
                 dto.setInitializeStatus("初始化完成");
                 dto.setEmbeddingStatus("向量化失败");
                 break;
-            default:
+            default :
                 dto.setIsInitialize(0);
                 dto.setIsEmbedding(0);
                 dto.setInitializeStatus("未知状态");

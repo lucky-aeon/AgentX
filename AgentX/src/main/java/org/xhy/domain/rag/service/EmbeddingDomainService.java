@@ -170,19 +170,14 @@ public class EmbeddingDomainService implements MetadataConstant {
                     Wrappers.lambdaQuery(DocumentUnitEntity.class).in(DocumentUnitEntity::getId, documentIds));
 
             // 按照检索相关性顺序重新排列结果，并设置相似度分数
-            List<DocumentUnitEntity> sortedResults = documentIds.stream()
-                    .map(id -> {
-                        DocumentUnitEntity doc = documents.stream()
-                                .filter(d -> id.equals(d.getId()))
-                                .findFirst()
-                                .orElse(null);
-                        if (doc != null) {
-                            // 设置相似度分数
-                            doc.setSimilarityScore(documentScores.get(id));
-                        }
-                        return doc;
-                    })
-                    .filter(java.util.Objects::nonNull).toList();
+            List<DocumentUnitEntity> sortedResults = documentIds.stream().map(id -> {
+                DocumentUnitEntity doc = documents.stream().filter(d -> id.equals(d.getId())).findFirst().orElse(null);
+                if (doc != null) {
+                    // 设置相似度分数
+                    doc.setSimilarityScore(documentScores.get(id));
+                }
+                return doc;
+            }).filter(java.util.Objects::nonNull).toList();
 
             // 记录搜索性能统计
             long totalTime = System.currentTimeMillis() - startTime;
@@ -235,11 +230,10 @@ public class EmbeddingDomainService implements MetadataConstant {
 
             // 检查文件OCR状态
             Integer processingStatus = fileDetail.getProcessingStatus();
-            if (processingStatus == null || 
-                (!processingStatus.equals(FileProcessingStatusEnum.OCR_COMPLETED.getCode()) &&
-                 !processingStatus.equals(FileProcessingStatusEnum.EMBEDDING_PROCESSING.getCode()) &&
-                 !processingStatus.equals(FileProcessingStatusEnum.COMPLETED.getCode()) &&
-                 !processingStatus.equals(FileProcessingStatusEnum.EMBEDDING_FAILED.getCode()))) {
+            if (processingStatus == null || (!processingStatus.equals(FileProcessingStatusEnum.OCR_COMPLETED.getCode())
+                    && !processingStatus.equals(FileProcessingStatusEnum.EMBEDDING_PROCESSING.getCode())
+                    && !processingStatus.equals(FileProcessingStatusEnum.COMPLETED.getCode())
+                    && !processingStatus.equals(FileProcessingStatusEnum.EMBEDDING_FAILED.getCode()))) {
                 log.warn("The file with ID {} has no OCR data", fileId);
                 return false;
             }

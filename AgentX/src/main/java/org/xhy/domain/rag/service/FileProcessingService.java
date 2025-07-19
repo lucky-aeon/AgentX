@@ -24,9 +24,8 @@ public class FileProcessingService {
     private final RagDocSyncOcrContext ragDocSyncOcrContext;
     private final FileProcessingStateMachineService stateMachineService;
 
-    public FileProcessingService(FileDetailRepository fileDetailRepository, 
-                                 RagDocSyncOcrContext ragDocSyncOcrContext,
-                                 FileProcessingStateMachineService stateMachineService) {
+    public FileProcessingService(FileDetailRepository fileDetailRepository, RagDocSyncOcrContext ragDocSyncOcrContext,
+            FileProcessingStateMachineService stateMachineService) {
         this.fileDetailRepository = fileDetailRepository;
         this.ragDocSyncOcrContext = ragDocSyncOcrContext;
         this.stateMachineService = stateMachineService;
@@ -39,13 +38,14 @@ public class FileProcessingService {
     public void processFileInitialization(String fileId, String userId) {
         try {
             FileDetailEntity fileEntity = getFileById(fileId, userId);
-            
+
             // 使用状态机开始OCR处理
-            boolean startSuccess = stateMachineService.handleEvent(fileEntity, FileProcessingEventEnum.START_OCR_PROCESSING);
+            boolean startSuccess = stateMachineService.handleEvent(fileEntity,
+                    FileProcessingEventEnum.START_OCR_PROCESSING);
             if (!startSuccess) {
                 throw new BusinessException("无法开始OCR处理，当前状态不允许");
             }
-            
+
             // 更新文件状态到数据库
             updateFileInDatabase(fileEntity);
 
@@ -70,9 +70,10 @@ public class FileProcessingService {
 
             // 重新获取文件状态（可能在策略处理中被更新）
             fileEntity = getFileById(fileId, userId);
-            
+
             // 完成OCR处理
-            boolean completeSuccess = stateMachineService.handleEvent(fileEntity, FileProcessingEventEnum.COMPLETE_OCR_PROCESSING);
+            boolean completeSuccess = stateMachineService.handleEvent(fileEntity,
+                    FileProcessingEventEnum.COMPLETE_OCR_PROCESSING);
             if (completeSuccess) {
                 updateFileInDatabase(fileEntity);
             }
@@ -81,7 +82,8 @@ public class FileProcessingService {
             // 处理失败
             try {
                 FileDetailEntity fileEntity = getFileById(fileId, userId);
-                boolean failSuccess = stateMachineService.handleEvent(fileEntity, FileProcessingEventEnum.FAIL_OCR_PROCESSING);
+                boolean failSuccess = stateMachineService.handleEvent(fileEntity,
+                        FileProcessingEventEnum.FAIL_OCR_PROCESSING);
                 if (failSuccess) {
                     updateFileInDatabase(fileEntity);
                 }
@@ -127,7 +129,8 @@ public class FileProcessingService {
      * @param currentOcrPage 当前OCR页数
      * @param totalPages 总页数
      * @param userId 用户ID */
-    public void updateFileOcrProgressViaStateMachine(String fileId, Integer currentOcrPage, Integer totalPages, String userId) {
+    public void updateFileOcrProgressViaStateMachine(String fileId, Integer currentOcrPage, Integer totalPages,
+            String userId) {
         FileDetailEntity fileEntity = getFileById(fileId, userId);
         boolean success = stateMachineService.updateOcrProgress(fileEntity, currentOcrPage, totalPages);
         if (success) {
@@ -140,7 +143,8 @@ public class FileProcessingService {
      * @param currentEmbeddingPage 当前向量化页数
      * @param totalPages 总页数
      * @param userId 用户ID */
-    public void updateFileEmbeddingProgressViaStateMachine(String fileId, Integer currentEmbeddingPage, Integer totalPages, String userId) {
+    public void updateFileEmbeddingProgressViaStateMachine(String fileId, Integer currentEmbeddingPage,
+            Integer totalPages, String userId) {
         FileDetailEntity fileEntity = getFileById(fileId, userId);
         boolean success = stateMachineService.updateEmbeddingProgress(fileEntity, currentEmbeddingPage, totalPages);
         if (success) {
@@ -215,7 +219,7 @@ public class FileProcessingService {
             status.append("状态: ").append(statusEnum.getDescription()).append("\n");
 
             switch (statusEnum) {
-                case OCR_PROCESSING:
+                case OCR_PROCESSING :
                     if (currentOcrPage != null && totalPages != null) {
                         status.append("OCR进度: ").append(currentOcrPage).append("/").append(totalPages).append(" 页");
                         if (ocrProgress != null) {
@@ -223,22 +227,23 @@ public class FileProcessingService {
                         }
                     }
                     break;
-                case EMBEDDING_PROCESSING:
+                case EMBEDDING_PROCESSING :
                     if (currentEmbeddingPage != null && totalPages != null) {
-                        status.append("向量化进度: ").append(currentEmbeddingPage).append("/").append(totalPages).append(" 页");
+                        status.append("向量化进度: ").append(currentEmbeddingPage).append("/").append(totalPages)
+                                .append(" 页");
                         if (embeddingProgress != null) {
                             status.append(" (").append(String.format("%.1f", embeddingProgress)).append("%)");
                         }
                     }
                     break;
-                case COMPLETED:
+                case COMPLETED :
                     status.append("处理完成");
                     break;
-                case OCR_FAILED:
-                case EMBEDDING_FAILED:
+                case OCR_FAILED :
+                case EMBEDDING_FAILED :
                     status.append("处理失败，请重试");
                     break;
-                default:
+                default :
                     // 显示详细进度信息
                     if (currentOcrPage != null && totalPages != null) {
                         status.append("OCR进度: ").append(currentOcrPage).append("/").append(totalPages).append(" 页");
@@ -248,7 +253,8 @@ public class FileProcessingService {
                         status.append("\n");
                     }
                     if (currentEmbeddingPage != null && totalPages != null) {
-                        status.append("向量化进度: ").append(currentEmbeddingPage).append("/").append(totalPages).append(" 页");
+                        status.append("向量化进度: ").append(currentEmbeddingPage).append("/").append(totalPages)
+                                .append(" 页");
                         if (embeddingProgress != null) {
                             status.append(" (").append(String.format("%.1f", embeddingProgress)).append("%)");
                         }
