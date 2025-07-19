@@ -23,11 +23,9 @@ public class RagDataAccessService {
     private final RagVersionFileRepository ragVersionFileRepository;
     private final RagVersionDocumentRepository ragVersionDocumentRepository;
 
-    public RagDataAccessService(UserRagRepository userRagRepository,
-                               FileDetailRepository fileDetailRepository,
-                               DocumentUnitRepository documentUnitRepository,
-                               RagVersionFileRepository ragVersionFileRepository,
-                               RagVersionDocumentRepository ragVersionDocumentRepository) {
+    public RagDataAccessService(UserRagRepository userRagRepository, FileDetailRepository fileDetailRepository,
+            DocumentUnitRepository documentUnitRepository, RagVersionFileRepository ragVersionFileRepository,
+            RagVersionDocumentRepository ragVersionDocumentRepository) {
         this.userRagRepository = userRagRepository;
         this.fileDetailRepository = fileDetailRepository;
         this.documentUnitRepository = documentUnitRepository;
@@ -42,7 +40,7 @@ public class RagDataAccessService {
      * @return 文件列表 */
     public List<FileDetailEntity> getRagFiles(String userId, String userRagId) {
         UserRagEntity userRag = getUserRag(userId, userRagId);
-        
+
         if (userRag.isReferenceType()) {
             // REFERENCE类型：从原始数据集获取最新文件
             return getRealTimeFiles(userRag.getOriginalRagId(), userId);
@@ -59,7 +57,7 @@ public class RagDataAccessService {
      * @return 文档单元列表 */
     public List<DocumentUnitEntity> getRagDocuments(String userId, String userRagId) {
         UserRagEntity userRag = getUserRag(userId, userRagId);
-        
+
         if (userRag.isReferenceType()) {
             // REFERENCE类型：从原始数据集获取最新文档
             return getRealTimeDocuments(userRag.getOriginalRagId(), userId);
@@ -77,7 +75,7 @@ public class RagDataAccessService {
      * @return 文档单元列表 */
     public List<DocumentUnitEntity> getRagDocumentsByFile(String userId, String userRagId, String fileId) {
         UserRagEntity userRag = getUserRag(userId, userRagId);
-        
+
         if (userRag.isReferenceType()) {
             // REFERENCE类型：从原始数据集获取最新文档
             return getRealTimeDocumentsByFile(fileId, userId);
@@ -108,14 +106,14 @@ public class RagDataAccessService {
      * @return 数据来源信息 */
     public RagDataSourceInfo getRagDataSourceInfo(String userId, String userRagId) {
         UserRagEntity userRag = getUserRag(userId, userRagId);
-        
+
         RagDataSourceInfo sourceInfo = new RagDataSourceInfo();
         sourceInfo.setUserRagId(userRagId);
         sourceInfo.setOriginalRagId(userRag.getOriginalRagId());
         sourceInfo.setVersionId(userRag.getRagVersionId());
         sourceInfo.setInstallType(userRag.getInstallType());
         sourceInfo.setIsRealTime(userRag.isReferenceType());
-        
+
         return sourceInfo;
     }
 
@@ -124,8 +122,7 @@ public class RagDataAccessService {
     /** 获取用户RAG安装记录 */
     private UserRagEntity getUserRag(String userId, String userRagId) {
         LambdaQueryWrapper<UserRagEntity> wrapper = Wrappers.<UserRagEntity>lambdaQuery()
-                .eq(UserRagEntity::getUserId, userId)
-                .eq(UserRagEntity::getId, userRagId);
+                .eq(UserRagEntity::getUserId, userId).eq(UserRagEntity::getId, userRagId);
 
         UserRagEntity userRag = userRagRepository.selectOne(wrapper);
         if (userRag == null) {
@@ -138,8 +135,7 @@ public class RagDataAccessService {
     /** 获取实时文件（从原始数据集） */
     private List<FileDetailEntity> getRealTimeFiles(String originalRagId, String userId) {
         LambdaQueryWrapper<FileDetailEntity> wrapper = Wrappers.<FileDetailEntity>lambdaQuery()
-                .eq(FileDetailEntity::getDataSetId, originalRagId)
-                .eq(FileDetailEntity::getUserId, userId)
+                .eq(FileDetailEntity::getDataSetId, originalRagId).eq(FileDetailEntity::getUserId, userId)
                 .orderByDesc(FileDetailEntity::getCreatedAt);
 
         return fileDetailRepository.selectList(wrapper);
@@ -170,8 +166,7 @@ public class RagDataAccessService {
     /** 获取实时文档（按文件ID过滤） */
     private List<DocumentUnitEntity> getRealTimeDocumentsByFile(String fileId, String userId) {
         LambdaQueryWrapper<DocumentUnitEntity> wrapper = Wrappers.<DocumentUnitEntity>lambdaQuery()
-                .eq(DocumentUnitEntity::getFileId, fileId)
-                .orderByDesc(DocumentUnitEntity::getCreatedAt);
+                .eq(DocumentUnitEntity::getFileId, fileId).orderByDesc(DocumentUnitEntity::getCreatedAt);
 
         return documentUnitRepository.selectList(wrapper);
     }

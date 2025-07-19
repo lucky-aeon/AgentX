@@ -29,7 +29,6 @@ public class UserRagDTO {
     /** 版本号 */
     private String version;
 
-
     /** 安装时间 */
     private LocalDateTime installedAt;
 
@@ -109,7 +108,6 @@ public class UserRagDTO {
     public void setVersion(String version) {
         this.version = version;
     }
-
 
     public LocalDateTime getInstalledAt() {
         return installedAt;

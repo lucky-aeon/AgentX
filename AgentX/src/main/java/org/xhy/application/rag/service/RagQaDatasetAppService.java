@@ -81,7 +81,7 @@ public class RagQaDatasetAppService {
     private final LLMDomainService llmDomainService;
     private final UserSettingsDomainService userSettingsDomainService;
     private final HighAvailabilityDomainService highAvailabilityDomainService;
-    
+
     // 添加RAG发布和市场服务依赖
     private final RagPublishAppService ragPublishAppService;
     private final RagMarketAppService ragMarketAppService;
@@ -95,10 +95,9 @@ public class RagQaDatasetAppService {
             EmbeddingDomainService embeddingDomainService, ObjectMapper objectMapper,
             LLMServiceFactory llmServiceFactory, LLMDomainService llmDomainService,
             UserSettingsDomainService userSettingsDomainService,
-            HighAvailabilityDomainService highAvailabilityDomainService,
-            RagPublishAppService ragPublishAppService, RagMarketAppService ragMarketAppService,
-            RagVersionDomainService ragVersionDomainService, UserRagDomainService userRagDomainService,
-            RagDataAccessService ragDataAccessService) {
+            HighAvailabilityDomainService highAvailabilityDomainService, RagPublishAppService ragPublishAppService,
+            RagMarketAppService ragMarketAppService, RagVersionDomainService ragVersionDomainService,
+            UserRagDomainService userRagDomainService, RagDataAccessService ragDataAccessService) {
         this.ragQaDatasetDomainService = ragQaDatasetDomainService;
         this.fileDetailDomainService = fileDetailDomainService;
         this.documentUnitRepository = documentUnitRepository;
@@ -125,7 +124,7 @@ public class RagQaDatasetAppService {
     public RagQaDatasetDTO createDataset(CreateDatasetRequest request, String userId) {
         RagQaDatasetEntity entity = RagQaDatasetAssembler.toEntity(request, userId);
         RagQaDatasetEntity createdEntity = ragQaDatasetDomainService.createDataset(entity);
-        
+
         // 自动创建0.0.1版本并安装给用户
         try {
             createAndInstallInitialVersion(createdEntity.getId(), userId);
@@ -133,10 +132,10 @@ public class RagQaDatasetAppService {
             log.warn("Failed to create initial version for dataset {}: {}", createdEntity.getId(), e.getMessage());
             // 不影响数据集创建，只记录警告
         }
-        
+
         return RagQaDatasetAssembler.toDTO(createdEntity, 0L);
     }
-    
+
     /** 创建并安装初始版本
      * @param ragId 数据集ID
      * @param userId 用户ID */
@@ -146,15 +145,15 @@ public class RagQaDatasetAppService {
         publishRequest.setRagId(ragId);
         publishRequest.setVersion("0.0.1");
         publishRequest.setChangeLog("创建 RAG 默认版本");
-        
+
         // 发布版本（保持为REVIEWING状态，不公开）
         RagVersionDTO versionDTO = ragPublishAppService.publishRagVersion(publishRequest, userId);
-        
+
         // 使用新的自动安装方法（直接创建REFERENCE类型安装）
         userRagDomainService.autoInstallRag(userId, ragId, versionDTO.getId());
-        
-        log.info("Successfully created and auto-installed initial version 0.0.1 for dataset {} by user {}", 
-                ragId, userId);
+
+        log.info("Successfully created and auto-installed initial version 0.0.1 for dataset {} by user {}", ragId,
+                userId);
     }
 
     /** 更新数据集
@@ -185,7 +184,7 @@ public class RagQaDatasetAppService {
         } catch (Exception e) {
             log.debug("Failed to get version history for dataset {}, may not have versions", datasetId);
         }
-        
+
         // 删除创建者自己在user_rags表中的安装记录（在删除数据集之前执行）
         try {
             // 按原始RAG ID删除安装记录，避免业务逻辑校验导致的事务回滚
@@ -194,7 +193,7 @@ public class RagQaDatasetAppService {
             // 如果没有安装记录，忽略异常
             log.debug("No installation record found for dataset {}", datasetId);
         }
-        
+
         // 删除所有RAG发布版本
         for (RagVersionDTO version : versions) {
             try {
@@ -204,7 +203,7 @@ public class RagQaDatasetAppService {
                 log.debug("Failed to delete RAG version {}, may not exist", version.getId());
             }
         }
-        
+
         // 先删除数据集下的所有文件
         fileDetailDomainService.deleteAllFilesByDataset(datasetId, userId);
 
@@ -626,8 +625,9 @@ public class RagQaDatasetAppService {
      * @return 搜索结果 */
     public List<DocumentUnitDTO> ragSearchByUserRag(RagSearchRequest request, String userRagId, String userId) {
         // 获取RAG数据源信息
-        RagDataAccessService.RagDataSourceInfo sourceInfo = ragDataAccessService.getRagDataSourceInfo(userId, userRagId);
-        
+        RagDataAccessService.RagDataSourceInfo sourceInfo = ragDataAccessService.getRagDataSourceInfo(userId,
+                userRagId);
+
         // 根据安装类型获取实际的数据集ID
         String actualDatasetId;
         if (sourceInfo.getIsRealTime()) {
@@ -637,29 +637,27 @@ public class RagQaDatasetAppService {
             // SNAPSHOT类型：使用原始数据集ID（但实际搜索会通过版本控制过滤）
             actualDatasetId = sourceInfo.getOriginalRagId();
         }
-        
+
         // 验证数据集权限 - 通过userRagId已经验证了权限，这里检查原始数据集是否存在
-        ragQaDatasetDomainService.getDatasetById(actualDatasetId);
-        
+        ragQaDatasetDomainService.checkDatasetExists(actualDatasetId, userId);
+
         // 使用智能调整后的参数进行RAG搜索
         Double adjustedMinScore = request.getAdjustedMinScore();
         Integer adjustedCandidateMultiplier = request.getAdjustedCandidateMultiplier();
-        
+
         List<DocumentUnitEntity> entities;
         if (sourceInfo.getIsRealTime()) {
             // REFERENCE类型：搜索实时数据
-            entities = embeddingDomainService.ragDoc(List.of(actualDatasetId),
-                    request.getQuestion(), request.getMaxResults(), adjustedMinScore,
-                    request.getEnableRerank(), adjustedCandidateMultiplier);
+            entities = embeddingDomainService.ragDoc(List.of(actualDatasetId), request.getQuestion(),
+                    request.getMaxResults(), adjustedMinScore, request.getEnableRerank(), adjustedCandidateMultiplier);
         } else {
             // SNAPSHOT类型：搜索版本快照数据
             List<DocumentUnitEntity> snapshotDocuments = ragDataAccessService.getRagDocuments(userId, userRagId);
             // 对快照数据进行向量搜索（这里可能需要特殊处理，暂时使用相同逻辑）
-            entities = embeddingDomainService.ragDoc(List.of(actualDatasetId),
-                    request.getQuestion(), request.getMaxResults(), adjustedMinScore,
-                    request.getEnableRerank(), adjustedCandidateMultiplier);
+            entities = embeddingDomainService.ragDoc(List.of(actualDatasetId), request.getQuestion(),
+                    request.getMaxResults(), adjustedMinScore, request.getEnableRerank(), adjustedCandidateMultiplier);
         }
-        
+
         // 转换为DTO并返回
         return DocumentUnitAssembler.toDTOs(entities);
     }
@@ -694,44 +692,6 @@ public class RagQaDatasetAppService {
                     emitter.complete();
                 } catch (Exception e) {
                     log.warn("Error completing SSE emitter", e);
-                }
-            }
-        });
-
-        return emitter;
-    }
-
-    /** 基于已安装知识库的RAG流式问答
-     * @param request 流式问答请求
-     * @param userRagId 用户已安装的RAG ID
-     * @param userId 用户ID
-     * @return SSE流式响应 */
-    public SseEmitter ragStreamChatByUserRag(RagStreamChatRequest request, String userRagId, String userId) {
-        SseEmitter emitter = new SseEmitter(Long.MAX_VALUE);
-
-        // 设置连接关闭回调
-        emitter.onCompletion(() -> log.info("RAG stream chat by userRag completed for user: {}, userRagId: {}", userId, userRagId));
-        emitter.onTimeout(() -> {
-            log.warn("RAG stream chat by userRag timeout for user: {}, userRagId: {}", userId, userRagId);
-            sendSseData(emitter, createErrorResponse("连接超时"));
-        });
-        emitter.onError((ex) -> {
-            log.error("RAG stream chat by userRag connection error for user: {}, userRagId: {}", userId, userRagId, ex);
-        });
-
-        // 异步处理流式问答
-        CompletableFuture.runAsync(() -> {
-            try {
-                processRagStreamChatByUserRag(request, userRagId, userId, emitter);
-            } catch (Exception e) {
-                log.error("RAG stream chat by userRag error", e);
-                sendSseData(emitter, createErrorResponse("处理过程中发生错误: " + e.getMessage()));
-            } finally {
-                // 确保连接被正确关闭
-                try {
-                    emitter.complete();
-                } catch (Exception e) {
-                    log.warn("Failed to complete emitter", e);
                 }
             }
         });
@@ -1050,112 +1010,6 @@ public class RagQaDatasetAppService {
             }
         } catch (Exception e) {
             log.error("发送SSE数据失败", e);
-        }
-    }
-
-    /** 处理基于已安装知识库的RAG流式问答核心逻辑 */
-    private void processRagStreamChatByUserRag(RagStreamChatRequest request, String userRagId, String userId, SseEmitter emitter) {
-        try {
-            // 第一阶段：检索文档
-            log.info("Starting RAG stream chat by userRag for user: {}, userRagId: {}, question: '{}'", userId, userRagId, request.getQuestion());
-
-            // 发送检索开始信号
-            sendSseData(emitter, AgentChatResponse.build("开始检索相关文档...", MessageType.RAG_RETRIEVAL_START));
-            Thread.sleep(500);
-
-            // 使用UserRag ID进行搜索
-            RagSearchRequest searchRequest = new RagSearchRequest();
-            searchRequest.setQuestion(request.getQuestion());
-            searchRequest.setMaxResults(request.getMaxResults());
-            searchRequest.setMinScore(request.getMinScore());
-            searchRequest.setEnableRerank(request.getEnableRerank());
-            // 这里不设置datasetIds，而是通过userRagId在ragSearchByUserRag方法中处理
-
-            List<DocumentUnitDTO> searchResults = ragSearchByUserRag(searchRequest, userRagId, userId);
-
-            // 转换为内部检索结果格式
-            List<RetrievedDocument> retrievedDocs = searchResults.stream()
-                    .map(doc -> new RetrievedDocument(doc.getDocumentContent(), doc.getFileName(), doc.getMetadata()))
-                    .collect(Collectors.toList());
-
-            // 发送检索完成信号和结果
-            RagThinkingData retrievalData = new RagThinkingData();
-            retrievalData.setRetrievedDocuments(searchResults);
-
-            sendSseData(emitter, AgentChatResponse.buildRetrievalComplete(
-                    "成功检索到 " + searchResults.size() + " 个相关文档", MessageType.RAG_RETRIEVAL_COMPLETE, retrievalData));
-            Thread.sleep(500);
-
-            // 第二阶段：AI思考与答案生成
-            sendSseData(emitter, AgentChatResponse.build("正在分析文档内容...", MessageType.RAG_THINKING_START));
-            Thread.sleep(300);
-
-            // 获取模型配置
-            HighAvailabilityResult haResult = highAvailabilityDomainService.selectAvailableModel(userId, "chat");
-            if (haResult == null || !haResult.isSuccess()) {
-                throw new RuntimeException("无可用的聊天模型");
-            }
-
-            ModelEntity model = haResult.getModel();
-            ProviderEntity provider = haResult.getProvider();
-
-            // 构建聊天上下文
-            List<dev.langchain4j.data.message.ChatMessage> messages = new ArrayList<>();
-
-            // 构建系统提示词
-            StringBuilder contextBuilder = new StringBuilder();
-            contextBuilder.append("你是一个智能问答助手。请基于以下检索到的文档内容回答用户问题：\n\n");
-
-            for (int i = 0; i < retrievedDocs.size(); i++) {
-                RetrievedDocument doc = retrievedDocs.get(i);
-                contextBuilder.append(String.format("文档%d [%s]:\n%s\n\n",
-                        i + 1, doc.getFileName(), doc.getContent()));
-            }
-
-            contextBuilder.append("请根据以上文档内容准确回答用户问题。如果文档中没有相关信息，请明确说明。");
-
-            messages.add(SystemMessage.from(contextBuilder.toString()));
-            messages.add(UserMessage.from(request.getQuestion()));
-
-            // 创建流式聊天模型
-            StreamingChatModel streamingModel = llmServiceFactory.createStreamingChatModel(provider, model);
-
-            // 发送思考完成信号
-            sendSseData(emitter, AgentChatResponse.build("思考完成，开始生成回答...", MessageType.RAG_THINKING_COMPLETE));
-            Thread.sleep(300);
-
-            // 开始流式生成
-            sendSseData(emitter, AgentChatResponse.build("", MessageType.RAG_ANSWER_START));
-
-            StringBuilder answerBuilder = new StringBuilder();
-
-            // 流式生成回答
-            TokenStream tokenStream = streamingModel.generate(messages);
-
-            tokenStream
-                    .onNext((token) -> {
-                        answerBuilder.append(token);
-                        sendSseData(emitter, AgentChatResponse.build(token, MessageType.RAG_ANSWER_PART));
-                    })
-                    .onComplete((response) -> {
-                        log.info("RAG stream chat by userRag completed successfully for user: {}, userRagId: {}", userId, userRagId);
-
-                        // 发送最终完成信号
-                        sendSseData(emitter, AgentChatResponse.buildEndMessage(
-                                answerBuilder.toString(), MessageType.RAG_ANSWER_COMPLETE));
-                    })
-                    .onError((error) -> {
-                        log.error("RAG stream chat by userRag generation error for user: {}, userRagId: {}", userId, userRagId, error);
-                        sendSseData(emitter, createErrorResponse("生成回答时发生错误: " + error.getMessage()));
-                    })
-                    .start();
-
-            // 等待流式生成完成
-            Thread.sleep(500);
-
-        } catch (Exception e) {
-            log.error("RAG stream chat by userRag processing error for user: {}, userRagId: {}", userId, userRagId, e);
-            sendSseData(emitter, createErrorResponse("处理过程中发生错误: " + e.getMessage()));
         }
     }
 

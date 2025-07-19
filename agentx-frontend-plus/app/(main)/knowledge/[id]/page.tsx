@@ -803,40 +803,7 @@ export default function DatasetDetailPage() {
                             </TableCell>
                             <TableCell>
                               <div className="flex items-center gap-1">
-                                {fileStatusDisplay.canStartOcr && (
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-6 px-2 text-xs"
-                                    onClick={() => handleProcessFile(file.id, 1)}
-                                    disabled={processing}
-                                    title="开始OCR处理"
-                                  >
-                                    {processing ? (
-                                      <Loader2 className="h-3 w-3 animate-spin" />
-                                    ) : (
-                                      <Play className="h-3 w-3" />
-                                    )}
-                                    OCR
-                                  </Button>
-                                )}
-                                {fileStatusDisplay.canStartEmbedding && (
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-6 px-2 text-xs"
-                                    onClick={() => handleProcessFile(file.id, 2)}
-                                    disabled={processing}
-                                    title="开始向量化处理"
-                                  >
-                                    {processing ? (
-                                      <Loader2 className="h-3 w-3 animate-spin" />
-                                    ) : (
-                                      <Play className="h-3 w-3" />
-                                    )}
-                                    向量化
-                                  </Button>
-                                )}
+                                
                                 {(fileStatusDisplay.status.text === "处理完成" || fileStatusDisplay.status.text === "OCR处理完成") && (
                                   <Button
                                     variant="ghost"

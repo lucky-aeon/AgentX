@@ -141,7 +141,6 @@ public class RagMarketAppService {
         return dtoList;
     }
 
-
     /** 获取用户安装的RAG详情
      * 
      * @param ragVersionId RAG版本ID
@@ -224,7 +223,7 @@ public class RagMarketAppService {
             return null;
         }
     }
-    
+
     /** 检查RAG版本是否已安装
      * 
      * @param ragVersionId RAG版本ID

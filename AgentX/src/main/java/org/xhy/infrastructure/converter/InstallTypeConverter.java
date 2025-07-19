@@ -16,7 +16,8 @@ import java.sql.SQLException;
 public class InstallTypeConverter extends BaseTypeHandler<InstallType> {
 
     @Override
-    public void setNonNullParameter(PreparedStatement ps, int i, InstallType parameter, JdbcType jdbcType) throws SQLException {
+    public void setNonNullParameter(PreparedStatement ps, int i, InstallType parameter, JdbcType jdbcType)
+            throws SQLException {
         ps.setString(i, parameter.getCode());
     }
 

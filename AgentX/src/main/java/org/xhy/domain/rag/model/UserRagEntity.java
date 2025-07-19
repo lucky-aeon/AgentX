@@ -43,7 +43,6 @@ public class UserRagEntity extends BaseEntity implements Serializable {
     /** 版本号 */
     private String version;
 
-
     /** 安装时间 */
     private LocalDateTime installedAt;
 
@@ -110,7 +109,6 @@ public class UserRagEntity extends BaseEntity implements Serializable {
         this.version = version;
     }
 
-
     public LocalDateTime getInstalledAt() {
         return installedAt;
     }
@@ -134,7 +132,6 @@ public class UserRagEntity extends BaseEntity implements Serializable {
     public void setInstallType(InstallType installType) {
         this.installType = installType;
     }
-
 
     /** 检查是否为引用类型安装
      * 

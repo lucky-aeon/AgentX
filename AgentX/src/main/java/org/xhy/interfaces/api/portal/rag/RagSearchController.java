@@ -52,24 +52,11 @@ public class RagSearchController {
      * @param request RAG搜索请求
      * @return 搜索结果 */
     @PostMapping("/user-rag/{userRagId}")
-    public Result<List<DocumentUnitDTO>> ragSearchByUserRag(
-            @PathVariable String userRagId,
+    public Result<List<DocumentUnitDTO>> ragSearchByUserRag(@PathVariable String userRagId,
             @RequestBody @Validated RagSearchRequest request) {
         String userId = UserContext.getCurrentUserId();
         List<DocumentUnitDTO> searchResults = ragQaDatasetAppService.ragSearchByUserRag(request, userRagId, userId);
         return Result.success(searchResults);
     }
 
-    /** 基于已安装知识库的RAG流式问答
-     * 
-     * @param userRagId 已安装的知识库ID
-     * @param request 流式问答请求
-     * @return 流式响应 */
-    @PostMapping("/user-rag/{userRagId}/stream-chat")
-    public SseEmitter ragStreamChatByUserRag(
-            @PathVariable String userRagId,
-            @RequestBody @Validated RagStreamChatRequest request) {
-        String userId = UserContext.getCurrentUserId();
-        return ragQaDatasetAppService.ragStreamChatByUserRag(request, userRagId, userId);
-    }
 }
