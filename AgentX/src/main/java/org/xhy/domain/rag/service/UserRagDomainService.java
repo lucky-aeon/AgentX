@@ -47,6 +47,11 @@ public class UserRagDomainService {
         // 验证版本存在
         RagVersionEntity ragVersion = ragVersionDomainService.getRagVersion(ragVersionId);
 
+        // 检查0.0.1版本权限：只有创建者可以安装0.0.1版本
+        if ("0.0.1".equals(ragVersion.getVersion()) && !ragVersion.getUserId().equals(userId)) {
+            throw new BusinessException("0.0.1版本为作者私有版本，不支持安装");
+        }
+
         // 如果是自己的RAG，允许安装任何状态的版本（包括私有版本）
         // 如果是他人的RAG，只能安装已发布的版本
         if (!ragVersion.getUserId().equals(userId)
@@ -127,6 +132,11 @@ public class UserRagDomainService {
 
         // 验证目标版本
         RagVersionEntity targetVersion = ragVersionDomainService.getRagVersion(targetVersionId);
+
+        // 检查0.0.1版本权限：只有创建者可以切换到0.0.1版本
+        if ("0.0.1".equals(targetVersion.getVersion()) && !targetVersion.getUserId().equals(userId)) {
+            throw new BusinessException("0.0.1版本为作者私有版本，不支持切换");
+        }
 
         // 权限检查：确保目标版本属于同一个原始RAG
         if (!targetVersion.getOriginalRagId().equals(userRag.getOriginalRagId())) {

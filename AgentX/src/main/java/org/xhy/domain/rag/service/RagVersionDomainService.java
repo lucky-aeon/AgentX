@@ -246,7 +246,8 @@ public class RagVersionDomainService {
      * @return 分页结果 */
     public IPage<RagVersionEntity> listPublishedVersions(Integer page, Integer pageSize, String keyword) {
         LambdaQueryWrapper<RagVersionEntity> wrapper = Wrappers.<RagVersionEntity>lambdaQuery()
-                .eq(RagVersionEntity::getPublishStatus, RagPublishStatus.PUBLISHED.getCode());
+                .eq(RagVersionEntity::getPublishStatus, RagPublishStatus.PUBLISHED.getCode())
+                .ne(RagVersionEntity::getVersion, "0.0.1"); // 过滤掉0.0.1版本（用户私有版本）
 
         if (StringUtils.isNotBlank(keyword)) {
             wrapper.and(w -> w.like(RagVersionEntity::getName, keyword).or().like(RagVersionEntity::getDescription,
@@ -267,6 +268,7 @@ public class RagVersionDomainService {
     public IPage<RagVersionEntity> listPendingReviewVersions(Integer page, Integer pageSize) {
         LambdaQueryWrapper<RagVersionEntity> wrapper = Wrappers.<RagVersionEntity>lambdaQuery()
                 .eq(RagVersionEntity::getPublishStatus, RagPublishStatus.REVIEWING.getCode())
+                .ne(RagVersionEntity::getVersion, "0.0.1") // 过滤掉0.0.1版本（用户私有版本）
                 .orderByAsc(RagVersionEntity::getCreatedAt);
 
         Page<RagVersionEntity> pageObj = new Page<>(page, pageSize);

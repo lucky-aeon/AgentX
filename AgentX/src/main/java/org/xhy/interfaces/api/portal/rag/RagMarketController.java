@@ -109,4 +109,16 @@ public class RagMarketController {
         boolean result = ragMarketAppService.canUseRag(userId, ragId, ragVersionId);
         return Result.success(result);
     }
+
+    /** 切换已安装RAG的版本
+     * 
+     * @param userRagId 用户RAG安装记录ID
+     * @param targetVersionId 目标版本ID
+     * @return 切换后的RAG信息 */
+    @PutMapping("/installed/{userRagId}/switch-version")
+    public Result<UserRagDTO> switchRagVersion(@PathVariable String userRagId, @RequestParam String targetVersionId) {
+        String userId = UserContext.getCurrentUserId();
+        UserRagDTO result = ragMarketAppService.switchRagVersion(userRagId, targetVersionId, userId);
+        return Result.success(result);
+    }
 }

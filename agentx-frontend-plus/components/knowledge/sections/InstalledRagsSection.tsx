@@ -108,6 +108,21 @@ export function InstalledRagsSection() {
     }
   }
 
+  // 处理版本切换
+  const handleVersionSwitch = (updatedUserRag: UserRagDTO) => {
+    // 更新本地状态中对应的RAG
+    setInstalledRags(prev => 
+      prev.map(rag => 
+        rag.id === updatedUserRag.id ? updatedUserRag : rag
+      )
+    )
+    
+    // 如果当前查看详情的RAG被更新，也要更新详情状态
+    if (ragToViewDetails?.id === updatedUserRag.id) {
+      setRagToViewDetails(updatedUserRag)
+    }
+  }
+
   // 处理卸载RAG
   const handleUninstallRag = async () => {
     if (!ragToUninstall) return
@@ -279,6 +294,7 @@ export function InstalledRagsSection() {
                 userRag={userRag}
                 onUninstall={setRagToUninstall}
                 onCardClick={setRagToViewDetails}
+                onVersionSwitch={handleVersionSwitch}
                 currentUserId={currentUserId}
               />
             ))}
@@ -304,6 +320,7 @@ export function InstalledRagsSection() {
         onOpenChange={(open) => !open && setRagToViewDetails(null)}
         userRag={ragToViewDetails}
         onUninstall={setRagToUninstall}
+        onVersionSwitch={handleVersionSwitch}
         currentUserId={currentUserId}
       />
 

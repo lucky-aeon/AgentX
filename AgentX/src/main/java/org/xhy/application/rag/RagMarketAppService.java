@@ -166,6 +166,23 @@ public class RagMarketAppService {
         return userRagDomainService.canUseRag(userId, ragId, ragVersionId);
     }
 
+    /** 切换已安装RAG的版本
+     * 
+     * @param userRagId 用户RAG安装记录ID
+     * @param targetVersionId 目标版本ID
+     * @param userId 用户ID
+     * @return 切换后的RAG信息 */
+    @Transactional
+    public UserRagDTO switchRagVersion(String userRagId, String targetVersionId, String userId) {
+        UserRagEntity updatedUserRag = userRagDomainService.switchRagVersion(userId, userRagId, targetVersionId);
+
+        // 转换为DTO并丰富信息
+        UserRagDTO dto = UserRagAssembler.toDTO(updatedUserRag);
+        enrichWithVersionInfo(dto);
+
+        return dto;
+    }
+
     /** 丰富用户信息
      * 
      * @param dto RAG市场DTO */

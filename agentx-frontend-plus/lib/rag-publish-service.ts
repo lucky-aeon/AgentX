@@ -312,6 +312,43 @@ export async function checkRagPermission(ragId?: string, ragVersionId?: string):
   }
 }
 
+/** 切换已安装RAG的版本 */
+export async function switchRagVersion(userRagId: string, targetVersionId: string): Promise<ApiResponse<UserRagDTO>> {
+  try {
+    return await httpClient.put<ApiResponse<UserRagDTO>>(
+      `${API_ENDPOINTS.MARKET}/installed/${userRagId}/switch-version?targetVersionId=${targetVersionId}`,
+      {}
+    )
+  } catch (error) {
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : "版本切换失败",
+      data: {} as UserRagDTO,
+      timestamp: Date.now()
+    }
+  }
+}
+
+/** 切换已安装RAG的版本（带Toast提示） */
+export async function switchRagVersionWithToast(userRagId: string, targetVersionId: string): Promise<ApiResponse<UserRagDTO>> {
+  const response = await switchRagVersion(userRagId, targetVersionId)
+  
+  if (response.code === 200) {
+    toast({
+      title: "版本切换成功",
+      description: `已切换到版本 v${response.data.version}`,
+    })
+  } else {
+    toast({
+      title: "版本切换失败",
+      description: response.message,
+      variant: "destructive"
+    })
+  }
+  
+  return response
+}
+
 // ================================ 管理员审核相关接口 ================================
 
 /** 获取待审核的RAG版本列表 */

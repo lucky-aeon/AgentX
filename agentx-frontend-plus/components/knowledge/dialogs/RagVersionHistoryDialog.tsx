@@ -132,6 +132,11 @@ export function RagVersionHistoryDialog({
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <Badge variant="outline">v{version.version}</Badge>
+                      {version.version === "0.0.1" && (
+                        <Badge variant="secondary" className="text-xs">
+                          私有版本
+                        </Badge>
+                      )}
                       <Badge 
                         variant="outline" 
                         className={getPublishStatusColor(version.publishStatus)}

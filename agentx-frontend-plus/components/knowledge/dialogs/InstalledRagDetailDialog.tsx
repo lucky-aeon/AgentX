@@ -1,6 +1,6 @@
 "use client"
 
-import { Book, User, FileText, Trash, FolderOpen, Eye, MessageSquare } from "lucide-react"
+import { Book, User, FileText, Trash, FolderOpen, Eye, MessageSquare, RefreshCw, History } from "lucide-react"
 import { useMemo, useState, useEffect } from "react"
 
 import { Button } from "@/components/ui/button"
@@ -13,17 +13,26 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
-import type { UserRagDTO } from "@/types/rag-publish"
+import type { UserRagDTO, RagVersionDTO } from "@/types/rag-publish"
 import { SimpleFileBrowserDialog } from "./SimpleFileBrowserDialog"
 import { InstalledRagChatDialog } from "./InstalledRagChatDialog"
 import { getAllDatasetFilesWithToast } from "@/lib/rag-dataset-service"
+import { getRagVersionHistory, switchRagVersionWithToast } from "@/lib/rag-publish-service"
 
 interface InstalledRagDetailDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   userRag: UserRagDTO | null
   onUninstall?: (userRag: UserRagDTO) => void
+  onVersionSwitch?: (updatedUserRag: UserRagDTO) => void
   currentUserId?: string | null
 }
 
@@ -32,6 +41,7 @@ export function InstalledRagDetailDialog({
   onOpenChange,
   userRag,
   onUninstall,
+  onVersionSwitch,
   currentUserId
 }: InstalledRagDetailDialogProps) {
   // 子对话框状态
@@ -40,6 +50,12 @@ export function InstalledRagDetailDialog({
   
   // 实时文件数量
   const [realTimeFileCount, setRealTimeFileCount] = useState<number | null>(null)
+  
+  // 版本相关状态
+  const [availableVersions, setAvailableVersions] = useState<RagVersionDTO[]>([])
+  const [selectedVersionId, setSelectedVersionId] = useState<string>("")
+  const [isSwitchingVersion, setIsSwitchingVersion] = useState(false)
+  const [versionsLoading, setVersionsLoading] = useState(false)
 
   // 判断是否为用户自己的知识库
   const isOwner = useMemo(() => {
@@ -72,6 +88,56 @@ export function InstalledRagDetailDialog({
     
     fetchFileCount()
   }, [open, userRag?.originalRagId, userRag?.fileCount])
+
+  // 获取可用版本列表
+  useEffect(() => {
+    const fetchVersions = async () => {
+      if (!open || !userRag?.originalRagId) {
+        return
+      }
+      
+      setVersionsLoading(true)
+      try {
+        const response = await getRagVersionHistory(userRag.originalRagId)
+        if (response.code === 200) {
+          setAvailableVersions(response.data)
+          setSelectedVersionId(userRag.ragVersionId || "")
+        }
+      } catch (error) {
+        console.error("获取版本历史失败:", error)
+      } finally {
+        setVersionsLoading(false)
+      }
+    }
+    
+    fetchVersions()
+  }, [open, userRag?.originalRagId, userRag?.ragVersionId])
+
+  // 处理版本切换
+  const handleVersionSwitch = async (targetVersionId: string) => {
+    if (!userRag?.id || targetVersionId === userRag.ragVersionId) {
+      return
+    }
+    
+    setIsSwitchingVersion(true)
+    try {
+      const response = await switchRagVersionWithToast(userRag.id, targetVersionId)
+      if (response.code === 200) {
+        // 切换成功，通知父组件更新状态
+        setSelectedVersionId(targetVersionId)
+        onVersionSwitch?.(response.data)
+        
+        // 关闭对话框
+        setTimeout(() => {
+          onOpenChange(false)
+        }, 500)
+      }
+    } catch (error) {
+      console.error("版本切换失败:", error)
+    } finally {
+      setIsSwitchingVersion(false)
+    }
+  }
 
   if (!userRag) return null
 
@@ -138,6 +204,59 @@ export function InstalledRagDetailDialog({
             </div>
           </div>
 
+          {/* 版本切换 */}
+          {availableVersions.length > 1 && (
+            <div className="space-y-2">
+              <div className="text-sm font-medium flex items-center gap-2">
+                <History className="h-4 w-4" />
+                版本切换
+              </div>
+              <div className="flex items-center gap-2">
+                <Select
+                  value={selectedVersionId}
+                  onValueChange={handleVersionSwitch}
+                  disabled={isSwitchingVersion || versionsLoading}
+                >
+                  <SelectTrigger className="flex-1">
+                    <SelectValue>
+                      {versionsLoading ? (
+                        "加载版本中..."
+                      ) : (
+                        availableVersions.find(v => v.id === selectedVersionId)?.version 
+                          ? `v${availableVersions.find(v => v.id === selectedVersionId)?.version}`
+                          : "选择版本"
+                      )}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableVersions.map((version) => (
+                      <SelectItem key={version.id} value={version.id}>
+                        <div className="flex items-center gap-2">
+                          <span>v{version.version}</span>
+                          {version.version === "0.0.1" && (
+                            <Badge variant="secondary" className="text-xs">
+                              私有
+                            </Badge>
+                          )}
+                          {version.id === userRag.ragVersionId && (
+                            <Badge variant="outline" className="text-xs">
+                              当前
+                            </Badge>
+                          )}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {isSwitchingVersion && (
+                  <RefreshCw className="h-4 w-4 animate-spin text-muted-foreground" />
+                )}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {availableVersions.length} 个可用版本
+              </div>
+            </div>
+          )}
 
         </div>
 
