@@ -29,10 +29,12 @@ import org.xhy.domain.rag.repository.DocumentUnitRepository;
 import org.xhy.domain.rag.service.FileDetailDomainService;
 import org.xhy.domain.rag.straegy.RagDocSyncOcrStrategy;
 import org.xhy.domain.rag.straegy.context.RagDocSyncOcrContext;
+import org.xhy.infrastructure.exception.BusinessException;
 import org.xhy.infrastructure.mq.enums.EventType;
 import org.xhy.infrastructure.mq.events.RagDocSyncOcrEvent;
 import org.xhy.infrastructure.mq.events.RagDocSyncStorageEvent;
 import org.xhy.infrastructure.mq.model.MqMessage;
+import org.xhy.infrastructure.rag.service.UserModelConfigResolver;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson2.JSONObject;
@@ -53,13 +55,16 @@ public class RagDocOcrConsumer {
     private final FileDetailDomainService fileDetailDomainService;
     private final DocumentUnitRepository documentUnitRepository;
     private final ApplicationEventPublisher applicationEventPublisher;
+    private final UserModelConfigResolver userModelConfigResolver;
 
     public RagDocOcrConsumer(RagDocSyncOcrContext ragDocSyncOcrContext, FileDetailDomainService fileDetailDomainService,
-            DocumentUnitRepository documentUnitRepository, ApplicationEventPublisher applicationEventPublisher) {
+            DocumentUnitRepository documentUnitRepository, ApplicationEventPublisher applicationEventPublisher,
+            UserModelConfigResolver userModelConfigResolver) {
         this.ragDocSyncOcrContext = ragDocSyncOcrContext;
         this.fileDetailDomainService = fileDetailDomainService;
         this.documentUnitRepository = documentUnitRepository;
         this.applicationEventPublisher = applicationEventPublisher;
+        this.userModelConfigResolver = userModelConfigResolver;
     }
 
     @RabbitHandler
@@ -82,18 +87,18 @@ public class RagDocOcrConsumer {
                     fileEntity.getUserId());
 
             if (!startSuccess) {
-                throw new RuntimeException("无法开始OCR处理，文件状态不允许");
+                throw new BusinessException("无法开始OCR处理，文件状态不允许");
             }
 
             // 获取文件扩展名并选择处理策略
             String fileExt = fileDetailDomainService.getFileExtension(ocrMessage.getFileId());
             if (fileExt == null) {
-                throw new RuntimeException("文件扩展名不能为空");
+                throw new BusinessException("文件扩展名不能为空");
             }
 
             RagDocSyncOcrStrategy strategy = ragDocSyncOcrContext.getTaskExportStrategy(fileExt.toUpperCase());
             if (strategy == null) {
-                throw new RuntimeException("不支持的文件类型: " + fileExt);
+                throw new BusinessException("不支持的文件类型: " + fileExt);
             }
 
             // 执行OCR处理
@@ -167,6 +172,10 @@ public class RagDocOcrConsumer {
                 storageMessage.setContent(documentUnit.getContent());
                 storageMessage.setVector(true);
                 storageMessage.setDatasetId(fileEntity.getDataSetId());
+                storageMessage.setUserId(fileEntity.getUserId());
+                // 获取用户的嵌入模型配置
+                storageMessage.setEmbeddingModelConfig(
+                        userModelConfigResolver.getUserEmbeddingModelConfig(fileEntity.getUserId()));
 
                 RagDocSyncStorageEvent<RagDocSyncStorageMessage> storageEvent = new RagDocSyncStorageEvent<>(
                         storageMessage, EventType.DOC_SYNC_RAG);

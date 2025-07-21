@@ -2,6 +2,7 @@ package org.xhy.domain.rag.message;
 
 import java.io.Serial;
 import java.io.Serializable;
+import org.xhy.domain.rag.model.ModelConfig;
 
 /** @author shilong.zang
  * @date 20:54 <br/>
@@ -29,6 +30,12 @@ public class RagDocSyncStorageMessage implements Serializable {
 
     /** 数据集ID */
     private String datasetId;
+
+    /** 用户ID */
+    private String userId;
+
+    /** 嵌入模型配置 */
+    private ModelConfig embeddingModelConfig;
 
     public String getId() {
         return id;
@@ -84,5 +91,21 @@ public class RagDocSyncStorageMessage implements Serializable {
 
     public void setDatasetId(String datasetId) {
         this.datasetId = datasetId;
+    }
+
+    public String getUserId() {
+        return userId;
+    }
+
+    public void setUserId(String userId) {
+        this.userId = userId;
+    }
+
+    public ModelConfig getEmbeddingModelConfig() {
+        return embeddingModelConfig;
+    }
+
+    public void setEmbeddingModelConfig(ModelConfig embeddingModelConfig) {
+        this.embeddingModelConfig = embeddingModelConfig;
     }
 }

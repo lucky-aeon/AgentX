@@ -2,15 +2,21 @@ package org.xhy.interfaces.api.portal.user;
 
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.xhy.application.llm.dto.ModelDTO;
+import org.xhy.application.llm.service.LLMAppService;
 import org.xhy.application.user.dto.UserDTO;
 import org.xhy.application.user.dto.UserSettingsDTO;
 import org.xhy.application.user.service.UserAppService;
 import org.xhy.application.user.service.UserSettingsAppService;
+import org.xhy.domain.llm.model.enums.ModelType;
+import org.xhy.domain.llm.model.enums.ProviderType;
 import org.xhy.infrastructure.auth.UserContext;
 import org.xhy.interfaces.api.common.Result;
 import org.xhy.interfaces.dto.user.request.ChangePasswordRequest;
 import org.xhy.interfaces.dto.user.request.UserSettingsUpdateRequest;
 import org.xhy.interfaces.dto.user.request.UserUpdateRequest;
+
+import java.util.List;
 
 /** 用户 */
 @RestController
@@ -21,9 +27,13 @@ public class PortalUserController {
 
     private final UserSettingsAppService userSettingsAppService;
 
-    public PortalUserController(UserAppService userAppService, UserSettingsAppService userSettingsAppService) {
+    private final LLMAppService llmAppService;
+
+    public PortalUserController(UserAppService userAppService, UserSettingsAppService userSettingsAppService,
+            LLMAppService llmAppService) {
         this.userAppService = userAppService;
         this.userSettingsAppService = userSettingsAppService;
+        this.llmAppService = llmAppService;
     }
 
     /** 获取用户信息
@@ -81,5 +91,25 @@ public class PortalUserController {
         String userId = UserContext.getCurrentUserId();
         String defaultModelId = userSettingsAppService.getUserDefaultModelId(userId);
         return Result.success(defaultModelId);
+    }
+
+    /** 获取可用的OCR模型列表（复用现有模型接口，支持视觉模型）
+     * @return OCR模型列表 */
+    @GetMapping("/settings/ocr-models")
+    public Result<List<ModelDTO>> getOcrModels() {
+        String userId = UserContext.getCurrentUserId();
+        // OCR模型实际上是对话模型，但支持视觉输入，所以复用CHAT类型
+        List<ModelDTO> models = llmAppService.getActiveModelsByType(ProviderType.ALL, userId, ModelType.CHAT);
+        return Result.success(models);
+    }
+
+    /** 获取可用的嵌入模型列表（按模型类型筛选）
+     * @return 嵌入模型列表 */
+    @GetMapping("/settings/embedding-models")
+    public Result<List<ModelDTO>> getEmbeddingModels() {
+        String userId = UserContext.getCurrentUserId();
+        // 筛选嵌入模型类型
+        List<ModelDTO> models = llmAppService.getActiveModelsByType(ProviderType.ALL, userId, ModelType.EMBEDDING);
+        return Result.success(models);
     }
 }

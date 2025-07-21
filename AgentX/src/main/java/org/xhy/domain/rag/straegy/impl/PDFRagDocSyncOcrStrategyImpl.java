@@ -21,6 +21,7 @@ import org.xhy.domain.rag.model.DocumentUnitEntity;
 import org.xhy.domain.rag.model.FileDetailEntity;
 import org.xhy.domain.rag.repository.DocumentUnitRepository;
 import org.xhy.domain.rag.repository.FileDetailRepository;
+import org.xhy.infrastructure.exception.BusinessException;
 import org.xhy.infrastructure.llm.LLMProviderService;
 import org.xhy.infrastructure.llm.config.ProviderConfig;
 import org.xhy.infrastructure.llm.protocol.enums.ProviderProtocol;
@@ -108,6 +109,13 @@ public class PDFRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl impl
     /** 处理PDF文件 - 按页处理逻辑 */
     @Override
     public Map<Integer, String> processFile(byte[] fileBytes, int totalPages) {
+        return processFile(fileBytes, totalPages, null);
+    }
+
+    /** 处理PDF文件 - 按页处理逻辑（带消息参数） */
+    @Override
+    public Map<Integer, String> processFile(byte[] fileBytes, int totalPages,
+            RagDocSyncOcrMessage ragDocSyncOcrMessage) {
 
         final HashMap<Integer, String> ocrData = new HashMap<>();
         for (int pageIndex = 0; pageIndex < totalPages; pageIndex++) {
@@ -119,12 +127,8 @@ public class PDFRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl impl
                         ImageContent.from(base64, TikaFileTypeDetector.detectFileType(Base64.decode(base64))),
                         TextContent.from(OCR_PROMPT));
 
-                /** 创建OCR处理的默认配置 TODO: 这里应该从系统配置中获取OCR专用的模型配置 */
-                ProviderConfig ocrProviderConfig = new ProviderConfig(
-                        "sk-cxdmubeuwhayavsalqgmkrljfplhharyrociewxaikfmqkwm", "https://api.siliconflow.cn/v1",
-                        "Qwen/Qwen2.5-VL-72B-Instruct", ProviderProtocol.OPENAI);
-
-                ChatModel ocrModel = LLMProviderService.getStrand(ProviderProtocol.OPENAI, ocrProviderConfig);
+                /** 创建OCR处理的模型配置 - 从消息中获取用户配置的OCR模型 */
+                ChatModel ocrModel = createOcrModelFromMessage(ragDocSyncOcrMessage);
 
                 final ChatResponse chat = ocrModel.chat(userMessage);
 
@@ -224,6 +228,52 @@ public class PDFRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl impl
                     totalPages, String.format("%.1f", progress));
         } catch (Exception e) {
             log.warn("Failed to update OCR progress for file {}: {}", currentProcessingFileId, e.getMessage());
+        }
+    }
+
+    /** 从消息中创建OCR模型
+     * 
+     * @param ragDocSyncOcrMessage OCR消息
+     * @return ChatModel实例
+     * @throws RuntimeException 如果没有配置OCR模型或创建失败 */
+    private ChatModel createOcrModelFromMessage(RagDocSyncOcrMessage ragDocSyncOcrMessage) {
+        // 检查消息和模型配置是否存在
+        if (ragDocSyncOcrMessage == null || ragDocSyncOcrMessage.getOcrModelConfig() == null) {
+            String errorMsg = String.format("用户 %s 未配置OCR模型，无法进行文档OCR处理",
+                    ragDocSyncOcrMessage != null ? ragDocSyncOcrMessage.getUserId() : "unknown");
+            log.error(errorMsg);
+            throw new BusinessException(errorMsg);
+        }
+
+        try {
+            var modelConfig = ragDocSyncOcrMessage.getOcrModelConfig();
+
+            // 验证模型配置的完整性
+            if (modelConfig.getModelId() == null || modelConfig.getApiKey() == null
+                    || modelConfig.getBaseUrl() == null) {
+                String errorMsg = String.format("用户 %s 的OCR模型配置不完整: modelId=%s, apiKey=%s, baseUrl=%s",
+                        ragDocSyncOcrMessage.getUserId(), modelConfig.getModelId(),
+                        modelConfig.getApiKey() != null ? "已配置" : "未配置", modelConfig.getBaseUrl());
+                log.error(errorMsg);
+                throw new BusinessException(errorMsg);
+            }
+
+            ProviderConfig ocrProviderConfig = new ProviderConfig(modelConfig.getApiKey(), modelConfig.getBaseUrl(),
+                    modelConfig.getModelId(), ProviderProtocol.OPENAI);
+
+            ChatModel ocrModel = LLMProviderService.getStrand(ProviderProtocol.OPENAI, ocrProviderConfig);
+
+            log.info("Successfully created OCR model for user {}: {}", ragDocSyncOcrMessage.getUserId(),
+                    modelConfig.getModelId());
+            return ocrModel;
+
+        } catch (RuntimeException e) {
+            // 重新抛出已知的业务异常
+            throw e;
+        } catch (Exception e) {
+            String errorMsg = String.format("用户 %s 创建OCR模型失败: %s", ragDocSyncOcrMessage.getUserId(), e.getMessage());
+            log.error(errorMsg, e);
+            throw new BusinessException(errorMsg, e);
         }
     }
 }

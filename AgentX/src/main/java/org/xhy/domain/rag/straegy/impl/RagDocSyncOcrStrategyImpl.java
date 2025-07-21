@@ -32,7 +32,7 @@ public abstract class RagDocSyncOcrStrategyImpl implements RagDocSyncOcrStrategy
             LOG.warn("Page size is null, using default value 1 for txt/word files");
             pageSize = 1;
         }
-        final Map<Integer, String> ocrData = processFile(fileData, pageSize);
+        final Map<Integer, String> ocrData = processFile(fileData, pageSize, ragDocSyncOcrMessage);
 
         LOG.info("Successfully retrieved {} pages of data from the current file", ocrData.size());
 
@@ -50,6 +50,12 @@ public abstract class RagDocSyncOcrStrategyImpl implements RagDocSyncOcrStrategy
 
     /** ocr数据 */
     abstract public Map<Integer, String> processFile(byte[] fileBytes, int totalPages);
+
+    /** ocr数据 (带消息参数，子类可选择性重写此方法) */
+    public Map<Integer, String> processFile(byte[] fileBytes, int totalPages,
+            RagDocSyncOcrMessage ragDocSyncOcrMessage) {
+        return processFile(fileBytes, totalPages);
+    }
 
     /** 保存数据 */
     abstract public void insertData(RagDocSyncOcrMessage ragDocSyncOcrMessage, Map<Integer, String> ocrData)

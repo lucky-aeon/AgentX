@@ -12,6 +12,7 @@ import dev.langchain4j.service.AiServices;
 import dev.langchain4j.service.TokenStream;
 import dev.langchain4j.service.tool.ToolExecution;
 import dev.langchain4j.service.tool.ToolProvider;
+import org.xhy.infrastructure.exception.BusinessException;
 
 import java.util.List;
 

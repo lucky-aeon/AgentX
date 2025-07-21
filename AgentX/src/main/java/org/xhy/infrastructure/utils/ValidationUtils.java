@@ -1,5 +1,6 @@
 package org.xhy.infrastructure.utils;
 
+import org.xhy.infrastructure.exception.BusinessException;
 import org.xhy.infrastructure.exception.ParamValidationException;
 
 import javax.crypto.Cipher;
@@ -88,7 +89,7 @@ public class ValidationUtils {
                 byte[] encryptedBytes = cipher.doFinal(data.getBytes());
                 return Base64.getEncoder().encodeToString(encryptedBytes);
             } catch (Exception e) {
-                throw new RuntimeException("加密失败" + e.getMessage(), e);
+                throw new BusinessException("加密失败" + e.getMessage(), e);
             }
         }
 
@@ -107,7 +108,7 @@ public class ValidationUtils {
                 byte[] decryptedBytes = cipher.doFinal(Base64.getDecoder().decode(encryptedData));
                 return new String(decryptedBytes);
             } catch (Exception e) {
-                throw new RuntimeException("解密失败:" + e.getMessage(), e);
+                throw new BusinessException("解密失败:" + e.getMessage(), e);
             }
         }
     }

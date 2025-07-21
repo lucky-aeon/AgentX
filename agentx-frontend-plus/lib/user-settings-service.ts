@@ -18,6 +18,8 @@ export interface FallbackConfig {
 // 用户设置配置类型 - 对应后端UserSettingsConfig
 export interface UserSettingsConfig {
   defaultModel: string | null
+  defaultOcrModel: string | null
+  defaultEmbeddingModel: string | null
   fallbackConfig?: FallbackConfig
 }
 
@@ -146,6 +148,44 @@ export async function getChatModels(): Promise<ApiResponse<Model[]>> {
   return getModelsByType('CHAT')
 }
 
+// 获取OCR模型（使用独立API）
+export async function getOcrModels(): Promise<ApiResponse<Model[]>> {
+  try {
+    console.log('Fetching OCR models from dedicated API')
+    
+    const response = await httpClient.get<ApiResponse<Model[]>>('/users/settings/ocr-models')
+    
+    return response
+  } catch (error) {
+    console.error("获取OCR模型列表错误:", error)
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : "未知错误",
+      data: [],
+      timestamp: Date.now(),
+    }
+  }
+}
+
+// 获取嵌入模型（使用独立API，按模型类型筛选）
+export async function getEmbeddingModels(): Promise<ApiResponse<Model[]>> {
+  try {
+    console.log('Fetching embedding models from dedicated API')
+    
+    const response = await httpClient.get<ApiResponse<Model[]>>('/users/settings/embedding-models')
+    
+    return response
+  } catch (error) {
+    console.error("获取嵌入模型列表错误:", error)
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : "未知错误",
+      data: [],
+      timestamp: Date.now(),
+    }
+  }
+}
+
 // 带Toast提示的函数
 export const getUserSettingsWithToast = withToast(getUserSettings, {
   showSuccessToast: false,
@@ -182,4 +222,16 @@ export const getChatModelsWithToast = withToast(getChatModels, {
   showSuccessToast: false,
   showErrorToast: true,
   errorTitle: "获取聊天模型失败"
+})
+
+export const getOcrModelsWithToast = withToast(getOcrModels, {
+  showSuccessToast: false,
+  showErrorToast: true,
+  errorTitle: "获取OCR模型失败"
+})
+
+export const getEmbeddingModelsWithToast = withToast(getEmbeddingModels, {
+  showSuccessToast: false,
+  showErrorToast: true,
+  errorTitle: "获取嵌入模型失败"
 }) 

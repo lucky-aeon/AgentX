@@ -22,6 +22,7 @@ import org.xhy.domain.rag.model.DocumentUnitEntity;
 import org.xhy.domain.rag.model.FileDetailEntity;
 import org.xhy.domain.rag.repository.DocumentUnitRepository;
 import org.xhy.domain.rag.repository.FileDetailRepository;
+import org.xhy.infrastructure.exception.BusinessException;
 import org.xhy.infrastructure.mq.enums.EventType;
 import org.xhy.infrastructure.mq.events.RagDocSyncStorageEvent;
 
@@ -304,8 +305,9 @@ public class EmbeddingDomainService implements MetadataConstant {
 
         final TextSegment textSegment = new TextSegment(content, documentMetadata);
 
-        // 生成嵌入向量并保存TextSegment（包含content和metadata）
-        Embedding embeddings = openAiEmbeddingModel.embed(textSegment).content();
+        // 使用消息中配置的嵌入模型生成向量
+        OpenAiEmbeddingModel embeddingModel = createEmbeddingModelFromMessage(ragDocSyncStorageMessage);
+        Embedding embeddings = embeddingModel.embed(textSegment).content();
 
         embeddingStore.add(embeddings, textSegment);
 
@@ -338,5 +340,50 @@ public class EmbeddingDomainService implements MetadataConstant {
         metadata.put(DOCUMENT_ID, ragDocSyncStorageMessage.getId());
         metadata.put(DATA_SET_ID, ragDocSyncStorageMessage.getDatasetId());
         return metadata;
+    }
+
+    /** 从消息中创建嵌入模型
+     * 
+     * @param ragDocSyncStorageMessage 存储消息
+     * @return OpenAiEmbeddingModel实例
+     * @throws RuntimeException 如果没有配置嵌入模型或创建失败 */
+    private OpenAiEmbeddingModel createEmbeddingModelFromMessage(RagDocSyncStorageMessage ragDocSyncStorageMessage) {
+        // 检查消息和模型配置是否存在
+        if (ragDocSyncStorageMessage == null || ragDocSyncStorageMessage.getEmbeddingModelConfig() == null) {
+            String errorMsg = String.format("用户 %s 未配置嵌入模型，无法进行向量化处理",
+                    ragDocSyncStorageMessage != null ? ragDocSyncStorageMessage.getUserId() : "unknown");
+            log.error(errorMsg);
+            throw new BusinessException(errorMsg);
+        }
+
+        try {
+            var modelConfig = ragDocSyncStorageMessage.getEmbeddingModelConfig();
+
+            // 验证模型配置的完整性
+            if (modelConfig.getModelId() == null || modelConfig.getApiKey() == null
+                    || modelConfig.getBaseUrl() == null) {
+                String errorMsg = String.format("用户 %s 的嵌入模型配置不完整: modelId=%s, apiKey=%s, baseUrl=%s",
+                        ragDocSyncStorageMessage.getUserId(), modelConfig.getModelId(),
+                        modelConfig.getApiKey() != null ? "已配置" : "未配置", modelConfig.getBaseUrl());
+                log.error(errorMsg);
+                throw new BusinessException(errorMsg);
+            }
+
+            OpenAiEmbeddingModel embeddingModel = OpenAiEmbeddingModel.builder().apiKey(modelConfig.getApiKey())
+                    .baseUrl(modelConfig.getBaseUrl()).modelName(modelConfig.getModelId()).logRequests(true)
+                    .logResponses(true).build();
+
+            log.info("Successfully created embedding model for user {}: {}", ragDocSyncStorageMessage.getUserId(),
+                    modelConfig.getModelId());
+            return embeddingModel;
+
+        } catch (RuntimeException e) {
+            // 重新抛出已知的业务异常
+            throw e;
+        } catch (Exception e) {
+            String errorMsg = String.format("用户 %s 创建嵌入模型失败: %s", ragDocSyncStorageMessage.getUserId(), e.getMessage());
+            log.error(errorMsg, e);
+            throw new BusinessException(errorMsg, e);
+        }
     }
 }

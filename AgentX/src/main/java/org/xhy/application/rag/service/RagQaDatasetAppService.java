@@ -25,6 +25,7 @@ import org.xhy.application.rag.RagPublishAppService;
 import org.xhy.application.rag.RagMarketAppService;
 import org.xhy.application.rag.request.PublishRagRequest;
 import org.xhy.application.rag.request.InstallRagRequest;
+import org.xhy.application.rag.service.RagModelConfigService;
 import org.xhy.domain.rag.constant.FileProcessingStatusEnum;
 import org.xhy.domain.rag.constant.FileProcessingEventEnum;
 import org.xhy.domain.rag.constant.MetadataConstant;
@@ -36,6 +37,7 @@ import org.xhy.domain.rag.model.RagQaDatasetEntity;
 import org.xhy.domain.rag.repository.DocumentUnitRepository;
 import org.xhy.domain.rag.repository.FileDetailRepository;
 import org.xhy.domain.rag.service.*;
+import org.xhy.infrastructure.exception.BusinessException;
 import org.xhy.infrastructure.mq.enums.EventType;
 import org.xhy.infrastructure.mq.events.RagDocSyncOcrEvent;
 import org.xhy.infrastructure.mq.events.RagDocSyncStorageEvent;
@@ -88,6 +90,7 @@ public class RagQaDatasetAppService {
     private final RagVersionDomainService ragVersionDomainService;
     private final UserRagDomainService userRagDomainService;
     private final RagDataAccessService ragDataAccessService;
+    private final RagModelConfigService ragModelConfigService;
 
     public RagQaDatasetAppService(RagQaDatasetDomainService ragQaDatasetDomainService,
             FileDetailDomainService fileDetailDomainService, DocumentUnitRepository documentUnitRepository,
@@ -97,7 +100,8 @@ public class RagQaDatasetAppService {
             UserSettingsDomainService userSettingsDomainService,
             HighAvailabilityDomainService highAvailabilityDomainService, RagPublishAppService ragPublishAppService,
             RagMarketAppService ragMarketAppService, RagVersionDomainService ragVersionDomainService,
-            UserRagDomainService userRagDomainService, RagDataAccessService ragDataAccessService) {
+            UserRagDomainService userRagDomainService, RagDataAccessService ragDataAccessService,
+            RagModelConfigService ragModelConfigService) {
         this.ragQaDatasetDomainService = ragQaDatasetDomainService;
         this.fileDetailDomainService = fileDetailDomainService;
         this.documentUnitRepository = documentUnitRepository;
@@ -114,6 +118,7 @@ public class RagQaDatasetAppService {
         this.ragVersionDomainService = ragVersionDomainService;
         this.userRagDomainService = userRagDomainService;
         this.ragDataAccessService = ragDataAccessService;
+        this.ragModelConfigService = ragModelConfigService;
     }
 
     /** 创建数据集
@@ -296,6 +301,9 @@ public class RagQaDatasetAppService {
             RagDocSyncOcrMessage ocrMessage = new RagDocSyncOcrMessage();
             ocrMessage.setFileId(fileId);
             ocrMessage.setPageSize(fileEntity.getFilePageSize());
+            ocrMessage.setUserId(userId);
+            // 获取用户的OCR模型配置并设置到消息中
+            ocrMessage.setOcrModelConfig(ragModelConfigService.getUserOcrModelConfig(userId));
 
             RagDocSyncOcrEvent<RagDocSyncOcrMessage> ocrEvent = new RagDocSyncOcrEvent<>(ocrMessage,
                     EventType.DOC_REFRESH_ORG);
@@ -568,7 +576,7 @@ public class RagQaDatasetAppService {
             }
         } catch (Exception e) {
             log.error("Failed to cleanup existing document units for file: {}", fileId, e);
-            throw new RuntimeException("清理已有语料数据失败: " + e.getMessage());
+            throw new BusinessException("清理已有语料数据失败: " + e.getMessage());
         }
     }
 

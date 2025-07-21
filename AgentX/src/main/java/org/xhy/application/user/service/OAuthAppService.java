@@ -17,6 +17,7 @@ import org.springframework.util.StringUtils;
 import org.xhy.domain.user.model.UserEntity;
 import org.xhy.domain.user.service.UserDomainService;
 import org.xhy.infrastructure.config.GitHubOAuthProperties;
+import org.xhy.infrastructure.exception.BusinessException;
 import org.xhy.infrastructure.utils.JwtUtils;
 import org.xhy.interfaces.dto.user.GitHubTokenResponse;
 import org.xhy.interfaces.dto.user.GitHubUserInfo;
@@ -55,13 +56,13 @@ public class OAuthAppService {
             // 1. 获取访问令牌
             GitHubTokenResponse tokenResponse = getAccessToken(code);
             if (tokenResponse == null || !StringUtils.hasText(tokenResponse.getAccessToken())) {
-                throw new RuntimeException("获取GitHub访问令牌失败");
+                throw new BusinessException("获取GitHub访问令牌失败");
             }
 
             // 2. 获取用户信息
             GitHubUserInfo userInfo = getUserInfo(tokenResponse.getAccessToken());
             if (userInfo == null || userInfo.getId() == null) {
-                throw new RuntimeException("获取GitHub用户信息失败");
+                throw new BusinessException("获取GitHub用户信息失败");
             }
 
             // 3. 如果用户邮箱为空，尝试获取用户主邮箱
@@ -81,7 +82,7 @@ public class OAuthAppService {
             return result;
         } catch (Exception e) {
             logger.error("GitHub登录处理失败", e);
-            throw new RuntimeException("GitHub登录失败: " + e.getMessage());
+            throw new BusinessException("GitHub登录失败: " + e.getMessage());
         }
     }
 

@@ -27,6 +27,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.lang.Dict;
 import cn.hutool.core.util.StrUtil;
+import org.xhy.infrastructure.exception.BusinessException;
 
 /** 文件上传服务服务配置
  * @author shilong.zang

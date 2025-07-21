@@ -14,6 +14,7 @@ import javax.crypto.spec.SecretKeySpec;
 
 import org.springframework.stereotype.Service;
 import org.xhy.infrastructure.config.OssProperties;
+import org.xhy.infrastructure.exception.BusinessException;
 
 /** OSS上传服务 提供前端直传OSS的上传凭证生成功能 */
 @Service
@@ -66,7 +67,7 @@ public class OssUploadService {
                     accessUrlPrefix, expiration, 10485760);
 
         } catch (Exception e) {
-            throw new RuntimeException("生成上传凭证失败", e);
+            throw new BusinessException("生成上传凭证失败", e);
         }
     }
 
