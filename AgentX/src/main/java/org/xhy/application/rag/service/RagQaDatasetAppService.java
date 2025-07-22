@@ -20,6 +20,7 @@ import org.xhy.application.rag.assembler.DocumentUnitAssembler;
 import org.xhy.application.rag.assembler.FileDetailAssembler;
 import org.xhy.application.rag.assembler.FileProcessProgressAssembler;
 import org.xhy.application.rag.assembler.RagQaDatasetAssembler;
+import org.xhy.domain.rag.model.UserRagEntity;
 import org.xhy.application.rag.dto.*;
 import org.xhy.application.rag.RagPublishAppService;
 import org.xhy.application.rag.RagMarketAppService;
@@ -224,6 +225,60 @@ public class RagQaDatasetAppService {
         RagQaDatasetEntity entity = ragQaDatasetDomainService.getDataset(datasetId, userId);
         Long fileCount = fileDetailDomainService.countFilesByDataset(datasetId, userId);
         return RagQaDatasetAssembler.toDTO(entity, fileCount);
+    }
+
+    /** 获取数据集详情（用于Agent配置）
+     * @param datasetId 数据集ID
+     * @param userId 用户ID
+     * @return 数据集DTO */
+    public RagQaDatasetDTO getDatasetById(String datasetId, String userId) {
+        return getDataset(datasetId, userId);
+    }
+
+    /** 批量获取数据集详情（用于Agent配置）
+     * @param datasetIds 数据集ID列表
+     * @param userId 用户ID
+     * @return 数据集DTO列表 */
+    public List<RagQaDatasetDTO> getDatasetsByIds(List<String> datasetIds, String userId) {
+        List<RagQaDatasetDTO> datasets = new ArrayList<>();
+        for (String datasetId : datasetIds) {
+            try {
+                RagQaDatasetDTO dataset = getDataset(datasetId, userId);
+                datasets.add(dataset);
+            } catch (Exception e) {
+                log.warn("获取数据集 {} 失败，用户 {} 可能无权限访问: {}", datasetId, userId, e.getMessage());
+                // 跳过无权限访问的数据集
+            }
+        }
+        return datasets;
+    }
+
+    /** 获取用户可用的数据集列表（用于Agent配置） 只返回已安装的知识库（包括用户创建的和从市场安装的）
+     * @param userId 用户ID
+     * @return 数据集DTO列表 */
+    public List<RagQaDatasetDTO> getUserAvailableDatasets(String userId) {
+        List<RagQaDatasetDTO> availableDatasets = new ArrayList<>();
+
+        // 获取用户所有已安装的RAG
+        List<UserRagEntity> installedRags = userRagDomainService.listAllInstalledRags(userId);
+
+        for (UserRagEntity userRag : installedRags) {
+            try {
+                // 获取原始数据集的文件数量
+                Long fileCount = fileDetailDomainService.countFilesByDataset(userRag.getOriginalRagId(), userId);
+
+                // 转换为DTO
+                RagQaDatasetDTO dataset = RagQaDatasetAssembler.fromUserRagEntity(userRag, fileCount);
+                availableDatasets.add(dataset);
+
+            } catch (Exception e) {
+                // 如果原始数据集不存在或无权限访问，跳过该安装记录
+                log.warn("获取已安装RAG {} 失败，用户 {} 可能无权限访问或数据集已被删除: {}", userRag.getOriginalRagId(), userId,
+                        e.getMessage());
+            }
+        }
+
+        return availableDatasets;
     }
 
     /** 分页查询数据集

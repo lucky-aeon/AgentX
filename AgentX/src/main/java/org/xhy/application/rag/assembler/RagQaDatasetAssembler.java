@@ -5,6 +5,7 @@ import org.xhy.application.rag.dto.CreateDatasetRequest;
 import org.xhy.application.rag.dto.RagQaDatasetDTO;
 import org.xhy.application.rag.dto.UpdateDatasetRequest;
 import org.xhy.domain.rag.model.RagQaDatasetEntity;
+import org.xhy.domain.rag.model.UserRagEntity;
 
 import java.util.Collections;
 import java.util.List;
@@ -79,5 +80,46 @@ public class RagQaDatasetAssembler {
             return Collections.emptyList();
         }
         return entities.stream().map(RagQaDatasetAssembler::toDTO).collect(Collectors.toList());
+    }
+
+    /** 用户安装的RAG转换为数据集DTO
+     * @param userRag 用户安装的RAG实体
+     * @param fileCount 文件数量
+     * @return 数据集DTO */
+    public static RagQaDatasetDTO fromUserRagEntity(UserRagEntity userRag, Long fileCount) {
+        if (userRag == null) {
+            return null;
+        }
+        RagQaDatasetDTO dto = new RagQaDatasetDTO();
+
+        // 使用原始RAG ID作为数据集ID，这样Agent可以正确引用
+        dto.setId(userRag.getOriginalRagId());
+
+        // 使用安装时的快照信息
+        dto.setName(userRag.getName());
+        dto.setDescription(userRag.getDescription());
+        dto.setIcon(userRag.getIcon());
+
+        // 文件数量
+        dto.setFileCount(fileCount);
+
+        // 时间信息使用安装时间
+        dto.setCreatedAt(userRag.getInstalledAt());
+        dto.setUpdatedAt(userRag.getUpdatedAt());
+
+        // 用户ID保持一致
+        dto.setUserId(userRag.getUserId());
+
+        return dto;
+    }
+
+    /** 用户安装的RAG列表转换为数据集DTO列表
+     * @param userRags 用户安装的RAG实体列表
+     * @return 数据集DTO列表 */
+    public static List<RagQaDatasetDTO> fromUserRagEntities(List<UserRagEntity> userRags) {
+        if (userRags == null || userRags.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return userRags.stream().map(userRag -> fromUserRagEntity(userRag, 0L)).collect(Collectors.toList());
     }
 }

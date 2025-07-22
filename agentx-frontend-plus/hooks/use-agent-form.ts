@@ -3,6 +3,7 @@ import { toast } from "@/hooks/use-toast"
 import { getInstalledTools } from "@/lib/tool-service"
 import type { Tool } from "@/types/tool"
 import type { AgentTool } from "@/types/agent"
+import type { KnowledgeBase } from "@/lib/agent-knowledge-base-service"
 
 export interface AgentFormData {
   name: string
@@ -47,6 +48,10 @@ export function useAgentForm({ initialData, isEditMode = false }: UseAgentFormPr
   const [selectedToolForSidebar, setSelectedToolForSidebar] = useState<Tool | null>(null)
   const [isToolSidebarOpen, setIsToolSidebarOpen] = useState(false)
   const [installedTools, setInstalledTools] = useState<Tool[]>([])
+  
+  // 知识库相关状态
+  const [selectedKnowledgeBaseForSidebar, setSelectedKnowledgeBaseForSidebar] = useState<KnowledgeBase | null>(null)
+  const [isKnowledgeBaseSidebarOpen, setIsKnowledgeBaseSidebarOpen] = useState(false)
   
   // 表单数据 - 去掉类型选择，统一使用agent类型
   const [formData, setFormData] = useState<AgentFormData>({
@@ -160,6 +165,19 @@ export function useAgentForm({ initialData, isEditMode = false }: UseAgentFormPr
     }
   }
 
+  // 处理知识库点击事件
+  const handleKnowledgeBaseClick = (knowledgeBase: KnowledgeBase) => {
+    if (selectedKnowledgeBaseForSidebar && selectedKnowledgeBaseForSidebar.id === knowledgeBase.id) {
+      // 如果再次点击同一个知识库，关闭侧边栏
+      setIsKnowledgeBaseSidebarOpen(false)
+      setSelectedKnowledgeBaseForSidebar(null)
+    } else {
+      // 否则显示该知识库的详情
+      setSelectedKnowledgeBaseForSidebar(knowledgeBase)
+      setIsKnowledgeBaseSidebarOpen(true)
+    }
+  }
+
   // 更新工具预设参数
   const updateToolPresetParameters = (toolId: string, presetParams: Record<string, Record<string, string>>) => {
     // 获取当前工具信息
@@ -255,6 +273,11 @@ export function useAgentForm({ initialData, isEditMode = false }: UseAgentFormPr
     setIsToolSidebarOpen,
     installedTools,
     
+    // 知识库相关状态
+    selectedKnowledgeBaseForSidebar,
+    isKnowledgeBaseSidebarOpen,
+    setIsKnowledgeBaseSidebarOpen,
+    
     // 表单数据
     formData,
     updateFormField,
@@ -263,6 +286,7 @@ export function useAgentForm({ initialData, isEditMode = false }: UseAgentFormPr
     toggleTool,
     toggleKnowledgeBase,
     handleToolClick,
+    handleKnowledgeBaseClick,
     updateToolPresetParameters,
     
     // 工具函数

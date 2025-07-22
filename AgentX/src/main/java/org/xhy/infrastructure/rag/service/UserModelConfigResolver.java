@@ -108,10 +108,9 @@ public class UserModelConfigResolver {
             }
 
             // 不是官方的则要判断当前服务商是否是当前用户的
-            if (!providerEntity.getIsOfficial() && !Objects.equals(providerEntity.getUserId(), userId)){
+            if (!providerEntity.getIsOfficial() && !Objects.equals(providerEntity.getUserId(), userId)) {
                 throw new BusinessException("模型不存在");
             }
-
 
             // 构建模型配置
             ModelConfig modelConfig = new ModelConfig(modelEntity.getModelId(), providerEntity.getConfig().getApiKey(),

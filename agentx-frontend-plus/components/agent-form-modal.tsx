@@ -15,6 +15,7 @@ import AgentBasicInfoForm from "@/app/(main)/studio/edit/[id]/components/AgentBa
 import AgentPromptForm from "@/app/(main)/studio/edit/[id]/components/AgentPromptForm"
 import AgentToolsForm from "@/app/(main)/studio/edit/[id]/components/AgentToolsForm"
 import ToolDetailSidebar from "@/app/(main)/studio/edit/[id]/components/ToolDetailSidebar"
+import KnowledgeBaseDetailSidebar from "@/app/(main)/studio/edit/[id]/components/KnowledgeBaseDetailSidebar"
 import AgentPreviewChat from "@/components/agent-preview-chat"
 
 interface AgentFormModalProps {
@@ -70,6 +71,11 @@ export default function AgentFormModal({
     isToolSidebarOpen,
     setIsToolSidebarOpen,
     
+    // 知识库相关状态
+    selectedKnowledgeBaseForSidebar,
+    isKnowledgeBaseSidebarOpen,
+    setIsKnowledgeBaseSidebarOpen,
+    
     // 表单数据
     formData,
     updateFormField,
@@ -78,6 +84,7 @@ export default function AgentFormModal({
     toggleTool,
     toggleKnowledgeBase,
     handleToolClick,
+    handleKnowledgeBaseClick,
     updateToolPresetParameters,
     
     // 工具函数
@@ -235,6 +242,7 @@ export default function AgentFormModal({
                 toggleTool={toggleTool}
                 toggleKnowledgeBase={toggleKnowledgeBase}
                 onToolClick={handleToolClick}
+                onKnowledgeBaseClick={handleKnowledgeBaseClick}
                 updateToolPresetParameters={updateToolPresetParameters}
               />
             </TabsContent>
@@ -323,6 +331,13 @@ export default function AgentFormModal({
           formData.toolPresetParams[selectedToolForSidebar.mcpServerName] : 
           {}}
         onSavePresetParameters={updateToolPresetParameters}
+      />
+
+      {/* 知识库详情侧边栏 */}
+      <KnowledgeBaseDetailSidebar
+        knowledgeBase={selectedKnowledgeBaseForSidebar}
+        isOpen={isKnowledgeBaseSidebarOpen}
+        onClose={() => setIsKnowledgeBaseSidebarOpen(false)}
       />
 
       {/* 编辑模式的额外组件（如版本历史对话框等） */}
