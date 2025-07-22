@@ -24,6 +24,7 @@ export function ThinkingProcess({
   expanded = true,
   onToggle 
 }: ThinkingProcessProps) {
+  // 只要有thinking状态就显示，无论是否有实际内容
   if (!thinking && !thinkingContent) {
     return null;
   }

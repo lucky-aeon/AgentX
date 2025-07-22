@@ -51,10 +51,6 @@ public class RagPublishAppService {
      * @return 发布的版本信息 */
     @Transactional
     public RagVersionDTO publishRagVersion(PublishRagRequest request, String userId) {
-        // 检查是否尝试发布0.0.1版本（私有版本不可发布）
-        if ("0.0.1".equals(request.getVersion())) {
-            throw new BusinessException("0.0.1版本为私有版本，不支持发布。请使用其他版本号（如1.0.0）进行发布");
-        }
 
         // 处理标签JSON
         String labelsJson = null;

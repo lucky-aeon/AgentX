@@ -1,8 +1,6 @@
 package org.xhy.application.rag.service;
 
-import static dev.langchain4j.store.embedding.filter.MetadataFilterBuilder.metadataKey;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -41,6 +39,7 @@ import org.xhy.domain.rag.model.RagVersionEntity;
 import org.xhy.domain.rag.repository.DocumentUnitRepository;
 import org.xhy.domain.rag.repository.FileDetailRepository;
 import org.xhy.domain.rag.service.*;
+import java.util.concurrent.CompletableFuture;
 import org.xhy.infrastructure.exception.BusinessException;
 import org.xhy.infrastructure.mq.enums.EventType;
 import org.xhy.infrastructure.mq.events.RagDocSyncOcrEvent;
@@ -1186,6 +1185,122 @@ public class RagQaDatasetAppService {
 
         public void setScore(Double score) {
             this.score = score;
+        }
+    }
+
+    /** 基于已安装知识库的RAG流式问答
+     * 
+     * @param request 流式问答请求
+     * @param userRagId 用户RAG安装记录ID
+     * @param userId 用户ID
+     * @return SSE流式响应 */
+    public SseEmitter ragStreamChatByUserRag(RagStreamChatRequest request, String userRagId, String userId) {
+        SseEmitter emitter = new SseEmitter(Long.MAX_VALUE);
+
+        // 设置连接关闭回调
+        emitter.onCompletion(() -> log.info("RAG stream chat by userRag completed for user: {}, userRagId: {}", userId, userRagId));
+        emitter.onTimeout(() -> {
+            log.warn("RAG stream chat by userRag timeout for user: {}, userRagId: {}", userId, userRagId);
+            sendSseData(emitter, createErrorResponse("连接超时"));
+        });
+        emitter.onError((ex) -> {
+            log.error("RAG stream chat by userRag connection error for user: {}, userRagId: {}", userId, userRagId, ex);
+        });
+
+        // 异步处理流式问答
+        CompletableFuture.runAsync(() -> {
+            try {
+                processRagStreamChatByUserRag(request, userRagId, userId, emitter);
+            } catch (Exception e) {
+                log.error("RAG stream chat by userRag error", e);
+                sendSseData(emitter, createErrorResponse("处理过程中发生错误: " + e.getMessage()));
+            } finally {
+                // 确保连接被正确关闭
+                try {
+                    emitter.complete();
+                } catch (Exception e) {
+                    log.warn("Error completing SSE emitter", e);
+                }
+            }
+        });
+
+        return emitter;
+    }
+
+    /** 处理基于用户RAG的流式问答核心逻辑 */
+    private void processRagStreamChatByUserRag(RagStreamChatRequest request, String userRagId, String userId, SseEmitter emitter) {
+        try {
+            // 检查用户RAG是否存在和有权限访问
+            if (!ragDataAccessService.canAccessRag(userId, userRagId)) {
+                sendSseData(emitter, createErrorResponse("处理过程中发生错误: 数据集不存在"));
+                return;
+            }
+
+            // 获取RAG数据源信息
+            var dataSourceInfo = ragDataAccessService.getRagDataSourceInfo(userId, userRagId);
+            log.info("Starting RAG stream chat by userRag: {}, user: {}, question: '{}', install type: {}", 
+                userRagId, userId, request.getQuestion(), dataSourceInfo.getInstallType());
+
+            // 第一阶段：检索文档
+            sendSseData(emitter, AgentChatResponse.build("开始检索相关文档...", MessageType.RAG_RETRIEVAL_START));
+            Thread.sleep(500);
+
+            // 获取用户的嵌入模型配置
+            ModelConfig embeddingModelConfig = ragModelConfigService.getUserEmbeddingModelConfig(userId);
+            EmbeddingModelFactory.EmbeddingConfig embeddingConfig = toEmbeddingConfig(embeddingModelConfig);
+            
+            // 对于已安装的RAG，我们使用原始RAG的数据集ID进行检索
+            List<String> ragDatasetIds = List.of(dataSourceInfo.getOriginalRagId());
+            
+            List<DocumentUnitEntity> retrievedDocuments = embeddingDomainService.ragDoc(
+                ragDatasetIds, 
+                request.getQuestion(),
+                request.getMaxResults(), 
+                request.getMinScore(), 
+                request.getEnableRerank(), 
+                2, 
+                embeddingConfig
+            );
+
+            // 构建检索结果
+            List<RetrievedDocument> retrievedDocs = new ArrayList<>();
+            for (DocumentUnitEntity doc : retrievedDocuments) {
+                FileDetailEntity fileDetail = fileDetailRepository.selectById(doc.getFileId());
+                double similarityScore = doc.getSimilarityScore() != null ? doc.getSimilarityScore() : 0.0;
+                retrievedDocs.add(new RetrievedDocument(doc.getFileId(),
+                        fileDetail != null ? fileDetail.getOriginalFilename() : "未知文件", doc.getId(), similarityScore));
+            }
+
+            // 发送检索完成信号
+            String retrievalMessage = String.format("检索完成，找到 %d 个相关文档", retrievedDocs.size());
+            AgentChatResponse retrievalEndResponse = AgentChatResponse.build(retrievalMessage,
+                    MessageType.RAG_RETRIEVAL_END);
+            try {
+                retrievalEndResponse.setPayload(objectMapper.writeValueAsString(retrievedDocs));
+            } catch (Exception e) {
+                log.error("Failed to serialize retrieved documents", e);
+            }
+            sendSseData(emitter, retrievalEndResponse);
+
+            Thread.sleep(500);
+
+            // 第二阶段：生成回答
+            sendSseData(emitter, AgentChatResponse.build("开始生成回答...", MessageType.RAG_ANSWER_START));
+            Thread.sleep(500);
+
+            // 构建LLM上下文
+            String context = buildContextFromDocuments(retrievedDocuments);
+            String prompt = buildRagPrompt(request.getQuestion(), context);
+
+            // 调用流式LLM - 使用同步等待确保流式处理完成
+            generateStreamAnswerAndWait(prompt, userId, emitter);
+
+            // 在LLM流式处理完成后发送完成信号
+            sendSseData(emitter, AgentChatResponse.buildEndMessage("回答生成完成", MessageType.RAG_ANSWER_END));
+
+        } catch (Exception e) {
+            log.error("Error in processRagStreamChatByUserRag", e);
+            sendSseData(emitter, createErrorResponse("处理过程中发生错误: " + e.getMessage()));
         }
     }
 }

@@ -7,22 +7,22 @@ import java.io.Serial;
 import java.io.Serializable;
 import org.xhy.infrastructure.entity.BaseEntity;
 
-/** RAG版本文件实体（文件快照）
+/** 用户RAG文件快照实体
  * @author xhy
- * @date 2025-07-16 <br/>
+ * @date 2025-07-22 <br/>
  */
-@TableName("rag_version_files")
-public class RagVersionFileEntity extends BaseEntity implements Serializable {
+@TableName("user_rag_files")
+public class UserRagFileEntity extends BaseEntity implements Serializable {
 
     @Serial
     private static final long serialVersionUID = -1L;
 
-    /** 文件ID */
+    /** 文件快照ID */
     @TableId(type = IdType.ASSIGN_UUID)
     private String id;
 
-    /** 关联的RAG版本ID */
-    private String ragVersionId;
+    /** 关联的用户RAG ID */
+    private String userRagId;
 
     /** 原始文件ID（仅标识） */
     private String originalFileId;
@@ -56,12 +56,12 @@ public class RagVersionFileEntity extends BaseEntity implements Serializable {
         this.id = id;
     }
 
-    public String getRagVersionId() {
-        return ragVersionId;
+    public String getUserRagId() {
+        return userRagId;
     }
 
-    public void setRagVersionId(String ragVersionId) {
-        this.ragVersionId = ragVersionId;
+    public void setUserRagId(String userRagId) {
+        this.userRagId = userRagId;
     }
 
     public String getOriginalFileId() {

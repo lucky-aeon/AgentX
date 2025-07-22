@@ -262,8 +262,11 @@ export interface RagThinkingData {
 export interface RetrievedFileInfo {
   fileId: string;
   fileName: string;
-  documentId: string;
-  score: number;
+  documentId?: string;
+  score?: number;
+  filePath?: string;
+  isInstalledRag?: boolean;
+  userRagId?: string;
 }
 
 // 文件详情请求

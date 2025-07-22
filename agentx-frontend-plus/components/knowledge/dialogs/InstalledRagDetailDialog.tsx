@@ -24,7 +24,7 @@ import {
 import type { UserRagDTO, RagVersionDTO } from "@/types/rag-publish"
 import { SimpleFileBrowserDialog } from "./SimpleFileBrowserDialog"
 import { InstalledRagChatDialog } from "./InstalledRagChatDialog"
-import { getAllDatasetFilesWithToast } from "@/lib/rag-dataset-service"
+import { getInstalledRagFilesWithToast } from "@/lib/rag-publish-service"
 import { getRagVersionHistory, switchRagVersionWithToast } from "@/lib/rag-publish-service"
 
 interface InstalledRagDetailDialogProps {
@@ -67,27 +67,31 @@ export function InstalledRagDetailDialog({
     return new Date(dateString).toLocaleString('zh-CN')
   }
   
-  // 获取实时文件数量
+  // 获取实时文件数量 - 当对话框打开或版本切换时更新
   useEffect(() => {
     const fetchFileCount = async () => {
-      if (!open || !userRag?.originalRagId) {
+      if (!open || !userRag?.id) {
+        setRealTimeFileCount(null)
         return
       }
       
       try {
-        const response = await getAllDatasetFilesWithToast(userRag.originalRagId)
+        const response = await getInstalledRagFilesWithToast(userRag.id)
         if (response.code === 200) {
           setRealTimeFileCount(response.data.length)
+        } else {
+          // API失败时，使用后端返回的统计数据
+          setRealTimeFileCount(userRag.fileCount || 0)
         }
       } catch (error) {
         console.error("获取文件数量失败:", error)
-        // 失败时使用原有的fileCount
+        // 失败时使用后端返回的统计数据
         setRealTimeFileCount(userRag.fileCount || 0)
       }
     }
     
     fetchFileCount()
-  }, [open, userRag?.originalRagId, userRag?.fileCount])
+  }, [open, userRag?.id, userRag?.ragVersionId]) // 添加ragVersionId依赖，版本切换时重新获取
 
   // 获取可用版本列表
   useEffect(() => {
@@ -127,10 +131,9 @@ export function InstalledRagDetailDialog({
         setSelectedVersionId(targetVersionId)
         onVersionSwitch?.(response.data)
         
-        // 关闭对话框
-        setTimeout(() => {
-          onOpenChange(false)
-        }, 500)
+        // useEffect会因为userRag更新而自动重新获取最新的文件数量
+        
+        // 版本切换成功后不关闭对话框，让用户继续查看切换后的信息
       }
     } catch (error) {
       console.error("版本切换失败:", error)

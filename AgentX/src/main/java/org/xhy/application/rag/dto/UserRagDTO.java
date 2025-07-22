@@ -1,6 +1,7 @@
 package org.xhy.application.rag.dto;
 
 import java.time.LocalDateTime;
+import org.xhy.domain.rag.constant.InstallType;
 
 /** 用户安装的RAG DTO
  * @author xhy
@@ -52,6 +53,9 @@ public class UserRagDTO {
 
     /** 创建者ID */
     private String creatorId;
+
+    /** 安装类型 */
+    private InstallType installType;
 
     public String getId() {
         return id;
@@ -171,5 +175,27 @@ public class UserRagDTO {
 
     public void setCreatorId(String creatorId) {
         this.creatorId = creatorId;
+    }
+
+    public InstallType getInstallType() {
+        return installType;
+    }
+
+    public void setInstallType(InstallType installType) {
+        this.installType = installType;
+    }
+
+    /** 检查是否为引用类型安装
+     * 
+     * @return 是否为引用类型 */
+    public boolean isReferenceType() {
+        return this.installType != null && this.installType.isReference();
+    }
+
+    /** 检查是否为快照类型安装
+     * 
+     * @return 是否为快照类型 */
+    public boolean isSnapshotType() {
+        return this.installType != null && this.installType.isSnapshot();
     }
 }

@@ -7,6 +7,9 @@ import org.xhy.application.rag.RagMarketAppService;
 import org.xhy.application.rag.dto.RagMarketDTO;
 import org.xhy.application.rag.dto.UserRagDTO;
 import org.xhy.application.rag.request.InstallRagRequest;
+import org.xhy.domain.rag.model.DocumentUnitEntity;
+import org.xhy.domain.rag.model.FileDetailEntity;
+import org.xhy.domain.rag.service.RagDataAccessService;
 import org.xhy.infrastructure.auth.UserContext;
 import org.xhy.interfaces.api.common.Result;
 
@@ -21,9 +24,11 @@ import java.util.List;
 public class RagMarketController {
 
     private final RagMarketAppService ragMarketAppService;
+    private final RagDataAccessService ragDataAccessService;
 
-    public RagMarketController(RagMarketAppService ragMarketAppService) {
+    public RagMarketController(RagMarketAppService ragMarketAppService, RagDataAccessService ragDataAccessService) {
         this.ragMarketAppService = ragMarketAppService;
+        this.ragDataAccessService = ragDataAccessService;
     }
 
     /** 获取市场上的RAG版本列表
@@ -119,6 +124,41 @@ public class RagMarketController {
     public Result<UserRagDTO> switchRagVersion(@PathVariable String userRagId, @RequestParam String targetVersionId) {
         String userId = UserContext.getCurrentUserId();
         UserRagDTO result = ragMarketAppService.switchRagVersion(userRagId, targetVersionId, userId);
+        return Result.success(result);
+    }
+
+    /** 获取已安装RAG的文件列表
+     * 
+     * @param userRagId 用户RAG安装记录ID
+     * @return 文件列表 */
+    @GetMapping("/installed/{userRagId}/files")
+    public Result<List<FileDetailEntity>> getInstalledRagFiles(@PathVariable String userRagId) {
+        String userId = UserContext.getCurrentUserId();
+        List<FileDetailEntity> result = ragDataAccessService.getRagFiles(userId, userRagId);
+        return Result.success(result);
+    }
+
+    /** 获取已安装RAG的所有文档单元
+     * 
+     * @param userRagId 用户RAG安装记录ID
+     * @return 文档单元列表 */
+    @GetMapping("/installed/{userRagId}/documents")
+    public Result<List<DocumentUnitEntity>> getInstalledRagDocuments(@PathVariable String userRagId) {
+        String userId = UserContext.getCurrentUserId();
+        List<DocumentUnitEntity> result = ragDataAccessService.getRagDocuments(userId, userRagId);
+        return Result.success(result);
+    }
+
+    /** 获取已安装RAG特定文件的文档单元
+     * 
+     * @param userRagId 用户RAG安装记录ID
+     * @param fileId 文件ID
+     * @return 文档单元列表 */
+    @GetMapping("/installed/{userRagId}/files/{fileId}/documents")
+    public Result<List<DocumentUnitEntity>> getInstalledRagFileDocuments(@PathVariable String userRagId, 
+            @PathVariable String fileId) {
+        String userId = UserContext.getCurrentUserId();
+        List<DocumentUnitEntity> result = ragDataAccessService.getRagDocumentsByFile(userId, userRagId, fileId);
         return Result.success(result);
     }
 }

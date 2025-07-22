@@ -30,6 +30,7 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { getFileInfoWithToast, getDocumentUnitsWithToast } from '@/lib/rag-file-service';
+import { getInstalledRagFileDocumentsWithToast } from '@/lib/rag-publish-service';
 import { useFileDetail } from '@/hooks/rag-chat/useFileDetail';
 import type { 
   RetrievedFileInfo, 
@@ -85,6 +86,35 @@ export function FileDetailPanel({ selectedFile, onDataLoad }: FileDetailPanelPro
   const loadFileInfo = async () => {
     if (!selectedFile) return;
     
+    console.log('[FileDetailPanel] Loading file info for:', selectedFile);
+    
+    // 对于已安装RAG的文件，我们可能不需要加载额外的文件信息
+    // 因为基本信息已经在selectedFile中提供了
+    if (selectedFile.isInstalledRag) {
+      console.log('[FileDetailPanel] Processing as installed RAG file');
+      // 为已安装RAG创建基本的文件信息对象
+      const basicFileInfo: FileDetailInfoDTO = {
+        id: selectedFile.fileId,
+        originalFilename: selectedFile.fileName,
+        filename: selectedFile.fileName,
+        url: selectedFile.filePath || '',
+        size: undefined as any, // 大小信息在已安装RAG中不可用
+        ext: '',
+        contentType: '',
+        filePageSize: undefined as any, // 页数信息在已安装RAG中不可用
+        isInitialize: 1,
+        isEmbedding: 1,
+        dataSetId: selectedFile.userRagId || '',
+        userId: '',
+        createdAt: '',
+        updatedAt: ''
+      };
+      
+      setFileInfo(basicFileInfo);
+      onDataLoad?.(basicFileInfo);
+      return;
+    }
+    
     try {
       const response = await getFileInfoWithToast(selectedFile.fileId);
       if (response.code === 200) {
@@ -108,12 +138,56 @@ export function FileDetailPanel({ selectedFile, onDataLoad }: FileDetailPanelPro
       setLoading(true);
       setError(null);
       
-      const response = await getDocumentUnitsWithToast({
-        fileId: selectedFile.fileId,
-        page,
-        pageSize: 10,
-        keyword: keyword?.trim() || undefined
-      });
+      let response;
+      
+      if (selectedFile.isInstalledRag && selectedFile.userRagId) {
+        // 已安装RAG：使用快照感知API
+        console.log('[FileDetailPanel] Loading documents for installed RAG:', { userRagId: selectedFile.userRagId, fileId: selectedFile.fileId });
+        const documentsResponse = await getInstalledRagFileDocumentsWithToast(
+          selectedFile.userRagId, 
+          selectedFile.fileId
+        );
+        console.log('[FileDetailPanel] Documents response:', documentsResponse);
+        
+        if (documentsResponse.code === 200) {
+          let documents = documentsResponse.data || [];
+          
+          // 客户端过滤（如果有搜索查询）
+          if (keyword?.trim()) {
+            const query = keyword.trim().toLowerCase();
+            documents = documents.filter(doc => 
+              doc.content?.toLowerCase().includes(query)
+            );
+          }
+          
+          // 客户端分页
+          const startIndex = (page - 1) * 10;
+          const endIndex = startIndex + 10;
+          const paginatedDocs = documents.slice(startIndex, endIndex);
+          
+          // 构造分页响应格式
+          response = {
+            code: 200,
+            data: {
+              records: paginatedDocs,
+              total: documents.length,
+              size: 10,
+              current: page,
+              pages: Math.ceil(documents.length / 10)
+            }
+          };
+        } else {
+          response = documentsResponse;
+        }
+      } else {
+        // 原始RAG：使用原有API
+        response = await getDocumentUnitsWithToast({
+          fileId: selectedFile.fileId,
+          page,
+          pageSize: 10,
+          keyword: keyword?.trim() || undefined
+        });
+      }
       
       if (response.code === 200) {
         setPageData(response.data);
@@ -204,25 +278,38 @@ export function FileDetailPanel({ selectedFile, onDataLoad }: FileDetailPanelPro
             <FileText className="h-5 w-5 text-blue-600" />
             <div>
               <h3 className="text-lg font-medium">{selectedFile.fileName}</h3>
-              <p className="text-sm text-muted-foreground">
-                相似度: {(selectedFile.score * 100).toFixed(0)}%
-              </p>
+              {selectedFile.score !== undefined && (
+                <p className="text-sm text-muted-foreground">
+                  相似度: {(selectedFile.score * 100).toFixed(0)}%
+                </p>
+              )}
+              {selectedFile.isInstalledRag && (
+                <p className="text-sm text-muted-foreground">
+                  已安装知识库文件
+                </p>
+              )}
             </div>
           </div>
           
-          {/* 文件详情 */}
-          {fileInfo && (
+          {/* 文件详情 - 只有当有可显示的信息时才显示 */}
+          {fileInfo && ((fileInfo.filePageSize && fileInfo.filePageSize > 0) || (fileInfo.size && fileInfo.size > 0)) && (
             <div className="grid grid-cols-2 gap-3 text-sm">
-              <div className="flex items-center gap-2">
-                <Hash className="h-4 w-4 text-muted-foreground" />
-                <span className="text-muted-foreground">页数：</span>
-                <span>{fileInfo.filePageSize || 0} 页</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <HardDrive className="h-4 w-4 text-muted-foreground" />
-                <span className="text-muted-foreground">大小：</span>
-                <span>{formatFileSize(fileInfo.size || 0)}</span>
-              </div>
+              {/* 只有页数大于0时才显示 */}
+              {fileInfo.filePageSize && fileInfo.filePageSize > 0 && (
+                <div className="flex items-center gap-2">
+                  <Hash className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-muted-foreground">页数：</span>
+                  <span>{fileInfo.filePageSize} 页</span>
+                </div>
+              )}
+              {/* 只有大小大于0时才显示 */}
+              {fileInfo.size && fileInfo.size > 0 && (
+                <div className="flex items-center gap-2">
+                  <HardDrive className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-muted-foreground">大小：</span>
+                  <span>{formatFileSize(fileInfo.size)}</span>
+                </div>
+              )}
             </div>
           )}
 

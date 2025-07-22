@@ -50,62 +50,119 @@ export async function ragStreamChatByUserRag(
     if (!reader) {
       throw new Error("No response body");
     }
+    
+    console.log('[RAG Stream] Reader created successfully');
 
     const decoder = new TextDecoder();
+    let chunkCount = 0;
     
     while (true) {
+      console.log('[RAG Stream] Reading chunk...');
       const { done, value } = await reader.read();
+      chunkCount++;
+      
+      console.log('[RAG Stream] Chunk', chunkCount, '- done:', done, 'value length:', value?.length);
       
       if (done) {
+        console.log('[RAG Stream] Stream finished');
         onDone?.();
         break;
       }
       
       const chunk = decoder.decode(value, { stream: true });
+      console.log('[RAG Stream] Decoded chunk:', chunk);
       const lines = chunk.split('\n');
+      console.log('[RAG Stream] Split lines:', lines);
       
       for (const line of lines) {
         if (line.trim() === '') continue;
         
-        // 处理SSE格式：data: {...}
-        if (line.startsWith('data: ')) {
-          const data = line.slice(6);
+        // 处理SSE格式：data:{...} 或 data: {...}
+        if (line.startsWith('data:')) {
+          const data = line.startsWith('data: ') ? line.slice(6) : line.slice(5);
+          console.log('[RAG Stream] Raw SSE data:', data);
           
           if (data.trim() === '[DONE]') {
+            console.log('[RAG Stream] Received [DONE] signal');
             onDone?.();
             return;
           }
           
           try {
             const message: SSEMessage = JSON.parse(data);
+            console.log('[RAG Stream] Parsed message:', message);
+            
+            // 兼容处理：后端可能使用 message.type 或 message.messageType
+            const messageType = message.type || (message as any).messageType;
             
             // 根据消息类型处理
-            switch (message.type) {
+            console.log('[RAG Stream] Processing message:', {
+              messageType,
+              content: message.content,
+              timestamp: message.timestamp,
+              done: message.done
+            });
+            
+            switch (messageType) {
               case 'RAG_RETRIEVAL_START':
+                console.log('[RAG Stream] Handling retrieval start');
+                onThinking?.({
+                  type: 'retrieval',
+                  status: 'start',
+                  message: message.content || '开始检索相关文档...'
+                });
+                break;
+              case 'RAG_RETRIEVAL_END':
               case 'RAG_RETRIEVAL_COMPLETE':
-                onThinking?.(message.data);
+                console.log('[RAG Stream] Handling retrieval complete');
+                const retrievalData = {
+                  type: 'retrieval',
+                  status: 'end',
+                  message: message.content || '检索完成',
+                  documents: message.payload ? JSON.parse(message.payload) : [],
+                  retrievedCount: 0
+                };
+                // 计算检索到的文档数量
+                if (retrievalData.documents && Array.isArray(retrievalData.documents)) {
+                  retrievalData.retrievedCount = retrievalData.documents.length;
+                }
+                console.log('[RAG Stream] Retrieval completed with documents:', retrievalData);
+                onThinking?.(retrievalData);
                 break;
               case 'RAG_THINKING_START':
-              case 'RAG_THINKING_COMPLETE':
-                if (message.content) {
-                  onThinkingContent?.(message.content, message.timestamp);
-                }
-                if (message.type === 'RAG_THINKING_COMPLETE') {
-                  onThinkingEnd?.();
-                }
+              case 'RAG_THINKING_PROGRESS':
+              case 'RAG_THINKING_END':
+                console.log('[RAG Stream] Ignoring thinking message:', messageType);
+                // 忽略思考过程相关消息
                 break;
               case 'RAG_ANSWER_START':
-                // 开始回答
+                console.log('[RAG Stream] Answer started');
+                onThinking?.({
+                  type: 'answer',
+                  status: 'start', 
+                  message: message.content || '开始生成回答...'
+                });
                 break;
-              case 'RAG_ANSWER_PART':
+              case 'RAG_ANSWER_PROGRESS':
+                console.log('[RAG Stream] Handling answer progress:', message.content);
                 onContent?.(message.content || '', message.timestamp);
                 break;
               case 'RAG_ANSWER_COMPLETE':
+              case 'RAG_ANSWER_END':
+                console.log('[RAG Stream] Answer completed');
                 onDone?.();
                 break;
               case 'ERROR':
+                console.log('[RAG Stream] Handling ERROR message:', message.content);
                 onError?.(message.content || 'Unknown error');
                 break;
+              case 'TEXT':
+                console.log('[RAG Stream] Handling TEXT message as error:', message.content);
+                // TEXT类型消息作为错误处理
+                onError?.(message.content || 'Unknown error');
+                break;
+              default:
+                console.warn('[RAG Stream] Unknown message type:', messageType, message);
             }
           } catch (e) {
             console.warn('Failed to parse SSE message:', data, e);
@@ -115,9 +172,9 @@ export async function ragStreamChatByUserRag(
     }
   } catch (error) {
     if (error instanceof Error && error.name === 'AbortError') {
-      console.log('RAG stream chat by userRag aborted');
+      console.log('[RAG Stream] RAG stream chat by userRag aborted');
     } else {
-      console.error('RAG stream chat by userRag error:', error);
+      console.error('[RAG Stream] RAG stream chat by userRag error:', error);
       onError?.(error instanceof Error ? error.message : 'Unknown error');
     }
   }
@@ -185,7 +242,6 @@ export async function ragStreamChat(
           try {
             const message = JSON.parse(data);
             
-            
             // 根据后端的messageType处理不同类型的消息
             switch (message.messageType) {
               case 'RAG_RETRIEVAL_START':
@@ -226,6 +282,10 @@ export async function ragStreamChat(
                 onDone?.();
                 break;
               case 'ERROR':
+                onError?.(message.content || '未知错误');
+                break;
+              case 'TEXT':
+                // TEXT类型消息作为错误处理
                 onError?.(message.content || '未知错误');
                 break;
               default:

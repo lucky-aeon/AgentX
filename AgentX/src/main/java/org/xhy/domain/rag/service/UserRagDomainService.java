@@ -29,12 +29,14 @@ public class UserRagDomainService {
     private final UserRagRepository userRagRepository;
     private final RagVersionDomainService ragVersionDomainService;
     private final RagQaDatasetDomainService ragQaDatasetDomainService;
+    private final UserRagSnapshotService userRagSnapshotService;
 
     public UserRagDomainService(UserRagRepository userRagRepository, RagVersionDomainService ragVersionDomainService,
-            RagQaDatasetDomainService ragQaDatasetDomainService) {
+            RagQaDatasetDomainService ragQaDatasetDomainService, UserRagSnapshotService userRagSnapshotService) {
         this.userRagRepository = userRagRepository;
         this.ragVersionDomainService = ragVersionDomainService;
         this.ragQaDatasetDomainService = ragQaDatasetDomainService;
+        this.userRagSnapshotService = userRagSnapshotService;
     }
 
     /** 安装RAG（新版本 - 安装RAG本身而不是特定版本）
@@ -82,6 +84,12 @@ public class UserRagDomainService {
         userRag.setInstalledAt(LocalDateTime.now());
 
         userRagRepository.insert(userRag);
+        
+        // 如果是SNAPSHOT类型，创建用户专属快照
+        if (installType == InstallType.SNAPSHOT) {
+            userRagSnapshotService.createUserSnapshot(userRag.getId(), ragVersionId);
+        }
+        
         return userRag;
     }
 
@@ -152,6 +160,11 @@ public class UserRagDomainService {
         // 确定新的安装类型
         InstallType newInstallType = determineInstallType(userId, targetVersion);
 
+        // 如果当前是SNAPSHOT类型，先删除旧的快照数据
+        if (userRag.isSnapshotType()) {
+            userRagSnapshotService.deleteUserSnapshot(userRag.getId());
+        }
+
         // 更新安装记录（更新快照数据）
         LambdaUpdateWrapper<UserRagEntity> updateWrapper = Wrappers.<UserRagEntity>lambdaUpdate()
                 .eq(UserRagEntity::getId, userRagId).eq(UserRagEntity::getUserId, userId)
@@ -163,6 +176,11 @@ public class UserRagDomainService {
 
         userRagRepository.checkedUpdate(null, updateWrapper);
 
+        // 如果新类型是SNAPSHOT，创建新版本的快照数据
+        if (newInstallType == InstallType.SNAPSHOT) {
+            userRagSnapshotService.createUserSnapshot(userRagId, targetVersionId);
+        }
+
         // 返回更新后的记录
         return getUserRag(userId, userRagId);
     }
@@ -172,6 +190,9 @@ public class UserRagDomainService {
      * @param userId 用户ID
      * @param ragVersionId RAG版本ID */
     public void uninstallRag(String userId, String ragVersionId) {
+        // 获取安装记录
+        UserRagEntity userRag = getInstalledRag(userId, ragVersionId);
+        
         // 检查是否为用户自己的知识库
         try {
             RagVersionEntity ragVersion = ragVersionDomainService.getRagVersion(ragVersionId);
@@ -187,6 +208,11 @@ public class UserRagDomainService {
             }
             // 如果是其他异常（比如源知识库不存在），则继续执行卸载
             // 这种情况下，源知识库已被删除，允许卸载残留的安装记录
+        }
+
+        // 如果是SNAPSHOT类型，删除用户快照数据
+        if (userRag.isSnapshotType()) {
+            userRagSnapshotService.deleteUserSnapshot(userRag.getId());
         }
 
         LambdaUpdateWrapper<UserRagEntity> wrapper = Wrappers.<UserRagEntity>lambdaUpdate()

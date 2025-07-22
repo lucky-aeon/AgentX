@@ -7,9 +7,8 @@ import { SplitLayout } from "@/components/layout/SplitLayout"
 import { ChatMessageList } from "@/components/rag-chat/ChatMessageList"
 import { ChatInputArea } from "@/components/rag-chat/ChatInputArea"
 import { FileDetailPanel } from "@/components/rag-chat/FileDetailPanel"
-import { useRagChatSession } from "@/hooks/rag-chat/useRagChatSession"
+import { useUserRagChatSession } from "@/hooks/rag-chat/useUserRagChatSession"
 import { useChatLayout } from "@/hooks/rag-chat/useChatLayout"
-import { toast } from "@/hooks/use-toast"
 import type { UserRagDTO, RetrievedFileInfo } from "@/types/rag-dataset"
 
 interface InstalledRagChatDialogProps {
@@ -37,19 +36,19 @@ export function InstalledRagChatDialog({
     sendMessage,
     clearMessages,
     stopGeneration
-  } = useRagChatSession({
-    onError: (error) => {
-      toast({
-        title: "对话出错",
-        description: error,
-        variant: "destructive"
-      })
-    }
-  })
+  } = useUserRagChatSession({})
 
   // 处理文件点击
   const handleFileClick = (file: RetrievedFileInfo) => {
-    selectFile(file)
+    console.log('[InstalledRagChatDialog] File clicked:', file);
+    // 为已安装RAG的文件添加必要的标识信息
+    const enrichedFile: RetrievedFileInfo = {
+      ...file,
+      isInstalledRag: true,
+      userRagId: userRag?.id || ''
+    };
+    console.log('[InstalledRagChatDialog] Enriched file info:', enrichedFile);
+    selectFile(enrichedFile)
   }
 
   // 处理文件详情数据加载
@@ -57,19 +56,15 @@ export function InstalledRagChatDialog({
     setFileDetailData(data)
   }
 
-  // 处理发送消息 - 使用 originalRagId 作为 datasetId
+  // 处理发送消息 - 使用 userRagId 作为数据源
   const handleSendMessage = async (message: string) => {
-    if (!userRag?.originalRagId) {
-      toast({
-        title: "错误",
-        description: "无法获取知识库数据源",
-        variant: "destructive"
-      })
+    if (!userRag?.id) {
+      console.error("无法获取知识库数据源");
       return
     }
 
-    // 使用原始RAG ID作为搜索数据源，复用现有逻辑
-    await sendMessage(message, [userRag.originalRagId])
+    // 使用用户RAG ID，支持快照感知的数据访问
+    await sendMessage(message, userRag.id)
   }
 
   // 处理对话框关闭

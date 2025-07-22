@@ -440,3 +440,98 @@ export async function removeRagVersionWithToast(versionId: string): Promise<ApiR
   
   return response
 }
+
+// ================================ 已安装RAG数据访问接口 ================================
+
+/** 获取已安装RAG的文件列表 */
+export async function getInstalledRagFiles(userRagId: string): Promise<ApiResponse<any[]>> {
+  try {
+    return await httpClient.get<ApiResponse<any[]>>(
+      `${API_ENDPOINTS.MARKET}/installed/${userRagId}/files`
+    )
+  } catch (error) {
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : "获取文件列表失败",
+      data: [],
+      timestamp: Date.now()
+    }
+  }
+}
+
+/** 获取已安装RAG的文件列表（带Toast提示） */
+export async function getInstalledRagFilesWithToast(userRagId: string): Promise<ApiResponse<any[]>> {
+  const response = await getInstalledRagFiles(userRagId)
+  
+  if (response.code !== 200) {
+    toast({
+      title: "获取文件列表失败",
+      description: response.message,
+      variant: "destructive"
+    })
+  }
+  
+  return response
+}
+
+/** 获取已安装RAG的文档列表 */
+export async function getInstalledRagDocuments(userRagId: string): Promise<ApiResponse<any[]>> {
+  try {
+    return await httpClient.get<ApiResponse<any[]>>(
+      `${API_ENDPOINTS.MARKET}/installed/${userRagId}/documents`
+    )
+  } catch (error) {
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : "获取文档列表失败",
+      data: [],
+      timestamp: Date.now()
+    }
+  }
+}
+
+/** 获取已安装RAG的文档列表（带Toast提示） */
+export async function getInstalledRagDocumentsWithToast(userRagId: string): Promise<ApiResponse<any[]>> {
+  const response = await getInstalledRagDocuments(userRagId)
+  
+  if (response.code !== 200) {
+    toast({
+      title: "获取文档列表失败",
+      description: response.message,
+      variant: "destructive"
+    })
+  }
+  
+  return response
+}
+
+/** 获取已安装RAG特定文件的文档列表 */
+export async function getInstalledRagFileDocuments(userRagId: string, fileId: string): Promise<ApiResponse<any[]>> {
+  try {
+    return await httpClient.get<ApiResponse<any[]>>(
+      `${API_ENDPOINTS.MARKET}/installed/${userRagId}/files/${fileId}/documents`
+    )
+  } catch (error) {
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : "获取文档列表失败",
+      data: [],
+      timestamp: Date.now()
+    }
+  }
+}
+
+/** 获取已安装RAG特定文件的文档列表（带Toast提示） */
+export async function getInstalledRagFileDocumentsWithToast(userRagId: string, fileId: string): Promise<ApiResponse<any[]>> {
+  const response = await getInstalledRagFileDocuments(userRagId, fileId)
+  
+  if (response.code !== 200) {
+    toast({
+      title: "获取文档列表失败",
+      description: response.message,
+      variant: "destructive"
+    })
+  }
+  
+  return response
+}

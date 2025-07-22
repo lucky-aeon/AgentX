@@ -10,12 +10,16 @@ import org.xhy.application.rag.assembler.UserRagAssembler;
 import org.xhy.application.rag.dto.RagMarketDTO;
 import org.xhy.application.rag.dto.UserRagDTO;
 import org.xhy.application.rag.request.InstallRagRequest;
+import org.xhy.domain.rag.model.RagQaDatasetEntity;
 import org.xhy.domain.rag.model.RagVersionEntity;
 import org.xhy.domain.rag.model.UserRagEntity;
+import org.xhy.domain.rag.service.RagQaDatasetDomainService;
 import org.xhy.domain.rag.service.RagVersionDomainService;
 import org.xhy.domain.rag.service.UserRagDomainService;
+import org.xhy.domain.rag.service.UserRagSnapshotService;
 import org.xhy.domain.user.service.UserDomainService;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /** RAG市场应用服务
@@ -28,12 +32,17 @@ public class RagMarketAppService {
     private final RagVersionDomainService ragVersionDomainService;
     private final UserRagDomainService userRagDomainService;
     private final UserDomainService userDomainService;
+    private final RagQaDatasetDomainService ragQaDatasetDomainService;
+    private final UserRagSnapshotService userRagSnapshotService;
 
     public RagMarketAppService(RagVersionDomainService ragVersionDomainService,
-            UserRagDomainService userRagDomainService, UserDomainService userDomainService) {
+            UserRagDomainService userRagDomainService, UserDomainService userDomainService,
+            RagQaDatasetDomainService ragQaDatasetDomainService, UserRagSnapshotService userRagSnapshotService) {
         this.ragVersionDomainService = ragVersionDomainService;
         this.userRagDomainService = userRagDomainService;
         this.userDomainService = userDomainService;
+        this.ragQaDatasetDomainService = ragQaDatasetDomainService;
+        this.userRagSnapshotService = userRagSnapshotService;
     }
 
     /** 获取市场上的RAG版本列表
@@ -108,12 +117,20 @@ public class RagMarketAppService {
     public Page<UserRagDTO> getUserInstalledRags(String userId, Integer page, Integer pageSize, String keyword) {
         IPage<UserRagEntity> entityPage = userRagDomainService.listInstalledRags(userId, page, pageSize, keyword);
 
-        // 转换为DTO
-        List<UserRagDTO> dtoList = UserRagAssembler.toDTOs(entityPage.getRecords());
-
-        // 丰富版本信息
-        for (UserRagDTO dto : dtoList) {
-            enrichWithVersionInfo(dto);
+        // 根据安装类型分别处理数据
+        List<UserRagDTO> dtoList = new ArrayList<>();
+        for (UserRagEntity entity : entityPage.getRecords()) {
+            UserRagDTO dto;
+            
+            if (entity.isReferenceType()) {
+                // REFERENCE类型：获取原始RAG的实时信息
+                dto = enrichWithReferenceInfo(entity);
+            } else {
+                // SNAPSHOT类型：使用快照数据
+                dto = enrichWithSnapshotInfo(entity);
+            }
+            
+            dtoList.add(dto);
         }
 
         // 创建DTO分页对象
@@ -130,12 +147,20 @@ public class RagMarketAppService {
     public List<UserRagDTO> getUserAllInstalledRags(String userId) {
         List<UserRagEntity> entities = userRagDomainService.listAllInstalledRags(userId);
 
-        // 转换为DTO
-        List<UserRagDTO> dtoList = UserRagAssembler.toDTOs(entities);
-
-        // 丰富版本信息
-        for (UserRagDTO dto : dtoList) {
-            enrichWithVersionInfo(dto);
+        // 根据安装类型分别处理数据
+        List<UserRagDTO> dtoList = new ArrayList<>();
+        for (UserRagEntity entity : entities) {
+            UserRagDTO dto;
+            
+            if (entity.isReferenceType()) {
+                // REFERENCE类型：获取原始RAG的实时信息
+                dto = enrichWithReferenceInfo(entity);
+            } else {
+                // SNAPSHOT类型：使用快照数据
+                dto = enrichWithSnapshotInfo(entity);
+            }
+            
+            dtoList.add(dto);
         }
 
         return dtoList;
@@ -149,9 +174,15 @@ public class RagMarketAppService {
     public UserRagDTO getInstalledRagDetail(String ragVersionId, String userId) {
         UserRagEntity userRag = userRagDomainService.getInstalledRag(userId, ragVersionId);
 
-        // 转换为DTO并丰富信息
-        UserRagDTO dto = UserRagAssembler.toDTO(userRag);
-        enrichWithVersionInfo(dto);
+        // 根据安装类型处理数据
+        UserRagDTO dto;
+        if (userRag.isReferenceType()) {
+            // REFERENCE类型：获取原始RAG的实时信息
+            dto = enrichWithReferenceInfo(userRag);
+        } else {
+            // SNAPSHOT类型：使用快照数据
+            dto = enrichWithSnapshotInfo(userRag);
+        }
 
         return dto;
     }
@@ -176,9 +207,15 @@ public class RagMarketAppService {
     public UserRagDTO switchRagVersion(String userRagId, String targetVersionId, String userId) {
         UserRagEntity updatedUserRag = userRagDomainService.switchRagVersion(userId, userRagId, targetVersionId);
 
-        // 转换为DTO并丰富信息
-        UserRagDTO dto = UserRagAssembler.toDTO(updatedUserRag);
-        enrichWithVersionInfo(dto);
+        // 根据安装类型处理数据
+        UserRagDTO dto;
+        if (updatedUserRag.isReferenceType()) {
+            // REFERENCE类型：获取原始RAG的实时信息
+            dto = enrichWithReferenceInfo(updatedUserRag);
+        } else {
+            // SNAPSHOT类型：使用快照数据
+            dto = enrichWithSnapshotInfo(updatedUserRag);
+        }
 
         return dto;
     }
@@ -248,5 +285,51 @@ public class RagMarketAppService {
      * @return 是否已安装 */
     public boolean isRagVersionInstalled(String ragVersionId, String userId) {
         return userRagDomainService.isRagInstalled(userId, ragVersionId);
+    }
+
+    // ========== 私有辅助方法 ==========
+
+    /** 处理REFERENCE类型的信息丰富
+     * 
+     * @param entity 用户RAG实体
+     * @return 丰富信息后的DTO */
+    private UserRagDTO enrichWithReferenceInfo(UserRagEntity entity) {
+        try {
+            // 获取原始RAG的实时信息
+            RagQaDatasetEntity originalRag = ragQaDatasetDomainService.getDataset(entity.getOriginalRagId(), entity.getUserId());
+            String creatorNickname = getUserNickname(originalRag.getUserId());
+            
+            return UserRagAssembler.enrichWithReferenceInfo(entity, originalRag, creatorNickname);
+        } catch (Exception e) {
+            // 如果原始RAG不存在，返回基本信息
+            return UserRagAssembler.toDTO(entity);
+        }
+    }
+
+    /** 处理SNAPSHOT类型的信息丰富
+     * 
+     * @param entity 用户RAG实体
+     * @return 丰富信息后的DTO */
+    private UserRagDTO enrichWithSnapshotInfo(UserRagEntity entity) {
+        try {
+            // 获取快照的统计信息（从用户快照表统计）
+            Integer fileCount = userRagSnapshotService.getUserRagFileCount(entity.getId());
+            Integer documentCount = userRagSnapshotService.getUserRagDocumentCount(entity.getId());
+            
+            // 获取创建者信息（尽量从版本信息获取，如果版本已删除则使用空值）
+            String creatorNickname = null;
+            String creatorId = null;
+            try {
+                RagVersionEntity ragVersion = ragVersionDomainService.getRagVersion(entity.getRagVersionId());
+                creatorNickname = getUserNickname(ragVersion.getUserId());
+                creatorId = ragVersion.getUserId();
+            } catch (Exception e) {
+                // 版本已删除，忽略创建者信息
+            }
+            
+            return UserRagAssembler.enrichWithSnapshotInfo(entity, fileCount, documentCount, creatorNickname, creatorId);
+        } catch (Exception e) {
+            return UserRagAssembler.toDTO(entity);
+        }
     }
 }

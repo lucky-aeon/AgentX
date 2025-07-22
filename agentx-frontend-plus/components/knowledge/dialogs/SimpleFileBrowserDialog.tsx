@@ -33,8 +33,8 @@ import {
 import { toast } from "@/hooks/use-toast"
 
 import { 
-  getDatasetFilesWithToast 
-} from "@/lib/rag-dataset-service"
+  getInstalledRagFilesWithToast 
+} from "@/lib/rag-publish-service"
 import type { 
   UserRagDTO,
   FileDetail
@@ -70,18 +70,24 @@ export function SimpleFileBrowserDialog({
 
   // 加载文件列表
   const loadFiles = async () => {
-    if (!userRag?.originalRagId) return
+    if (!userRag?.id) return
 
     setLoading(true)
     try {
-      const response = await getDatasetFilesWithToast(userRag.originalRagId, {
-        keyword: debouncedQuery?.trim() || undefined,
-        page: 1,
-        pageSize: 100 // 显示更多文件，适合浏览场景
-      })
+      const response = await getInstalledRagFilesWithToast(userRag.id)
 
       if (response.code === 200) {
-        setFiles(response.data?.records || [])
+        let files = response.data || []
+        
+        // 客户端过滤（如果有搜索查询）
+        if (debouncedQuery?.trim()) {
+          const query = debouncedQuery.trim().toLowerCase()
+          files = files.filter(file => 
+            file.originalFilename?.toLowerCase().includes(query)
+          )
+        }
+        
+        setFiles(files.slice(0, 100)) // 限制最多显示100个文件
       }
     } catch (error) {
       toast({
@@ -256,7 +262,9 @@ export function SimpleFileBrowserDialog({
                 selectedFile={{
                   fileId: selectedFile.id,
                   fileName: selectedFile.originalFilename,
-                  filePath: selectedFile.url || ""
+                  filePath: selectedFile.url || "",
+                  isInstalledRag: true,
+                  userRagId: userRag.id
                 }}
                 onDataLoad={() => {}}
               />

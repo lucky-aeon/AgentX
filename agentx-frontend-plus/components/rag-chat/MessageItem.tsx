@@ -16,6 +16,16 @@ interface MessageItemProps {
   onToggleThinking?: () => void;
 }
 
+// 检测是否为错误消息
+const isErrorMessage = (content: string): boolean => {
+  const errorKeywords = [
+    '错误', '失败', '无法', '未配置', '抱歉', 
+    '出现了错误', '请重试', '处理失败', '未找到',
+    '不存在', '配置错误', '连接失败'
+  ];
+  return errorKeywords.some(keyword => content.includes(keyword));
+};
+
 export function MessageItem({ 
   message, 
   onFileClick, 
@@ -23,6 +33,13 @@ export function MessageItem({
   expandedThinking = true,
   onToggleThinking 
 }: MessageItemProps) {
+  console.log('[MessageItem] Rendering message:', {
+    id: message.id,
+    role: message.role,
+    content: message.content,
+    isStreaming: message.isStreaming,
+    isError: isErrorMessage(message.content)
+  });
   return (
     <div
       className={`flex gap-3 ${
@@ -70,8 +87,16 @@ export function MessageItem({
         
         {/* 助手消息：回答内容 */}
         {message.role === 'assistant' && message.content && (
-          <Card className="px-4 py-2 bg-muted" key={`${message.id}-content`}>
-            <div className="prose prose-sm dark:prose-invert max-w-none">
+          <Card className={`px-4 py-2 ${
+            isErrorMessage(message.content)
+              ? 'bg-destructive/10 border-destructive/20' 
+              : 'bg-muted'
+          }`} key={`${message.id}-content`}>
+            <div className={`prose prose-sm dark:prose-invert max-w-none ${
+              isErrorMessage(message.content)
+                ? 'text-destructive' 
+                : ''
+            }`}>
               <ReactMarkdown>
                 {message.content}
               </ReactMarkdown>

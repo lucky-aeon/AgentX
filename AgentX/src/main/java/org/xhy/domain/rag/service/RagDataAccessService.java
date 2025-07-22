@@ -22,15 +22,20 @@ public class RagDataAccessService {
     private final DocumentUnitRepository documentUnitRepository;
     private final RagVersionFileRepository ragVersionFileRepository;
     private final RagVersionDocumentRepository ragVersionDocumentRepository;
+    private final UserRagFileRepository userRagFileRepository;
+    private final UserRagDocumentRepository userRagDocumentRepository;
 
     public RagDataAccessService(UserRagRepository userRagRepository, FileDetailRepository fileDetailRepository,
             DocumentUnitRepository documentUnitRepository, RagVersionFileRepository ragVersionFileRepository,
-            RagVersionDocumentRepository ragVersionDocumentRepository) {
+            RagVersionDocumentRepository ragVersionDocumentRepository, UserRagFileRepository userRagFileRepository,
+            UserRagDocumentRepository userRagDocumentRepository) {
         this.userRagRepository = userRagRepository;
         this.fileDetailRepository = fileDetailRepository;
         this.documentUnitRepository = documentUnitRepository;
         this.ragVersionFileRepository = ragVersionFileRepository;
         this.ragVersionDocumentRepository = ragVersionDocumentRepository;
+        this.userRagFileRepository = userRagFileRepository;
+        this.userRagDocumentRepository = userRagDocumentRepository;
     }
 
     /** 获取用户可用的RAG文件列表
@@ -45,8 +50,8 @@ public class RagDataAccessService {
             // REFERENCE类型：从原始数据集获取最新文件
             return getRealTimeFiles(userRag.getOriginalRagId(), userId);
         } else {
-            // SNAPSHOT类型：从版本快照获取固定文件
-            return getSnapshotFiles(userRag.getRagVersionId());
+            // SNAPSHOT类型：从用户快照获取固定文件
+            return getUserSnapshotFiles(userRagId);
         }
     }
 
@@ -62,8 +67,8 @@ public class RagDataAccessService {
             // REFERENCE类型：从原始数据集获取最新文档
             return getRealTimeDocuments(userRag.getOriginalRagId(), userId);
         } else {
-            // SNAPSHOT类型：从版本快照获取固定文档
-            return getSnapshotDocuments(userRag.getRagVersionId());
+            // SNAPSHOT类型：从用户快照获取固定文档
+            return getUserSnapshotDocuments(userRagId);
         }
     }
 
@@ -80,8 +85,8 @@ public class RagDataAccessService {
             // REFERENCE类型：从原始数据集获取最新文档
             return getRealTimeDocumentsByFile(fileId, userId);
         } else {
-            // SNAPSHOT类型：从版本快照获取固定文档（需要找到对应的版本文件ID）
-            return getSnapshotDocumentsByOriginalFile(userRag.getRagVersionId(), fileId);
+            // SNAPSHOT类型：从用户快照获取固定文档（需要找到对应的用户文件ID）
+            return getUserSnapshotDocumentsByOriginalFile(userRagId, fileId);
         }
     }
 
@@ -141,11 +146,18 @@ public class RagDataAccessService {
         return fileDetailRepository.selectList(wrapper);
     }
 
-    /** 获取快照文件（从版本快照） */
-    private List<FileDetailEntity> getSnapshotFiles(String versionId) {
-        // 这里需要根据实际的版本文件表结构来实现
-        // 暂时返回空列表，具体实现需要根据RagVersionFileEntity的结构
-        return List.of();
+    /** 获取用户快照文件（从用户快照表） */
+    private List<FileDetailEntity> getUserSnapshotFiles(String userRagId) {
+        LambdaQueryWrapper<UserRagFileEntity> wrapper = Wrappers.<UserRagFileEntity>lambdaQuery()
+                .eq(UserRagFileEntity::getUserRagId, userRagId)
+                .orderByDesc(UserRagFileEntity::getCreatedAt);
+        
+        List<UserRagFileEntity> userFiles = userRagFileRepository.selectList(wrapper);
+        
+        // 转换为FileDetailEntity格式（用于兼容现有接口）
+        return userFiles.stream()
+                .map(this::convertToFileDetailEntity)
+                .collect(java.util.stream.Collectors.toList());
     }
 
     /** 获取实时文档（从原始数据集） */
@@ -156,11 +168,18 @@ public class RagDataAccessService {
         return List.of();
     }
 
-    /** 获取快照文档（从版本快照） */
-    private List<DocumentUnitEntity> getSnapshotDocuments(String versionId) {
-        // 这里需要根据实际的版本文档表结构来实现
-        // 暂时返回空列表，具体实现需要根据RagVersionDocumentEntity的结构
-        return List.of();
+    /** 获取用户快照文档（从用户快照表） */
+    private List<DocumentUnitEntity> getUserSnapshotDocuments(String userRagId) {
+        LambdaQueryWrapper<UserRagDocumentEntity> wrapper = Wrappers.<UserRagDocumentEntity>lambdaQuery()
+                .eq(UserRagDocumentEntity::getUserRagId, userRagId)
+                .orderByDesc(UserRagDocumentEntity::getCreatedAt);
+        
+        List<UserRagDocumentEntity> userDocs = userRagDocumentRepository.selectList(wrapper);
+        
+        // 转换为DocumentUnitEntity格式（用于兼容现有接口）
+        return userDocs.stream()
+                .map(this::convertToDocumentUnitEntity)
+                .collect(java.util.stream.Collectors.toList());
     }
 
     /** 获取实时文档（按文件ID过滤） */
@@ -171,11 +190,60 @@ public class RagDataAccessService {
         return documentUnitRepository.selectList(wrapper);
     }
 
-    /** 获取快照文档（按原始文件ID过滤） */
-    private List<DocumentUnitEntity> getSnapshotDocumentsByOriginalFile(String versionId, String originalFileId) {
-        // 这里需要根据实际的版本文档表结构来实现
-        // 需要先找到版本中对应的文件快照，再获取文档
-        return List.of();
+    /** 获取用户快照文档（按原始文件ID过滤） */
+    private List<DocumentUnitEntity> getUserSnapshotDocumentsByOriginalFile(String userRagId, String originalFileId) {
+        // 先找到对应的用户文件快照
+        LambdaQueryWrapper<UserRagFileEntity> fileWrapper = Wrappers.<UserRagFileEntity>lambdaQuery()
+                .eq(UserRagFileEntity::getUserRagId, userRagId)
+                .eq(UserRagFileEntity::getOriginalFileId, originalFileId);
+        
+        UserRagFileEntity userFile = userRagFileRepository.selectOne(fileWrapper);
+        if (userFile == null) {
+            return List.of();
+        }
+        
+        // 再查询对应的文档快照
+        LambdaQueryWrapper<UserRagDocumentEntity> docWrapper = Wrappers.<UserRagDocumentEntity>lambdaQuery()
+                .eq(UserRagDocumentEntity::getUserRagId, userRagId)
+                .eq(UserRagDocumentEntity::getUserRagFileId, userFile.getId())
+                .orderByDesc(UserRagDocumentEntity::getCreatedAt);
+        
+        List<UserRagDocumentEntity> userDocs = userRagDocumentRepository.selectList(docWrapper);
+        
+        // 转换为DocumentUnitEntity格式
+        return userDocs.stream()
+                .map(this::convertToDocumentUnitEntity)
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    // ========== 转换方法 ==========
+    
+    /** 转换用户文件快照为FileDetailEntity格式 */
+    private FileDetailEntity convertToFileDetailEntity(UserRagFileEntity userFile) {
+        FileDetailEntity file = new FileDetailEntity();
+        file.setId(userFile.getId()); // 使用用户文件快照的ID
+        file.setDataSetId(userFile.getUserRagId()); // 设置为userRagId，表示数据来源
+        file.setOriginalFilename(userFile.getFileName());
+        file.setSize(userFile.getFileSize());
+        file.setFilePageSize(userFile.getFilePageSize()); // 设置文件页数
+        file.setExt(userFile.getFileType());
+        file.setPath(userFile.getFilePath());
+        file.setProcessingStatus(userFile.getProcessStatus()); // 设置处理状态
+        file.setCreatedAt(userFile.getCreatedAt());
+        file.setUpdatedAt(userFile.getUpdatedAt());
+        return file;
+    }
+    
+    /** 转换用户文档快照为DocumentUnitEntity格式 */
+    private DocumentUnitEntity convertToDocumentUnitEntity(UserRagDocumentEntity userDoc) {
+        DocumentUnitEntity doc = new DocumentUnitEntity();
+        doc.setId(userDoc.getId()); // 使用用户文档快照的ID
+        doc.setFileId(userDoc.getUserRagFileId()); // 设置为用户文件快照ID
+        doc.setContent(userDoc.getContent());
+        doc.setPage(userDoc.getPage());
+        doc.setCreatedAt(userDoc.getCreatedAt());
+        doc.setUpdatedAt(userDoc.getUpdatedAt());
+        return doc;
     }
 
     /** RAG数据来源信息 */
