@@ -155,7 +155,7 @@ public class RagMarketController {
      * @param fileId 文件ID
      * @return 文档单元列表 */
     @GetMapping("/installed/{userRagId}/files/{fileId}/documents")
-    public Result<List<DocumentUnitEntity>> getInstalledRagFileDocuments(@PathVariable String userRagId, 
+    public Result<List<DocumentUnitEntity>> getInstalledRagFileDocuments(@PathVariable String userRagId,
             @PathVariable String fileId) {
         String userId = UserContext.getCurrentUserId();
         List<DocumentUnitEntity> result = ragDataAccessService.getRagDocumentsByFile(userId, userRagId, fileId);

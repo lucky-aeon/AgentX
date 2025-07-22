@@ -74,23 +74,23 @@ public class UserRagAssembler {
      * @param originalRag 原始RAG数据集
      * @param creatorNickname 创建者昵称
      * @return 丰富信息后的DTO */
-    public static UserRagDTO enrichWithReferenceInfo(UserRagEntity entity, RagQaDatasetEntity originalRag, 
+    public static UserRagDTO enrichWithReferenceInfo(UserRagEntity entity, RagQaDatasetEntity originalRag,
             String creatorNickname) {
         if (entity == null) {
             return null;
         }
 
         UserRagDTO dto = toDTO(entity);
-        
+
         // 使用原始RAG的实时信息覆盖快照数据
         dto.setName(originalRag.getName());
         dto.setDescription(originalRag.getDescription());
         dto.setIcon(originalRag.getIcon());
-        
+
         // 设置统计信息和创建者信息
         dto.setCreatorNickname(creatorNickname);
         dto.setCreatorId(originalRag.getUserId());
-        
+
         return dto;
     }
 
@@ -102,21 +102,21 @@ public class UserRagAssembler {
      * @param creatorNickname 创建者昵称
      * @param creatorId 创建者ID
      * @return 丰富信息后的DTO */
-    public static UserRagDTO enrichWithSnapshotInfo(UserRagEntity entity, Integer fileCount, Integer documentCount, 
+    public static UserRagDTO enrichWithSnapshotInfo(UserRagEntity entity, Integer fileCount, Integer documentCount,
             String creatorNickname, String creatorId) {
         if (entity == null) {
             return null;
         }
 
         UserRagDTO dto = toDTO(entity);
-        
+
         // 使用entity中的快照信息（name、description、icon已经是快照数据）
         // 只补充统计信息和创建者信息
         dto.setFileCount(fileCount);
         dto.setDocumentCount(documentCount);
         dto.setCreatorNickname(creatorNickname);
         dto.setCreatorId(creatorId);
-        
+
         return dto;
     }
 }

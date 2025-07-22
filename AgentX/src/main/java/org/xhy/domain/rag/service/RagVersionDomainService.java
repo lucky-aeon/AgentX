@@ -281,10 +281,7 @@ public class RagVersionDomainService {
      * @param ragId 原始RAG数据集ID
      * @param userId 用户ID
      * @return 版本列表 */
-    /** 获取RAG版本历史
-     * 智能权限处理：
-     * - 如果是RAG创建者：返回自己发布的所有版本（包括审核中的）
-     * - 如果不是创建者：返回该RAG的所有已发布版本（供版本切换使用）
+    /** 获取RAG版本历史 智能权限处理： - 如果是RAG创建者：返回自己发布的所有版本（包括审核中的） - 如果不是创建者：返回该RAG的所有已发布版本（供版本切换使用）
      * 
      * @param ragId 原始RAG数据集ID
      * @param userId 当前用户ID
@@ -293,10 +290,10 @@ public class RagVersionDomainService {
         // 首先获取原始RAG信息，判断当前用户是否是创建者
         RagQaDatasetEntity originalRag = ragQaDatasetDomainService.findDatasetById(ragId);
         boolean isCreator = originalRag != null && userId.equals(originalRag.getUserId());
-        
+
         LambdaQueryWrapper<RagVersionEntity> wrapper = Wrappers.<RagVersionEntity>lambdaQuery()
                 .eq(RagVersionEntity::getOriginalRagId, ragId);
-        
+
         if (isCreator) {
             // 创建者：查看自己发布的所有版本（包括审核中、被拒绝的）
             wrapper.eq(RagVersionEntity::getUserId, userId);
@@ -304,7 +301,7 @@ public class RagVersionDomainService {
             // 非创建者：只查看已发布的版本（供版本切换）
             wrapper.eq(RagVersionEntity::getPublishStatus, RagPublishStatus.PUBLISHED.getCode());
         }
-        
+
         wrapper.orderByDesc(RagVersionEntity::getCreatedAt);
         return ragVersionRepository.selectList(wrapper);
     }

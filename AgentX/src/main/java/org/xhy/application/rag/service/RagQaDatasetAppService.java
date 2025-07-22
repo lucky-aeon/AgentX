@@ -1,10 +1,11 @@
 package org.xhy.application.rag.service;
 
-
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import dev.langchain4j.data.message.SystemMessage;
+import dev.langchain4j.data.embedding.Embedding;
+import dev.langchain4j.model.embedding.EmbeddingModel;
 import java.util.Arrays;
 import java.util.Collections;
 import org.dromara.streamquery.stream.core.stream.Steam;
@@ -19,6 +20,7 @@ import org.xhy.application.rag.assembler.FileDetailAssembler;
 import org.xhy.application.rag.assembler.FileProcessProgressAssembler;
 import org.xhy.application.rag.assembler.RagQaDatasetAssembler;
 import org.xhy.domain.rag.model.UserRagEntity;
+import org.xhy.domain.rag.model.UserRagFileEntity;
 import org.xhy.application.rag.dto.*;
 import org.xhy.application.rag.RagPublishAppService;
 import org.xhy.application.rag.RagMarketAppService;
@@ -38,6 +40,7 @@ import org.xhy.domain.rag.model.RagQaDatasetEntity;
 import org.xhy.domain.rag.model.RagVersionEntity;
 import org.xhy.domain.rag.repository.DocumentUnitRepository;
 import org.xhy.domain.rag.repository.FileDetailRepository;
+import org.xhy.domain.rag.repository.UserRagFileRepository;
 import org.xhy.domain.rag.service.*;
 import java.util.concurrent.CompletableFuture;
 import org.xhy.infrastructure.exception.BusinessException;
@@ -94,6 +97,8 @@ public class RagQaDatasetAppService {
     private final UserRagDomainService userRagDomainService;
     private final RagDataAccessService ragDataAccessService;
     private final RagModelConfigService ragModelConfigService;
+    private final EmbeddingModelFactory embeddingModelFactory;
+    private final UserRagFileRepository userRagFileRepository;
 
     public RagQaDatasetAppService(RagQaDatasetDomainService ragQaDatasetDomainService,
             FileDetailDomainService fileDetailDomainService, DocumentUnitRepository documentUnitRepository,
@@ -104,7 +109,8 @@ public class RagQaDatasetAppService {
             HighAvailabilityDomainService highAvailabilityDomainService, RagPublishAppService ragPublishAppService,
             RagMarketAppService ragMarketAppService, RagVersionDomainService ragVersionDomainService,
             UserRagDomainService userRagDomainService, RagDataAccessService ragDataAccessService,
-            RagModelConfigService ragModelConfigService) {
+            RagModelConfigService ragModelConfigService, EmbeddingModelFactory embeddingModelFactory,
+            UserRagFileRepository userRagFileRepository) {
         this.ragQaDatasetDomainService = ragQaDatasetDomainService;
         this.fileDetailDomainService = fileDetailDomainService;
         this.documentUnitRepository = documentUnitRepository;
@@ -122,6 +128,8 @@ public class RagQaDatasetAppService {
         this.userRagDomainService = userRagDomainService;
         this.ragDataAccessService = ragDataAccessService;
         this.ragModelConfigService = ragModelConfigService;
+        this.embeddingModelFactory = embeddingModelFactory;
+        this.userRagFileRepository = userRagFileRepository;
     }
 
     /** 创建数据集
@@ -1198,7 +1206,8 @@ public class RagQaDatasetAppService {
         SseEmitter emitter = new SseEmitter(Long.MAX_VALUE);
 
         // 设置连接关闭回调
-        emitter.onCompletion(() -> log.info("RAG stream chat by userRag completed for user: {}, userRagId: {}", userId, userRagId));
+        emitter.onCompletion(
+                () -> log.info("RAG stream chat by userRag completed for user: {}, userRagId: {}", userId, userRagId));
         emitter.onTimeout(() -> {
             log.warn("RAG stream chat by userRag timeout for user: {}, userRagId: {}", userId, userRagId);
             sendSseData(emitter, createErrorResponse("连接超时"));
@@ -1228,7 +1237,8 @@ public class RagQaDatasetAppService {
     }
 
     /** 处理基于用户RAG的流式问答核心逻辑 */
-    private void processRagStreamChatByUserRag(RagStreamChatRequest request, String userRagId, String userId, SseEmitter emitter) {
+    private void processRagStreamChatByUserRag(RagStreamChatRequest request, String userRagId, String userId,
+            SseEmitter emitter) {
         try {
             // 检查用户RAG是否存在和有权限访问
             if (!ragDataAccessService.canAccessRag(userId, userRagId)) {
@@ -1238,8 +1248,8 @@ public class RagQaDatasetAppService {
 
             // 获取RAG数据源信息
             var dataSourceInfo = ragDataAccessService.getRagDataSourceInfo(userId, userRagId);
-            log.info("Starting RAG stream chat by userRag: {}, user: {}, question: '{}', install type: {}", 
-                userRagId, userId, request.getQuestion(), dataSourceInfo.getInstallType());
+            log.info("Starting RAG stream chat by userRag: {}, user: {}, question: '{}', install type: {}", userRagId,
+                    userId, request.getQuestion(), dataSourceInfo.getInstallType());
 
             // 第一阶段：检索文档
             sendSseData(emitter, AgentChatResponse.build("开始检索相关文档...", MessageType.RAG_RETRIEVAL_START));
@@ -1248,27 +1258,49 @@ public class RagQaDatasetAppService {
             // 获取用户的嵌入模型配置
             ModelConfig embeddingModelConfig = ragModelConfigService.getUserEmbeddingModelConfig(userId);
             EmbeddingModelFactory.EmbeddingConfig embeddingConfig = toEmbeddingConfig(embeddingModelConfig);
-            
-            // 对于已安装的RAG，我们使用原始RAG的数据集ID进行检索
-            List<String> ragDatasetIds = List.of(dataSourceInfo.getOriginalRagId());
-            
-            List<DocumentUnitEntity> retrievedDocuments = embeddingDomainService.ragDoc(
-                ragDatasetIds, 
-                request.getQuestion(),
-                request.getMaxResults(), 
-                request.getMinScore(), 
-                request.getEnableRerank(), 
-                2, 
-                embeddingConfig
-            );
+
+            List<DocumentUnitEntity> retrievedDocuments;
+
+            // 根据RAG类型选择不同的数据源
+            if (dataSourceInfo.getIsRealTime()) {
+                // REFERENCE类型：使用原始RAG的数据集进行向量搜索
+                List<String> ragDatasetIds = List.of(dataSourceInfo.getOriginalRagId());
+                retrievedDocuments = embeddingDomainService.ragDoc(ragDatasetIds, request.getQuestion(),
+                        request.getMaxResults(), request.getMinScore(), request.getEnableRerank(), 2, embeddingConfig);
+            } else {
+                // SNAPSHOT类型：使用用户快照数据进行检索
+                retrievedDocuments = ragDataAccessService.getRagDocuments(userId, userRagId);
+
+                // 如果快照数据为空，返回空结果
+                if (retrievedDocuments.isEmpty()) {
+                    log.info("用户RAG [{}] 的快照数据为空，无法进行检索", userRagId);
+                } else {
+                    // 对快照文档进行相关性过滤和排序
+                    retrievedDocuments = filterAndRankSnapshotDocuments(retrievedDocuments, request.getQuestion(),
+                            request.getMaxResults(), embeddingConfig);
+                }
+            }
 
             // 构建检索结果
             List<RetrievedDocument> retrievedDocs = new ArrayList<>();
-            for (DocumentUnitEntity doc : retrievedDocuments) {
-                FileDetailEntity fileDetail = fileDetailRepository.selectById(doc.getFileId());
-                double similarityScore = doc.getSimilarityScore() != null ? doc.getSimilarityScore() : 0.0;
-                retrievedDocs.add(new RetrievedDocument(doc.getFileId(),
-                        fileDetail != null ? fileDetail.getOriginalFilename() : "未知文件", doc.getId(), similarityScore));
+            
+            if (dataSourceInfo.getIsRealTime()) {
+                // REFERENCE类型：使用原始文件信息
+                for (DocumentUnitEntity doc : retrievedDocuments) {
+                    FileDetailEntity fileDetail = fileDetailRepository.selectById(doc.getFileId());
+                    double similarityScore = doc.getSimilarityScore() != null ? doc.getSimilarityScore() : 0.0;
+                    retrievedDocs.add(new RetrievedDocument(doc.getFileId(),
+                            fileDetail != null ? fileDetail.getOriginalFilename() : "未知文件", doc.getId(), similarityScore));
+                }
+            } else {
+                // SNAPSHOT类型：使用快照文件信息
+                for (DocumentUnitEntity doc : retrievedDocuments) {
+                    // doc.getFileId() 在SNAPSHOT模式下是 user_rag_files 的ID
+                    UserRagFileEntity userFile = userRagFileRepository.selectById(doc.getFileId());
+                    double similarityScore = doc.getSimilarityScore() != null ? doc.getSimilarityScore() : 0.0;
+                    retrievedDocs.add(new RetrievedDocument(doc.getFileId(),
+                            userFile != null ? userFile.getFileName() : "未知文件", doc.getId(), similarityScore));
+                }
             }
 
             // 发送检索完成信号
@@ -1301,6 +1333,97 @@ public class RagQaDatasetAppService {
         } catch (Exception e) {
             log.error("Error in processRagStreamChatByUserRag", e);
             sendSseData(emitter, createErrorResponse("处理过程中发生错误: " + e.getMessage()));
+        }
+    }
+
+    /** 对快照文档进行相关性过滤和排序
+     * 
+     * @param documents 快照文档列表
+     * @param question 用户问题
+     * @param maxResults 最大返回数量
+     * @param embeddingConfig 嵌入模型配置
+     * @return 过滤和排序后的文档列表 */
+    private List<DocumentUnitEntity> filterAndRankSnapshotDocuments(List<DocumentUnitEntity> documents, String question,
+            Integer maxResults, EmbeddingModelFactory.EmbeddingConfig embeddingConfig) {
+
+        if (documents == null || documents.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        try {
+            // 获取嵌入模型
+            EmbeddingModel embeddingModel = embeddingModelFactory.createEmbeddingModel(embeddingConfig);
+
+            // 计算问题的向量
+            Embedding questionEmbedding = embeddingModel.embed(question).content();
+
+            // 为每个文档计算相似度
+            List<DocumentWithScore> documentsWithScores = new ArrayList<>();
+            for (DocumentUnitEntity doc : documents) {
+                try {
+                    // 计算文档内容的向量
+                    Embedding docEmbedding = embeddingModel.embed(doc.getContent()).content();
+
+                    // 计算余弦相似度
+                    double similarity = cosineSimilarity(questionEmbedding.vectorAsList(), docEmbedding.vectorAsList());
+
+                    // 设置相似度分数到文档实体
+                    doc.setSimilarityScore(similarity);
+                    documentsWithScores.add(new DocumentWithScore(doc, similarity));
+
+                } catch (Exception e) {
+                    log.warn("计算文档相似度失败: {}", e.getMessage());
+                    // 如果计算失败，设置较低的相似度分数
+                    doc.setSimilarityScore(0.0);
+                    documentsWithScores.add(new DocumentWithScore(doc, 0.0));
+                }
+            }
+
+            // 按相似度降序排序
+            documentsWithScores.sort((a, b) -> Double.compare(b.score, a.score));
+
+            // 限制返回数量
+            int limit = maxResults != null
+                    ? Math.min(maxResults, documentsWithScores.size())
+                    : documentsWithScores.size();
+
+            return documentsWithScores.stream().limit(limit).map(dws -> dws.document).collect(Collectors.toList());
+
+        } catch (Exception e) {
+            log.error("快照文档相关性过滤失败", e);
+            // 如果计算相似度失败，返回前N个文档
+            int limit = maxResults != null ? Math.min(maxResults, documents.size()) : documents.size();
+            return documents.subList(0, limit);
+        }
+    }
+
+    /** 计算两个向量的余弦相似度 */
+    private double cosineSimilarity(List<Float> vectorA, List<Float> vectorB) {
+        if (vectorA.size() != vectorB.size()) {
+            return 0.0;
+        }
+
+        double dotProduct = 0.0;
+        double normA = 0.0;
+        double normB = 0.0;
+
+        for (int i = 0; i < vectorA.size(); i++) {
+            dotProduct += vectorA.get(i) * vectorB.get(i);
+            normA += Math.pow(vectorA.get(i), 2);
+            normB += Math.pow(vectorB.get(i), 2);
+        }
+
+        return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+    }
+
+    /** 文档与分数的内部类 */
+    private static class DocumentWithScore {
+        final DocumentUnitEntity document;
+        final double score;
+
+        DocumentWithScore(DocumentUnitEntity document, double score) {
+            this.document = document;
+            this.score = score;
         }
     }
 }

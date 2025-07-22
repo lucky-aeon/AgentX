@@ -59,8 +59,7 @@ public class RagQaDatasetDomainService {
         return ragQaDatasetRepository.selectOne(wrapper);
     }
 
-    /** 根据ID获取数据集基本信息（不检查用户权限）
-     * 用于权限判断等场景
+    /** 根据ID获取数据集基本信息（不检查用户权限） 用于权限判断等场景
      * @param datasetId 数据集ID
      * @return 数据集实体，如果不存在返回null */
     public RagQaDatasetEntity findDatasetById(String datasetId) {

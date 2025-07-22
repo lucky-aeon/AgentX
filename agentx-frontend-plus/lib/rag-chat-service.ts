@@ -54,6 +54,7 @@ export async function ragStreamChatByUserRag(
     console.log('[RAG Stream] Reader created successfully');
 
     const decoder = new TextDecoder();
+    let buffer = '';
     let chunkCount = 0;
     
     while (true) {
@@ -69,10 +70,11 @@ export async function ragStreamChatByUserRag(
         break;
       }
       
-      const chunk = decoder.decode(value, { stream: true });
-      console.log('[RAG Stream] Decoded chunk:', chunk);
-      const lines = chunk.split('\n');
-      console.log('[RAG Stream] Split lines:', lines);
+      buffer += decoder.decode(value, { stream: true });
+      console.log('[RAG Stream] Buffer after decode:', buffer);
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+      console.log('[RAG Stream] Split lines:', lines, 'remaining buffer:', buffer);
       
       for (const line of lines) {
         if (line.trim() === '') continue;
@@ -130,10 +132,18 @@ export async function ragStreamChatByUserRag(
                 onThinking?.(retrievalData);
                 break;
               case 'RAG_THINKING_START':
+                console.log('[RAG Stream] Handling thinking start');
+                onThinking?.({ type: 'thinking', status: 'start', message: message.content });
+                break;
               case 'RAG_THINKING_PROGRESS':
+                console.log('[RAG Stream] Handling thinking progress:', message.content);
+                // 思考过程的内容传递给专门的回调
+                onThinkingContent?.(message.content || '', message.timestamp);
+                break;
               case 'RAG_THINKING_END':
-                console.log('[RAG Stream] Ignoring thinking message:', messageType);
-                // 忽略思考过程相关消息
+                console.log('[RAG Stream] Handling thinking end');
+                // 思考结束
+                onThinkingEnd?.();
                 break;
               case 'RAG_ANSWER_START':
                 console.log('[RAG Stream] Answer started');

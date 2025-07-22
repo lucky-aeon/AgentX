@@ -84,12 +84,12 @@ public class UserRagDomainService {
         userRag.setInstalledAt(LocalDateTime.now());
 
         userRagRepository.insert(userRag);
-        
+
         // 如果是SNAPSHOT类型，创建用户专属快照
         if (installType == InstallType.SNAPSHOT) {
             userRagSnapshotService.createUserSnapshot(userRag.getId(), ragVersionId);
         }
-        
+
         return userRag;
     }
 
@@ -192,7 +192,7 @@ public class UserRagDomainService {
     public void uninstallRag(String userId, String ragVersionId) {
         // 获取安装记录
         UserRagEntity userRag = getInstalledRag(userId, ragVersionId);
-        
+
         // 检查是否为用户自己的知识库
         try {
             RagVersionEntity ragVersion = ragVersionDomainService.getRagVersion(ragVersionId);

@@ -36,8 +36,7 @@ public class UserRagSnapshotService {
     private final RagVersionDocumentRepository ragVersionDocumentRepository;
 
     public UserRagSnapshotService(UserRagFileRepository userRagFileRepository,
-            UserRagDocumentRepository userRagDocumentRepository,
-            RagVersionFileRepository ragVersionFileRepository,
+            UserRagDocumentRepository userRagDocumentRepository, RagVersionFileRepository ragVersionFileRepository,
             RagVersionDocumentRepository ragVersionDocumentRepository) {
         this.userRagFileRepository = userRagFileRepository;
         this.userRagDocumentRepository = userRagDocumentRepository;
@@ -233,8 +232,7 @@ public class UserRagSnapshotService {
 
         // 获取对应的用户文件列表
         LambdaQueryWrapper<UserRagFileEntity> userWrapper = Wrappers.<UserRagFileEntity>lambdaQuery()
-                .eq(UserRagFileEntity::getUserRagId, userRagId)
-                .orderByDesc(UserRagFileEntity::getCreatedAt);
+                .eq(UserRagFileEntity::getUserRagId, userRagId).orderByDesc(UserRagFileEntity::getCreatedAt);
         List<UserRagFileEntity> userFiles = userRagFileRepository.selectList(userWrapper);
 
         // 建立映射关系（基于originalFileId）

@@ -149,15 +149,12 @@ public class RagDataAccessService {
     /** 获取用户快照文件（从用户快照表） */
     private List<FileDetailEntity> getUserSnapshotFiles(String userRagId) {
         LambdaQueryWrapper<UserRagFileEntity> wrapper = Wrappers.<UserRagFileEntity>lambdaQuery()
-                .eq(UserRagFileEntity::getUserRagId, userRagId)
-                .orderByDesc(UserRagFileEntity::getCreatedAt);
-        
+                .eq(UserRagFileEntity::getUserRagId, userRagId).orderByDesc(UserRagFileEntity::getCreatedAt);
+
         List<UserRagFileEntity> userFiles = userRagFileRepository.selectList(wrapper);
-        
+
         // 转换为FileDetailEntity格式（用于兼容现有接口）
-        return userFiles.stream()
-                .map(this::convertToFileDetailEntity)
-                .collect(java.util.stream.Collectors.toList());
+        return userFiles.stream().map(this::convertToFileDetailEntity).collect(java.util.stream.Collectors.toList());
     }
 
     /** 获取实时文档（从原始数据集） */
@@ -171,15 +168,12 @@ public class RagDataAccessService {
     /** 获取用户快照文档（从用户快照表） */
     private List<DocumentUnitEntity> getUserSnapshotDocuments(String userRagId) {
         LambdaQueryWrapper<UserRagDocumentEntity> wrapper = Wrappers.<UserRagDocumentEntity>lambdaQuery()
-                .eq(UserRagDocumentEntity::getUserRagId, userRagId)
-                .orderByDesc(UserRagDocumentEntity::getCreatedAt);
-        
+                .eq(UserRagDocumentEntity::getUserRagId, userRagId).orderByDesc(UserRagDocumentEntity::getCreatedAt);
+
         List<UserRagDocumentEntity> userDocs = userRagDocumentRepository.selectList(wrapper);
-        
+
         // 转换为DocumentUnitEntity格式（用于兼容现有接口）
-        return userDocs.stream()
-                .map(this::convertToDocumentUnitEntity)
-                .collect(java.util.stream.Collectors.toList());
+        return userDocs.stream().map(this::convertToDocumentUnitEntity).collect(java.util.stream.Collectors.toList());
     }
 
     /** 获取实时文档（按文件ID过滤） */
@@ -196,28 +190,26 @@ public class RagDataAccessService {
         LambdaQueryWrapper<UserRagFileEntity> fileWrapper = Wrappers.<UserRagFileEntity>lambdaQuery()
                 .eq(UserRagFileEntity::getUserRagId, userRagId)
                 .eq(UserRagFileEntity::getOriginalFileId, originalFileId);
-        
+
         UserRagFileEntity userFile = userRagFileRepository.selectOne(fileWrapper);
         if (userFile == null) {
             return List.of();
         }
-        
+
         // 再查询对应的文档快照
         LambdaQueryWrapper<UserRagDocumentEntity> docWrapper = Wrappers.<UserRagDocumentEntity>lambdaQuery()
                 .eq(UserRagDocumentEntity::getUserRagId, userRagId)
                 .eq(UserRagDocumentEntity::getUserRagFileId, userFile.getId())
                 .orderByDesc(UserRagDocumentEntity::getCreatedAt);
-        
+
         List<UserRagDocumentEntity> userDocs = userRagDocumentRepository.selectList(docWrapper);
-        
+
         // 转换为DocumentUnitEntity格式
-        return userDocs.stream()
-                .map(this::convertToDocumentUnitEntity)
-                .collect(java.util.stream.Collectors.toList());
+        return userDocs.stream().map(this::convertToDocumentUnitEntity).collect(java.util.stream.Collectors.toList());
     }
 
     // ========== 转换方法 ==========
-    
+
     /** 转换用户文件快照为FileDetailEntity格式 */
     private FileDetailEntity convertToFileDetailEntity(UserRagFileEntity userFile) {
         FileDetailEntity file = new FileDetailEntity();
@@ -233,7 +225,7 @@ public class RagDataAccessService {
         file.setUpdatedAt(userFile.getUpdatedAt());
         return file;
     }
-    
+
     /** 转换用户文档快照为DocumentUnitEntity格式 */
     private DocumentUnitEntity convertToDocumentUnitEntity(UserRagDocumentEntity userDoc) {
         DocumentUnitEntity doc = new DocumentUnitEntity();

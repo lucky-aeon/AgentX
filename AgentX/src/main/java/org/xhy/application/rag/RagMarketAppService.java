@@ -121,7 +121,7 @@ public class RagMarketAppService {
         List<UserRagDTO> dtoList = new ArrayList<>();
         for (UserRagEntity entity : entityPage.getRecords()) {
             UserRagDTO dto;
-            
+
             if (entity.isReferenceType()) {
                 // REFERENCE类型：获取原始RAG的实时信息
                 dto = enrichWithReferenceInfo(entity);
@@ -129,7 +129,7 @@ public class RagMarketAppService {
                 // SNAPSHOT类型：使用快照数据
                 dto = enrichWithSnapshotInfo(entity);
             }
-            
+
             dtoList.add(dto);
         }
 
@@ -151,7 +151,7 @@ public class RagMarketAppService {
         List<UserRagDTO> dtoList = new ArrayList<>();
         for (UserRagEntity entity : entities) {
             UserRagDTO dto;
-            
+
             if (entity.isReferenceType()) {
                 // REFERENCE类型：获取原始RAG的实时信息
                 dto = enrichWithReferenceInfo(entity);
@@ -159,7 +159,7 @@ public class RagMarketAppService {
                 // SNAPSHOT类型：使用快照数据
                 dto = enrichWithSnapshotInfo(entity);
             }
-            
+
             dtoList.add(dto);
         }
 
@@ -296,9 +296,10 @@ public class RagMarketAppService {
     private UserRagDTO enrichWithReferenceInfo(UserRagEntity entity) {
         try {
             // 获取原始RAG的实时信息
-            RagQaDatasetEntity originalRag = ragQaDatasetDomainService.getDataset(entity.getOriginalRagId(), entity.getUserId());
+            RagQaDatasetEntity originalRag = ragQaDatasetDomainService.getDataset(entity.getOriginalRagId(),
+                    entity.getUserId());
             String creatorNickname = getUserNickname(originalRag.getUserId());
-            
+
             return UserRagAssembler.enrichWithReferenceInfo(entity, originalRag, creatorNickname);
         } catch (Exception e) {
             // 如果原始RAG不存在，返回基本信息
@@ -315,7 +316,7 @@ public class RagMarketAppService {
             // 获取快照的统计信息（从用户快照表统计）
             Integer fileCount = userRagSnapshotService.getUserRagFileCount(entity.getId());
             Integer documentCount = userRagSnapshotService.getUserRagDocumentCount(entity.getId());
-            
+
             // 获取创建者信息（尽量从版本信息获取，如果版本已删除则使用空值）
             String creatorNickname = null;
             String creatorId = null;
@@ -326,8 +327,9 @@ public class RagMarketAppService {
             } catch (Exception e) {
                 // 版本已删除，忽略创建者信息
             }
-            
-            return UserRagAssembler.enrichWithSnapshotInfo(entity, fileCount, documentCount, creatorNickname, creatorId);
+
+            return UserRagAssembler.enrichWithSnapshotInfo(entity, fileCount, documentCount, creatorNickname,
+                    creatorId);
         } catch (Exception e) {
             return UserRagAssembler.toDTO(entity);
         }
