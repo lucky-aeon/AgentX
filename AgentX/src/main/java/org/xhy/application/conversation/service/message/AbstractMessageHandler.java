@@ -1,6 +1,7 @@
 package org.xhy.application.conversation.service.message;
 
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
+import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.data.message.*;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.model.chat.ChatModel;
@@ -8,11 +9,14 @@ import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.model.chat.response.ChatResponse;
 import dev.langchain4j.service.AiServices;
 import dev.langchain4j.service.TokenStream;
+import dev.langchain4j.service.tool.ToolExecutor;
 import dev.langchain4j.service.tool.ToolProvider;
 import dev.langchain4j.store.memory.chat.InMemoryChatMemoryStore;
 import org.xhy.application.conversation.dto.AgentChatResponse;
 import org.xhy.application.conversation.service.handler.context.AgentPromptTemplates;
 import org.xhy.application.conversation.service.handler.context.ChatContext;
+import org.xhy.application.conversation.service.message.agent.tool.RagToolManager;
+import org.xhy.domain.agent.model.AgentEntity;
 import org.xhy.domain.conversation.constant.MessageType;
 import org.xhy.domain.conversation.constant.Role;
 import org.xhy.domain.conversation.model.MessageEntity;
@@ -45,15 +49,17 @@ public abstract class AbstractMessageHandler {
     protected final SessionDomainService sessionDomainService;
     protected final UserSettingsDomainService userSettingsDomainService;
     protected final LLMDomainService llmDomainService;
+    protected final RagToolManager ragToolManager;
     public AbstractMessageHandler(LLMServiceFactory llmServiceFactory, MessageDomainService messageDomainService,
-            HighAvailabilityDomainService highAvailabilityDomainService, SessionDomainService sessionDomainService,
-            UserSettingsDomainService userSettingsDomainService, LLMDomainService llmDomainService) {
+                                  HighAvailabilityDomainService highAvailabilityDomainService, SessionDomainService sessionDomainService,
+                                  UserSettingsDomainService userSettingsDomainService, LLMDomainService llmDomainService, RagToolManager ragToolManager) {
         this.llmServiceFactory = llmServiceFactory;
         this.messageDomainService = messageDomainService;
         this.highAvailabilityDomainService = highAvailabilityDomainService;
         this.sessionDomainService = sessionDomainService;
         this.userSettingsDomainService = userSettingsDomainService;
         this.llmDomainService = llmDomainService;
+        this.ragToolManager = ragToolManager;
     }
 
     /** 处理对话的模板方法
@@ -78,6 +84,7 @@ public abstract class AbstractMessageHandler {
 
         // 5. 根据子类决定是否需要工具
         ToolProvider toolProvider = provideTools(chatContext);
+
 
         // 6. 根据是否流式选择不同的处理方式
         if (chatContext.isStreaming()) {
@@ -106,7 +113,7 @@ public abstract class AbstractMessageHandler {
                 chatContext.getModel());
 
         // 创建流式Agent
-        Agent agent = buildStreamingAgent(streamingClient, memory, toolProvider);
+        Agent agent = buildStreamingAgent(streamingClient, memory, toolProvider,chatContext.getAgent());
 
         // 使用现有的流式处理逻辑
         processChat(agent, connection, transport, chatContext, userEntity, llmEntity);
@@ -254,30 +261,21 @@ public abstract class AbstractMessageHandler {
 
     /** 构建流式Agent */
     protected Agent buildStreamingAgent(StreamingChatModel model, MessageWindowChatMemory memory,
-            ToolProvider toolProvider) {
+                                        ToolProvider toolProvider, AgentEntity agent) {
+
+        Map<ToolSpecification, ToolExecutor> ragTools = ragToolManager.createRagTools(agent);
+
         AiServices<Agent> agentService = AiServices.builder(Agent.class).streamingChatModel(model).chatMemory(memory);
 
-        if (toolProvider != null) {
-            agentService.toolProvider(toolProvider);
+        if (ragTools!=null){
+            agentService.tools(ragTools);
         }
-
-        return agentService.build();
-    }
-
-    /** 构建同步Agent */
-    protected SyncAgent buildSyncAgent(ChatModel model, MessageWindowChatMemory memory, ToolProvider toolProvider) {
-        AiServices<SyncAgent> agentService = AiServices.builder(SyncAgent.class).chatModel(model).chatMemory(memory);
 
         if (toolProvider != null) {
             agentService.toolProvider(toolProvider);
         }
 
         return agentService.build();
-    }
-
-    /** 构建Agent - 保持向后兼容 */
-    protected Agent buildAgent(StreamingChatModel model, MessageWindowChatMemory memory, ToolProvider toolProvider) {
-        return buildStreamingAgent(model, memory, toolProvider);
     }
 
     /** 创建用户消息实体 */
@@ -337,7 +335,6 @@ public abstract class AbstractMessageHandler {
     // 智能重命名会话
     protected void smartRenameSession(ChatContext chatContext) {
         Thread thread = new Thread(() -> {
-            System.out.println("2222");
             // 获取会话 id
             String sessionId = chatContext.getSessionId();
             // 是否是首次对话

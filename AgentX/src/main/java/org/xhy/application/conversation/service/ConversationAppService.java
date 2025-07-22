@@ -413,9 +413,9 @@ public class ConversationAppService {
         ModelEntity model = getModelForChat(null, modelId, userId);
 
         // 2. 获取服务商信息（预览不使用高可用）
-        ProviderEntity provider = llmDomainService.getProvider(model.getProviderId(), userId);
+        ProviderEntity provider = llmDomainService.getProvider(model.getProviderId());
         provider.isActive();
-
+        provider.isAvailable(provider.getUserId());
         // 3. 获取工具配置
         List<String> mcpServerNames = getMcpServerNames(previewRequest.getToolIds(), userId);
 

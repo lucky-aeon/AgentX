@@ -39,7 +39,7 @@ public class RagToolManager {
 
         // 如果没有配置知识库，返回空Map
         if (knowledgeBaseIds == null || knowledgeBaseIds.isEmpty()) {
-            return new HashMap<>();
+            return null;
         }
 
         try {
@@ -48,7 +48,7 @@ public class RagToolManager {
 
             if (validKnowledgeBaseIds.isEmpty()) {
                 log.warn("Agent {} 配置的知识库都无效或无权限访问", agent.getId());
-                return new HashMap<>();
+                return null;
             }
 
             // 获取知识库名称用于工具描述
@@ -70,7 +70,7 @@ public class RagToolManager {
 
         } catch (Exception e) {
             log.error("为Agent {} 创建RAG工具失败: {}", agent.getId(), e.getMessage(), e);
-            return new HashMap<>();
+            return null;
         }
     }
 
