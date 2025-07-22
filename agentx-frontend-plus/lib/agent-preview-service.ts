@@ -9,6 +9,7 @@ export interface AgentPreviewRequest {
   messageHistory?: MessageHistoryItem[]
   modelId?: string // 可选，不传则使用用户默认模型
   fileUrls?: string[] // 新增：文件URL列表
+  knowledgeBaseIds?: string[] // 新增：知识库ID列表，用于RAG功能
 }
 
 // 消息历史项

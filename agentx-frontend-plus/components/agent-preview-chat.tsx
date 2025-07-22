@@ -45,6 +45,7 @@ interface AgentPreviewChatProps {
   toolPresetParams?: Record<string, Record<string, Record<string, string>>>
   modelId?: string
   multiModal?: boolean // 新增：是否启用多模态功能
+  knowledgeBaseIds?: string[] // 新增：知识库ID列表，用于RAG功能
   
   // 样式控制
   className?: string
@@ -61,6 +62,7 @@ export default function AgentPreviewChat({
   toolPresetParams,
   modelId,
   multiModal = false,
+  knowledgeBaseIds,
   className = "",
   disabled = false,
   placeholder = "输入消息进行预览..."
@@ -147,13 +149,15 @@ export default function AgentPreviewChat({
         toolPresetParams,
         messageHistory,
         modelId,
-        fileUrls: fileUrls.length > 0 ? fileUrls : undefined // 当前消息的文件URL
+        fileUrls: fileUrls.length > 0 ? fileUrls : undefined, // 当前消息的文件URL
+        knowledgeBaseIds: knowledgeBaseIds && knowledgeBaseIds.length > 0 ? knowledgeBaseIds : undefined // RAG知识库配置
       }
 
-      // 输出完整请求到控制台
+      // 输出完整请求到控制台，包含RAG配置
       console.log('预览请求数据:', {
         ...previewRequest,
-        fileUrls: fileUrls
+        fileUrls: fileUrls,
+        knowledgeBaseIds: knowledgeBaseIds || []
       })
 
       // 创建AI响应消息（在第一次收到内容时才添加）

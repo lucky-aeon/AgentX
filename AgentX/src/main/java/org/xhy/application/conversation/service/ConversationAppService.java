@@ -467,6 +467,7 @@ public class ConversationAppService {
         virtualAgent.setSystemPrompt(previewRequest.getSystemPrompt());
         virtualAgent.setToolIds(previewRequest.getToolIds());
         virtualAgent.setToolPresetParams(previewRequest.getToolPresetParams());
+        virtualAgent.setKnowledgeBaseIds(previewRequest.getKnowledgeBaseIds()); // 设置知识库IDs用于RAG功能
 
         virtualAgent.setEnabled(true);
         virtualAgent.setCreatedAt(LocalDateTime.now());
