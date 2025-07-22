@@ -991,6 +991,7 @@ public class RagQaDatasetAppService {
 
             // 普通模型的流式处理方式
             tokenStream.onPartialResponse(fragment -> {
+                log.debug("收到响应片段: {}", fragment);
 
                 // 如果有思考过程但还没结束思考，先结束思考阶段
                 if (hasThinkingProcess[0] && !thinkingEnded[0]) {
