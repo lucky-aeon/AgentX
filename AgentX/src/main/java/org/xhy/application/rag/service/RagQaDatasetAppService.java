@@ -27,6 +27,8 @@ import org.xhy.application.rag.RagMarketAppService;
 import org.xhy.application.rag.request.PublishRagRequest;
 import org.xhy.application.rag.request.InstallRagRequest;
 import org.xhy.application.rag.service.RagModelConfigService;
+import org.xhy.domain.rag.model.ModelConfig;
+import org.xhy.infrastructure.rag.factory.EmbeddingModelFactory;
 import org.xhy.domain.rag.constant.FileProcessingStatusEnum;
 import org.xhy.domain.rag.constant.FileProcessingEventEnum;
 import org.xhy.domain.rag.constant.MetadataConstant;
@@ -708,11 +710,15 @@ public class RagQaDatasetAppService {
         Double adjustedMinScore = request.getAdjustedMinScore();
         Integer adjustedCandidateMultiplier = request.getAdjustedCandidateMultiplier();
 
+        // 获取用户的嵌入模型配置
+        ModelConfig embeddingModelConfig = ragModelConfigService.getUserEmbeddingModelConfig(userId);
+        EmbeddingModelFactory.EmbeddingConfig embeddingConfig = toEmbeddingConfig(embeddingModelConfig);
+
         // 调用领域服务进行RAG搜索，使用智能优化的参数
         List<DocumentUnitEntity> entities = embeddingDomainService.ragDoc(request.getDatasetIds(),
                 request.getQuestion(), request.getMaxResults(), adjustedMinScore, // 使用智能调整的相似度阈值
-                request.getEnableRerank(), adjustedCandidateMultiplier // 使用智能调整的候选结果倍数
-        );
+                request.getEnableRerank(), adjustedCandidateMultiplier, // 使用智能调整的候选结果倍数
+                embeddingConfig); // 传入嵌入模型配置
 
         // 转换为DTO并返回
         return DocumentUnitAssembler.toDTOs(entities);
@@ -746,17 +752,23 @@ public class RagQaDatasetAppService {
         Double adjustedMinScore = request.getAdjustedMinScore();
         Integer adjustedCandidateMultiplier = request.getAdjustedCandidateMultiplier();
 
+        // 获取用户的嵌入模型配置
+        ModelConfig embeddingModelConfig = ragModelConfigService.getUserEmbeddingModelConfig(userId);
+        EmbeddingModelFactory.EmbeddingConfig embeddingConfig = toEmbeddingConfig(embeddingModelConfig);
+
         List<DocumentUnitEntity> entities;
         if (sourceInfo.getIsRealTime()) {
             // REFERENCE类型：搜索实时数据
             entities = embeddingDomainService.ragDoc(List.of(actualDatasetId), request.getQuestion(),
-                    request.getMaxResults(), adjustedMinScore, request.getEnableRerank(), adjustedCandidateMultiplier);
+                    request.getMaxResults(), adjustedMinScore, request.getEnableRerank(), adjustedCandidateMultiplier,
+                    embeddingConfig);
         } else {
             // SNAPSHOT类型：搜索版本快照数据
             List<DocumentUnitEntity> snapshotDocuments = ragDataAccessService.getRagDocuments(userId, userRagId);
             // 对快照数据进行向量搜索（这里可能需要特殊处理，暂时使用相同逻辑）
             entities = embeddingDomainService.ragDoc(List.of(actualDatasetId), request.getQuestion(),
-                    request.getMaxResults(), adjustedMinScore, request.getEnableRerank(), adjustedCandidateMultiplier);
+                    request.getMaxResults(), adjustedMinScore, request.getEnableRerank(), adjustedCandidateMultiplier,
+                    embeddingConfig);
         }
 
         // 转换为DTO并返回
@@ -829,14 +841,18 @@ public class RagQaDatasetAppService {
                 throw new IllegalArgumentException("必须指定文件ID或数据集ID");
             }
 
+            // 获取用户的嵌入模型配置
+            ModelConfig embeddingModelConfig = ragModelConfigService.getUserEmbeddingModelConfig(userId);
+            EmbeddingModelFactory.EmbeddingConfig embeddingConfig = toEmbeddingConfig(embeddingModelConfig);
+
             // 执行RAG检索
             List<DocumentUnitEntity> retrievedDocuments;
             if (request.getFileId() != null && !request.getFileId().trim().isEmpty()) {
                 retrievedDocuments = retrieveFromFile(request.getFileId(), request.getQuestion(),
-                        request.getMaxResults());
+                        request.getMaxResults(), embeddingConfig);
             } else {
                 retrievedDocuments = embeddingDomainService.ragDoc(searchDatasetIds, request.getQuestion(),
-                        request.getMaxResults(), request.getMinScore(), request.getEnableRerank(), 2);
+                        request.getMaxResults(), request.getMinScore(), request.getEnableRerank(), 2, embeddingConfig);
             }
 
             // 构建检索结果
@@ -883,7 +899,8 @@ public class RagQaDatasetAppService {
     }
 
     /** 从指定文件中检索相关文档 */
-    private List<DocumentUnitEntity> retrieveFromFile(String fileId, String question, Integer maxResults) {
+    private List<DocumentUnitEntity> retrieveFromFile(String fileId, String question, Integer maxResults,
+            EmbeddingModelFactory.EmbeddingConfig embeddingConfig) {
         // 查询文件下的所有文档单元
         List<DocumentUnitEntity> fileDocuments = documentUnitRepository
                 .selectList(Wrappers.lambdaQuery(DocumentUnitEntity.class).eq(DocumentUnitEntity::getFileId, fileId)
@@ -900,7 +917,7 @@ public class RagQaDatasetAppService {
         FileDetailEntity fileEntity = fileDetailRepository.selectById(fileId);
         List<String> datasetIds = List.of(fileEntity.getDataSetId());
 
-        return embeddingDomainService.ragDoc(datasetIds, question, maxResults, 0.5, true, 2);
+        return embeddingDomainService.ragDoc(datasetIds, question, maxResults, 0.5, true, 2, embeddingConfig);
     }
 
     /** 构建检索文档的上下文 */
@@ -974,7 +991,6 @@ public class RagQaDatasetAppService {
 
             // 普通模型的流式处理方式
             tokenStream.onPartialResponse(fragment -> {
-                log.debug("收到响应片段: {}", fragment);
 
                 // 如果有思考过程但还没结束思考，先结束思考阶段
                 if (hasThinkingProcess[0] && !thinkingEnded[0]) {
@@ -992,7 +1008,6 @@ public class RagQaDatasetAppService {
 
                 sendSseData(emitter, AgentChatResponse.build(fragment, MessageType.RAG_ANSWER_PROGRESS));
             }).onPartialReasoning(reasoning -> {
-                log.debug("收到思维链片段: {}", reasoning);
 
                 // 标记有思考过程
                 hasThinkingProcess[0] = true;
@@ -1103,12 +1118,6 @@ public class RagQaDatasetAppService {
         try {
             String jsonData = objectMapper.writeValueAsString(response);
             emitter.send(SseEmitter.event().data(jsonData));
-        } catch (IllegalStateException e) {
-            if (e.getMessage() != null && e.getMessage().contains("already completed")) {
-                log.warn("SSE连接已关闭，跳过数据发送: {}", response.getMessageType());
-            } else {
-                log.error("SSE状态错误", e);
-            }
         } catch (Exception e) {
             log.error("发送SSE数据失败", e);
         }
@@ -1118,6 +1127,15 @@ public class RagQaDatasetAppService {
     private AgentChatResponse createErrorResponse(String errorMessage) {
         AgentChatResponse response = AgentChatResponse.buildEndMessage(errorMessage, MessageType.TEXT);
         return response;
+    }
+
+    /** 将ModelConfig转换为EmbeddingModelFactory.EmbeddingConfig
+     * 
+     * @param modelConfig RAG模型配置
+     * @return 嵌入模型工厂配置 */
+    private EmbeddingModelFactory.EmbeddingConfig toEmbeddingConfig(ModelConfig modelConfig) {
+        return new EmbeddingModelFactory.EmbeddingConfig(modelConfig.getApiKey(), modelConfig.getBaseUrl(),
+                modelConfig.getModelId());
     }
 
     /** 检索到的文档信息（内部类） */

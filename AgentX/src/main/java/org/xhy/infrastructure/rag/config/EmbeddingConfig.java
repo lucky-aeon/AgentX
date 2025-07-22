@@ -24,17 +24,6 @@ public class EmbeddingConfig {
         this.embeddingProperties = embeddingProperties;
     }
 
-    /** 创建OpenAI嵌入模型Bean
-     * @return OpenAiEmbeddingModel实例 */
-    @Bean
-    OpenAiEmbeddingModel openAiEmbeddingModel() {
-        // 从配置属性中提取基础URL，如果apiUrl包含完整路径则需要提取基础部分
-        String baseUrl = embeddingProperties.getApiUrl();
-
-        return OpenAiEmbeddingModel.builder().apiKey(embeddingProperties.getApiKey()).baseUrl(baseUrl)
-                .modelName(embeddingProperties.getModel()).logRequests(true).logResponses(true).build();
-    }
-
     /** 向量化存储配置
      * @return PgVectorEmbeddingStore实例 */
     @Bean

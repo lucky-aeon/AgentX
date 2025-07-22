@@ -133,10 +133,6 @@ oss:
 
 embedding:
   name: OpenAI
-  api-key: ${SILICONFLOW_API_KEY:}
-  api-url: ${SILICONFLOW_API_URL_EMBEDDING:}
-  model: ${SILICONFLOW_MODEL_EMBEDDING_MODEL:}
-  timeout: ${SILICONFLOW_TIMEOUT:}
   vector-store:
     host: ${VECTOR_DB_HOST:${DB_HOST:localhost}}
     port: ${VECTOR_DB_PORT:${DB_PORT:5432}}

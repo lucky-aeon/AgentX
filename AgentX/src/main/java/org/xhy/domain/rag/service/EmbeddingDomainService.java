@@ -35,6 +35,7 @@ import dev.langchain4j.data.document.Metadata;
 import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.model.openai.OpenAiEmbeddingModel;
+import org.xhy.infrastructure.rag.factory.EmbeddingModelFactory;
 import dev.langchain4j.store.embedding.EmbeddingSearchRequest;
 import dev.langchain4j.store.embedding.EmbeddingSearchResult;
 import dev.langchain4j.store.embedding.EmbeddingStore;
@@ -51,7 +52,7 @@ public class EmbeddingDomainService implements MetadataConstant {
 
     private static final Logger log = LoggerFactory.getLogger(EmbeddingDomainService.class);
 
-    private final OpenAiEmbeddingModel openAiEmbeddingModel;
+    private final EmbeddingModelFactory embeddingModelFactory;
 
     private final ApplicationContext applicationContext;
 
@@ -63,10 +64,11 @@ public class EmbeddingDomainService implements MetadataConstant {
 
     private final RerankDomainService rerankService;
 
-    public EmbeddingDomainService(OpenAiEmbeddingModel openAiEmbeddingModel, EmbeddingStore<TextSegment> embeddingStore,
-            FileDetailRepository fileDetailRepository, ApplicationContext applicationContext,
-            DocumentUnitRepository documentUnitRepository, RerankDomainService rerankService) {
-        this.openAiEmbeddingModel = openAiEmbeddingModel;
+    public EmbeddingDomainService(EmbeddingModelFactory embeddingModelFactory,
+            EmbeddingStore<TextSegment> embeddingStore, FileDetailRepository fileDetailRepository,
+            ApplicationContext applicationContext, DocumentUnitRepository documentUnitRepository,
+            RerankDomainService rerankService) {
+        this.embeddingModelFactory = embeddingModelFactory;
         this.embeddingStore = embeddingStore;
         this.fileDetailRepository = fileDetailRepository;
         this.applicationContext = applicationContext;
@@ -82,9 +84,10 @@ public class EmbeddingDomainService implements MetadataConstant {
      * @param minScore 最小相似度阈值
      * @param enableRerank 是否启用重排序
      * @param candidateMultiplier 候选结果倍数
+     * @param embeddingConfig 嵌入模型配置
      * @return 相关文档列表 */
     public List<DocumentUnitEntity> ragDoc(List<String> dataSetId, String question, Integer maxResults, Double minScore,
-            Boolean enableRerank, Integer candidateMultiplier) {
+            Boolean enableRerank, Integer candidateMultiplier, EmbeddingModelFactory.EmbeddingConfig embeddingConfig) {
         // 参数验证和日志
         if (dataSetId == null || dataSetId.isEmpty()) {
             log.warn("Dataset IDs list is empty");
@@ -93,6 +96,12 @@ public class EmbeddingDomainService implements MetadataConstant {
 
         if (!StringUtils.hasText(question)) {
             log.warn("Query question is empty");
+            return new ArrayList<>();
+        }
+
+        // 验证嵌入模型配置
+        if (embeddingConfig == null) {
+            log.warn("Embedding model config is null");
             return new ArrayList<>();
         }
 
@@ -106,6 +115,9 @@ public class EmbeddingDomainService implements MetadataConstant {
         long startTime = System.currentTimeMillis();
 
         try {
+            // 创建嵌入模型实例
+            OpenAiEmbeddingModel embeddingModel = embeddingModelFactory.createEmbeddingModel(embeddingConfig);
+
             // 向量搜索 - 根据是否启用重排序决定搜索数量
             int searchLimit = finalEnableRerank
                     ? Math.max(finalMaxResults * finalCandidateMultiplier, 30)
@@ -118,7 +130,7 @@ public class EmbeddingDomainService implements MetadataConstant {
             // 向量查询
             final EmbeddingSearchResult<TextSegment> textSegmentList = embeddingStore.search(EmbeddingSearchRequest
                     .builder().filter(new IsIn(DATA_SET_ID, dataSetId)).maxResults(searchLimit).minScore(finalMinScore) // 使用可配置的相似度阈值
-                    .queryEmbedding(Embedding.from(openAiEmbeddingModel.embed(question).content().vector())).build());
+                    .queryEmbedding(Embedding.from(embeddingModel.embed(question).content().vector())).build());
 
             List<EmbeddingMatch<TextSegment>> embeddingMatches;
 
@@ -141,8 +153,7 @@ public class EmbeddingDomainService implements MetadataConstant {
 
                 final EmbeddingSearchResult<TextSegment> fallbackResult = embeddingStore.search(EmbeddingSearchRequest
                         .builder().filter(new IsIn(DATA_SET_ID, dataSetId)).maxResults(searchLimit).minScore(0.3) // 降低阈值进行回退搜索
-                        .queryEmbedding(Embedding.from(openAiEmbeddingModel.embed(question).content().vector()))
-                        .build());
+                        .queryEmbedding(Embedding.from(embeddingModel.embed(question).content().vector())).build());
 
                 embeddingMatches = fallbackResult.matches();
                 log.debug("Fallback search found {} matches with lower threshold", embeddingMatches.size());
@@ -196,9 +207,10 @@ public class EmbeddingDomainService implements MetadataConstant {
         }
     }
 
-    /** RAG文档检索（兼容旧版本接口） */
+    /** RAG文档检索（兼容旧版本接口） 注意：此方法已废弃，请使用带嵌入模型配置的版本 */
+    @Deprecated
     public List<DocumentUnitEntity> ragDoc(List<String> dataSetId, String question, Integer maxResults) {
-        return ragDoc(dataSetId, question, maxResults, null, null, null);
+        throw new BusinessException("此方法已废弃，请传入嵌入模型配置参数");
     }
 
     /** 批量删除向量数据
@@ -369,9 +381,10 @@ public class EmbeddingDomainService implements MetadataConstant {
                 throw new BusinessException(errorMsg);
             }
 
-            OpenAiEmbeddingModel embeddingModel = OpenAiEmbeddingModel.builder().apiKey(modelConfig.getApiKey())
-                    .baseUrl(modelConfig.getBaseUrl()).modelName(modelConfig.getModelId()).logRequests(true)
-                    .logResponses(true).build();
+            // 使用工厂类创建嵌入模型
+            EmbeddingModelFactory.EmbeddingConfig config = new EmbeddingModelFactory.EmbeddingConfig(
+                    modelConfig.getApiKey(), modelConfig.getBaseUrl(), modelConfig.getModelId());
+            OpenAiEmbeddingModel embeddingModel = embeddingModelFactory.createEmbeddingModel(config);
 
             log.info("Successfully created embedding model for user {}: {}", ragDocSyncStorageMessage.getUserId(),
                     modelConfig.getModelId());
