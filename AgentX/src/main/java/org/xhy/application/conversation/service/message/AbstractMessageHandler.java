@@ -51,8 +51,9 @@ public abstract class AbstractMessageHandler {
     protected final LLMDomainService llmDomainService;
     protected final RagToolManager ragToolManager;
     public AbstractMessageHandler(LLMServiceFactory llmServiceFactory, MessageDomainService messageDomainService,
-                                  HighAvailabilityDomainService highAvailabilityDomainService, SessionDomainService sessionDomainService,
-                                  UserSettingsDomainService userSettingsDomainService, LLMDomainService llmDomainService, RagToolManager ragToolManager) {
+            HighAvailabilityDomainService highAvailabilityDomainService, SessionDomainService sessionDomainService,
+            UserSettingsDomainService userSettingsDomainService, LLMDomainService llmDomainService,
+            RagToolManager ragToolManager) {
         this.llmServiceFactory = llmServiceFactory;
         this.messageDomainService = messageDomainService;
         this.highAvailabilityDomainService = highAvailabilityDomainService;
@@ -85,7 +86,6 @@ public abstract class AbstractMessageHandler {
         // 5. 根据子类决定是否需要工具
         ToolProvider toolProvider = provideTools(chatContext);
 
-
         // 6. 根据是否流式选择不同的处理方式
         if (chatContext.isStreaming()) {
             processStreamingChat(chatContext, connection, transport, userMessageEntity, llmMessageEntity, memory,
@@ -113,7 +113,7 @@ public abstract class AbstractMessageHandler {
                 chatContext.getModel());
 
         // 创建流式Agent
-        Agent agent = buildStreamingAgent(streamingClient, memory, toolProvider,chatContext.getAgent());
+        Agent agent = buildStreamingAgent(streamingClient, memory, toolProvider, chatContext.getAgent());
 
         // 使用现有的流式处理逻辑
         processChat(agent, connection, transport, chatContext, userEntity, llmEntity);
@@ -261,13 +261,13 @@ public abstract class AbstractMessageHandler {
 
     /** 构建流式Agent */
     protected Agent buildStreamingAgent(StreamingChatModel model, MessageWindowChatMemory memory,
-                                        ToolProvider toolProvider, AgentEntity agent) {
+            ToolProvider toolProvider, AgentEntity agent) {
 
         Map<ToolSpecification, ToolExecutor> ragTools = ragToolManager.createRagTools(agent);
 
         AiServices<Agent> agentService = AiServices.builder(Agent.class).streamingChatModel(model).chatMemory(memory);
 
-        if (ragTools!=null){
+        if (ragTools != null) {
             agentService.tools(ragTools);
         }
 

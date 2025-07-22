@@ -35,6 +35,7 @@ import org.xhy.domain.rag.message.RagDocSyncStorageMessage;
 import org.xhy.domain.rag.model.DocumentUnitEntity;
 import org.xhy.domain.rag.model.FileDetailEntity;
 import org.xhy.domain.rag.model.RagQaDatasetEntity;
+import org.xhy.domain.rag.model.RagVersionEntity;
 import org.xhy.domain.rag.repository.DocumentUnitRepository;
 import org.xhy.domain.rag.repository.FileDetailRepository;
 import org.xhy.domain.rag.service.*;
@@ -162,6 +163,35 @@ public class RagQaDatasetAppService {
                 userId);
     }
 
+    /** 同步版本信息
+     * @param datasetId 数据集ID
+     * @param name 新名称
+     * @param description 新描述
+     * @param icon 新图标
+     * @param userId 用户ID */
+    private void syncVersionInfo(String datasetId, String name, String description, String icon, String userId) {
+        // 查找对应的0.0.1版本
+        RagVersionEntity version001 = ragVersionDomainService.findVersionByOriginalRagIdAndVersion(datasetId, "0.0.1",
+                userId);
+
+        if (version001 != null) {
+            // 更新0.0.1版本的基本信息
+            ragVersionDomainService.updateVersionBasicInfo(version001.getId(), name, description, icon, userId);
+            log.debug("Successfully synced version 0.0.1 info for dataset {}", datasetId);
+        } else {
+            log.debug("Version 0.0.1 not found for dataset {}, skip sync", datasetId);
+        }
+
+        // 同步更新用户安装记录的基本信息（针对REFERENCE类型）
+        try {
+            userRagDomainService.updateUserRagBasicInfo(userId, datasetId, name, description, icon);
+            log.debug("Successfully synced user installation info for dataset {}", datasetId);
+        } catch (Exception e) {
+            log.warn("Failed to sync user installation info for dataset {}: {}", datasetId, e.getMessage());
+            // 不抛出异常，避免影响主流程
+        }
+    }
+
     /** 更新数据集
      * @param datasetId 数据集ID
      * @param request 更新请求
@@ -171,6 +201,14 @@ public class RagQaDatasetAppService {
     public RagQaDatasetDTO updateDataset(String datasetId, UpdateDatasetRequest request, String userId) {
         RagQaDatasetEntity entity = RagQaDatasetAssembler.toEntity(request, datasetId, userId);
         ragQaDatasetDomainService.updateDataset(entity);
+
+        // 同步更新对应的0.0.1版本信息（如果存在）
+        try {
+            syncVersionInfo(datasetId, request.getName(), request.getDescription(), request.getIcon(), userId);
+        } catch (Exception e) {
+            log.warn("Failed to sync version info for dataset {}: {}", datasetId, e.getMessage());
+            // 不影响主流程，只记录警告
+        }
 
         // 获取更新后的实体
         RagQaDatasetEntity updatedEntity = ragQaDatasetDomainService.getDataset(datasetId, userId);

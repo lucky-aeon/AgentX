@@ -101,7 +101,7 @@ public class ProviderEntity extends BaseEntity {
     }
 
     public void isAvailable(String userId) {
-        if (!isOfficial && !Objects.equals(this.getUserId(), userId)){
+        if (!isOfficial && !Objects.equals(this.getUserId(), userId)) {
             throw new BusinessException("模型未找到");
         }
     }

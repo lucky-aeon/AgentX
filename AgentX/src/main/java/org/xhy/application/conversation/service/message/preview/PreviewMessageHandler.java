@@ -28,13 +28,12 @@ public class PreviewMessageHandler extends AbstractMessageHandler {
 
     private final AgentToolManager agentToolManager;
 
-
     public PreviewMessageHandler(LLMServiceFactory llmServiceFactory, MessageDomainService messageDomainService,
             HighAvailabilityDomainService highAvailabilityDomainService, SessionDomainService sessionDomainService,
             UserSettingsDomainService userSettingsDomainService, LLMDomainService llmDomainService,
             AgentToolManager agentToolManager, RagToolManager ragToolManager) {
         super(llmServiceFactory, messageDomainService, highAvailabilityDomainService, sessionDomainService,
-                userSettingsDomainService, llmDomainService,ragToolManager);
+                userSettingsDomainService, llmDomainService, ragToolManager);
         this.agentToolManager = agentToolManager;
     }
 

@@ -14,11 +14,11 @@ import org.xhy.infrastructure.llm.LLMServiceFactory;
 @Component(value = "chatMessageHandler")
 public class ChatMessageHandler extends AbstractMessageHandler {
 
-
     public ChatMessageHandler(LLMServiceFactory llmServiceFactory, MessageDomainService messageDomainService,
-                              HighAvailabilityDomainService highAvailabilityDomainService, SessionDomainService sessionDomainService,
-                              UserSettingsDomainService userSettingsDomainService, LLMDomainService llmDomainService, RagToolManager ragToolManager) {
+            HighAvailabilityDomainService highAvailabilityDomainService, SessionDomainService sessionDomainService,
+            UserSettingsDomainService userSettingsDomainService, LLMDomainService llmDomainService,
+            RagToolManager ragToolManager) {
         super(llmServiceFactory, messageDomainService, highAvailabilityDomainService, sessionDomainService,
-                userSettingsDomainService, llmDomainService,ragToolManager);
+                userSettingsDomainService, llmDomainService, ragToolManager);
     }
 }

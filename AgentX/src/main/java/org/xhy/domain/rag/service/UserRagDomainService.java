@@ -346,6 +346,24 @@ public class UserRagDomainService {
         userRagRepository.checkedDelete(wrapper);
     }
 
+    /** 更新用户安装记录的基本信息
+     * 
+     * @param userId 用户ID
+     * @param originalRagId 原始RAG数据集ID
+     * @param name 新名称
+     * @param description 新描述
+     * @param icon 新图标 */
+    public void updateUserRagBasicInfo(String userId, String originalRagId, String name, String description,
+            String icon) {
+        LambdaUpdateWrapper<UserRagEntity> wrapper = Wrappers.<UserRagEntity>lambdaUpdate()
+                .eq(UserRagEntity::getUserId, userId).eq(UserRagEntity::getOriginalRagId, originalRagId)
+                .eq(UserRagEntity::getInstallType, InstallType.REFERENCE) // 只更新REFERENCE类型的安装
+                .set(UserRagEntity::getName, name).set(UserRagEntity::getDescription, description)
+                .set(UserRagEntity::getIcon, icon);
+
+        userRagRepository.update(null, wrapper);
+    }
+
     /** 强制卸载RAG（按原始RAG ID，用于数据集删除时清理）
      * 
      * @param userId 用户ID

@@ -288,6 +288,36 @@ public class RagVersionDomainService {
         return ragVersionRepository.selectList(wrapper);
     }
 
+    /** 根据原始RAG ID和版本号查找版本
+     * 
+     * @param originalRagId 原始RAG数据集ID
+     * @param version 版本号
+     * @param userId 用户ID
+     * @return 版本实体，如果不存在返回null */
+    public RagVersionEntity findVersionByOriginalRagIdAndVersion(String originalRagId, String version, String userId) {
+        LambdaQueryWrapper<RagVersionEntity> wrapper = Wrappers.<RagVersionEntity>lambdaQuery()
+                .eq(RagVersionEntity::getOriginalRagId, originalRagId).eq(RagVersionEntity::getVersion, version)
+                .eq(RagVersionEntity::getUserId, userId);
+
+        return ragVersionRepository.selectOne(wrapper);
+    }
+
+    /** 更新版本基本信息
+     * 
+     * @param versionId 版本ID
+     * @param name 新名称
+     * @param description 新描述
+     * @param icon 新图标
+     * @param userId 用户ID */
+    public void updateVersionBasicInfo(String versionId, String name, String description, String icon, String userId) {
+        LambdaUpdateWrapper<RagVersionEntity> wrapper = Wrappers.<RagVersionEntity>lambdaUpdate()
+                .eq(RagVersionEntity::getId, versionId).eq(RagVersionEntity::getUserId, userId)
+                .set(RagVersionEntity::getName, name).set(RagVersionEntity::getDescription, description)
+                .set(RagVersionEntity::getIcon, icon);
+
+        ragVersionRepository.update(null, wrapper);
+    }
+
     /** 获取RAG统计数据
      * 
      * @return 统计数据 */
