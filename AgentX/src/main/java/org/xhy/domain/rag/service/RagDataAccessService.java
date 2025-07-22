@@ -72,6 +72,24 @@ public class RagDataAccessService {
         }
     }
 
+    /** 获取用户可用的RAG文件信息
+     * 
+     * @param userId 用户ID
+     * @param userRagId 用户RAG安装记录ID
+     * @param fileId 文件ID
+     * @return 文件详细信息 */
+    public FileDetailEntity getRagFileInfo(String userId, String userRagId, String fileId) {
+        UserRagEntity userRag = getUserRag(userId, userRagId);
+
+        if (userRag.isReferenceType()) {
+            // REFERENCE类型：从原始数据集获取最新文件信息
+            return getRealTimeFileInfo(fileId, userId);
+        } else {
+            // SNAPSHOT类型：从用户快照获取文件信息
+            return getUserSnapshotFileInfo(userRagId, fileId);
+        }
+    }
+
     /** 获取用户可用的RAG文档单元列表（按文件ID过滤）
      * 
      * @param userId 用户ID
@@ -85,8 +103,8 @@ public class RagDataAccessService {
             // REFERENCE类型：从原始数据集获取最新文档
             return getRealTimeDocumentsByFile(fileId, userId);
         } else {
-            // SNAPSHOT类型：从用户快照获取固定文档（需要找到对应的用户文件ID）
-            return getUserSnapshotDocumentsByOriginalFile(userRagId, fileId);
+            // SNAPSHOT类型：从用户快照获取固定文档（fileId就是用户快照文件ID）
+            return getUserSnapshotDocumentsByUserFileId(userRagId, fileId);
         }
     }
 
@@ -176,12 +194,77 @@ public class RagDataAccessService {
         return userDocs.stream().map(this::convertToDocumentUnitEntity).collect(java.util.stream.Collectors.toList());
     }
 
+    /** 获取实时文件信息 */
+    private FileDetailEntity getRealTimeFileInfo(String fileId, String userId) {
+        LambdaQueryWrapper<FileDetailEntity> wrapper = Wrappers.<FileDetailEntity>lambdaQuery()
+                .eq(FileDetailEntity::getId, fileId)
+                .eq(FileDetailEntity::getUserId, userId);
+        
+        FileDetailEntity file = fileDetailRepository.selectOne(wrapper);
+        if (file == null) {
+            throw new BusinessException("文件不存在或无权限访问");
+        }
+        return file;
+    }
+
+    /** 获取用户快照文件信息 */
+    private FileDetailEntity getUserSnapshotFileInfo(String userRagId, String userFileId) {
+        // 验证文件属于指定的用户RAG
+        LambdaQueryWrapper<UserRagFileEntity> wrapper = Wrappers.<UserRagFileEntity>lambdaQuery()
+                .eq(UserRagFileEntity::getUserRagId, userRagId)
+                .eq(UserRagFileEntity::getId, userFileId);
+        
+        UserRagFileEntity userFile = userRagFileRepository.selectOne(wrapper);
+        if (userFile == null) {
+            throw new BusinessException("文件不存在或无权限访问");
+        }
+        
+        // 动态计算实际页数 - 查询最大页码
+        LambdaQueryWrapper<UserRagDocumentEntity> docWrapper = Wrappers.<UserRagDocumentEntity>lambdaQuery()
+                .eq(UserRagDocumentEntity::getUserRagFileId, userFileId)
+                .select(UserRagDocumentEntity::getPage)
+                .orderByDesc(UserRagDocumentEntity::getPage)
+                .last("LIMIT 1");
+        
+        List<UserRagDocumentEntity> docs = userRagDocumentRepository.selectList(docWrapper);
+        int actualPageSize = docs.isEmpty() ? 0 : docs.get(0).getPage() + 1;
+        
+        // 转换为FileDetailEntity并修正页数
+        FileDetailEntity file = convertToFileDetailEntity(userFile);
+        file.setFilePageSize(actualPageSize); // 使用动态计算的页数
+        return file;
+    }
+
     /** 获取实时文档（按文件ID过滤） */
     private List<DocumentUnitEntity> getRealTimeDocumentsByFile(String fileId, String userId) {
         LambdaQueryWrapper<DocumentUnitEntity> wrapper = Wrappers.<DocumentUnitEntity>lambdaQuery()
                 .eq(DocumentUnitEntity::getFileId, fileId).orderByDesc(DocumentUnitEntity::getCreatedAt);
 
         return documentUnitRepository.selectList(wrapper);
+    }
+
+    /** 获取用户快照文档（按用户文件ID过滤） */
+    private List<DocumentUnitEntity> getUserSnapshotDocumentsByUserFileId(String userRagId, String userFileId) {
+        // 验证文件属于指定的用户RAG
+        LambdaQueryWrapper<UserRagFileEntity> fileWrapper = Wrappers.<UserRagFileEntity>lambdaQuery()
+                .eq(UserRagFileEntity::getUserRagId, userRagId)
+                .eq(UserRagFileEntity::getId, userFileId);
+
+        UserRagFileEntity userFile = userRagFileRepository.selectOne(fileWrapper);
+        if (userFile == null) {
+            return List.of();
+        }
+
+        // 查询对应的文档快照
+        LambdaQueryWrapper<UserRagDocumentEntity> docWrapper = Wrappers.<UserRagDocumentEntity>lambdaQuery()
+                .eq(UserRagDocumentEntity::getUserRagId, userRagId)
+                .eq(UserRagDocumentEntity::getUserRagFileId, userFileId)
+                .orderByDesc(UserRagDocumentEntity::getCreatedAt);
+
+        List<UserRagDocumentEntity> userDocs = userRagDocumentRepository.selectList(docWrapper);
+
+        // 转换为DocumentUnitEntity格式
+        return userDocs.stream().map(this::convertToDocumentUnitEntity).collect(java.util.stream.Collectors.toList());
     }
 
     /** 获取用户快照文档（按原始文件ID过滤） */

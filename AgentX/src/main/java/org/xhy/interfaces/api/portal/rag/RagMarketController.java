@@ -149,6 +149,19 @@ public class RagMarketController {
         return Result.success(result);
     }
 
+    /** 获取已安装RAG特定文件的信息
+     * 
+     * @param userRagId 用户RAG安装记录ID
+     * @param fileId 文件ID
+     * @return 文件详细信息 */
+    @GetMapping("/installed/{userRagId}/files/{fileId}/info")
+    public Result<FileDetailEntity> getInstalledRagFileInfo(@PathVariable String userRagId,
+            @PathVariable String fileId) {
+        String userId = UserContext.getCurrentUserId();
+        FileDetailEntity result = ragDataAccessService.getRagFileInfo(userId, userRagId, fileId);
+        return Result.success(result);
+    }
+
     /** 获取已安装RAG特定文件的文档单元
      * 
      * @param userRagId 用户RAG安装记录ID

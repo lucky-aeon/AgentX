@@ -30,7 +30,7 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { getFileInfoWithToast, getDocumentUnitsWithToast } from '@/lib/rag-file-service';
-import { getInstalledRagFileDocumentsWithToast } from '@/lib/rag-publish-service';
+import { getInstalledRagFileDocumentsWithToast, getInstalledRagFileInfoWithToast } from '@/lib/rag-publish-service';
 import { useFileDetail } from '@/hooks/rag-chat/useFileDetail';
 import type { 
   RetrievedFileInfo, 
@@ -88,31 +88,62 @@ export function FileDetailPanel({ selectedFile, onDataLoad }: FileDetailPanelPro
     
     console.log('[FileDetailPanel] Loading file info for:', selectedFile);
     
-    // 对于已安装RAG的文件，我们可能不需要加载额外的文件信息
-    // 因为基本信息已经在selectedFile中提供了
-    if (selectedFile.isInstalledRag) {
-      console.log('[FileDetailPanel] Processing as installed RAG file');
-      // 为已安装RAG创建基本的文件信息对象
-      const basicFileInfo: FileDetailInfoDTO = {
-        id: selectedFile.fileId,
-        originalFilename: selectedFile.fileName,
-        filename: selectedFile.fileName,
-        url: selectedFile.filePath || '',
-        size: undefined as any, // 大小信息在已安装RAG中不可用
-        ext: '',
-        contentType: '',
-        filePageSize: undefined as any, // 页数信息在已安装RAG中不可用
-        isInitialize: 1,
-        isEmbedding: 1,
-        dataSetId: selectedFile.userRagId || '',
-        userId: '',
-        createdAt: '',
-        updatedAt: ''
-      };
+    // 对于已安装RAG的文件，调用专门的API获取文件信息
+    if (selectedFile.isInstalledRag && selectedFile.userRagId) {
+      console.log('[FileDetailPanel] Processing as installed RAG file, loading from API');
       
-      setFileInfo(basicFileInfo);
-      onDataLoad?.(basicFileInfo);
-      return;
+      try {
+        const response = await getInstalledRagFileInfoWithToast(selectedFile.userRagId, selectedFile.fileId);
+        
+        if (response.code === 200 && response.data) {
+          // 使用从API获取的实际文件信息
+          const installedFileInfo: FileDetailInfoDTO = {
+            id: selectedFile.fileId,
+            originalFilename: selectedFile.fileName,
+            filename: selectedFile.fileName,
+            url: response.data.url || selectedFile.filePath || '',
+            size: response.data.size || 0, // 使用API返回的文件大小
+            ext: response.data.ext || '',
+            contentType: response.data.contentType || '',
+            filePageSize: response.data.filePageSize || 0, // 使用API返回的页数信息
+            isInitialize: response.data.processingStatus === 2 ? 1 : 0,
+            isEmbedding: response.data.processingStatus === 2 ? 1 : 0,
+            dataSetId: selectedFile.userRagId,
+            userId: response.data.userId || '',
+            createdAt: response.data.createdAt || '',
+            updatedAt: response.data.updatedAt || ''
+          };
+          
+          setFileInfo(installedFileInfo);
+          onDataLoad?.(installedFileInfo);
+          return;
+        } else {
+          throw new Error(response.message || '获取文件信息失败');
+        }
+      } catch (error) {
+        console.error('[FileDetailPanel] Failed to load installed RAG file info:', error);
+        // 如果API调用失败，仍然显示基本信息
+        const fallbackFileInfo: FileDetailInfoDTO = {
+          id: selectedFile.fileId,
+          originalFilename: selectedFile.fileName,
+          filename: selectedFile.fileName,
+          url: selectedFile.filePath || '',
+          size: 0,
+          ext: '',
+          contentType: '',
+          filePageSize: 0,
+          isInitialize: 1,
+          isEmbedding: 1,
+          dataSetId: selectedFile.userRagId,
+          userId: '',
+          createdAt: '',
+          updatedAt: ''
+        };
+        
+        setFileInfo(fallbackFileInfo);
+        onDataLoad?.(fallbackFileInfo);
+        return;
+      }
     }
     
     try {

@@ -505,6 +505,22 @@ export async function getInstalledRagDocumentsWithToast(userRagId: string): Prom
   return response
 }
 
+/** 获取已安装RAG特定文件的信息 */
+export async function getInstalledRagFileInfo(userRagId: string, fileId: string): Promise<ApiResponse<any>> {
+  try {
+    return await httpClient.get<ApiResponse<any>>(
+      `${API_ENDPOINTS.MARKET}/installed/${userRagId}/files/${fileId}/info`
+    )
+  } catch (error) {
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : "获取文件信息失败",
+      data: null,
+      timestamp: Date.now()
+    }
+  }
+}
+
 /** 获取已安装RAG特定文件的文档列表 */
 export async function getInstalledRagFileDocuments(userRagId: string, fileId: string): Promise<ApiResponse<any[]>> {
   try {
@@ -519,6 +535,21 @@ export async function getInstalledRagFileDocuments(userRagId: string, fileId: st
       timestamp: Date.now()
     }
   }
+}
+
+/** 获取已安装RAG特定文件的信息（带Toast提示） */
+export async function getInstalledRagFileInfoWithToast(userRagId: string, fileId: string): Promise<ApiResponse<any>> {
+  const response = await getInstalledRagFileInfo(userRagId, fileId)
+  
+  if (response.code !== 200) {
+    toast({
+      title: "获取文件信息失败",
+      description: response.message,
+      variant: "destructive"
+    })
+  }
+  
+  return response
 }
 
 /** 获取已安装RAG特定文件的文档列表（带Toast提示） */
