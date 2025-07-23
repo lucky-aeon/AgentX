@@ -6,10 +6,11 @@ import { Input } from '@/components/ui/input'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Loader2, MessageCircle, Send, Bot, User, AlertCircle, Paperclip, X } from 'lucide-react'
+import { Loader2, MessageCircle, Send, Bot, User, AlertCircle, Paperclip, X, Wrench } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
-import { previewAgent, type AgentPreviewRequest, type MessageHistoryItem } from '@/lib/agent-preview-service'
+import { previewAgentStream, handlePreviewStream, parseStreamData, createStreamDecoder, type AgentPreviewRequest, type MessageHistoryItem, type AgentChatResponse } from '@/lib/agent-preview-service'
 import { uploadMultipleFiles, type UploadResult, type UploadFileInfo } from '@/lib/file-upload-service'
+import { MessageType } from '@/types/conversation'
 
 // 文件类型 - 使用URL而不是base64内容
 interface ChatFile {
@@ -30,6 +31,7 @@ interface ChatMessage {
   isStreaming?: boolean
   files?: ChatFile[] // 消息附带的文件
   fileUrls?: string[] // 新增：文件URL列表（用于发送给后端）
+  type?: MessageType // 消息类型
 }
 
 // 组件属性
@@ -77,15 +79,36 @@ export default function AgentPreviewChat({
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null) // 新增：文件输入引用
+  
+  // 新增：消息处理状态管理（参考chat-panel.tsx）
+  const hasReceivedFirstResponse = useRef(false)
+  const messageContentAccumulator = useRef({
+    content: "",
+    type: MessageType.TEXT as MessageType
+  })
+  const messageSequenceNumber = useRef(0)
+  const [completedTextMessages, setCompletedTextMessages] = useState<Set<string>>(new Set())
+  const [currentAssistantMessage, setCurrentAssistantMessage] = useState<{ id: string; hasContent: boolean } | null>(null)
 
-  // 初始化欢迎消息
+  // 初始化欢迎消息和状态重置
   useEffect(() => {
+    // 重置消息处理状态
+    hasReceivedFirstResponse.current = false
+    messageContentAccumulator.current = {
+      content: "",
+      type: MessageType.TEXT
+    }
+    setCompletedTextMessages(new Set())
+    messageSequenceNumber.current = 0
+    setCurrentAssistantMessage(null)
+    
     if (welcomeMessage) {
       setMessages([{
         id: 'welcome',
         role: 'ASSISTANT',
         content: welcomeMessage,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        type: MessageType.TEXT
       }])
     }
   }, [welcomeMessage])
@@ -100,7 +123,7 @@ export default function AgentPreviewChat({
     }
   }, [messages, isThinking])
 
-  // 发送消息
+  // 发送消息 - 重新实现，使用和chat-panel相同的消息处理逻辑
   const sendMessage = async () => {
     if ((!inputValue.trim() && uploadedFiles.length === 0) || isLoading || disabled) return
 
@@ -114,7 +137,8 @@ export default function AgentPreviewChat({
       content: inputValue.trim(),
       timestamp: Date.now(),
       files: completedFiles.length > 0 ? [...completedFiles] : undefined,
-      fileUrls: fileUrls.length > 0 ? fileUrls : undefined
+      fileUrls: fileUrls.length > 0 ? fileUrls : undefined,
+      type: MessageType.TEXT
     }
 
     // 输出文件URL到控制台
@@ -128,6 +152,13 @@ export default function AgentPreviewChat({
     setUploadedFiles([]) // 清空已上传的文件
     setIsLoading(true)
     setIsThinking(true) // 设置思考状态
+    setCurrentAssistantMessage(null) // 重置助手消息状态
+    
+    // 重置所有状态
+    setCompletedTextMessages(new Set())
+    resetMessageAccumulator()
+    hasReceivedFirstResponse.current = false
+    messageSequenceNumber.current = 0
 
     try {
       // 构建消息历史 - 包含文件URL信息
@@ -153,115 +184,236 @@ export default function AgentPreviewChat({
         knowledgeBaseIds: knowledgeBaseIds && knowledgeBaseIds.length > 0 ? knowledgeBaseIds : undefined // RAG知识库配置
       }
 
-      // 输出完整请求到控制台，包含RAG配置
-      console.log('预览请求数据:', {
-        ...previewRequest,
-        fileUrls: fileUrls,
-        knowledgeBaseIds: knowledgeBaseIds || []
-      })
+      console.log('预览请求数据:', previewRequest)
 
-      // 创建AI响应消息（在第一次收到内容时才添加）
-      let aiMessageId: string | null = null
-      let hasReceivedFirstResponse = false
+      // 使用新的流式处理方式
+      const stream = await previewAgentStream(previewRequest)
+      if (!stream) {
+        throw new Error('Failed to get preview stream')
+      }
 
-      // 发送预览请求
-      await previewAgent(
-        previewRequest,
-        // 流式消息处理
-        (content: string) => {
-          console.log('Received streaming content:', content);
-          
-          // 首次响应处理
-          if (!hasReceivedFirstResponse) {
-            hasReceivedFirstResponse = true
-            setIsThinking(false) // 收到第一个内容时关闭思考状态
-            
-            // 创建AI响应消息
-            aiMessageId = (Date.now() + 1).toString()
-            const aiMessage: ChatMessage = {
-              id: aiMessageId,
-              role: 'ASSISTANT',
-              content: content,
-              timestamp: Date.now(),
-              isStreaming: true
-            }
-            
-            setMessages(prev => [...prev, aiMessage])
-            setStreamingMessageId(aiMessageId)
-          } else if (aiMessageId) {
-            // 更新现有消息内容
-            setMessages(prev => prev.map(msg => 
-              msg.id === aiMessageId 
-                ? { ...msg, content: msg.content + content }
-                : msg
-            ))
-          }
+      // 生成基础消息ID，作为所有消息序列的前缀
+      const baseMessageId = Date.now().toString()
+      
+      // 重置状态
+      hasReceivedFirstResponse.current = false
+      messageContentAccumulator.current = {
+        content: "",
+        type: MessageType.TEXT
+      }
+
+      await handlePreviewStream(
+        stream,
+        (response: AgentChatResponse) => {
+          console.log('收到流式响应:', response)
+          // 处理消息 - 传递baseMessageId作为前缀
+          handleStreamDataMessage(response, baseMessageId)
         },
-        // 完成处理
-        (fullContent: string) => {
-          console.log('Preview completed with full content:', fullContent);
-          if (aiMessageId) {
-            setMessages(prev => prev.map(msg => 
-              msg.id === aiMessageId 
-                ? { ...msg, content: fullContent, isStreaming: false }
-                : msg
-            ))
-          }
-          setStreamingMessageId(null)
+        (error: Error) => {
+          console.error('Preview stream error:', error)
+          handleStreamError(error)
+        },
+        () => {
+          console.log('Preview stream completed')
           setIsLoading(false)
           setIsThinking(false)
-        },
-        // 错误处理
-        (error: Error) => {
-          console.error('Preview error:', error)
-          
-          // 如果还在思考中，先关闭思考状态并添加错误消息
-          if (isThinking) {
-            setIsThinking(false)
-            const errorMessageId = (Date.now() + 1).toString()
-            const errorMessage: ChatMessage = {
-              id: errorMessageId,
-              role: 'ASSISTANT',
-              content: `预览出错: ${error.message}`,
-              timestamp: Date.now(),
-              isStreaming: false
-            }
-            setMessages(prev => [...prev, errorMessage])
-          } else if (aiMessageId) {
-            // 如果已经有消息，更新消息内容
-            setMessages(prev => prev.map(msg => 
-              msg.id === aiMessageId 
-                ? { 
-                    ...msg, 
-                    content: `预览出错: ${error.message}`, 
-                    isStreaming: false 
-                  }
-                : msg
-            ))
-          }
-          
-          setStreamingMessageId(null)
-          setIsLoading(false)
-          
-          toast({
-            title: "预览失败",
-            description: error.message,
-            variant: "destructive"
-          })
         }
       )
     } catch (error) {
       console.error('Preview request failed:', error)
-      setStreamingMessageId(null)
-      setIsLoading(false)
-      setIsThinking(false)
-      
-      toast({
-        title: "预览失败", 
-        description: error instanceof Error ? error.message : "未知错误",
-        variant: "destructive"
-      })
+      handleStreamError(error instanceof Error ? error : new Error('未知错误'))
     }
+  }
+
+  // 消息处理主函数 - 与chat-panel保持一致
+  const handleStreamDataMessage = (data: AgentChatResponse, baseMessageId: string) => {
+    // 首次响应处理
+    if (!hasReceivedFirstResponse.current) {
+      hasReceivedFirstResponse.current = true
+      setIsThinking(false)
+    }
+    
+    // 处理错误消息
+    if (isErrorMessage(data)) {
+      handleErrorMessage(data)
+      return
+    }
+    
+    // 获取消息类型，默认为TEXT
+    const messageType = (data.messageType as MessageType) || MessageType.TEXT
+    
+    // 生成当前消息序列的唯一ID
+    const currentMessageId = `assistant-${messageType}-${baseMessageId}-seq${messageSequenceNumber.current}`
+    
+    console.log(`处理消息: 类型=${messageType}, 序列=${messageSequenceNumber.current}, ID=${currentMessageId}, done=${data.done}`)
+    
+    // 处理消息内容（用于UI显示）
+    const displayableTypes = [undefined, "TEXT", "TOOL_CALL"]
+    const isDisplayableType = displayableTypes.includes(data.messageType)
+    
+    if (isDisplayableType && data.content) {
+      // 累积消息内容
+      messageContentAccumulator.current.content += data.content
+      messageContentAccumulator.current.type = messageType
+      
+      // 更新UI显示
+      updateOrCreateMessageInUI(currentMessageId, messageContentAccumulator.current)
+    }
+    
+    // 消息结束信号处理
+    if (data.done) {
+      console.log(`消息完成 (done=true), 类型: ${messageType}, 序列: ${messageSequenceNumber.current}`)
+      
+      // 如果是可显示类型且有内容，完成该消息
+      if (isDisplayableType && messageContentAccumulator.current.content) {
+        finalizeMessage(currentMessageId, messageContentAccumulator.current)
+      }
+      
+      // 无论如何，都重置消息累积器，准备接收下一条消息
+      resetMessageAccumulator()
+      
+      // 增加消息序列计数
+      messageSequenceNumber.current += 1
+      
+      console.log(`消息序列增加到: ${messageSequenceNumber.current}`)
+    }
+  }
+  
+  // 更新或创建UI消息
+  const updateOrCreateMessageInUI = (messageId: string, messageData: {
+    content: string
+    type: MessageType
+  }) => {
+    // 使用函数式更新，在一次原子操作中检查并更新/创建消息
+    setMessages(prev => {
+      // 检查消息是否已存在
+      const messageIndex = prev.findIndex(msg => msg.id === messageId)
+      
+      if (messageIndex >= 0) {
+        // 消息已存在，只需更新内容
+        console.log(`更新现有消息: ${messageId}, 内容长度: ${messageData.content.length}`)
+        const newMessages = [...prev]
+        newMessages[messageIndex] = {
+          ...newMessages[messageIndex],
+          content: messageData.content
+        }
+        return newMessages
+      } else {
+        // 消息不存在，创建新消息
+        console.log(`创建新消息: ${messageId}, 类型: ${messageData.type}`)
+        return [
+          ...prev,
+          {
+            id: messageId,
+            role: "ASSISTANT" as const,
+            content: messageData.content,
+            type: messageData.type,
+            timestamp: Date.now(),
+            isStreaming: true
+          }
+        ]
+      }
+    })
+    
+    // 更新当前助手消息状态
+    setCurrentAssistantMessage({ id: messageId, hasContent: true })
+    setStreamingMessageId(messageId)
+  }
+  
+  // 完成消息处理
+  const finalizeMessage = (messageId: string, messageData: {
+    content: string
+    type: MessageType
+  }) => {
+    console.log(`完成消息: ${messageId}, 类型: ${messageData.type}, 内容长度: ${messageData.content.length}`)
+    
+    // 如果消息内容为空，不处理
+    if (!messageData.content || messageData.content.trim() === "") {
+      console.log("消息内容为空，不处理")
+      return
+    }
+    
+    // 确保UI已更新到最终状态，使用相同的原子操作模式
+    setMessages(prev => {
+      // 检查消息是否已存在
+      const messageIndex = prev.findIndex(msg => msg.id === messageId)
+      
+      if (messageIndex >= 0) {
+        // 消息已存在，更新内容
+        console.log(`完成现有消息: ${messageId}`)
+        const newMessages = [...prev]
+        newMessages[messageIndex] = {
+          ...newMessages[messageIndex],
+          content: messageData.content,
+          isStreaming: false
+        }
+        return newMessages
+      } else {
+        // 消息不存在，创建新消息
+        console.log(`创建并完成新消息: ${messageId}`)
+        return [
+          ...prev,
+          {
+            id: messageId,
+            role: "ASSISTANT" as const,
+            content: messageData.content,
+            type: messageData.type,
+            timestamp: Date.now(),
+            isStreaming: false
+          }
+        ]
+      }
+    })
+    
+    // 标记消息为已完成
+    setCompletedTextMessages(prev => {
+      const newSet = new Set(prev)
+      newSet.add(messageId)
+      return newSet
+    })
+    
+    setStreamingMessageId(null)
+  }
+
+  // 重置消息累积器
+  const resetMessageAccumulator = () => {
+    console.log("重置消息累积器")
+    messageContentAccumulator.current = {
+      content: "",
+      type: MessageType.TEXT
+    }
+  }
+
+  // 判断是否为错误消息
+  const isErrorMessage = (data: AgentChatResponse): boolean => {
+    return !!data.content && (
+      data.content.includes("Error updating database") || 
+      data.content.includes("PSQLException") || 
+      data.content.includes("任务执行过程中发生错误")
+    )
+  }
+
+  // 处理错误消息
+  const handleErrorMessage = (data: AgentChatResponse) => {
+    console.error("检测到后端错误:", data.content)
+    toast({
+      title: "任务执行错误",
+      description: "服务器处理任务时遇到问题，请稍后再试",
+      variant: "destructive",
+    })
+  }
+
+  // 处理流处理错误
+  const handleStreamError = (error: Error) => {
+    setIsThinking(false)
+    setIsLoading(false)
+    setStreamingMessageId(null)
+    
+    toast({
+      title: "预览失败",
+      description: error.message,
+      variant: "destructive"
+    })
   }
 
   // 处理按键事件
@@ -272,17 +424,61 @@ export default function AgentPreviewChat({
     }
   }
 
+  // 根据消息类型获取图标和文本
+  const getMessageTypeInfo = (type?: MessageType) => {
+    switch (type) {
+      case MessageType.TOOL_CALL:
+        return {
+          icon: <Wrench className="h-4 w-4 text-blue-500" />,
+          text: '工具调用'
+        }
+      case MessageType.TEXT:
+      default:
+        return {
+          icon: <Bot className="h-4 w-4" />,
+          text: agentName
+        }
+    }
+  }
+
+  // 格式化消息时间
+  const formatMessageTime = (timestamp?: number | string) => {
+    if (!timestamp) return '刚刚'
+    try {
+      const date = typeof timestamp === 'number' ? new Date(timestamp) : new Date(timestamp)
+      return date.toLocaleString('zh-CN', {
+        hour: '2-digit',
+        minute: '2-digit',
+        month: '2-digit',
+        day: '2-digit'
+      })
+    } catch (e) {
+      return '刚刚'
+    }
+  }
+
   // 清空对话
   const clearChat = () => {
     setMessages(welcomeMessage ? [{
       id: 'welcome',
       role: 'ASSISTANT',
       content: welcomeMessage,
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      type: MessageType.TEXT
     }] : [])
     setIsThinking(false)
     setIsLoading(false)
     setStreamingMessageId(null)
+    setCurrentAssistantMessage(null)
+    
+    // 重置消息处理状态
+    hasReceivedFirstResponse.current = false
+    messageContentAccumulator.current = {
+      content: "",
+      type: MessageType.TEXT
+    }
+    setCompletedTextMessages(new Set())
+    messageSequenceNumber.current = 0
   }
 
   // 处理文件上传
@@ -451,96 +647,126 @@ export default function AgentPreviewChat({
         <ScrollArea className="h-full px-6" ref={scrollAreaRef}>
           <div className="py-4 space-y-4">
             {messages.map((message) => (
-              <div
-                key={message.id}
-                className={`flex gap-3 ${
-                  message.role === 'USER' ? 'justify-end' : 'justify-start'
-                }`}
-              >
-                {message.role === 'ASSISTANT' && (
-                  <Avatar className="h-8 w-8 mt-1">
-                    <AvatarImage src={agentAvatar || undefined} alt="Agent" />
-                    <AvatarFallback className="bg-blue-100 text-blue-600">
-                      <Bot className="h-4 w-4" />
-                    </AvatarFallback>
-                  </Avatar>
-                )}
-                
-                <div
-                  className={`max-w-[80%] rounded-lg px-4 py-2 ${
-                    message.role === 'USER'
-                      ? 'bg-blue-500 text-white'
-                      : message.content.startsWith('预览出错:')
-                      ? 'bg-red-50 text-red-700 border border-red-200'
-                      : 'bg-gray-100 text-gray-900'
-                  }`}
-                >
-                  {/* 文件显示 */}
-                  {message.files && message.files.length > 0 && (
-                    <div className="mb-2 space-y-2">
-                      {message.files.map((file) => (
-                        <div
-                          key={file.id}
-                          className={`flex items-center gap-2 p-2 rounded border ${
-                            message.role === 'USER'
-                              ? 'bg-blue-400/20 border-blue-300/30'
-                              : 'bg-white border-gray-200'
-                          }`}
-                        >
-                          {file.type.startsWith('image/') && file.url && file.url.trim() !== '' && (
-                            <img
-                              src={file.url}
-                              alt={file.name}
-                              className="w-8 h-8 rounded object-cover"
-                            />
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <p className={`text-xs font-medium truncate ${
-                              message.role === 'USER' ? 'text-white' : 'text-gray-900'
-                            }`}>
-                              {file.name}
-                            </p>
-                            <p className={`text-xs ${
-                              message.role === 'USER' ? 'text-blue-100' : 'text-gray-500'
-                            }`}>
-                              {(file.size / 1024).toFixed(1)} KB
-                            </p>
-                          </div>
+              <div key={message.id} className="w-full">
+                {/* 用户消息 */}
+                {message.role === 'USER' ? (
+                  <div className="flex justify-end">
+                    <div className="max-w-[80%]">
+                      {/* 文件显示 - 在消息内容之前 */}
+                      {message.files && message.files.length > 0 && (
+                        <div className="mb-2 space-y-2">
+                          {message.files.map((file) => (
+                            <div
+                              key={file.id}
+                              className="flex items-center gap-2 p-2 rounded border bg-blue-400/20 border-blue-300/30"
+                            >
+                              {file.type.startsWith('image/') && file.url && file.url.trim() !== '' && (
+                                <img
+                                  src={file.url}
+                                  alt={file.name}
+                                  className="w-8 h-8 rounded object-cover"
+                                />
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-medium truncate text-white">
+                                  {file.name}
+                                </p>
+                                <p className="text-xs text-blue-100">
+                                  {(file.size / 1024).toFixed(1)} KB
+                                </p>
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                      ))}
+                      )}
+                      
+                      {/* 消息内容 */}
+                      {message.content && (
+                        <div className="bg-blue-50 text-gray-800 p-3 rounded-lg shadow-sm">
+                          {message.content}
+                        </div>
+                      )}
+                      
+                      <div className="text-xs text-gray-500 mt-1 text-right">
+                        {formatMessageTime(message.timestamp)}
+                      </div>
                     </div>
-                  )}
-
-                  {/* 文本内容 */}
-                  {message.content && (
-                    <div className="text-sm whitespace-pre-wrap">
-                      {message.content}
-                      {message.isStreaming && (
-                        <span className="inline-block w-2 h-4 bg-current opacity-75 animate-pulse ml-1" />
+                  </div>
+                ) : (
+                  /* AI消息 */
+                  <div className="flex items-start">
+                    <div className="h-8 w-8 mr-2 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
+                      {message.type && message.type !== MessageType.TEXT 
+                        ? getMessageTypeInfo(message.type).icon 
+                        : <div className="text-lg">🤖</div>
+                      }
+                    </div>
+                    <div className="max-w-[80%]">
+                      {/* 消息类型指示 */}
+                      <div className="flex items-center mb-1 text-xs text-gray-500">
+                        <span className="font-medium">
+                          {message.type ? getMessageTypeInfo(message.type).text : agentName}
+                        </span>
+                        <span className="mx-1 text-gray-400">·</span>
+                        <span>{formatMessageTime(message.timestamp)}</span>
+                      </div>
+                      {/* 文件显示 - 在消息内容之前 */}
+                      {message.files && message.files.length > 0 && (
+                        <div className="mb-2 space-y-2">
+                          {message.files.map((file) => (
+                            <div
+                              key={file.id}
+                              className="flex items-center gap-2 p-2 rounded border bg-white border-gray-200"
+                            >
+                              {file.type.startsWith('image/') && file.url && file.url.trim() !== '' && (
+                                <img
+                                  src={file.url}
+                                  alt={file.name}
+                                  className="w-8 h-8 rounded object-cover"
+                                />
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-medium truncate text-gray-900">
+                                  {file.name}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  {(file.size / 1024).toFixed(1)} KB
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      
+                      {/* 消息内容 */}
+                      {message.content && (
+                        <div className={`p-3 rounded-lg ${
+                          message.content.startsWith('预览出错:')
+                            ? 'bg-red-50 text-red-700 border border-red-200'
+                            : ''
+                        }`}>
+                          <div className="text-sm whitespace-pre-wrap">
+                            {message.content}
+                            {message.isStreaming && (
+                              <span className="inline-block w-2 h-4 bg-current opacity-75 animate-pulse ml-1" />
+                            )}
+                          </div>
+                          {message.content.startsWith('预览出错:') && (
+                            <div className="flex items-center gap-1 mt-1 text-xs">
+                              <AlertCircle className="h-3 w-3" />
+                              <span>请检查Agent配置或网络连接</span>
+                            </div>
+                          )}
+                        </div>
                       )}
                     </div>
-                  )}
-
-                  {message.content.startsWith('预览出错:') && (
-                    <div className="flex items-center gap-1 mt-1 text-xs">
-                      <AlertCircle className="h-3 w-3" />
-                      <span>请检查Agent配置或网络连接</span>
-                    </div>
-                  )}
-                </div>
-
-                {message.role === 'USER' && (
-                  <Avatar className="h-8 w-8 mt-1">
-                    <AvatarFallback className="bg-green-100 text-green-600">
-                      <User className="h-4 w-4" />
-                    </AvatarFallback>
-                  </Avatar>
+                  </div>
                 )}
               </div>
             ))}
 
-            {/* 思考中提示 - 和对话页面相同的UI */}
-            {isThinking && (
+            {/* 思考中提示 - 和chat-panel保持一致 */}
+            {isThinking && (!currentAssistantMessage || !currentAssistantMessage.hasContent) && (
               <div className="flex items-start">
                 <div className="h-8 w-8 mr-2 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
                   <div className="text-lg">🤖</div>
