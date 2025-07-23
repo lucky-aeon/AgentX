@@ -95,6 +95,9 @@ public class RagQaDatasetAssembler {
         // 使用原始RAG ID作为数据集ID，这样Agent可以正确引用
         dto.setId(userRag.getOriginalRagId());
 
+        // 设置用户RAG安装记录ID，用于调用已安装RAG相关接口
+        dto.setUserRagId(userRag.getId());
+
         // 使用安装时的快照信息
         dto.setName(userRag.getName());
         dto.setDescription(userRag.getDescription());

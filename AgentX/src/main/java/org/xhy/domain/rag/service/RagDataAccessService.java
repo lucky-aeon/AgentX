@@ -122,6 +122,17 @@ public class RagDataAccessService {
         }
     }
 
+    /** 统计用户RAG快照文件数量
+     * 
+     * @param userRagId 用户RAG安装记录ID
+     * @return 文件数量 */
+    public Long countUserRagFiles(String userRagId) {
+        LambdaQueryWrapper<UserRagFileEntity> wrapper = Wrappers.<UserRagFileEntity>lambdaQuery()
+                .eq(UserRagFileEntity::getUserRagId, userRagId);
+
+        return userRagFileRepository.selectCount(wrapper);
+    }
+
     /** 获取RAG的实际数据来源信息
      * 
      * @param userId 用户ID
@@ -197,9 +208,8 @@ public class RagDataAccessService {
     /** 获取实时文件信息 */
     private FileDetailEntity getRealTimeFileInfo(String fileId, String userId) {
         LambdaQueryWrapper<FileDetailEntity> wrapper = Wrappers.<FileDetailEntity>lambdaQuery()
-                .eq(FileDetailEntity::getId, fileId)
-                .eq(FileDetailEntity::getUserId, userId);
-        
+                .eq(FileDetailEntity::getId, fileId).eq(FileDetailEntity::getUserId, userId);
+
         FileDetailEntity file = fileDetailRepository.selectOne(wrapper);
         if (file == null) {
             throw new BusinessException("文件不存在或无权限访问");
@@ -211,24 +221,21 @@ public class RagDataAccessService {
     private FileDetailEntity getUserSnapshotFileInfo(String userRagId, String userFileId) {
         // 验证文件属于指定的用户RAG
         LambdaQueryWrapper<UserRagFileEntity> wrapper = Wrappers.<UserRagFileEntity>lambdaQuery()
-                .eq(UserRagFileEntity::getUserRagId, userRagId)
-                .eq(UserRagFileEntity::getId, userFileId);
-        
+                .eq(UserRagFileEntity::getUserRagId, userRagId).eq(UserRagFileEntity::getId, userFileId);
+
         UserRagFileEntity userFile = userRagFileRepository.selectOne(wrapper);
         if (userFile == null) {
             throw new BusinessException("文件不存在或无权限访问");
         }
-        
+
         // 动态计算实际页数 - 查询最大页码
         LambdaQueryWrapper<UserRagDocumentEntity> docWrapper = Wrappers.<UserRagDocumentEntity>lambdaQuery()
-                .eq(UserRagDocumentEntity::getUserRagFileId, userFileId)
-                .select(UserRagDocumentEntity::getPage)
-                .orderByDesc(UserRagDocumentEntity::getPage)
-                .last("LIMIT 1");
-        
+                .eq(UserRagDocumentEntity::getUserRagFileId, userFileId).select(UserRagDocumentEntity::getPage)
+                .orderByDesc(UserRagDocumentEntity::getPage).last("LIMIT 1");
+
         List<UserRagDocumentEntity> docs = userRagDocumentRepository.selectList(docWrapper);
         int actualPageSize = docs.isEmpty() ? 0 : docs.get(0).getPage() + 1;
-        
+
         // 转换为FileDetailEntity并修正页数
         FileDetailEntity file = convertToFileDetailEntity(userFile);
         file.setFilePageSize(actualPageSize); // 使用动态计算的页数
@@ -247,8 +254,7 @@ public class RagDataAccessService {
     private List<DocumentUnitEntity> getUserSnapshotDocumentsByUserFileId(String userRagId, String userFileId) {
         // 验证文件属于指定的用户RAG
         LambdaQueryWrapper<UserRagFileEntity> fileWrapper = Wrappers.<UserRagFileEntity>lambdaQuery()
-                .eq(UserRagFileEntity::getUserRagId, userRagId)
-                .eq(UserRagFileEntity::getId, userFileId);
+                .eq(UserRagFileEntity::getUserRagId, userRagId).eq(UserRagFileEntity::getId, userFileId);
 
         UserRagFileEntity userFile = userRagFileRepository.selectOne(fileWrapper);
         if (userFile == null) {

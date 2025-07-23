@@ -17,7 +17,10 @@ import org.xhy.domain.rag.repository.UserRagRepository;
 import org.xhy.infrastructure.exception.BusinessException;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /** 用户RAG领域服务
  * @author xhy
@@ -399,6 +402,91 @@ public class UserRagDomainService {
                 .eq(UserRagEntity::getUserId, userId).eq(UserRagEntity::getOriginalRagId, originalRagId);
 
         userRagRepository.checkedDelete(wrapper);
+    }
+
+    /** 获取用户安装的同一RAG的所有版本
+     * 
+     * @param userId 用户ID
+     * @param userRagId 当前用户RAG安装记录ID
+     * @return 同一原始RAG的所有已安装版本列表 */
+    public List<UserRagEntity> getInstalledVersionsByUserRagId(String userId, String userRagId) {
+        // 先获取当前用户RAG记录，获取其原始RAG ID
+        UserRagEntity currentUserRag = userRagRepository.selectById(userRagId);
+        if (currentUserRag == null || !currentUserRag.getUserId().equals(userId)) {
+            throw new BusinessException("未找到指定的RAG安装记录");
+        }
+
+        // 根据原始RAG ID获取该用户的所有安装版本
+        LambdaQueryWrapper<UserRagEntity> wrapper = Wrappers.<UserRagEntity>lambdaQuery()
+                .eq(UserRagEntity::getUserId, userId)
+                .eq(UserRagEntity::getOriginalRagId, currentUserRag.getOriginalRagId())
+                .orderByDesc(UserRagEntity::getInstalledAt);
+
+        return userRagRepository.selectList(wrapper);
+    }
+
+    /** 获取RAG的所有可切换版本（包括未安装的已发布版本）
+     * 
+     * @param userId 用户ID
+     * @param userRagId 当前用户RAG安装记录ID
+     * @return 该RAG的所有可切换版本信息 */
+    public List<UserRagEntity> getAvailableVersionsByUserRagId(String userId, String userRagId) {
+        // 先获取当前用户RAG记录，获取其原始RAG ID
+        UserRagEntity currentUserRag = userRagRepository.selectById(userRagId);
+        if (currentUserRag == null || !currentUserRag.getUserId().equals(userId)) {
+            throw new BusinessException("未找到指定的RAG安装记录");
+        }
+
+        // 获取该用户已安装的版本
+        List<UserRagEntity> installedVersions = getInstalledVersionsByUserRagId(userId, userRagId);
+        Map<String, UserRagEntity> installedVersionMap = installedVersions.stream()
+                .collect(Collectors.toMap(UserRagEntity::getRagVersionId, entity -> entity));
+
+        // 获取该RAG的所有已发布版本
+        List<RagVersionEntity> publishedVersions = ragVersionDomainService
+                .getPublishedVersionsByOriginalRagId(currentUserRag.getOriginalRagId());
+
+        // 构造返回列表：已安装的版本使用真实UserRagEntity，未安装的版本构造虚拟UserRagEntity
+        List<UserRagEntity> result = new ArrayList<>();
+        for (RagVersionEntity ragVersion : publishedVersions) {
+            if (installedVersionMap.containsKey(ragVersion.getId())) {
+                // 已安装的版本，使用真实的UserRagEntity
+                result.add(installedVersionMap.get(ragVersion.getId()));
+            } else {
+                // 未安装的版本，构造虚拟的UserRagEntity用于显示
+                UserRagEntity virtualUserRag = createVirtualUserRag(currentUserRag, ragVersion);
+                result.add(virtualUserRag);
+            }
+        }
+
+        return result;
+    }
+
+    /** 创建虚拟的UserRagEntity用于显示未安装的版本
+     * 
+     * @param currentUserRag 当前用户RAG
+     * @param ragVersion RAG版本信息
+     * @return 虚拟的UserRagEntity */
+    private UserRagEntity createVirtualUserRag(UserRagEntity currentUserRag, RagVersionEntity ragVersion) {
+        UserRagEntity virtualUserRag = new UserRagEntity();
+
+        // 使用当前RAG的基本信息
+        virtualUserRag.setUserId(currentUserRag.getUserId());
+        virtualUserRag.setOriginalRagId(currentUserRag.getOriginalRagId());
+        virtualUserRag.setInstallType(currentUserRag.getInstallType());
+
+        // 使用版本的信息
+        virtualUserRag.setRagVersionId(ragVersion.getId());
+        virtualUserRag.setVersion(ragVersion.getVersion());
+        virtualUserRag.setName(ragVersion.getName());
+        virtualUserRag.setDescription(ragVersion.getDescription());
+        virtualUserRag.setIcon(ragVersion.getIcon());
+
+        // 标记为虚拟记录（ID为null表示未安装）
+        virtualUserRag.setId(null);
+        virtualUserRag.setInstalledAt(null);
+
+        return virtualUserRag;
     }
 
     /** 确定安装类型

@@ -28,13 +28,13 @@ public class AgentKnowledgeBaseController {
         return Result.success(datasets);
     }
 
-    /** 获取知识库详情（用于Agent配置时显示知识库信息）
-     * @param knowledgeBaseId 知识库ID
+    /** 获取知识库详情（用于Agent配置时显示知识库信息） 优先查找用户已安装的知识库快照，如果没有则查找原始知识库
+     * @param knowledgeBaseId 知识库ID（可能是originalRagId或userRagId）
      * @return 知识库详情 */
     @GetMapping("/{knowledgeBaseId}")
     public Result<RagQaDatasetDTO> getKnowledgeBaseDetail(@PathVariable String knowledgeBaseId) {
         String userId = UserContext.getCurrentUserId();
-        RagQaDatasetDTO dataset = ragQaDatasetAppService.getDatasetById(knowledgeBaseId, userId);
+        RagQaDatasetDTO dataset = ragQaDatasetAppService.getAvailableDatasetById(knowledgeBaseId, userId);
         return Result.success(dataset);
     }
 

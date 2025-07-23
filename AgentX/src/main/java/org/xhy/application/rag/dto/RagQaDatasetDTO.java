@@ -10,6 +10,9 @@ public class RagQaDatasetDTO {
     /** 数据集ID */
     private String id;
 
+    /** 用户RAG安装记录ID（用于调用已安装RAG相关接口） */
+    private String userRagId;
+
     /** 数据集名称 */
     private String name;
 
@@ -37,6 +40,14 @@ public class RagQaDatasetDTO {
 
     public void setId(String id) {
         this.id = id;
+    }
+
+    public String getUserRagId() {
+        return userRagId;
+    }
+
+    public void setUserRagId(String userRagId) {
+        this.userRagId = userRagId;
     }
 
     public String getName() {

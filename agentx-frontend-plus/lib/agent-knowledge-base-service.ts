@@ -4,6 +4,7 @@ import { withToast } from './toast-utils'
 // 知识库基本信息接口
 export interface KnowledgeBase {
   id: string
+  userRagId?: string  // 用户RAG安装记录ID（用于调用已安装RAG相关接口）
   name: string
   description: string
   icon?: string

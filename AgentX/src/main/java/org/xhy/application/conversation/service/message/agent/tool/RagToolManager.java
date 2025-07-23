@@ -9,6 +9,7 @@ import org.xhy.application.rag.service.RagQaDatasetAppService;
 import org.xhy.domain.agent.model.AgentEntity;
 import org.xhy.domain.rag.model.RagQaDatasetEntity;
 import org.xhy.domain.rag.service.RagQaDatasetDomainService;
+import org.xhy.domain.rag.service.UserRagDomainService;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -24,11 +25,13 @@ public class RagToolManager {
 
     private final RagQaDatasetAppService ragQaDatasetAppService;
     private final RagQaDatasetDomainService ragQaDatasetDomainService;
+    private final UserRagDomainService userRagDomainService;
 
     public RagToolManager(RagQaDatasetAppService ragQaDatasetAppService,
-            RagQaDatasetDomainService ragQaDatasetDomainService) {
+            RagQaDatasetDomainService ragQaDatasetDomainService, UserRagDomainService userRagDomainService) {
         this.ragQaDatasetAppService = ragQaDatasetAppService;
         this.ragQaDatasetDomainService = ragQaDatasetDomainService;
+        this.userRagDomainService = userRagDomainService;
     }
 
     /** 为Agent创建RAG工具（如果Agent配置了知识库）
@@ -83,12 +86,17 @@ public class RagToolManager {
 
         for (String knowledgeBaseId : knowledgeBaseIds) {
             try {
-                // 检查知识库是否存在且用户有权限访问
-                ragQaDatasetDomainService.checkDatasetExists(knowledgeBaseId, userId);
-                validIds.add(knowledgeBaseId);
-                log.debug("知识库 {} 验证通过", knowledgeBaseId);
+                // 检查用户是否安装了这个知识库
+                boolean isInstalled = userRagDomainService.isRagInstalledByOriginalId(userId, knowledgeBaseId);
+
+                if (isInstalled) {
+                    validIds.add(knowledgeBaseId);
+                    log.debug("知识库 {} 验证通过，用户已安装", knowledgeBaseId);
+                } else {
+                    log.warn("知识库 {} 验证失败，用户 {} 未安装该知识库", knowledgeBaseId, userId);
+                }
             } catch (Exception e) {
-                log.warn("知识库 {} 验证失败，用户 {} 无权限访问: {}", knowledgeBaseId, userId, e.getMessage());
+                log.warn("知识库 {} 验证失败: {}", knowledgeBaseId, e.getMessage());
             }
         }
 
@@ -102,8 +110,17 @@ public class RagToolManager {
     private List<String> getKnowledgeBaseNames(List<String> knowledgeBaseIds, String userId) {
         return knowledgeBaseIds.stream().map(id -> {
             try {
-                RagQaDatasetEntity dataset = ragQaDatasetDomainService.getDataset(id, userId);
-                return dataset.getName();
+                // 获取用户安装的知识库信息
+                var userRag = userRagDomainService.findInstalledRagByOriginalId(userId, id);
+                if (userRag != null) {
+                    // 用户已安装，直接使用安装记录中的名称
+                    // 无论是SNAPSHOT还是REFERENCE类型，都使用安装记录中的信息
+                    return userRag.getName();
+                } else {
+                    // 用户未安装该知识库，不应该能访问
+                    log.warn("用户 {} 未安装知识库 {}，无法获取名称", userId, id);
+                    return "未知知识库";
+                }
             } catch (Exception e) {
                 log.warn("获取知识库 {} 名称失败: {}", id, e.getMessage());
                 return "未知知识库";

@@ -282,6 +282,34 @@ public class RagQaDatasetAppService {
         return getDataset(datasetId, userId);
     }
 
+    /** 获取用户可用的知识库详情（仅限已安装的知识库）
+     * 
+     * @param knowledgeBaseId 知识库ID（可能是originalRagId或userRagId）
+     * @param userId 用户ID
+     * @return 知识库详情
+     * @throws BusinessException 如果知识库未安装或无权限访问 */
+    public RagQaDatasetDTO getAvailableDatasetById(String knowledgeBaseId, String userId) {
+        // 首先尝试作为userRagId查找已安装的知识库
+        try {
+            UserRagEntity userRag = userRagDomainService.getUserRag(userId, knowledgeBaseId);
+            Long fileCount = getRagFileCount(userId, userRag);
+            return RagQaDatasetAssembler.fromUserRagEntity(userRag, fileCount);
+        } catch (Exception e) {
+            // 如果不是userRagId，则尝试作为originalRagId查找已安装的知识库
+            List<UserRagEntity> installedRags = userRagDomainService.listAllInstalledRags(userId);
+            for (UserRagEntity userRag : installedRags) {
+                if (knowledgeBaseId.equals(userRag.getOriginalRagId())) {
+                    // 找到匹配的已安装知识库，返回快照信息
+                    Long fileCount = getRagFileCount(userId, userRag);
+                    return RagQaDatasetAssembler.fromUserRagEntity(userRag, fileCount);
+                }
+            }
+
+            // 如果都没有找到，说明用户未安装该知识库，抛出异常
+            throw new BusinessException("知识库未安装或无权限访问，请先安装该知识库");
+        }
+    }
+
     /** 批量获取数据集详情（用于Agent配置）
      * @param datasetIds 数据集ID列表
      * @param userId 用户ID
@@ -311,21 +339,36 @@ public class RagQaDatasetAppService {
 
         for (UserRagEntity userRag : installedRags) {
             try {
-                // 获取原始数据集的文件数量
-                Long fileCount = fileDetailDomainService.countFilesByDataset(userRag.getOriginalRagId(), userId);
+                // 根据RAG安装类型正确获取文件数量
+                Long fileCount = getRagFileCount(userId, userRag);
 
                 // 转换为DTO
                 RagQaDatasetDTO dataset = RagQaDatasetAssembler.fromUserRagEntity(userRag, fileCount);
                 availableDatasets.add(dataset);
 
             } catch (Exception e) {
-                // 如果原始数据集不存在或无权限访问，跳过该安装记录
+                // 如果数据集不存在或无权限访问，跳过该安装记录
                 log.warn("获取已安装RAG {} 失败，用户 {} 可能无权限访问或数据集已被删除: {}", userRag.getOriginalRagId(), userId,
                         e.getMessage());
             }
         }
 
         return availableDatasets;
+    }
+
+    /** 根据RAG安装类型获取正确的文件数量
+     * 
+     * @param userId 用户ID
+     * @param userRag 用户RAG安装记录
+     * @return 文件数量 */
+    private Long getRagFileCount(String userId, UserRagEntity userRag) {
+        if (userRag.isSnapshotType()) {
+            // SNAPSHOT类型：统计用户快照文件数量
+            return ragDataAccessService.countUserRagFiles(userRag.getId());
+        } else {
+            // REFERENCE类型：统计原始数据集文件数量（不进行用户权限检查，因为已安装表示有权限）
+            return fileDetailDomainService.countFilesByDatasetWithoutUserCheck(userRag.getOriginalRagId());
+        }
     }
 
     /** 分页查询数据集
@@ -708,9 +751,28 @@ public class RagQaDatasetAppService {
      * @param userId 用户ID
      * @return 搜索结果 */
     public List<DocumentUnitDTO> ragSearch(RagSearchRequest request, String userId) {
-        // 验证数据集权限 - 检查用户是否有这些数据集的访问权限
+        // 验证数据集权限 - 检查用户是否安装了这些知识库
+        List<String> validDatasetIds = new ArrayList<>();
         for (String datasetId : request.getDatasetIds()) {
-            ragQaDatasetDomainService.checkDatasetExists(datasetId, userId);
+            // 检查用户是否安装了这个知识库
+            if (userRagDomainService.isRagInstalledByOriginalId(userId, datasetId)) {
+                validDatasetIds.add(datasetId);
+                log.debug("用户 {} 已安装知识库 {}，允许搜索", userId, datasetId);
+            } else {
+                // 检查用户是否是创建者（向后兼容）
+                try {
+                    ragQaDatasetDomainService.checkDatasetExists(datasetId, userId);
+                    validDatasetIds.add(datasetId);
+                    log.debug("用户 {} 是知识库 {} 的创建者，允许搜索", userId, datasetId);
+                } catch (Exception e) {
+                    log.warn("用户 {} 既没有安装知识库 {} 也不是创建者，跳过搜索", userId, datasetId);
+                }
+            }
+        }
+
+        if (validDatasetIds.isEmpty()) {
+            log.warn("用户 {} 没有任何有效的知识库可搜索", userId);
+            return new ArrayList<>();
         }
 
         // 使用智能调整后的参数进行RAG搜索
@@ -722,8 +784,8 @@ public class RagQaDatasetAppService {
         EmbeddingModelFactory.EmbeddingConfig embeddingConfig = toEmbeddingConfig(embeddingModelConfig);
 
         // 调用领域服务进行RAG搜索，使用智能优化的参数
-        List<DocumentUnitEntity> entities = embeddingDomainService.ragDoc(request.getDatasetIds(),
-                request.getQuestion(), request.getMaxResults(), adjustedMinScore, // 使用智能调整的相似度阈值
+        List<DocumentUnitEntity> entities = embeddingDomainService.ragDoc(validDatasetIds, request.getQuestion(),
+                request.getMaxResults(), adjustedMinScore, // 使用智能调整的相似度阈值
                 request.getEnableRerank(), adjustedCandidateMultiplier, // 使用智能调整的候选结果倍数
                 embeddingConfig); // 传入嵌入模型配置
 
@@ -752,8 +814,12 @@ public class RagQaDatasetAppService {
             actualDatasetId = sourceInfo.getOriginalRagId();
         }
 
-        // 验证数据集权限 - 通过userRagId已经验证了权限，这里检查原始数据集是否存在
-        ragQaDatasetDomainService.checkDatasetExists(actualDatasetId, userId);
+        // 验证数据集权限 - 通过userRagId已经验证了权限，不需要再检查用户是否是创建者
+        // 只需要确认原始数据集仍然存在
+        var originalDataset = ragQaDatasetDomainService.findDatasetById(actualDatasetId);
+        if (originalDataset == null) {
+            throw new BusinessException("原始数据集不存在或已被删除");
+        }
 
         // 使用智能调整后的参数进行RAG搜索
         Double adjustedMinScore = request.getAdjustedMinScore();
@@ -1283,14 +1349,15 @@ public class RagQaDatasetAppService {
 
             // 构建检索结果
             List<RetrievedDocument> retrievedDocs = new ArrayList<>();
-            
+
             if (dataSourceInfo.getIsRealTime()) {
                 // REFERENCE类型：使用原始文件信息
                 for (DocumentUnitEntity doc : retrievedDocuments) {
                     FileDetailEntity fileDetail = fileDetailRepository.selectById(doc.getFileId());
                     double similarityScore = doc.getSimilarityScore() != null ? doc.getSimilarityScore() : 0.0;
                     retrievedDocs.add(new RetrievedDocument(doc.getFileId(),
-                            fileDetail != null ? fileDetail.getOriginalFilename() : "未知文件", doc.getId(), similarityScore));
+                            fileDetail != null ? fileDetail.getOriginalFilename() : "未知文件", doc.getId(),
+                            similarityScore));
                 }
             } else {
                 // SNAPSHOT类型：使用快照文件信息

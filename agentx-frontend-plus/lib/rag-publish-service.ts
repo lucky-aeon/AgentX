@@ -349,6 +349,37 @@ export async function switchRagVersionWithToast(userRagId: string, targetVersion
   return response
 }
 
+/** 获取已安装RAG的所有版本列表 */
+export async function getInstalledRagVersions(userRagId: string): Promise<ApiResponse<UserRagDTO[]>> {
+  try {
+    return await httpClient.get<ApiResponse<UserRagDTO[]>>(
+      `${API_ENDPOINTS.MARKET}/installed/${userRagId}/versions`
+    )
+  } catch (error) {
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : "获取版本列表失败",
+      data: [],
+      timestamp: Date.now()
+    }
+  }
+}
+
+/** 获取已安装RAG的所有版本列表（带Toast提示） */
+export async function getInstalledRagVersionsWithToast(userRagId: string): Promise<ApiResponse<UserRagDTO[]>> {
+  const response = await getInstalledRagVersions(userRagId)
+  
+  if (response.code !== 200) {
+    toast({
+      title: "获取版本列表失败",
+      description: response.message,
+      variant: "destructive"
+    })
+  }
+  
+  return response
+}
+
 // ================================ 管理员审核相关接口 ================================
 
 /** 获取待审核的RAG版本列表 */

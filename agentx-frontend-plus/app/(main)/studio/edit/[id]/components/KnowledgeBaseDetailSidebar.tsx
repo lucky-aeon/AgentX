@@ -4,9 +4,12 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { X, Database, FileText, Calendar, ChevronDown, ChevronRight, File } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { X, Database, FileText, Calendar, ChevronDown, ChevronRight, File, RefreshCw } from 'lucide-react';
 import { getKnowledgeBaseDetail, getAllKnowledgeBaseFilesWithToast } from '@/lib/agent-knowledge-base-service';
+import { getInstalledRagFilesWithToast, getInstalledRagVersionsWithToast, switchRagVersionWithToast } from '@/lib/rag-publish-service';
 import type { KnowledgeBase, FileDetail } from '@/lib/agent-knowledge-base-service';
+import type { UserRagDTO } from '@/types/rag-publish';
 
 // 缓存已请求过的知识库详情
 const knowledgeBaseDetailsCache = new Map<string, any>();
@@ -15,12 +18,14 @@ interface KnowledgeBaseDetailSidebarProps {
   knowledgeBase: KnowledgeBase | null;
   isOpen: boolean;
   onClose: () => void;
+  onVersionSwitch?: (newKnowledgeBase: KnowledgeBase) => void;
 }
 
 const KnowledgeBaseDetailSidebar: React.FC<KnowledgeBaseDetailSidebarProps> = ({ 
   knowledgeBase: initialKnowledgeBase, 
   isOpen, 
   onClose,
+  onVersionSwitch,
 }) => {
   const [detailedKnowledgeBase, setDetailedKnowledgeBase] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -28,18 +33,104 @@ const KnowledgeBaseDetailSidebar: React.FC<KnowledgeBaseDetailSidebarProps> = ({
   const [isLoadingFiles, setIsLoadingFiles] = useState(false);
   const [showFileList, setShowFileList] = useState(true);
 
+  // 版本相关状态
+  const [versions, setVersions] = useState<UserRagDTO[]>([]);
+  const [isLoadingVersions, setIsLoadingVersions] = useState(false);
+  const [isSwitchingVersion, setIsSwitchingVersion] = useState(false);
+
+  // 获取版本列表
+  const fetchVersionList = async () => {
+    const knowledgeBaseToUse = detailedKnowledgeBase || initialKnowledgeBase;
+    if (!knowledgeBaseToUse?.userRagId) return;
+
+    setIsLoadingVersions(true);
+    try {
+      console.log('[KnowledgeBaseDetailSidebar] 获取版本列表，userRagId:', knowledgeBaseToUse.userRagId);
+      const response = await getInstalledRagVersionsWithToast(knowledgeBaseToUse.userRagId);
+      if (response.code === 200) {
+        setVersions(response.data || []);
+      } else {
+        console.error('获取版本列表失败:', response.message);
+        setVersions([]);
+      }
+    } catch (error) {
+      console.error('获取版本列表错误:', error);
+      setVersions([]);
+    } finally {
+      setIsLoadingVersions(false);
+    }
+  };
+
+  // 版本切换
+  const handleVersionSwitch = async (targetVersionId: string) => {
+    const knowledgeBaseToUse = detailedKnowledgeBase || initialKnowledgeBase;
+    if (!knowledgeBaseToUse?.userRagId || isSwitchingVersion) return;
+
+    setIsSwitchingVersion(true);
+    try {
+      console.log('[KnowledgeBaseDetailSidebar] 切换版本，userRagId:', knowledgeBaseToUse.userRagId, '目标版本:', targetVersionId);
+      const response = await switchRagVersionWithToast(knowledgeBaseToUse.userRagId, targetVersionId);
+      if (response.code === 200) {
+        // 更新详细信息
+        const updatedKnowledgeBase = {
+          ...knowledgeBaseToUse,
+          version: response.data.version,
+          ragVersionId: response.data.ragVersionId,
+          fileCount: response.data.fileCount || knowledgeBaseToUse.fileCount,
+          // 其他可能需要更新的字段
+        };
+        
+        setDetailedKnowledgeBase(updatedKnowledgeBase);
+        
+        // 清除缓存，确保下次获取最新数据
+        knowledgeBaseDetailsCache.delete(knowledgeBaseToUse.id);
+        
+        // 刷新版本列表和文件列表
+        await Promise.all([
+          fetchVersionList(),
+          fetchFileList()
+        ]);
+
+        // 通知父组件更新
+        if (onVersionSwitch) {
+          onVersionSwitch(updatedKnowledgeBase);
+        }
+      }
+    } catch (error) {
+      console.error('版本切换错误:', error);
+    } finally {
+      setIsSwitchingVersion(false);
+    }
+  };
+
   // 获取文件列表
   const fetchFileList = async () => {
     if (!initialKnowledgeBase) return;
     
     setIsLoadingFiles(true);
     try {
-      const response = await getAllKnowledgeBaseFilesWithToast(initialKnowledgeBase.id);
-      if (response.code === 200) {
-        setFiles(response.data);
+      // 优先使用已安装RAG的文件接口，使用详细信息中的userRagId
+      const knowledgeBaseToUse = detailedKnowledgeBase || initialKnowledgeBase;
+      
+      if (knowledgeBaseToUse.userRagId) {
+        console.log('[KnowledgeBaseDetailSidebar] 使用已安装RAG接口，userRagId:', knowledgeBaseToUse.userRagId);
+        const response = await getInstalledRagFilesWithToast(knowledgeBaseToUse.userRagId);
+        if (response.code === 200) {
+          setFiles(response.data || []);
+        } else {
+          console.error('获取已安装RAG文件列表失败:', response.message);
+          setFiles([]);
+        }
       } else {
-        console.error('获取文件列表失败:', response.message);
-        setFiles([]);
+        console.log('[KnowledgeBaseDetailSidebar] 回退到原始接口，knowledgeBaseId:', knowledgeBaseToUse.id);
+        // 向后兼容：如果没有userRagId，使用原始方法
+        const response = await getAllKnowledgeBaseFilesWithToast(knowledgeBaseToUse.id);
+        if (response.code === 200) {
+          setFiles(response.data);
+        } else {
+          console.error('获取文件列表失败:', response.message);
+          setFiles([]);
+        }
       }
     } catch (error) {
       console.error('获取文件列表错误:', error);
@@ -53,9 +144,17 @@ const KnowledgeBaseDetailSidebar: React.FC<KnowledgeBaseDetailSidebarProps> = ({
     if (isOpen && initialKnowledgeBase) {
       const cacheKey = initialKnowledgeBase.id;
       
-      // 如果缓存中有这个知识库的详情，直接使用
-      if (knowledgeBaseDetailsCache.has(cacheKey)) {
-        setDetailedKnowledgeBase(knowledgeBaseDetailsCache.get(cacheKey));
+      // 如果缓存中有这个知识库的详情且包含userRagId，直接使用
+      const cachedData = knowledgeBaseDetailsCache.get(cacheKey);
+      if (cachedData && cachedData.userRagId) {
+        setDetailedKnowledgeBase(cachedData);
+        // 缓存命中时也要获取文件列表和版本列表
+        setTimeout(() => {
+          Promise.all([
+            fetchVersionList(),
+            cachedData.fileCount > 0 ? fetchFileList() : Promise.resolve()
+          ]);
+        }, 100);
       } else {
         const fetchDetails = async () => {
           setIsLoading(true);
@@ -66,6 +165,14 @@ const KnowledgeBaseDetailSidebar: React.FC<KnowledgeBaseDetailSidebarProps> = ({
               setDetailedKnowledgeBase(detailData);
               // 缓存详情数据
               knowledgeBaseDetailsCache.set(cacheKey, detailData);
+              
+              // 获取详细信息后立即获取版本列表和文件列表
+              setTimeout(() => {
+                Promise.all([
+                  fetchVersionList(),
+                  detailData.fileCount > 0 ? fetchFileList() : Promise.resolve()
+                ]);
+              }, 100); // 小延迟确保状态更新完成
             } else {
               console.error('获取知识库详情失败:', response.message);
             }
@@ -79,14 +186,9 @@ const KnowledgeBaseDetailSidebar: React.FC<KnowledgeBaseDetailSidebarProps> = ({
         fetchDetails();
       }
       
-      // 重置文件列表状态并自动加载
+      // 重置文件列表状态
       setFiles([]);
       setShowFileList(true);
-      
-      // 自动获取文件列表
-      if (initialKnowledgeBase.fileCount > 0) {
-        fetchFileList();
-      }
     }
   }, [isOpen, initialKnowledgeBase]);
 
@@ -99,6 +201,10 @@ const KnowledgeBaseDetailSidebar: React.FC<KnowledgeBaseDetailSidebarProps> = ({
       setFiles([]);
       setIsLoadingFiles(false);
       setShowFileList(true);
+      // 清理版本相关状态
+      setVersions([]);
+      setIsLoadingVersions(false);
+      setIsSwitchingVersion(false);
     }, 200);
   };
 
@@ -151,6 +257,67 @@ const KnowledgeBaseDetailSidebar: React.FC<KnowledgeBaseDetailSidebarProps> = ({
                 </div>
               </div>
             </div>
+
+            {/* 版本选择器 - 只有当userRagId存在时才显示 */}
+            {displayKnowledgeBase.userRagId && (
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground">当前版本</p>
+                <div className="flex items-center space-x-2">
+                  {isLoadingVersions ? (
+                    <div className="flex items-center space-x-2">
+                      <RefreshCw className="w-4 h-4 animate-spin text-gray-500" />
+                      <span className="text-sm text-muted-foreground">加载版本...</span>
+                    </div>
+                  ) : versions.length > 1 ? (
+                    <Select
+                      value={(() => {
+                        // 优先使用当前知识库的ragVersionId
+                        if (displayKnowledgeBase.ragVersionId) {
+                          return displayKnowledgeBase.ragVersionId;
+                        }
+                        // 如果没有，查找版本列表中已安装的版本（id不为null的版本）
+                        const installedVersion = versions.find(v => v.id !== null);
+                        return installedVersion?.ragVersionId || versions[0]?.ragVersionId || '';
+                      })()}
+                      onValueChange={handleVersionSwitch}
+                      disabled={isSwitchingVersion}
+                    >
+                      <SelectTrigger className="w-full h-8 text-sm">
+                        <SelectValue placeholder="选择版本" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {versions.map((version) => (
+                          <SelectItem 
+                            key={version.ragVersionId || version.id} 
+                            value={version.ragVersionId || ''}
+                            className="text-sm"
+                          >
+                            <div className="flex items-center justify-between w-full">
+                              <span>v{version.version}</span>
+                              {version.id !== null && (
+                                <Badge variant="secondary" className="ml-2 text-xs">当前</Badge>
+                              )}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <div className="flex items-center space-x-2">
+                      <Badge variant="outline" className="text-xs">
+                        v{displayKnowledgeBase.version || '1.0'}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground">
+                        {versions.length === 1 ? '仅一个版本' : '无其他版本'}
+                      </span>
+                    </div>
+                  )}
+                  {isSwitchingVersion && (
+                    <RefreshCw className="w-4 h-4 animate-spin text-blue-500" />
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           <Separator />
@@ -207,14 +374,6 @@ const KnowledgeBaseDetailSidebar: React.FC<KnowledgeBaseDetailSidebarProps> = ({
                                 <span>{file.ext?.toUpperCase()}</span>
                                 <span>•</span>
                                 <span>{(file.size / 1024).toFixed(1)} KB</span>
-                                {file.processProgress < 100 && (
-                                  <>
-                                    <span>•</span>
-                                    <span className="text-blue-600">
-                                      处理中 {file.processProgress}%
-                                    </span>
-                                  </>
-                                )}
                               </div>
                             </div>
                           </div>

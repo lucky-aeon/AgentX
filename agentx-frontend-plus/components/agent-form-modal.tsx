@@ -289,6 +289,7 @@ export default function AgentFormModal({
             toolIds={formData.tools.map(t => t.id)}
             toolPresetParams={formData.toolPresetParams as unknown as Record<string, Record<string, Record<string, string>>>}
             multiModal={formData.multiModal}
+            knowledgeBaseIds={formData.knowledgeBaseIds}
             disabled={false}
             className="h-[500px]"
           />

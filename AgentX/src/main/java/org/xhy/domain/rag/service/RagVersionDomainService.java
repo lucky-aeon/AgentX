@@ -496,4 +496,17 @@ public class RagVersionDomainService {
                 .eq(RagVersionEntity::getId, versionId).eq(RagVersionEntity::getUserId, userId);
         ragVersionRepository.checkedDelete(versionWrapper);
     }
+
+    /** 获取原始RAG的所有已发布版本
+     * 
+     * @param originalRagId 原始RAG数据集ID
+     * @return 已发布的版本列表 */
+    public List<RagVersionEntity> getPublishedVersionsByOriginalRagId(String originalRagId) {
+        LambdaQueryWrapper<RagVersionEntity> wrapper = Wrappers.<RagVersionEntity>lambdaQuery()
+                .eq(RagVersionEntity::getOriginalRagId, originalRagId)
+                .eq(RagVersionEntity::getPublishStatus, RagPublishStatus.PUBLISHED.getCode())
+                .orderByAsc(RagVersionEntity::getVersion);
+
+        return ragVersionRepository.selectList(wrapper);
+    }
 }

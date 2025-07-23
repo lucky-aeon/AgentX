@@ -189,6 +189,15 @@ public class FileDetailDomainService {
         return fileDetailRepository.selectCount(wrapper);
     }
 
+    /** 统计数据集下的文件数量（不进行用户权限检查） 用于已安装RAG的文件统计，因为已安装表示用户有权限访问
+     * @param datasetId 数据集ID
+     * @return 文件数量 */
+    public Long countFilesByDatasetWithoutUserCheck(String datasetId) {
+        LambdaQueryWrapper<FileDetailEntity> wrapper = Wrappers.<FileDetailEntity>lambdaQuery()
+                .eq(FileDetailEntity::getDataSetId, datasetId);
+        return fileDetailRepository.selectCount(wrapper);
+    }
+
     /** 批量删除数据集下的所有文件
      * @param datasetId 数据集ID
      * @param userId 用户ID */
