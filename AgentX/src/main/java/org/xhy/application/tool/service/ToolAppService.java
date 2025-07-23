@@ -171,7 +171,8 @@ public class ToolAppService {
     }
 
     public ToolVersionDTO getToolVersionDetail(String toolId, String version, String userId) {
-        ToolVersionEntity toolVersionEntity = toolVersionDomainService.getToolVersion(toolId, version);
+        // 使用带权限验证的方法获取工具版本详情
+        ToolVersionEntity toolVersionEntity = toolVersionDomainService.getToolVersion(toolId, version, userId);
         ToolVersionDTO toolVersionDTO = ToolAssembler.toDTO(toolVersionEntity);
         // 设置创建者昵称
         UserEntity userInfo = userDomainService.getUserInfo(toolVersionDTO.getUserId());
@@ -188,7 +189,8 @@ public class ToolAppService {
 
     public void installTool(String toolId, String version, String userId) {
         UserToolEntity userToolEntity = userToolDomainService.findByToolIdAndUserId(toolId, userId);
-        ToolVersionEntity toolVersionEntity = toolVersionDomainService.getToolVersion(toolId, version);
+        // 使用带权限验证的方法获取工具版本
+        ToolVersionEntity toolVersionEntity = toolVersionDomainService.getToolVersion(toolId, version, userId);
 
         if (userToolEntity == null) {
             userToolEntity = new UserToolEntity();
