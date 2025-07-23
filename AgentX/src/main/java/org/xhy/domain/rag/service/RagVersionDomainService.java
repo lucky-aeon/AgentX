@@ -497,10 +497,37 @@ public class RagVersionDomainService {
         ragVersionRepository.checkedDelete(versionWrapper);
     }
 
+    /** 获取原始RAG的版本列表（根据用户权限显示不同范围的版本）
+     * 
+     * @param originalRagId 原始RAG数据集ID
+     * @param userId 当前用户ID
+     * @return 版本列表（创建者可看到所有版本，非创建者只能看到已发布版本） */
+    public List<RagVersionEntity> getVersionsByOriginalRagId(String originalRagId, String userId) {
+        LambdaQueryWrapper<RagVersionEntity> wrapper = Wrappers.<RagVersionEntity>lambdaQuery()
+                .eq(RagVersionEntity::getOriginalRagId, originalRagId);
+
+        // 检查当前用户是否为该知识库的创建者
+        // 通过查询该原始RAG的任意一个版本来获取创建者信息
+        RagVersionEntity firstVersion = ragVersionRepository.selectOne(Wrappers.<RagVersionEntity>lambdaQuery()
+                .eq(RagVersionEntity::getOriginalRagId, originalRagId).last("limit 1"));
+
+        boolean isCreator = firstVersion != null && userId.equals(firstVersion.getUserId());
+
+        if (!isCreator) {
+            // 非创建者：只显示已发布的版本
+            wrapper.eq(RagVersionEntity::getPublishStatus, RagPublishStatus.PUBLISHED.getCode());
+        }
+        // 创建者：显示所有版本（不添加状态限制）
+
+        wrapper.orderByAsc(RagVersionEntity::getVersion);
+        return ragVersionRepository.selectList(wrapper);
+    }
+
     /** 获取原始RAG的所有已发布版本
      * 
      * @param originalRagId 原始RAG数据集ID
      * @return 已发布的版本列表 */
+    @Deprecated
     public List<RagVersionEntity> getPublishedVersionsByOriginalRagId(String originalRagId) {
         LambdaQueryWrapper<RagVersionEntity> wrapper = Wrappers.<RagVersionEntity>lambdaQuery()
                 .eq(RagVersionEntity::getOriginalRagId, originalRagId)

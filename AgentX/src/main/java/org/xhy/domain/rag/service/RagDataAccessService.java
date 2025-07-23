@@ -168,9 +168,9 @@ public class RagDataAccessService {
 
     /** 获取实时文件（从原始数据集） */
     private List<FileDetailEntity> getRealTimeFiles(String originalRagId, String userId) {
+        // 修复：对于已安装的知识库，用户应该能看到该知识库的所有文件，而不仅仅是自己上传的文件
         LambdaQueryWrapper<FileDetailEntity> wrapper = Wrappers.<FileDetailEntity>lambdaQuery()
-                .eq(FileDetailEntity::getDataSetId, originalRagId).eq(FileDetailEntity::getUserId, userId)
-                .orderByDesc(FileDetailEntity::getCreatedAt);
+                .eq(FileDetailEntity::getDataSetId, originalRagId).orderByDesc(FileDetailEntity::getCreatedAt);
 
         return fileDetailRepository.selectList(wrapper);
     }
@@ -207,12 +207,13 @@ public class RagDataAccessService {
 
     /** 获取实时文件信息 */
     private FileDetailEntity getRealTimeFileInfo(String fileId, String userId) {
+        // 修复：对于已安装的知识库，用户应该能访问该知识库的所有文件信息
         LambdaQueryWrapper<FileDetailEntity> wrapper = Wrappers.<FileDetailEntity>lambdaQuery()
-                .eq(FileDetailEntity::getId, fileId).eq(FileDetailEntity::getUserId, userId);
+                .eq(FileDetailEntity::getId, fileId);
 
         FileDetailEntity file = fileDetailRepository.selectOne(wrapper);
         if (file == null) {
-            throw new BusinessException("文件不存在或无权限访问");
+            throw new BusinessException("文件不存在");
         }
         return file;
     }

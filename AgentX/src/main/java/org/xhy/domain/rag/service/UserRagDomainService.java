@@ -20,6 +20,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /** 用户RAG领域服务
@@ -72,7 +73,7 @@ public class UserRagDomainService {
         }
 
         // 确定安装类型
-        InstallType installType = determineInstallType(userId, ragVersion);
+        InstallType installType = determineInstallType(ragVersion);
 
         // 创建安装记录（完整快照）
         UserRagEntity userRag = new UserRagEntity();
@@ -161,7 +162,7 @@ public class UserRagDomainService {
         }
 
         // 确定新的安装类型
-        InstallType newInstallType = determineInstallType(userId, targetVersion);
+        InstallType newInstallType = determineInstallType(targetVersion);
 
         // 如果当前是SNAPSHOT类型，先删除旧的快照数据
         if (userRag.isSnapshotType()) {
@@ -442,21 +443,25 @@ public class UserRagDomainService {
         Map<String, UserRagEntity> installedVersionMap = installedVersions.stream()
                 .collect(Collectors.toMap(UserRagEntity::getRagVersionId, entity -> entity));
 
-        // 获取该RAG的所有已发布版本
-        List<RagVersionEntity> publishedVersions = ragVersionDomainService
-                .getPublishedVersionsByOriginalRagId(currentUserRag.getOriginalRagId());
+        // 获取该RAG的版本列表（根据用户权限决定范围）
+        List<RagVersionEntity> availableVersions = ragVersionDomainService
+                .getVersionsByOriginalRagId(currentUserRag.getOriginalRagId(), userId);
 
         // 构造返回列表：已安装的版本使用真实UserRagEntity，未安装的版本构造虚拟UserRagEntity
         List<UserRagEntity> result = new ArrayList<>();
-        for (RagVersionEntity ragVersion : publishedVersions) {
+        for (RagVersionEntity ragVersion : availableVersions) {
+            UserRagEntity currentUserRagEntity = null;
             if (installedVersionMap.containsKey(ragVersion.getId())) {
                 // 已安装的版本，使用真实的UserRagEntity
-                result.add(installedVersionMap.get(ragVersion.getId()));
+                currentUserRagEntity = installedVersionMap.get(ragVersion.getId());
             } else {
                 // 未安装的版本，构造虚拟的UserRagEntity用于显示
-                UserRagEntity virtualUserRag = createVirtualUserRag(currentUserRag, ragVersion);
-                result.add(virtualUserRag);
+                currentUserRagEntity = createVirtualUserRag(currentUserRag, ragVersion);
             }
+            currentUserRagEntity.setInstallType(
+                    !Objects.equals(ragVersion.getVersion(), "0.0.1") ? InstallType.SNAPSHOT : InstallType.REFERENCE);
+            result.add(currentUserRagEntity);
+
         }
 
         return result;
@@ -491,15 +496,12 @@ public class UserRagDomainService {
 
     /** 确定安装类型
      * 
-     * @param userId 用户ID
      * @param ragVersion RAG版本
      * @return 安装类型 */
-    private InstallType determineInstallType(String userId, RagVersionEntity ragVersion) {
-        // 如果是自己创建的RAG，使用REFERENCE类型（动态引用）
-        if (ragVersion.getUserId().equals(userId)) {
+    private InstallType determineInstallType(RagVersionEntity ragVersion) {
+        if (ragVersion.getVersion().equals("0.0.1")) {
             return InstallType.REFERENCE;
         }
-        // 如果是他人的RAG，使用SNAPSHOT类型（版本快照）
         return InstallType.SNAPSHOT;
     }
 }
