@@ -60,6 +60,10 @@ public class PreviewMessageHandler extends AbstractMessageHandler {
         // 部分响应处理
         tokenStream.onPartialResponse(reply -> {
             messageBuilder.get().append(reply);
+            // 删除换行后消息为空字符串
+            if (messageBuilder.get().toString().trim().isEmpty()) {
+                return;
+            }
             transport.sendMessage(connection, AgentChatResponse.build(reply, MessageType.TEXT));
         });
 

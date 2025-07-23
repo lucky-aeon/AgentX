@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -11,6 +11,9 @@ import { toast } from '@/hooks/use-toast'
 import { previewAgentStream, handlePreviewStream, parseStreamData, createStreamDecoder, type AgentPreviewRequest, type MessageHistoryItem, type AgentChatResponse } from '@/lib/agent-preview-service'
 import { uploadMultipleFiles, type UploadResult, type UploadFileInfo } from '@/lib/file-upload-service'
 import { MessageType } from '@/types/conversation'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
+import { Highlight, themes } from 'prism-react-renderer'
 
 // 文件类型 - 使用URL而不是base64内容
 interface ChatFile {
@@ -89,6 +92,8 @@ export default function AgentPreviewChat({
   const messageSequenceNumber = useRef(0)
   const [completedTextMessages, setCompletedTextMessages] = useState<Set<string>>(new Set())
   const [currentAssistantMessage, setCurrentAssistantMessage] = useState<{ id: string; hasContent: boolean } | null>(null)
+  const [autoScroll, setAutoScroll] = useState(true) // 新增：自动滚动控制
+  const chatContainerRef = useRef<HTMLDivElement>(null) // 新增：聊天容器引用
 
   // 初始化欢迎消息和状态重置
   useEffect(() => {
@@ -113,15 +118,45 @@ export default function AgentPreviewChat({
     }
   }, [welcomeMessage])
 
-  // 自动滚动到底部
+  // 智能滚动到底部 - 只在自动滚动开启时滚动
   useEffect(() => {
-    if (scrollAreaRef.current) {
+    if (autoScroll && scrollAreaRef.current) {
       const scrollElement = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]')
       if (scrollElement) {
         scrollElement.scrollTop = scrollElement.scrollHeight
       }
     }
-  }, [messages, isThinking])
+  }, [messages, isThinking, autoScroll])
+
+  // 监听滚动事件 - 检测用户是否手动滚动
+  useEffect(() => {
+    const scrollElement = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]')
+    if (!scrollElement) return
+
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = scrollElement
+      // 判断是否滚动到底部附近（20px误差范围）
+      const isAtBottom = scrollHeight - scrollTop - clientHeight < 20
+      setAutoScroll(isAtBottom)
+    }
+
+    scrollElement.addEventListener('scroll', handleScroll)
+    return () => scrollElement.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  // 处理用户主动发送消息时强制滚动到底部
+  const scrollToBottom = useCallback(() => {
+    setAutoScroll(true)
+    // 使用setTimeout确保在下一个渲染周期执行
+    setTimeout(() => {
+      if (scrollAreaRef.current) {
+        const scrollElement = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]')
+        if (scrollElement) {
+          scrollElement.scrollTop = scrollElement.scrollHeight
+        }
+      }
+    }, 100)
+  }, [])
 
   // 发送消息 - 重新实现，使用和chat-panel相同的消息处理逻辑
   const sendMessage = async () => {
@@ -153,6 +188,7 @@ export default function AgentPreviewChat({
     setIsLoading(true)
     setIsThinking(true) // 设置思考状态
     setCurrentAssistantMessage(null) // 重置助手消息状态
+    scrollToBottom() // 用户发送新消息时强制滚动到底部
     
     // 重置所有状态
     setCompletedTextMessages(new Set())
@@ -414,6 +450,80 @@ export default function AgentPreviewChat({
       description: error.message,
       variant: "destructive"
     })
+  }
+
+  // 渲染Markdown内容
+  const renderMessageContent = (content: string) => {
+    return (
+      <div className="react-markdown">
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
+          components={{
+            // 代码块渲染
+            code({ inline, className, children, ...props }: any) {
+              const match = /language-(\w+)/.exec(className || "")
+              return !inline && match ? (
+                <Highlight
+                  theme={themes.vsDark}
+                  code={String(children).replace(/\n$/, "")}
+                  language={match[1]}
+                >
+                  {({ className, style, tokens, getLineProps, getTokenProps }) => (
+                    <div className="code-block-container">
+                      <pre
+                        className={`${className} rounded p-2 my-2 overflow-x-auto max-w-full text-sm`}
+                        style={{...style, wordBreak: 'break-all', overflowWrap: 'break-word'}}
+                      >
+                        {tokens.map((line, i) => {
+                          // 获取line props但不通过展开操作符传递key
+                          const lineProps = getLineProps({ line, key: i })
+                          return (
+                            <div 
+                              key={i} 
+                              className={lineProps.className}
+                              style={{
+                                ...lineProps.style,
+                                whiteSpace: 'pre-wrap', 
+                                wordBreak: 'break-all'
+                              }}
+                            >
+                              <span className="text-gray-500 mr-2 text-right w-6 inline-block select-none">
+                                {i + 1}
+                              </span>
+                              {line.map((token, tokenIndex) => {
+                                // 获取token props但不包含key
+                                const tokenProps = getTokenProps({ token, key: tokenIndex })
+                                // 删除key属性，使用单独的key属性
+                                return <span 
+                                  key={tokenIndex} 
+                                  className={tokenProps.className}
+                                  style={{
+                                    ...tokenProps.style,
+                                    wordBreak: 'break-all',
+                                    overflowWrap: 'break-word'
+                                  }}
+                                  children={tokenProps.children}
+                                />
+                              })}
+                            </div>
+                          )
+                        })}
+                      </pre>
+                    </div>
+                  )}
+                </Highlight>
+              ) : (
+                <code className={`${className} bg-gray-100 px-1 py-0.5 rounded break-all`} {...props}>
+                  {children}
+                </code>
+              )
+            },
+          }}
+        >
+          {content}
+        </ReactMarkdown>
+      </div>
+    )
   }
 
   // 处理按键事件
@@ -683,7 +793,9 @@ export default function AgentPreviewChat({
                       {/* 消息内容 */}
                       {message.content && (
                         <div className="bg-blue-50 text-gray-800 p-3 rounded-lg shadow-sm">
-                          {message.content}
+                          <div className="text-sm whitespace-pre-wrap">
+                            {message.content}
+                          </div>
                         </div>
                       )}
                       
@@ -745,16 +857,26 @@ export default function AgentPreviewChat({
                             ? 'bg-red-50 text-red-700 border border-red-200'
                             : ''
                         }`}>
-                          <div className="text-sm whitespace-pre-wrap">
-                            {message.content}
-                            {message.isStreaming && (
-                              <span className="inline-block w-2 h-4 bg-current opacity-75 animate-pulse ml-1" />
-                            )}
-                          </div>
-                          {message.content.startsWith('预览出错:') && (
-                            <div className="flex items-center gap-1 mt-1 text-xs">
-                              <AlertCircle className="h-3 w-3" />
-                              <span>请检查Agent配置或网络连接</span>
+                          {message.content.startsWith('预览出错:') ? (
+                            // 错误消息使用简单文本显示
+                            <>
+                              <div className="text-sm whitespace-pre-wrap">
+                                {message.content}
+                                {message.isStreaming && (
+                                  <span className="inline-block w-2 h-4 bg-current opacity-75 animate-pulse ml-1" />
+                                )}
+                              </div>
+                              <div className="flex items-center gap-1 mt-1 text-xs">
+                                <AlertCircle className="h-3 w-3" />
+                                <span>请检查Agent配置或网络连接</span>
+                              </div>
+                            </>
+                          ) : (
+                            // 正常消息使用Markdown渲染
+                            <div className="markdown-content">
+                              {renderMessageContent(
+                                message.content + (message.isStreaming ? ' ▌' : '')
+                              )}
                             </div>
                           )}
                         </div>
@@ -787,6 +909,18 @@ export default function AgentPreviewChat({
                   </div>
                 </div>
               </div>
+            )}
+            
+            {/* 滚动到底部按钮 - 当用户手动滚动离开底部时显示 */}
+            {!autoScroll && (isLoading || isThinking) && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="fixed bottom-32 right-6 rounded-full shadow-md bg-white z-10 hover:bg-gray-50"
+                onClick={scrollToBottom}
+              >
+                <span className="text-sm">↓ 回到底部</span>
+              </Button>
             )}
           </div>
         </ScrollArea>
