@@ -24,8 +24,7 @@ public class RagDataAccessDomainService {
     private final UserRagDocumentRepository userRagDocumentRepository;
 
     public RagDataAccessDomainService(UserRagRepository userRagRepository, FileDetailRepository fileDetailRepository,
-            DocumentUnitRepository documentUnitRepository, RagVersionFileRepository ragVersionFileRepository,
-            RagVersionDocumentRepository ragVersionDocumentRepository, UserRagFileRepository userRagFileRepository,
+            DocumentUnitRepository documentUnitRepository, UserRagFileRepository userRagFileRepository,
             UserRagDocumentRepository userRagDocumentRepository) {
         this.userRagRepository = userRagRepository;
         this.fileDetailRepository = fileDetailRepository;

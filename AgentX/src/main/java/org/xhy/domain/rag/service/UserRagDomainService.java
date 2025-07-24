@@ -342,28 +342,6 @@ public class UserRagDomainService {
         return userRagRepository.selectCount(wrapper);
     }
 
-    /** 获取原始RAG的安装次数
-     * 
-     * @param originalRagId 原始RAG数据集ID
-     * @return 安装次数 */
-    public long getInstallCountByOriginalId(String originalRagId) {
-        LambdaQueryWrapper<UserRagEntity> wrapper = Wrappers.<UserRagEntity>lambdaQuery()
-                .eq(UserRagEntity::getOriginalRagId, originalRagId);
-
-        return userRagRepository.selectCount(wrapper);
-    }
-
-    /** 强制卸载RAG版本（用于数据集删除时清理，不进行业务校验）
-     * 
-     * @param userId 用户ID
-     * @param ragVersionId RAG版本ID */
-    public void forceUninstallRag(String userId, String ragVersionId) {
-        LambdaUpdateWrapper<UserRagEntity> wrapper = Wrappers.<UserRagEntity>lambdaUpdate()
-                .eq(UserRagEntity::getUserId, userId).eq(UserRagEntity::getRagVersionId, ragVersionId);
-
-        userRagRepository.checkedDelete(wrapper);
-    }
-
     /** 更新用户安装记录的基本信息
      * 
      * @param userId 用户ID

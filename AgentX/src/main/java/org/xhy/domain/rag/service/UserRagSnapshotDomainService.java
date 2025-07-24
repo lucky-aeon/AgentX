@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.xhy.domain.rag.model.RagVersionDocumentEntity;
@@ -48,7 +49,6 @@ public class UserRagSnapshotDomainService {
      * 
      * @param userRagId 用户RAG安装记录ID
      * @param ragVersionId RAG版本ID */
-    @Transactional
     public void createUserSnapshot(String userRagId, String ragVersionId) {
         logger.info("开始为用户RAG [{}] 创建版本 [{}] 的完整快照", userRagId, ragVersionId);
 
@@ -72,7 +72,6 @@ public class UserRagSnapshotDomainService {
      * 
      * @param userRagId 用户RAG安装记录ID
      * @param ragVersionId RAG版本ID */
-    @Transactional
     public void copyVersionFilesToUser(String userRagId, String ragVersionId) {
         // 查询版本文件快照
         LambdaQueryWrapper<RagVersionFileEntity> wrapper = Wrappers.<RagVersionFileEntity>lambdaQuery()
@@ -101,7 +100,6 @@ public class UserRagSnapshotDomainService {
      * 
      * @param userRagId 用户RAG安装记录ID
      * @param ragVersionId RAG版本ID */
-    @Transactional
     public void copyVersionDocumentsToUser(String userRagId, String ragVersionId) {
         // 查询版本文档快照
         LambdaQueryWrapper<RagVersionDocumentEntity> wrapper = Wrappers.<RagVersionDocumentEntity>lambdaQuery()
@@ -132,7 +130,6 @@ public class UserRagSnapshotDomainService {
     /** 删除用户RAG的所有快照数据
      * 
      * @param userRagId 用户RAG安装记录ID */
-    @Transactional
     public void deleteUserSnapshot(String userRagId) {
         logger.info("开始删除用户RAG [{}] 的所有快照数据", userRagId);
 
@@ -183,15 +180,7 @@ public class UserRagSnapshotDomainService {
     /** 转换版本文件为用户文件 */
     private UserRagFileEntity convertToUserRagFile(RagVersionFileEntity versionFile, String userRagId) {
         UserRagFileEntity userFile = new UserRagFileEntity();
-        userFile.setUserRagId(userRagId);
-        userFile.setOriginalFileId(versionFile.getOriginalFileId());
-        userFile.setFileName(versionFile.getFileName());
-        userFile.setFileSize(versionFile.getFileSize());
-        userFile.setFilePageSize(versionFile.getFilePageSize());
-        userFile.setFileType(versionFile.getFileType());
-        userFile.setFilePath(versionFile.getFilePath());
-        userFile.setProcessStatus(versionFile.getProcessStatus());
-        userFile.setEmbeddingStatus(versionFile.getEmbeddingStatus());
+        BeanUtils.copyProperties(versionFile, userFile);
         return userFile;
     }
 

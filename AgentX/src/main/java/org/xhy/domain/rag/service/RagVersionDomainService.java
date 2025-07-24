@@ -8,7 +8,6 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.xhy.domain.rag.constant.RagPublishStatus;
 import org.xhy.domain.rag.model.DocumentUnitEntity;
 import org.xhy.domain.rag.model.FileDetailEntity;
@@ -65,7 +64,6 @@ public class RagVersionDomainService {
      * @param changeLog 更新日志
      * @param userId 用户ID
      * @return 创建的RAG版本 */
-    @Transactional
     public RagVersionEntity createRagVersionSnapshot(String ragId, String version, String changeLog, String userId) {
         // 验证原始数据集存在
         RagQaDatasetEntity dataset = ragQaDatasetDomainService.getDataset(ragId, userId);
@@ -507,7 +505,6 @@ public class RagVersionDomainService {
      * 
      * @param versionId 版本ID
      * @param userId 用户ID */
-    @Transactional
     public void deleteRagVersion(String versionId, String userId) {
         // 验证版本是否存在且属于当前用户
         RagVersionEntity ragVersion = getRagVersion(versionId);

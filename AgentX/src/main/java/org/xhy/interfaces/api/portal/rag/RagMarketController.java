@@ -187,16 +187,4 @@ public class RagMarketController {
         List<FileDetailDTO> result = ragMarketAppService.getMarketRagFilesDTO(ragVersionId);
         return Result.success(result);
     }
-
-    /** 获取市场上RAG版本特定文件的文档单元
-     * 
-     * @param ragVersionId RAG版本ID
-     * @param fileId 文件ID
-     * @return 文档单元列表 */
-    @GetMapping("/{ragVersionId}/files/{fileId}/documents")
-    public Result<List<DocumentUnitDTO>> getMarketRagFileDocuments(@PathVariable String ragVersionId,
-            @PathVariable String fileId) {
-        List<DocumentUnitDTO> result = ragMarketAppService.getMarketRagFileDocumentsDTO(ragVersionId, fileId);
-        return Result.success(result);
-    }
 }

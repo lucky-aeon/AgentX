@@ -207,80 +207,12 @@ public class EmbeddingDomainService implements MetadataConstant {
         }
     }
 
-    /** RAG文档检索（兼容旧版本接口） 注意：此方法已废弃，请使用带嵌入模型配置的版本 */
-    @Deprecated
-    public List<DocumentUnitEntity> ragDoc(List<String> dataSetId, String question, Integer maxResults) {
-        throw new BusinessException("此方法已废弃，请传入嵌入模型配置参数");
-    }
-
     /** 批量删除向量数据
      *
      * @param fileIds 文件id集合 */
     public void deleteEmbedding(List<String> fileIds) {
 
         embeddingStore.removeAll(metadataKey(MetadataConstant.FILE_ID).isIn(fileIds));
-    }
-
-    /** 重新向量入库
-     *
-     * @param fileId 文件ID
-     * @return 处理结果，true表示成功，false表示失败 */
-    @Transactional(rollbackFor = Exception.class)
-    public boolean reindexEmbedding(String fileId) {
-
-        if (!StringUtils.hasText(fileId)) {
-            log.warn("File ID for re-vectorization is empty");
-            return false;
-        }
-
-        try {
-            // 获取文件详情
-            FileDetailEntity fileDetail = fileDetailRepository.selectById(fileId);
-            if (fileDetail == null) {
-                log.warn("File with ID {}not found", fileId);
-                return false;
-            }
-
-            // 检查文件OCR状态
-            Integer processingStatus = fileDetail.getProcessingStatus();
-            if (processingStatus == null || (!processingStatus.equals(FileProcessingStatusEnum.OCR_COMPLETED.getCode())
-                    && !processingStatus.equals(FileProcessingStatusEnum.EMBEDDING_PROCESSING.getCode())
-                    && !processingStatus.equals(FileProcessingStatusEnum.COMPLETED.getCode())
-                    && !processingStatus.equals(FileProcessingStatusEnum.EMBEDDING_FAILED.getCode()))) {
-                log.warn("The file with ID {} has no OCR data", fileId);
-                return false;
-            }
-
-            // 使用状态机开始向量化处理
-            // 这里直接操作状态，因为这是领域服务层
-            fileDetail.setProcessingStatus(FileProcessingStatusEnum.EMBEDDING_PROCESSING.getCode());
-            fileDetailRepository.updateById(fileDetail);
-
-            // 删除旧向量数据
-            removeEmbeddingByFileId(fileId);
-
-            // Todo 获取当前文件的所有文档id
-            // Todo 设置文档表为未向量化
-            final List<DocumentUnitEntity> documentUnitEntities = new ArrayList<>();
-
-            indexEmbedding(documentUnitEntities);
-
-            return true;
-        } catch (Exception e) {
-            log.error("File {} re-vectorization and storage failed", fileId, e);
-            // 更新文件状态为入库失败
-            try {
-                FileDetailEntity fileDetail = fileDetailRepository.selectById(fileId);
-                if (fileDetail != null) {
-                    // 使用状态机设置失败状态
-                    fileDetail.setProcessingStatus(FileProcessingStatusEnum.EMBEDDING_FAILED.getCode());
-                    fileDetailRepository.updateById(fileDetail);
-                }
-            } catch (Exception ex) {
-                log.error("Failed to update file status", ex);
-            }
-            return false;
-        }
     }
 
     /** 获取与文件关联的向量ID列表
