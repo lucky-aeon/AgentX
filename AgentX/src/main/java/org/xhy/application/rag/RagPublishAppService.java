@@ -2,7 +2,6 @@ package org.xhy.application.rag;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -10,11 +9,11 @@ import org.xhy.application.rag.assembler.RagVersionAssembler;
 import org.xhy.application.rag.dto.RagVersionDTO;
 import org.xhy.application.rag.dto.RagStatisticsDTO;
 import org.xhy.application.rag.dto.RagContentPreviewDTO;
-import org.xhy.application.rag.dto.RagVersionFileDTO;
-import org.xhy.application.rag.dto.RagVersionDocumentDTO;
 import org.xhy.application.rag.request.PublishRagRequest;
 import org.xhy.application.rag.request.ReviewRagVersionRequest;
 import org.xhy.application.rag.request.BatchReviewRequest;
+import org.xhy.interfaces.dto.rag.request.QueryUserRagVersionRequest;
+import org.xhy.interfaces.dto.rag.request.QueryPendingReviewRequest;
 import org.xhy.application.rag.request.QueryRagVersionRequest;
 import org.xhy.domain.rag.constant.RagPublishStatus;
 import org.xhy.domain.rag.model.RagVersionEntity;
@@ -35,7 +34,6 @@ public class RagPublishAppService {
     private final RagVersionDomainService ragVersionDomainService;
     private final UserRagDomainService userRagDomainService;
     private final UserDomainService userDomainService;
-    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public RagPublishAppService(RagVersionDomainService ragVersionDomainService,
             UserRagDomainService userRagDomainService, UserDomainService userDomainService) {
@@ -52,25 +50,9 @@ public class RagPublishAppService {
     @Transactional
     public RagVersionDTO publishRagVersion(PublishRagRequest request, String userId) {
 
-        // 处理标签JSON
-        String labelsJson = null;
-        if (request.getLabels() != null && !request.getLabels().isEmpty()) {
-            try {
-                labelsJson = objectMapper.writeValueAsString(request.getLabels());
-            } catch (Exception e) {
-                throw new BusinessException("标签格式错误");
-            }
-        }
-
         // 创建版本快照
         RagVersionEntity ragVersion = ragVersionDomainService.createRagVersionSnapshot(request.getRagId(),
                 request.getVersion(), request.getChangeLog(), userId);
-
-        // 设置标签
-        if (labelsJson != null) {
-            ragVersion.setLabels(labelsJson);
-            ragVersionDomainService.getRagVersion(ragVersion.getId()); // 触发更新
-        }
 
         // 转换为DTO
         RagVersionDTO dto = RagVersionAssembler.toDTO(ragVersion);
@@ -84,12 +66,11 @@ public class RagPublishAppService {
     /** 获取用户的RAG版本列表
      * 
      * @param userId 用户ID
-     * @param page 页码
-     * @param pageSize 每页大小
-     * @param keyword 搜索关键词
+     * @param request 查询请求
      * @return 版本列表 */
-    public Page<RagVersionDTO> getUserRagVersions(String userId, Integer page, Integer pageSize, String keyword) {
-        IPage<RagVersionEntity> entityPage = ragVersionDomainService.listUserVersions(userId, page, pageSize, keyword);
+    public Page<RagVersionDTO> getUserRagVersions(String userId, QueryUserRagVersionRequest request) {
+        IPage<RagVersionEntity> entityPage = ragVersionDomainService.listUserVersions(userId, request.getPage(),
+                request.getPageSize(), request.getKeyword());
 
         // 转换为DTO
         List<RagVersionDTO> dtoList = RagVersionAssembler.toDTOs(entityPage.getRecords());
@@ -160,7 +141,7 @@ public class RagPublishAppService {
     public RagVersionDTO reviewRagVersion(String versionId, ReviewRagVersionRequest request) {
         // 获取审核状态
         RagPublishStatus status = RagPublishStatus.fromCode(request.getStatus());
-        if (status == null || (status != RagPublishStatus.PUBLISHED && status != RagPublishStatus.REJECTED)) {
+        if ((status != RagPublishStatus.PUBLISHED && status != RagPublishStatus.REJECTED)) {
             throw new BusinessException("无效的审核状态");
         }
 
@@ -178,11 +159,11 @@ public class RagPublishAppService {
 
     /** 获取待审核的RAG版本列表
      * 
-     * @param page 页码
-     * @param pageSize 每页大小
+     * @param request 查询请求
      * @return 待审核版本列表 */
-    public Page<RagVersionDTO> getPendingReviewVersions(Integer page, Integer pageSize) {
-        IPage<RagVersionEntity> entityPage = ragVersionDomainService.listPendingReviewVersions(page, pageSize);
+    public Page<RagVersionDTO> getPendingReviewVersions(QueryPendingReviewRequest request) {
+        IPage<RagVersionEntity> entityPage = ragVersionDomainService.listPendingReviewVersions(request.getPage(),
+                request.getPageSize());
 
         // 转换为DTO
         List<RagVersionDTO> dtoList = RagVersionAssembler.toDTOs(entityPage.getRecords());
@@ -255,7 +236,7 @@ public class RagPublishAppService {
 
         // 获取审核状态
         RagPublishStatus status = RagPublishStatus.fromCode(request.getStatus());
-        if (status == null || (status != RagPublishStatus.PUBLISHED && status != RagPublishStatus.REJECTED
+        if ((status != RagPublishStatus.PUBLISHED && status != RagPublishStatus.REJECTED
                 && status != RagPublishStatus.REMOVED)) {
             throw new BusinessException("无效的审核状态");
         }

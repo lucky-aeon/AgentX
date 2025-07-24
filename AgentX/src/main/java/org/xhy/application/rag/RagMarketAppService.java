@@ -1,6 +1,8 @@
 package org.xhy.application.rag;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
@@ -14,17 +16,23 @@ import org.xhy.application.rag.dto.FileDetailDTO;
 import org.xhy.application.rag.dto.RagMarketDTO;
 import org.xhy.application.rag.dto.UserRagDTO;
 import org.xhy.application.rag.request.InstallRagRequest;
+import org.xhy.interfaces.dto.rag.request.QueryRagMarketRequest;
+import org.xhy.interfaces.dto.rag.request.QueryUserInstalledRagRequest;
 import org.xhy.domain.rag.model.DocumentUnitEntity;
 import org.xhy.domain.rag.model.FileDetailEntity;
 import org.xhy.domain.rag.model.RagQaDatasetEntity;
 import org.xhy.domain.rag.model.RagVersionEntity;
 import org.xhy.domain.rag.model.UserRagEntity;
-import org.xhy.domain.rag.service.RagDataAccessService;
+import org.xhy.domain.rag.repository.DocumentUnitRepository;
+import org.xhy.domain.rag.service.FileDetailDomainService;
+import org.xhy.domain.rag.service.RagDataAccessDomainService;
 import org.xhy.domain.rag.service.RagQaDatasetDomainService;
 import org.xhy.domain.rag.service.RagVersionDomainService;
 import org.xhy.domain.rag.service.UserRagDomainService;
-import org.xhy.domain.rag.service.UserRagSnapshotService;
+import org.xhy.domain.rag.service.UserRagSnapshotDomainService;
 import org.xhy.domain.user.service.UserDomainService;
+import org.xhy.domain.rag.constant.RagPublishStatus;
+import org.xhy.infrastructure.exception.BusinessException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,31 +48,34 @@ public class RagMarketAppService {
     private final UserRagDomainService userRagDomainService;
     private final UserDomainService userDomainService;
     private final RagQaDatasetDomainService ragQaDatasetDomainService;
-    private final UserRagSnapshotService userRagSnapshotService;
-    private final RagDataAccessService ragDataAccessService;
+    private final UserRagSnapshotDomainService userRagSnapshotService;
+    private final RagDataAccessDomainService ragDataAccessService;
+    private final FileDetailDomainService fileDetailDomainService;
+    private final DocumentUnitRepository documentUnitRepository;
 
     public RagMarketAppService(RagVersionDomainService ragVersionDomainService,
             UserRagDomainService userRagDomainService, UserDomainService userDomainService,
-            RagQaDatasetDomainService ragQaDatasetDomainService, UserRagSnapshotService userRagSnapshotService,
-            RagDataAccessService ragDataAccessService) {
+            RagQaDatasetDomainService ragQaDatasetDomainService, UserRagSnapshotDomainService userRagSnapshotService,
+            RagDataAccessDomainService ragDataAccessService, FileDetailDomainService fileDetailDomainService,
+            DocumentUnitRepository documentUnitRepository) {
         this.ragVersionDomainService = ragVersionDomainService;
         this.userRagDomainService = userRagDomainService;
         this.userDomainService = userDomainService;
         this.ragQaDatasetDomainService = ragQaDatasetDomainService;
         this.userRagSnapshotService = userRagSnapshotService;
         this.ragDataAccessService = ragDataAccessService;
+        this.fileDetailDomainService = fileDetailDomainService;
+        this.documentUnitRepository = documentUnitRepository;
     }
 
     /** 获取市场上的RAG版本列表
      * 
-     * @param page 页码
-     * @param pageSize 每页大小
-     * @param keyword 搜索关键词
+     * @param request 查询请求
      * @param currentUserId 当前用户ID（用于判断是否已安装）
      * @return RAG市场列表 */
-    public Page<RagMarketDTO> getMarketRagVersions(Integer page, Integer pageSize, String keyword,
-            String currentUserId) {
-        IPage<RagVersionEntity> entityPage = ragVersionDomainService.listPublishedVersions(page, pageSize, keyword);
+    public Page<RagMarketDTO> getMarketRagVersions(QueryRagMarketRequest request, String currentUserId) {
+        IPage<RagVersionEntity> entityPage = ragVersionDomainService.listPublishedVersions(request.getPage(),
+                request.getPageSize(), request.getKeyword());
 
         // 转换为MarketDTO
         List<RagMarketDTO> dtoList = RagVersionAssembler.toMarketDTOs(entityPage.getRecords());
@@ -120,12 +131,11 @@ public class RagMarketAppService {
     /** 获取用户安装的RAG列表
      * 
      * @param userId 用户ID
-     * @param page 页码
-     * @param pageSize 每页大小
-     * @param keyword 搜索关键词
+     * @param request 查询请求
      * @return 用户安装的RAG列表 */
-    public Page<UserRagDTO> getUserInstalledRags(String userId, Integer page, Integer pageSize, String keyword) {
-        IPage<UserRagEntity> entityPage = userRagDomainService.listInstalledRags(userId, page, pageSize, keyword);
+    public Page<UserRagDTO> getUserInstalledRags(String userId, QueryUserInstalledRagRequest request) {
+        IPage<UserRagEntity> entityPage = userRagDomainService.listInstalledRags(userId, request.getPage(),
+                request.getPageSize(), request.getKeyword());
 
         // 根据安装类型分别处理数据
         List<UserRagDTO> dtoList = new ArrayList<>();
@@ -415,5 +425,92 @@ public class RagMarketAppService {
         }
 
         return dtoList;
+    }
+
+    /** 获取市场上RAG版本的文件列表（返回DTO）
+     * 
+     * @param ragVersionId RAG版本ID
+     * @return 文件详细信息DTO列表 */
+    public List<FileDetailDTO> getMarketRagFilesDTO(String ragVersionId) {
+        // 根据版本ID获取原始RAG信息
+        RagVersionEntity ragVersion = ragVersionDomainService.getRagVersion(ragVersionId);
+        if (ragVersion == null) {
+            return new ArrayList<>();
+        }
+
+        // 获取原始RAG的文件列表 - 注意：这里需要传入创建者的用户ID
+        List<FileDetailEntity> entities = fileDetailDomainService.listAllFilesByDataset(ragVersion.getOriginalRagId(),
+                ragVersion.getUserId());
+        return FileDetailAssembler.toDTOs(entities);
+    }
+
+    /** 获取市场上RAG版本特定文件的文档单元（返回DTO）
+     * 
+     * @param ragVersionId RAG版本ID
+     * @param fileId 文件ID
+     * @return 文档单元DTO列表 */
+    public List<DocumentUnitDTO> getMarketRagFileDocumentsDTO(String ragVersionId, String fileId) {
+        // 调用统一的文档单元获取方法，不传用户ID表示市场访问
+        return getRagFileDocuments(ragVersionId, fileId, null);
+    }
+
+    /** 统一的RAG文件文档单元获取方法
+     * 
+     * @param ragVersionId RAG版本ID
+     * @param fileId 文件ID
+     * @param userId 用户ID，null表示市场访问，非null表示已安装访问
+     * @return 文档单元DTO列表 */
+    private List<DocumentUnitDTO> getRagFileDocuments(String ragVersionId, String fileId, String userId) {
+        // 获取RAG版本信息
+        RagVersionEntity ragVersion = ragVersionDomainService.getRagVersion(ragVersionId);
+        if (ragVersion == null) {
+            return new ArrayList<>();
+        }
+
+        // 权限验证：市场访问需要验证发布状态和版本限制
+        if (userId == null) {
+            // 市场访问权限检查
+            validateMarketAccess(ragVersion);
+        } else {
+            // 已安装访问权限检查（用户必须是创建者或已安装该版本）
+            validateInstalledAccess(ragVersion, userId);
+        }
+
+        // 查询文档单元
+        LambdaQueryWrapper<DocumentUnitEntity> wrapper = Wrappers.<DocumentUnitEntity>lambdaQuery()
+                .eq(DocumentUnitEntity::getFileId, fileId).orderByAsc(DocumentUnitEntity::getPage);
+
+        List<DocumentUnitEntity> entities = documentUnitRepository.selectList(wrapper);
+        return DocumentUnitAssembler.toDTOs(entities);
+    }
+
+    /** 验证市场访问权限
+     * 
+     * @param ragVersion RAG版本实体 */
+    private void validateMarketAccess(RagVersionEntity ragVersion) {
+        // 1. 检查版本号：0.0.1版本不能公开访问
+        if ("0.0.1".equals(ragVersion.getVersion())) {
+            throw new BusinessException("该版本不对外开放");
+        }
+
+        // 2. 检查发布状态：只有已发布状态才能公开访问
+        if (!RagPublishStatus.PUBLISHED.getCode().equals(ragVersion.getPublishStatus())) {
+            throw new BusinessException("该RAG版本未发布或已下架");
+        }
+    }
+
+    /** 验证已安装访问权限
+     * 
+     * @param ragVersion RAG版本实体
+     * @param userId 用户ID */
+    private void validateInstalledAccess(RagVersionEntity ragVersion, String userId) {
+        // 已安装访问：创建者可以访问任何状态，其他用户只能访问已发布版本
+        if (!ragVersion.getUserId().equals(userId)) {
+            // 非创建者需要检查发布状态
+            if (!RagPublishStatus.PUBLISHED.getCode().equals(ragVersion.getPublishStatus())) {
+                throw new BusinessException("该RAG版本未发布或已下架");
+            }
+        }
+        // 创建者可以访问自己创建的任何版本（包括0.0.1和未发布版本）
     }
 }

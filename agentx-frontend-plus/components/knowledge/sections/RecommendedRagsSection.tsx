@@ -31,6 +31,7 @@ import {
 import type { RagMarketDTO, PageResponse } from "@/types/rag-publish"
 import { MarketRagCard } from "../cards/MarketRagCard"
 import { InstallRagDialog } from "../dialogs/InstallRagDialog"
+import { MarketRagDetailDialog } from "../dialogs/MarketRagDetailDialog"
 
 export function RecommendedRagsSection() {
   const [marketRags, setMarketRags] = useState<RagMarketDTO[]>([])
@@ -360,6 +361,15 @@ export function RecommendedRagsSection() {
         onOpenChange={(open) => !open && setRagToInstall(null)}
         ragMarket={ragToInstall}
         onSuccess={handleInstallSuccess}
+      />
+
+      {/* 查看详情对话框 */}
+      <MarketRagDetailDialog
+        open={!!ragToViewDetails}
+        onOpenChange={(open) => !open && setRagToViewDetails(null)}
+        ragMarket={ragToViewDetails}
+        onInstall={setRagToInstall}
+        onInstallSuccess={handleInstallSuccess}
       />
     </div>
   )

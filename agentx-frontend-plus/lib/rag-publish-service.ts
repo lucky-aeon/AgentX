@@ -597,3 +597,65 @@ export async function getInstalledRagFileDocumentsWithToast(userRagId: string, f
   
   return response
 }
+
+/** 获取市场RAG的文件列表 */
+export async function getMarketRagFiles(ragVersionId: string): Promise<ApiResponse<any[]>> {
+  try {
+    return await httpClient.get<ApiResponse<any[]>>(
+      `${API_ENDPOINTS.MARKET}/${ragVersionId}/files`
+    )
+  } catch (error) {
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : "获取文件列表失败",
+      data: [],
+      timestamp: Date.now()
+    }
+  }
+}
+
+/** 获取市场RAG的文件列表（带Toast提示） */
+export async function getMarketRagFilesWithToast(ragVersionId: string): Promise<ApiResponse<any[]>> {
+  const response = await getMarketRagFiles(ragVersionId)
+  
+  if (response.code !== 200) {
+    toast({
+      title: "获取文件列表失败",
+      description: response.message,
+      variant: "destructive"
+    })
+  }
+  
+  return response
+}
+
+/** 获取市场RAG特定文件的文档单元 - 已禁用 */
+// export async function getMarketRagFileDocuments(ragVersionId: string, fileId: string): Promise<ApiResponse<any[]>> {
+//   try {
+//     return await httpClient.get<ApiResponse<any[]>>(
+//       `${API_ENDPOINTS.MARKET}/${ragVersionId}/files/${fileId}/documents`
+//     )
+//   } catch (error) {
+//     return {
+//       code: 500,
+//       message: error instanceof Error ? error.message : "获取文档单元失败",
+//       data: [],
+//       timestamp: Date.now()
+//     }
+//   }
+// }
+
+/** 获取市场RAG特定文件的文档单元（带Toast提示） - 已禁用 */
+// export async function getMarketRagFileDocumentsWithToast(ragVersionId: string, fileId: string): Promise<ApiResponse<any[]>> {
+//   const response = await getMarketRagFileDocuments(ragVersionId, fileId)
+  
+//   if (response.code !== 200) {
+//     toast({
+//       title: "获取文档单元失败",
+//       description: response.message,
+//       variant: "destructive"
+//     })
+//   }
+  
+//   return response
+// }

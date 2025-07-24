@@ -37,19 +37,6 @@ public class RagVersionAssembler {
             dto.setPublishStatusDesc(status.getDescription());
         }
 
-        // 处理标签JSON
-        if (StringUtils.isNotBlank(entity.getLabels())) {
-            try {
-                List<String> labels = objectMapper.readValue(entity.getLabels(), new TypeReference<List<String>>() {
-                });
-                dto.setLabels(labels);
-            } catch (Exception e) {
-                dto.setLabels(Collections.emptyList());
-            }
-        } else {
-            dto.setLabels(Collections.emptyList());
-        }
-
         return dto;
     }
 
@@ -69,19 +56,6 @@ public class RagVersionAssembler {
 
         RagMarketDTO dto = new RagMarketDTO();
         BeanUtils.copyProperties(entity, dto);
-
-        // 处理标签JSON
-        if (StringUtils.isNotBlank(entity.getLabels())) {
-            try {
-                List<String> labels = objectMapper.readValue(entity.getLabels(), new TypeReference<List<String>>() {
-                });
-                dto.setLabels(labels);
-            } catch (Exception e) {
-                dto.setLabels(Collections.emptyList());
-            }
-        } else {
-            dto.setLabels(Collections.emptyList());
-        }
 
         // 格式化文件大小显示
         dto.setTotalSizeDisplay(formatFileSize(entity.getTotalSize()));

@@ -33,10 +33,10 @@ public class UserRagDomainService {
     private final UserRagRepository userRagRepository;
     private final RagVersionDomainService ragVersionDomainService;
     private final RagQaDatasetDomainService ragQaDatasetDomainService;
-    private final UserRagSnapshotService userRagSnapshotService;
+    private final UserRagSnapshotDomainService userRagSnapshotService;
 
     public UserRagDomainService(UserRagRepository userRagRepository, RagVersionDomainService ragVersionDomainService,
-            RagQaDatasetDomainService ragQaDatasetDomainService, UserRagSnapshotService userRagSnapshotService) {
+            RagQaDatasetDomainService ragQaDatasetDomainService, UserRagSnapshotDomainService userRagSnapshotService) {
         this.userRagRepository = userRagRepository;
         this.ragVersionDomainService = ragVersionDomainService;
         this.ragQaDatasetDomainService = ragQaDatasetDomainService;
@@ -48,7 +48,6 @@ public class UserRagDomainService {
      * @param userId 用户ID
      * @param ragVersionId RAG版本ID
      * @return 安装记录 */
-    @Transactional
     public UserRagEntity installRag(String userId, String ragVersionId) {
         // 验证版本存在
         RagVersionEntity ragVersion = ragVersionDomainService.getRagVersion(ragVersionId);
@@ -103,7 +102,6 @@ public class UserRagDomainService {
      * @param originalRagId 原始RAG数据集ID
      * @param ragVersionId RAG版本ID
      * @return 安装记录 */
-    @Transactional
     public UserRagEntity autoInstallRag(String userId, String originalRagId, String ragVersionId) {
         // 检查是否已安装
         UserRagEntity existingRag = findInstalledRagByOriginalId(userId, originalRagId);
@@ -137,7 +135,6 @@ public class UserRagDomainService {
      * @param userRagId 用户RAG安装记录ID
      * @param targetVersionId 目标版本ID
      * @return 更新后的安装记录 */
-    @Transactional
     public UserRagEntity switchRagVersion(String userId, String userRagId, String targetVersionId) {
         // 获取当前安装记录
         UserRagEntity userRag = getUserRag(userId, userRagId);
@@ -198,20 +195,11 @@ public class UserRagDomainService {
         UserRagEntity userRag = getInstalledRag(userId, ragVersionId);
 
         // 检查是否为用户自己的知识库
-        try {
-            RagVersionEntity ragVersion = ragVersionDomainService.getRagVersion(ragVersionId);
+        RagVersionEntity ragVersion = ragVersionDomainService.getRagVersion(ragVersionId);
 
-            // 如果是用户自己创建的知识库且源知识库还存在，则不允许卸载
-            if (ragVersion.getUserId().equals(userId)) {
-                throw new BusinessException("无法卸载自己创建的知识库，请先删除原知识库");
-            }
-        } catch (BusinessException e) {
-            // 如果是"无法卸载自己创建的知识库"异常，则重新抛出
-            if (e.getMessage().contains("无法卸载自己创建的知识库")) {
-                throw e;
-            }
-            // 如果是其他异常（比如源知识库不存在），则继续执行卸载
-            // 这种情况下，源知识库已被删除，允许卸载残留的安装记录
+        // 如果是用户自己创建的知识库且源知识库还存在，则不允许卸载
+        if (ragVersion.getUserId().equals(userId)) {
+            throw new BusinessException("无法卸载自己创建的知识库，请先删除原知识库");
         }
 
         // 如果是SNAPSHOT类型，删除用户快照数据

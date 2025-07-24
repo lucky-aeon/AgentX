@@ -246,6 +246,7 @@ public class RagVersionDomainService {
      * @param keyword 搜索关键词
      * @return 分页结果 */
     public IPage<RagVersionEntity> listPublishedVersions(Integer page, Integer pageSize, String keyword) {
+        // 1. 查询所有已发布的版本，支持关键词搜索
         LambdaQueryWrapper<RagVersionEntity> wrapper = Wrappers.<RagVersionEntity>lambdaQuery()
                 .eq(RagVersionEntity::getPublishStatus, RagPublishStatus.PUBLISHED.getCode())
                 .ne(RagVersionEntity::getVersion, "0.0.1"); // 过滤掉0.0.1版本（用户私有版本）
@@ -256,9 +257,42 @@ public class RagVersionDomainService {
         }
 
         wrapper.orderByDesc(RagVersionEntity::getPublishedAt);
+        List<RagVersionEntity> allPublishedList = ragVersionRepository.selectList(wrapper);
 
-        Page<RagVersionEntity> pageObj = new Page<>(page, pageSize);
-        return ragVersionRepository.selectPage(pageObj, wrapper);
+        // 2. 按originalRagId分组，取每组publishedAt最大的一条（最新发布版本）
+        java.util.Map<String, RagVersionEntity> latestMap = allPublishedList.stream()
+                .collect(java.util.stream.Collectors.toMap(RagVersionEntity::getOriginalRagId, v -> v, (v1, v2) -> {
+                    // 比较发布时间，选择最新的版本
+                    if (v1.getPublishedAt() == null && v2.getPublishedAt() == null) {
+                        return v1.getCreatedAt().isAfter(v2.getCreatedAt()) ? v1 : v2;
+                    } else if (v1.getPublishedAt() == null) {
+                        return v2;
+                    } else if (v2.getPublishedAt() == null) {
+                        return v1;
+                    } else {
+                        return v1.getPublishedAt().isAfter(v2.getPublishedAt()) ? v1 : v2;
+                    }
+                }));
+
+        List<RagVersionEntity> latestList = new java.util.ArrayList<>(latestMap.values());
+
+        // 3. 按发布时间倒序排列
+        latestList.sort((a, b) -> {
+            LocalDateTime timeA = a.getPublishedAt() != null ? a.getPublishedAt() : a.getCreatedAt();
+            LocalDateTime timeB = b.getPublishedAt() != null ? b.getPublishedAt() : b.getCreatedAt();
+            return timeB.compareTo(timeA);
+        });
+
+        // 4. 手动分页
+        int fromIndex = (page - 1) * pageSize;
+        int toIndex = Math.min(fromIndex + pageSize, latestList.size());
+        List<RagVersionEntity> pageList = fromIndex >= latestList.size()
+                ? new java.util.ArrayList<>()
+                : latestList.subList(fromIndex, toIndex);
+
+        Page<RagVersionEntity> resultPage = new Page<>(page, pageSize, latestList.size());
+        resultPage.setRecords(pageList);
+        return resultPage;
     }
 
     /** 获取待审核的RAG版本列表

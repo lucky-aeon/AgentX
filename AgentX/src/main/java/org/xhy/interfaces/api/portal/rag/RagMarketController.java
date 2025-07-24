@@ -11,6 +11,8 @@ import org.xhy.application.rag.dto.UserRagDTO;
 import org.xhy.application.rag.request.InstallRagRequest;
 import org.xhy.infrastructure.auth.UserContext;
 import org.xhy.interfaces.api.common.Result;
+import org.xhy.interfaces.dto.rag.request.QueryRagMarketRequest;
+import org.xhy.interfaces.dto.rag.request.QueryUserInstalledRagRequest;
 
 import java.util.List;
 
@@ -30,15 +32,12 @@ public class RagMarketController {
 
     /** 获取市场上的RAG版本列表
      * 
-     * @param page 页码
-     * @param pageSize 每页大小
-     * @param keyword 搜索关键词
+     * @param request 查询请求
      * @return RAG市场列表 */
     @GetMapping
-    public Result<Page<RagMarketDTO>> getMarketRagVersions(@RequestParam(defaultValue = "1") Integer page,
-            @RequestParam(defaultValue = "15") Integer pageSize, @RequestParam(required = false) String keyword) {
+    public Result<Page<RagMarketDTO>> getMarketRagVersions(QueryRagMarketRequest request) {
         String userId = UserContext.getCurrentUserId();
-        Page<RagMarketDTO> result = ragMarketAppService.getMarketRagVersions(page, pageSize, keyword, userId);
+        Page<RagMarketDTO> result = ragMarketAppService.getMarketRagVersions(request, userId);
         return Result.success(result);
     }
 
@@ -66,15 +65,12 @@ public class RagMarketController {
 
     /** 获取用户安装的RAG列表
      * 
-     * @param page 页码
-     * @param pageSize 每页大小
-     * @param keyword 搜索关键词
+     * @param request 查询请求
      * @return 用户安装的RAG列表 */
     @GetMapping("/installed")
-    public Result<Page<UserRagDTO>> getUserInstalledRags(@RequestParam(defaultValue = "1") Integer page,
-            @RequestParam(defaultValue = "15") Integer pageSize, @RequestParam(required = false) String keyword) {
+    public Result<Page<UserRagDTO>> getUserInstalledRags(QueryUserInstalledRagRequest request) {
         String userId = UserContext.getCurrentUserId();
-        Page<UserRagDTO> result = ragMarketAppService.getUserInstalledRags(userId, page, pageSize, keyword);
+        Page<UserRagDTO> result = ragMarketAppService.getUserInstalledRags(userId, request);
         return Result.success(result);
     }
 
@@ -179,6 +175,28 @@ public class RagMarketController {
             @PathVariable String fileId) {
         String userId = UserContext.getCurrentUserId();
         List<DocumentUnitDTO> result = ragMarketAppService.getInstalledRagFileDocumentsDTO(userRagId, fileId, userId);
+        return Result.success(result);
+    }
+
+    /** 获取市场上RAG版本的文件列表
+     * 
+     * @param ragVersionId RAG版本ID
+     * @return 文件列表 */
+    @GetMapping("/{ragVersionId}/files")
+    public Result<List<FileDetailDTO>> getMarketRagFiles(@PathVariable String ragVersionId) {
+        List<FileDetailDTO> result = ragMarketAppService.getMarketRagFilesDTO(ragVersionId);
+        return Result.success(result);
+    }
+
+    /** 获取市场上RAG版本特定文件的文档单元
+     * 
+     * @param ragVersionId RAG版本ID
+     * @param fileId 文件ID
+     * @return 文档单元列表 */
+    @GetMapping("/{ragVersionId}/files/{fileId}/documents")
+    public Result<List<DocumentUnitDTO>> getMarketRagFileDocuments(@PathVariable String ragVersionId,
+            @PathVariable String fileId) {
+        List<DocumentUnitDTO> result = ragMarketAppService.getMarketRagFileDocumentsDTO(ragVersionId, fileId);
         return Result.success(result);
     }
 }

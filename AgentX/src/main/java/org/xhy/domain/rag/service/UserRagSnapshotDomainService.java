@@ -26,16 +26,16 @@ import java.util.Map;
  * @date 2025-07-22 <br/>
  */
 @Service
-public class UserRagSnapshotService {
+public class UserRagSnapshotDomainService {
 
-    private static final Logger logger = LoggerFactory.getLogger(UserRagSnapshotService.class);
+    private static final Logger logger = LoggerFactory.getLogger(UserRagSnapshotDomainService.class);
 
     private final UserRagFileRepository userRagFileRepository;
     private final UserRagDocumentRepository userRagDocumentRepository;
     private final RagVersionFileRepository ragVersionFileRepository;
     private final RagVersionDocumentRepository ragVersionDocumentRepository;
 
-    public UserRagSnapshotService(UserRagFileRepository userRagFileRepository,
+    public UserRagSnapshotDomainService(UserRagFileRepository userRagFileRepository,
             UserRagDocumentRepository userRagDocumentRepository, RagVersionFileRepository ragVersionFileRepository,
             RagVersionDocumentRepository ragVersionDocumentRepository) {
         this.userRagFileRepository = userRagFileRepository;
@@ -58,9 +58,6 @@ public class UserRagSnapshotService {
 
             // 复制文档快照
             copyVersionDocumentsToUser(userRagId, ragVersionId);
-
-            // TODO: 复制向量数据到用户命名空间
-            // copyVectorDataToUser(userRagId, ragVersionId);
 
             logger.info("用户RAG [{}] 快照创建完成", userRagId);
         } catch (Exception e) {
@@ -148,9 +145,6 @@ public class UserRagSnapshotService {
         LambdaUpdateWrapper<UserRagFileEntity> fileDeleteWrapper = Wrappers.<UserRagFileEntity>lambdaUpdate()
                 .eq(UserRagFileEntity::getUserRagId, userRagId);
         userRagFileRepository.delete(fileDeleteWrapper);
-
-        // TODO: 删除向量数据库中的用户命名空间数据
-        // deleteUserVectorData(userRagId);
 
         logger.info("用户RAG [{}] 快照数据删除完成", userRagId);
     }

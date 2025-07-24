@@ -15,25 +15,21 @@ import java.util.List;
  * @date 2025-07-19 <br/>
  */
 @Service
-public class RagDataAccessService {
+public class RagDataAccessDomainService {
 
     private final UserRagRepository userRagRepository;
     private final FileDetailRepository fileDetailRepository;
     private final DocumentUnitRepository documentUnitRepository;
-    private final RagVersionFileRepository ragVersionFileRepository;
-    private final RagVersionDocumentRepository ragVersionDocumentRepository;
     private final UserRagFileRepository userRagFileRepository;
     private final UserRagDocumentRepository userRagDocumentRepository;
 
-    public RagDataAccessService(UserRagRepository userRagRepository, FileDetailRepository fileDetailRepository,
+    public RagDataAccessDomainService(UserRagRepository userRagRepository, FileDetailRepository fileDetailRepository,
             DocumentUnitRepository documentUnitRepository, RagVersionFileRepository ragVersionFileRepository,
             RagVersionDocumentRepository ragVersionDocumentRepository, UserRagFileRepository userRagFileRepository,
             UserRagDocumentRepository userRagDocumentRepository) {
         this.userRagRepository = userRagRepository;
         this.fileDetailRepository = fileDetailRepository;
         this.documentUnitRepository = documentUnitRepository;
-        this.ragVersionFileRepository = ragVersionFileRepository;
-        this.ragVersionDocumentRepository = ragVersionDocumentRepository;
         this.userRagFileRepository = userRagFileRepository;
         this.userRagDocumentRepository = userRagDocumentRepository;
     }

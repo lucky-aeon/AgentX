@@ -1,11 +1,14 @@
 package org.xhy.domain.rag.model;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import java.io.Serial;
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.List;
+import org.xhy.infrastructure.converter.ListStringConverter;
 import org.xhy.infrastructure.entity.BaseEntity;
 
 /** RAG版本实体（完整快照）
@@ -40,8 +43,9 @@ public class RagVersionEntity extends BaseEntity implements Serializable {
     /** 更新日志 */
     private String changeLog;
 
-    /** 标签（JSON格式） */
-    private String labels;
+    /** 标签列表 */
+    @TableField(value = "labels", typeHandler = ListStringConverter.class)
+    private List<String> labels;
 
     /** 原始RAG数据集ID（仅标识用） */
     private String originalRagId;
@@ -126,11 +130,11 @@ public class RagVersionEntity extends BaseEntity implements Serializable {
         this.changeLog = changeLog;
     }
 
-    public String getLabels() {
+    public List<String> getLabels() {
         return labels;
     }
 
-    public void setLabels(String labels) {
+    public void setLabels(List<String> labels) {
         this.labels = labels;
     }
 

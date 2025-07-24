@@ -1,13 +1,9 @@
-package org.xhy.application.rag.dto;
+package org.xhy.interfaces.dto.rag.request;
 
 import org.xhy.interfaces.dto.Page;
 
-/** 查询数据集文件请求
- * @author shilong.zang
- * @date 2024-12-09 */
-public class QueryDatasetFileRequest extends Page {
+public class QueryUserInstalledRagRequest extends Page {
 
-    /** 搜索关键词 */
     private String keyword;
 
     public String getKeyword() {
