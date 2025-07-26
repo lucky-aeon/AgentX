@@ -22,20 +22,26 @@ RUN mvn clean package -DskipTests
 # 最终运行镜像 - 基于 PostgreSQL 镜像
 FROM postgres:15-alpine
 
-# 安装 Node.js 和 OpenJDK
+# 安装 Node.js、OpenJDK 和 RabbitMQ
 RUN apk add --no-cache \
     nodejs \
     npm \
     openjdk17-jre \
     curl \
     bash \
-    supervisor
+    supervisor \
+    rabbitmq-server
 
 # 设置 PostgreSQL 环境
 ENV POSTGRES_DB=agentx
 ENV POSTGRES_USER=agentx_user
 ENV POSTGRES_PASSWORD=agentx_pass
 ENV PGDATA=/var/lib/postgresql/data
+
+# 设置 RabbitMQ 环境
+ENV RABBITMQ_DEFAULT_USER=root
+ENV RABBITMQ_DEFAULT_PASS=zangzang
+ENV RABBITMQ_DEFAULT_VHOST=/
 
 # 创建应用目录
 WORKDIR /app
@@ -73,13 +79,14 @@ RUN printf '#!/bin/bash\n\necho "🚀 Starting AgentX All-in-One System"\necho "
 RUN chmod +x /app/start-agentx.sh
 
 # 创建必要目录和设置权限
-RUN mkdir -p /var/lib/postgresql/data /var/log /app/config && \
+RUN mkdir -p /var/lib/postgresql/data /var/log /app/config /var/lib/rabbitmq && \
     chown -R postgres:postgres /var/lib/postgresql && \
+    chown -R rabbitmq:rabbitmq /var/lib/rabbitmq && \
     chmod 755 /var/log && \
     chmod 755 /app/config
 
 # 暴露端口
-EXPOSE 3000 8088 5432
+EXPOSE 3000 8088 5432 5672 15672
 
 # 健康检查
 HEALTHCHECK --interval=30s --timeout=10s --start-period=180s --retries=3 \
