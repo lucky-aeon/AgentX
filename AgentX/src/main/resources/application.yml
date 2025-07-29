@@ -162,7 +162,7 @@ dromara:
         access-key: ${S3_SECRET_ID}
         secret-key: ${S3_SECRET_KEY}
         region: ${S3_REGION} # 与 end-point 参数至少填一个
-        end-point: ${S3_END_POINT} # 与 region 参数至少填一个
+        end-point: ${S3_ENDPOINT} # 与 region 参数至少填一个
         bucket-name: ${S3_BUCKET_NAME}
         domain: ${S3_DOMAIN} # 访问域名，注意“/”结尾，例如：https://abc.hn-bkt.clouddn.com/
         base-path: s3/ # 基础路径
