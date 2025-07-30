@@ -781,7 +781,8 @@ public class RagQaDatasetAppService {
         List<DocumentUnitEntity> entities = embeddingDomainService.ragDoc(validDatasetIds, request.getQuestion(),
                 request.getMaxResults(), adjustedMinScore, // 使用智能调整的相似度阈值
                 request.getEnableRerank(), adjustedCandidateMultiplier, // 使用智能调整的候选结果倍数
-                embeddingConfig); // 传入嵌入模型配置
+                embeddingConfig, // 传入嵌入模型配置
+                request.getEnableQueryExpansion()); // 传递查询扩展参数
 
         // 转换为DTO并返回
         return DocumentUnitAssembler.toDTOs(entities);
@@ -828,14 +829,14 @@ public class RagQaDatasetAppService {
             // REFERENCE类型：搜索实时数据
             entities = embeddingDomainService.ragDoc(List.of(actualDatasetId), request.getQuestion(),
                     request.getMaxResults(), adjustedMinScore, request.getEnableRerank(), adjustedCandidateMultiplier,
-                    embeddingConfig);
+                    embeddingConfig, request.getEnableQueryExpansion());
         } else {
             // SNAPSHOT类型：搜索版本快照数据
             List<DocumentUnitEntity> snapshotDocuments = ragDataAccessService.getRagDocuments(userId, userRagId);
             // 对快照数据进行向量搜索（这里可能需要特殊处理，暂时使用相同逻辑）
             entities = embeddingDomainService.ragDoc(List.of(actualDatasetId), request.getQuestion(),
                     request.getMaxResults(), adjustedMinScore, request.getEnableRerank(), adjustedCandidateMultiplier,
-                    embeddingConfig);
+                    embeddingConfig, request.getEnableQueryExpansion());
         }
 
         // 转换为DTO并返回
@@ -919,7 +920,8 @@ public class RagQaDatasetAppService {
                         request.getMaxResults(), embeddingConfig);
             } else {
                 retrievedDocuments = embeddingDomainService.ragDoc(searchDatasetIds, request.getQuestion(),
-                        request.getMaxResults(), request.getMinScore(), request.getEnableRerank(), 2, embeddingConfig);
+                        request.getMaxResults(), request.getMinScore(), request.getEnableRerank(), 2, embeddingConfig,
+                        false); // 流式问答中暂时不启用查询扩展，保持现有行为
             }
 
             // 构建检索结果
@@ -984,7 +986,8 @@ public class RagQaDatasetAppService {
         FileDetailEntity fileEntity = fileDetailRepository.selectById(fileId);
         List<String> datasetIds = List.of(fileEntity.getDataSetId());
 
-        return embeddingDomainService.ragDoc(datasetIds, question, maxResults, 0.5, true, 2, embeddingConfig);
+        return embeddingDomainService.ragDoc(datasetIds, question, maxResults, 0.5, true, 2, embeddingConfig,
+                false); // 文件内检索暂时不启用查询扩展，保持现有行为
     }
 
     /** 构建检索文档的上下文 */
@@ -1326,7 +1329,8 @@ public class RagQaDatasetAppService {
                 // REFERENCE类型：使用原始RAG的数据集进行向量搜索
                 List<String> ragDatasetIds = List.of(dataSourceInfo.getOriginalRagId());
                 retrievedDocuments = embeddingDomainService.ragDoc(ragDatasetIds, request.getQuestion(),
-                        request.getMaxResults(), request.getMinScore(), request.getEnableRerank(), 2, embeddingConfig);
+                        request.getMaxResults(), request.getMinScore(), request.getEnableRerank(), 2, embeddingConfig,
+                        false); // UserRag流式问答中暂时不启用查询扩展，保持现有行为
             } else {
                 // SNAPSHOT类型：使用用户快照数据进行检索
                 retrievedDocuments = ragDataAccessService.getRagDocuments(userId, userRagId);

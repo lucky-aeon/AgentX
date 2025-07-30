@@ -60,13 +60,14 @@ public class RagToolExecutor implements ToolExecutor {
             int maxResults = argsNode.has("maxResults") ? argsNode.get("maxResults").asInt(10) : 10;
             double minScore = argsNode.has("minScore") ? argsNode.get("minScore").asDouble(0.5) : 0.5;
             boolean enableRerank = argsNode.has("enableRerank") ? argsNode.get("enableRerank").asBoolean(true) : true;
+            boolean enableQueryExpansion = argsNode.has("enableQueryExpansion") ? argsNode.get("enableQueryExpansion").asBoolean(false) : false;
 
             if (!StringUtils.hasText(query)) {
                 return "错误：搜索查询内容为空";
             }
 
-            log.debug("RAG搜索参数 - query: {}, maxResults: {}, minScore: {}, enableRerank: {}, knowledgeBaseCount: {}",
-                    query, maxResults, minScore, enableRerank, knowledgeBaseIds.size());
+            log.debug("RAG搜索参数 - query: {}, maxResults: {}, minScore: {}, enableRerank: {}, enableQueryExpansion: {}, knowledgeBaseCount: {}",
+                    query, maxResults, minScore, enableRerank, enableQueryExpansion, knowledgeBaseIds.size());
 
             // 构建RAG搜索请求，支持多个知识库
             RagSearchRequest searchRequest = new RagSearchRequest();
@@ -75,6 +76,7 @@ public class RagToolExecutor implements ToolExecutor {
             searchRequest.setMaxResults(maxResults);
             searchRequest.setMinScore(minScore);
             searchRequest.setEnableRerank(enableRerank);
+            searchRequest.setEnableQueryExpansion(enableQueryExpansion);
 
             // 执行RAG搜索
             List<DocumentUnitDTO> searchResults = ragQaDatasetAppService.ragSearch(searchRequest, userId);

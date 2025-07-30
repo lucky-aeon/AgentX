@@ -5,8 +5,10 @@ import static dev.langchain4j.store.embedding.filter.MetadataFilterBuilder.metad
 import dev.langchain4j.store.embedding.EmbeddingMatch;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.dromara.streamquery.stream.core.stream.Steam;
 import org.slf4j.Logger;
@@ -85,9 +87,11 @@ public class EmbeddingDomainService implements MetadataConstant {
      * @param enableRerank 是否启用重排序
      * @param candidateMultiplier 候选结果倍数
      * @param embeddingConfig 嵌入模型配置
+     * @param enableQueryExpansion 是否启用查询扩展（相邻片段）
      * @return 相关文档列表 */
     public List<DocumentUnitEntity> ragDoc(List<String> dataSetId, String question, Integer maxResults, Double minScore,
-            Boolean enableRerank, Integer candidateMultiplier, EmbeddingModelFactory.EmbeddingConfig embeddingConfig) {
+            Boolean enableRerank, Integer candidateMultiplier, EmbeddingModelFactory.EmbeddingConfig embeddingConfig,
+            Boolean enableQueryExpansion) {
         // 参数验证和日志
         if (dataSetId == null || dataSetId.isEmpty()) {
             log.warn("Dataset IDs list is empty");
@@ -177,16 +181,50 @@ public class EmbeddingDomainService implements MetadataConstant {
                 return new ArrayList<>();
             }
 
-            // 批量查询文档实体并保持相关性排序
-            List<DocumentUnitEntity> documents = documentUnitRepository.selectList(
-                    Wrappers.lambdaQuery(DocumentUnitEntity.class).in(DocumentUnitEntity::getId, documentIds));
+            // 查询扩展：如果启用了查询扩展，添加相邻片段
+            List<String> finalDocumentIds = new ArrayList<>(documentIds);
+            if (Boolean.TRUE.equals(enableQueryExpansion)) {
+                // 获取初始匹配片段的详细信息
+                List<DocumentUnitEntity> initialDocs = documentUnitRepository.selectList(
+                        Wrappers.lambdaQuery(DocumentUnitEntity.class).in(DocumentUnitEntity::getId, documentIds));
+
+                // 收集所有需要的片段ID（使用LinkedHashSet保持顺序并去重）
+                Set<String> expandedIds = new LinkedHashSet<>(documentIds);
+
+                for (DocumentUnitEntity doc : initialDocs) {
+                    // 查询相邻页面片段（前一页、当前页、后一页）
+                    List<DocumentUnitEntity> adjacentChunks = documentUnitRepository.selectList(
+                            Wrappers.<DocumentUnitEntity>lambdaQuery()
+                                    .eq(DocumentUnitEntity::getFileId, doc.getFileId())
+                                    .between(DocumentUnitEntity::getPage, Math.max(1, doc.getPage() - 1),
+                                            doc.getPage() + 1)
+                                    .eq(DocumentUnitEntity::getIsVector, true));
+
+                    adjacentChunks.forEach(chunk -> expandedIds.add(chunk.getId()));
+                }
+
+                finalDocumentIds = new ArrayList<>(expandedIds);
+                log.info("Query expansion enabled: original {} chunks expanded to {} chunks for query: '{}'",
+                        documentIds.size(), finalDocumentIds.size(), question);
+            }
+
+            // 查询所有文档（包括扩展的）
+            List<DocumentUnitEntity> allDocuments = documentUnitRepository.selectList(
+                    Wrappers.lambdaQuery(DocumentUnitEntity.class).in(DocumentUnitEntity::getId, finalDocumentIds));
 
             // 按照检索相关性顺序重新排列结果，并设置相似度分数
-            List<DocumentUnitEntity> sortedResults = documentIds.stream().map(id -> {
-                DocumentUnitEntity doc = documents.stream().filter(d -> id.equals(d.getId())).findFirst().orElse(null);
+            List<DocumentUnitEntity> sortedResults = finalDocumentIds.stream().map(id -> {
+                DocumentUnitEntity doc = allDocuments.stream().filter(d -> id.equals(d.getId())).findFirst()
+                        .orElse(null);
                 if (doc != null) {
-                    // 设置相似度分数
-                    doc.setSimilarityScore(documentScores.get(id));
+                    // 设置相似度分数：原始匹配使用向量搜索分数，扩展片段使用默认分数
+                    Double score = documentScores.get(id);
+                    if (score != null) {
+                        doc.setSimilarityScore(score);
+                    } else {
+                        // 扩展片段设置较低的默认分数
+                        doc.setSimilarityScore(finalMinScore * 0.8);
+                    }
                 }
                 return doc;
             }).filter(java.util.Objects::nonNull).toList();
