@@ -12,7 +12,8 @@ import {
   Settings,
   Home,
   Shield,
-  Container
+  Container,
+  Database
 } from "lucide-react";
 
 interface MenuItemProps {
@@ -62,6 +63,11 @@ export function AdminSidebar() {
       href: "/admin/agents",
       icon: Bot,
       label: "Agent列表",
+    },
+    {
+      href: "/admin/rags",
+      icon: Database,
+      label: "RAG管理",
     },
     {
       href: "/admin/providers",

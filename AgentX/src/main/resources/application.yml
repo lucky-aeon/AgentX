@@ -15,6 +15,35 @@ server:
 spring:
   application:
     name: AgentX
+  rabbitmq:
+    host: ${SPRING_RABBITMQ_HOST}
+    port: ${SPRING_RABBITMQ_PORT}
+    username: ${SPRING_RABBITMQ_USERNAME}
+    password: ${SPRING_RABBITMQ_PASSWORD}
+    listener:
+      simple: # 添加 simple 下的并发配置
+        concurrency: 19
+        max-concurrency: 19
+        prefetch: 1
+        acknowledge-mode: manual
+        default-requeue-rejected: true
+        retry:
+          enabled: true
+          max-attempts: 3
+          initial-interval: 3000
+      direct:
+        acknowledge-mode: manual
+        default-requeue-rejected: true
+        retry:
+          enabled: true
+          max-attempts: 3
+          initial-interval: 3000
+    publisher-returns: true
+    publisher-confirm-type: correlated
+    connection-timeout: 200000
+    cache:
+      channel:
+        size: 25 # 添加通道缓存大小
   datasource:
     driver-class-name: org.postgresql.Driver
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:agentx}
@@ -84,20 +113,56 @@ high-availability:
   connect-timeout: 30000 # 连接超时时间(毫秒)
   read-timeout: 60000 # 读取超时时间(毫秒)
 
-# S3对象存储配置
-s3:
-  # 阿里云OSS的S3兼容endpoint
-  endpoint: ${S3_ENDPOINT:https://oss-cn-beijing.aliyuncs.com}
-  # 自定义域名(可选)，如果配置了自定义域名可以使用此配置
-  custom-domain: ${S3_CUSTOM_DOMAIN:}
+# OSS对象存储配置（前端直传用）
+oss:
+  # 阿里云OSS的endpoint
+  endpoint: ${OSS_ENDPOINT:https://oss-cn-beijing.aliyuncs.com}
+  # 自定义域名(可选)
+  custom-domain: ${OSS_CUSTOM_DOMAIN:}
   # 访问密钥
-  access-key: ${S3_ACCESS_KEY:${OSS_ACCESS_KEY:${OSS_ACCESS_KEY_ID:}}}
-  secret-key: ${S3_SECRET_KEY:${OSS_SECRET_KEY:${OSS_ACCESS_KEY_SECRET:}}}
+  access-key: ${OSS_ACCESS_KEY:${OSS_ACCESS_KEY_ID:}}
+  secret-key: ${OSS_SECRET_KEY:${OSS_ACCESS_KEY_SECRET:}}
   # 默认存储桶
-  bucket-name: ${S3_BUCKET_NAME:${OSS_BUCKET:}}
+  bucket-name: ${OSS_BUCKET:}
   # 区域
-  region: ${S3_REGION:cn-beijing}
-  # 启用路径样式访问（阿里云OSS需要设置为false，使用虚拟主机样式）
-  path-style-access: ${S3_PATH_STYLE_ACCESS:false}
+  region: ${OSS_REGION:cn-beijing}
+  # 启用路径样式访问
+  path-style-access: ${OSS_PATH_STYLE_ACCESS:false}
   # 文件访问URL前缀
-  url-prefix: ${S3_URL_PREFIX:}
+  url-prefix: ${OSS_URL_PREFIX:}
+
+embedding:
+  name: OpenAI
+  vector-store:
+    host: ${VECTOR_DB_HOST:${DB_HOST:localhost}}
+    port: ${VECTOR_DB_PORT:${DB_PORT:5432}}
+    user: ${VECTOR_DB_USER:${DB_USERNAME:postgres}}
+    password: ${VECTOR_DB_PASSWORD:${DB_PASSWORD:postgres}}
+    database: ${VECTOR_DB_NAME:${DB_NAME:agentx}}
+    table: ${VECTOR_DB_TABLE:public.vector_store}
+    dimension: ${VECTOR_DB_DIMENSION:1024}
+    drop-table-first: ${VECTOR_DB_DROP_TABLE_FIRST:false}
+    create-table: ${VECTOR_DB_CREATE_TABLE:true}
+
+rerank:
+  name: OpenAI
+  api-key: ${SILICONFLOW_API_KEY}
+  api-url: ${SILICONFLOW_API_URL_RERANK}
+  model: ${SILICONFLOW_MODEL_RERANK_MODEL:Pro/BAAI/bge-reranker-v2-m3}
+  timeout: ${SILICONFLOW_TIMEOUT:30000}
+
+dromara:
+  x-file-storage: #文件存储配置
+    default-platform: amazon-s3-1 #默认使用的存储平台
+    thumbnail-suffix: ".min.jpg" #缩略图后缀，例如【.min.jpg】【.png】
+    #对应平台的配置写在这里，注意缩进要对齐
+    amazon-s3: # 0.0.7 及以前的版本，配置名称是：aws-s3
+      - platform: amazon-s3-1 # 存储平台标识
+        enable-storage: true # 启用存储
+        access-key: ${S3_SECRET_ID}
+        secret-key: ${S3_SECRET_KEY}
+        region: ${S3_REGION} # 与 end-point 参数至少填一个
+        end-point: ${S3_ENDPOINT} # 与 region 参数至少填一个
+        bucket-name: ${S3_BUCKET_NAME}
+        domain: ${S3_DOMAIN} # 访问域名，注意“/”结尾，例如：https://abc.hn-bkt.clouddn.com/
+        base-path: s3/ # 基础路径

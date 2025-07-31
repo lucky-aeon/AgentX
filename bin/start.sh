@@ -179,6 +179,21 @@ if [ $RETRIES -eq 0 ]; then
 fi
 echo -e "${GREEN}API网关数据库已启动${NC}"
 
+# 等待RabbitMQ启动
+echo -e "${YELLOW}等待RabbitMQ启动...${NC}"
+RETRIES=60
+until docker compose exec -T rabbitmq rabbitmq-diagnostics -q ping > /dev/null 2>&1 || [ $RETRIES -eq 0 ]; do
+    echo -n "."
+    RETRIES=$((RETRIES-1))
+    sleep 2
+done
+
+if [ $RETRIES -eq 0 ]; then
+    echo -e "${RED}RabbitMQ启动超时${NC}"
+    exit 1
+fi
+echo -e "${GREEN}RabbitMQ已启动${NC}"
+
 # 等待API网关启动
 echo -e "${YELLOW}等待API网关启动...${NC}"
 RETRIES=30
@@ -235,8 +250,9 @@ echo -e "${BLUE}服务访问地址:${NC}"
 echo "  - 前端应用: http://localhost:3000"
 echo "  - 后端API: http://localhost:8080"
 echo "  - API网关: http://localhost:8081"
-echo "  - MCP网关: http://localhost:8082"
+echo "  - MCP网关: http://localhost:8005"
 echo "  - 数据库连接: localhost:5432"
+echo "  - RabbitMQ管理界面: http://localhost:15672 (用户名: root, 密码: zangzang)"
 echo
 echo -e "${YELLOW}🔐 默认登录账号:${NC}"
 echo "┌────────────────────────────────────────┐"

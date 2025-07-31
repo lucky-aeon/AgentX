@@ -108,6 +108,35 @@ export const API_ENDPOINTS = {
   DELETE_API_KEY: (id: string) => `/api-keys/${id}`, // 删除API密钥
   RESET_API_KEY: (id: string) => `/api-keys/${id}/reset`, // 重置API密钥
   AGENT_API_KEYS: (agentId: string) => `/api-keys/agent/${agentId}`, // 获取Agent的API密钥列表
+  
+  // RAG 数据集相关
+  RAG_DATASETS: "/rag/datasets", // 分页查询数据集
+  RAG_ALL_DATASETS: "/rag/datasets/all", // 获取所有数据集
+  RAG_DATASET_DETAIL: (id: string) => `/rag/datasets/${id}`, // 获取数据集详情
+  RAG_UPLOAD_FILE: "/rag/datasets/files", // 上传文件到数据集
+  RAG_DATASET_FILES: (id: string) => `/rag/datasets/${id}/files`, // 分页查询数据集文件
+  RAG_ALL_DATASET_FILES: (id: string) => `/rag/datasets/${id}/files/all`, // 获取数据集所有文件
+  RAG_DATASET_FILE_DELETE: (datasetId: string, fileId: string) => `/rag/datasets/${datasetId}/files/${fileId}`, // 删除数据集文件
+  // 新增RAG接口
+  RAG_PROCESS_FILE: "/rag/datasets/files/process", // 启动文件预处理
+  RAG_FILE_PROGRESS: (fileId: string) => `/rag/datasets/files/${fileId}/progress`, // 获取文件处理进度
+  RAG_DATASET_FILES_PROGRESS: (datasetId: string) => `/rag/datasets/${datasetId}/files/progress`, // 获取数据集文件处理进度列表
+  RAG_SEARCH: "/rag/search", // RAG搜索文档
+  RAG_SEARCH_BY_USER_RAG: (userRagId: string) => `/rag/search/user-rag/${userRagId}`, // 基于已安装知识库的RAG搜索
+  
+  // RAG 文件操作相关
+  RAG_FILE_INFO: (fileId: string) => `/rag/files/${fileId}/info`, // 获取文件详细信息
+  RAG_DOCUMENT_UNITS: "/rag/files/document-units/list", // 分页查询文件的语料
+  RAG_UPDATE_DOCUMENT_UNIT: "/rag/files/document-units", // 更新语料内容
+  RAG_DELETE_DOCUMENT_UNIT: (documentUnitId: string) => `/rag/files/document-units/${documentUnitId}`, // 删除语料
+  
+  // RAG 流式聊天相关
+  RAG_STREAM_CHAT: "/rag/search/stream-chat", // RAG流式问答
+  RAG_STREAM_CHAT_BY_USER_RAG: (userRagId: string) => `/rag/search/user-rag/${userRagId}/stream-chat`, // 基于已安装知识库的RAG流式问答
+  
+  // RAG 文件详情相关
+  RAG_FILE_DETAIL: "/rag/files/detail", // 获取文件详情
+  RAG_FILE_CONTENT: "/rag/files/content", // 获取文件内容
 }
 
 // 构建完整的API URL

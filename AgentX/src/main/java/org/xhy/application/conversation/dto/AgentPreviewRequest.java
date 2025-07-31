@@ -28,12 +28,23 @@ public class AgentPreviewRequest {
     /** 文件列表 */
     private List<String> fileUrls = new ArrayList<>();
 
+    /** 知识库ID列表，用于RAG功能 */
+    private List<String> knowledgeBaseIds = new ArrayList<>();
+
     public List<String> getFileUrls() {
         return fileUrls;
     }
 
     public void setFileUrls(List<String> fileUrls) {
         this.fileUrls = fileUrls;
+    }
+
+    public List<String> getKnowledgeBaseIds() {
+        return knowledgeBaseIds;
+    }
+
+    public void setKnowledgeBaseIds(List<String> knowledgeBaseIds) {
+        this.knowledgeBaseIds = knowledgeBaseIds;
     }
 
     public String getUserMessage() {

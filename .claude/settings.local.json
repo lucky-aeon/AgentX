@@ -40,7 +40,13 @@
       "Bash(rg:*)",
       "Bash(docker inspect:*)",
       "Bash(docker stop:*)",
-      "Bash(docker rm:*)"
+      "Bash(docker rm:*)",
+      "Bash(cp:*)",
+      "WebFetch(domain:docs.anthropic.com)",
+      "Bash(claude mcp:*)",
+      "Bash(env)",
+      "Bash(npx @modelcontextprotocol/server-postgres:*)",
+      "mcp__postgres-server__query"
     ],
     "deny": []
   }

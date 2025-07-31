@@ -55,7 +55,7 @@ check_docker() {
 check_ports() {
     log_info "检查端口占用..."
     
-    local ports=(3000 8080 8081)
+    local ports=(3000 8080 8081 5432 5672 15672)
     local occupied_ports=()
     
     for port in "${ports[@]}"; do
@@ -117,6 +117,9 @@ start_container() {
         -p 3000:3000 \
         -p 8080:8080 \
         -p 8081:8081 \
+        -p 5432:5432 \
+        -p 5672:5672 \
+        -p 15672:15672 \
         -v agentx-data:/var/lib/docker"
     
     # 如果存在 .env 文件，挂载配置目录
@@ -166,10 +169,13 @@ show_access_info() {
     echo "  🌐 前端界面: http://localhost:3000"
     echo "  🔌 后端API:  http://localhost:8080"
     echo "  🚪 API网关:  http://localhost:8081"
+    echo "  🐰 RabbitMQ管理界面: http://localhost:15672"
+    echo "  🗄️ 数据库连接: postgresql://agentx_user:agentx_pass@localhost:5432/agentx"
     echo
     echo "👤 默认账户:"
     echo "  管理员:     admin@agentx.ai / admin123"
     echo "  测试用户:   test@agentx.ai / test123"
+    echo "  RabbitMQ:   root / zangzang"
     echo
     echo "🔧 管理命令:"
     echo "  查看日志:   docker logs -f $CONTAINER_NAME"

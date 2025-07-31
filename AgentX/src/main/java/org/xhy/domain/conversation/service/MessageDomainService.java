@@ -7,6 +7,7 @@ import org.xhy.domain.conversation.model.MessageEntity;
 import org.xhy.domain.conversation.repository.ContextRepository;
 import org.xhy.domain.conversation.repository.MessageRepository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -32,6 +33,7 @@ public class MessageDomainService {
         }
         for (MessageEntity messageEntity : messageEntities) {
             messageEntity.setId(null);
+            messageEntity.setCreatedAt(LocalDateTime.now());
         }
         messageRepository.insert(messageEntities);
         contextEntity.getActiveMessages().addAll(messageEntities.stream().map(MessageEntity::getId).toList());

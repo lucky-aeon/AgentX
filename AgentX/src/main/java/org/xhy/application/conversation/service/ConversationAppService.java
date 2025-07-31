@@ -413,9 +413,9 @@ public class ConversationAppService {
         ModelEntity model = getModelForChat(null, modelId, userId);
 
         // 2. 获取服务商信息（预览不使用高可用）
-        ProviderEntity provider = llmDomainService.getProvider(model.getProviderId(), userId);
+        ProviderEntity provider = llmDomainService.getProvider(model.getProviderId());
         provider.isActive();
-
+        provider.isAvailable(provider.getUserId());
         // 3. 获取工具配置
         List<String> mcpServerNames = getMcpServerNames(previewRequest.getToolIds(), userId);
 
@@ -467,6 +467,7 @@ public class ConversationAppService {
         virtualAgent.setSystemPrompt(previewRequest.getSystemPrompt());
         virtualAgent.setToolIds(previewRequest.getToolIds());
         virtualAgent.setToolPresetParams(previewRequest.getToolPresetParams());
+        virtualAgent.setKnowledgeBaseIds(previewRequest.getKnowledgeBaseIds()); // 设置知识库IDs用于RAG功能
 
         virtualAgent.setEnabled(true);
         virtualAgent.setCreatedAt(LocalDateTime.now());

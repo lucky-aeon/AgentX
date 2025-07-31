@@ -30,9 +30,59 @@ export interface ApiResponse<T> {
   timestamp: number
 }
 
-// 获取当前用户ID（简化实现）
-export function getCurrentUserId(): string {
-  return API_CONFIG.CURRENT_USER_ID
+// 解析JWT Token获取用户ID
+function parseJwt(token: string): any {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+    return JSON.parse(jsonPayload);
+  } catch (e) {
+    console.error('Failed to parse JWT token:', e);
+    return null;
+  }
+}
+
+// 获取当前用户ID
+export function getCurrentUserId(): string | null {
+  if (typeof window === "undefined") {
+    return null; // 服务端渲染时返回null
+  }
+  
+  // 优先从localStorage获取token并解析
+  const token = localStorage.getItem("auth_token");
+  if (token) {
+    const payload = parseJwt(token);
+    if (payload && payload.userId) {
+      return payload.userId;
+    }
+    // 如果JWT中有其他字段表示用户ID
+    if (payload && payload.sub) {
+      return payload.sub;
+    }
+    if (payload && payload.id) {
+      return payload.id;
+    }
+  }
+  
+  // 如果无法从token解析，返回null
+  return null;
+}
+
+// 获取当前用户ID（异步版本，从API获取）
+export async function getCurrentUserIdAsync(): Promise<string | null> {
+  try {
+    const response = await getUserInfo();
+    if (response.code === 200 && response.data) {
+      return response.data.id;
+    }
+    return null;
+  } catch (error) {
+    console.error('Failed to get user ID from API:', error);
+    return null;
+  }
 }
 
 // 获取用户信息

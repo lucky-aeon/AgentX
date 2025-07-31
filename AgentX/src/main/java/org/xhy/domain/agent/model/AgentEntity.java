@@ -48,7 +48,7 @@ public class AgentEntity extends BaseEntity {
     private List<String> toolIds;
 
     /** 关联的知识库ID列表 */
-    @TableField(value = "knowledge_base_ids", exist = false)
+    @TableField(value = "knowledge_base_ids", typeHandler = ListStringConverter.class)
     private List<String> knowledgeBaseIds;
 
     /** 当前发布的版本ID */

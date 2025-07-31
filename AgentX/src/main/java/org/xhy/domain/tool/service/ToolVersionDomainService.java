@@ -51,7 +51,30 @@ public class ToolVersionDomainService {
         return resultPage;
     }
 
-    public ToolVersionEntity getToolVersion(String toolId, String version) {
+    /** 获取工具版本（带权限验证）
+     * 
+     * @param toolId 工具ID
+     * @param version 版本号
+     * @param userId 当前用户ID
+     * @return 工具版本实体 */
+    public ToolVersionEntity getToolVersion(String toolId, String version, String userId) {
+        ToolVersionEntity toolVersionEntity = getToolVersionWithoutPermissionCheck(toolId, version);
+
+        // 权限验证：如果不是创建者，只能获取公开版本
+        if (!userId.equals(toolVersionEntity.getUserId())
+                && !Boolean.TRUE.equals(toolVersionEntity.getPublicStatus())) {
+            throw new BusinessException("该工具版本未公开，无权访问");
+        }
+
+        return toolVersionEntity;
+    }
+
+    /** 获取工具版本（无权限验证，仅供内部使用）
+     * 
+     * @param toolId 工具ID
+     * @param version 版本号
+     * @return 工具版本实体 */
+    private ToolVersionEntity getToolVersionWithoutPermissionCheck(String toolId, String version) {
         Wrapper<ToolVersionEntity> wrapper = Wrappers.<ToolVersionEntity>lambdaQuery()
                 .eq(ToolVersionEntity::getToolId, toolId).eq(ToolVersionEntity::getVersion, version);
         ToolVersionEntity toolVersionEntity = toolVersionRepository.selectOne(wrapper);
@@ -59,6 +82,17 @@ public class ToolVersionDomainService {
             throw new BusinessException("工具版本不存在: " + toolId + " " + version);
         }
         return toolVersionEntity;
+    }
+
+    /** 获取工具版本（无权限验证，向后兼容）
+     * 
+     * @param toolId 工具ID
+     * @param version 版本号
+     * @return 工具版本实体
+     * @deprecated 使用带userId参数的版本以确保权限安全 */
+    @Deprecated
+    public ToolVersionEntity getToolVersion(String toolId, String version) {
+        return getToolVersionWithoutPermissionCheck(toolId, version);
     }
 
     public void addToolVersion(ToolVersionEntity toolVersionEntity) {

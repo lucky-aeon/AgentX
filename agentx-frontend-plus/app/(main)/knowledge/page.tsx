@@ -1,105 +1,44 @@
+"use client"
+
+import { useState } from "react"
+import { Plus, Database, Brain } from "lucide-react"
 import Link from "next/link"
-import { Book, Edit, MoreHorizontal, Plus, Trash, Upload } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-
-// Mock data for knowledge bases
-const knowledgeBases = [
-  { id: "1", name: "产品文档", description: "公司产品的详细文档", documents: 24, updatedAt: "2024-01-15" },
-  { id: "2", name: "技术指南", description: "技术指南和教程", documents: 18, updatedAt: "2024-02-20" },
-  { id: "3", name: "市场研究", description: "市场研究和分析报告", documents: 12, updatedAt: "2024-03-05" },
-  { id: "4", name: "客户反馈", description: "客户反馈和评价", documents: 36, updatedAt: "2024-03-10" },
-]
+import { CreateDatasetDialog } from "@/components/knowledge/CreateDatasetDialog"
+import { CreatedRagsSection } from "@/components/knowledge/sections/CreatedRagsSection"
+import { InstalledRagsSection } from "@/components/knowledge/sections/InstalledRagsSection"
+import { RecommendedRagsSection } from "@/components/knowledge/sections/RecommendedRagsSection"
 
 export default function KnowledgePage() {
-  return (
-    <div className="container py-6">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">知识库</h1>
-          <p className="text-muted-foreground">管理您的知识资源</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline">
-            <Upload className="mr-2 h-4 w-4" />
-            导入
-          </Button>
-          <Button asChild>
-            <Link href="/knowledge/new">
-              <Plus className="mr-2 h-4 w-4" />
-              创建知识库
-            </Link>
-          </Button>
-        </div>
-      </div>
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {knowledgeBases.map((kb) => (
-          <Card key={kb.id}>
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                    <Book className="h-4 w-4" />
-                  </div>
-                  <CardTitle className="text-base">{kb.name}</CardTitle>
-                </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon">
-                      <MoreHorizontal className="h-4 w-4" />
-                      <span className="sr-only">打开菜单</span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuLabel>操作</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem>
-                      <Edit className="mr-2 h-4 w-4" />
-                      编辑
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <Upload className="mr-2 h-4 w-4" />
-                      添加文档
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <Trash className="mr-2 h-4 w-4" />
-                      删除
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-              <CardDescription className="text-xs">更新于 {kb.updatedAt}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground mb-2">{kb.description}</p>
-              <div className="text-sm text-muted-foreground">文档数量: {kb.documents}</div>
-            </CardContent>
-            <CardFooter className="flex justify-between">
-              <Button variant="outline" size="sm" asChild>
-                <Link href={`/knowledge/edit/${kb.id}`}>
-                  <Edit className="mr-2 h-4 w-4" />
-                  编辑
-                </Link>
-              </Button>
-              <Button size="sm" asChild>
-                <Link href={`/knowledge/view/${kb.id}`}>
-                  <Book className="mr-2 h-4 w-4" />
-                  查看
-                </Link>
-              </Button>
-            </CardFooter>
-          </Card>
-        ))}
+  // 触发刷新
+  const triggerRefresh = () => {
+    setRefreshTrigger(prev => prev + 1)
+  }
+
+  return (
+    <div className="py-6 min-h-screen bg-gray-50">
+      <div className="container max-w-7xl mx-auto px-2">
+        {/* 页面头部 */}
+        <div className="flex items-center justify-between mb-8 bg-white p-6 rounded-lg shadow-sm">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">知识库</h1>
+            <p className="text-muted-foreground mt-1">管理您的RAG数据集，发现和使用优质知识库</p>
+          </div>
+          
+          <CreateDatasetDialog onSuccess={triggerRefresh} />
+        </div>
+        
+        {/* 我创建的知识库部分 */}
+        <CreatedRagsSection key={`created-${refreshTrigger}`} />
+        
+        {/* 我安装的知识库部分 */}
+        <InstalledRagsSection key={`installed-${refreshTrigger}`} />
+        
+        {/* 推荐知识库部分 */}
+        <RecommendedRagsSection key={`recommended-${refreshTrigger}`} />
       </div>
     </div>
   )

@@ -14,6 +14,9 @@ import {
   getUserSettingsWithToast, 
   updateUserSettingsWithToast, 
   getAllModelsWithToast,
+  getChatModelsWithToast,
+  getOcrModelsWithToast,
+  getEmbeddingModelsWithToast,
   type UserSettings,
   type UserSettingsConfig, 
   type UserSettingsUpdateRequest, 
@@ -26,6 +29,8 @@ export default function GeneralSettingsPage() {
   const [settings, setSettings] = useState<UserSettings>({
     settingConfig: {
       defaultModel: null,
+      defaultOcrModel: null,
+      defaultEmbeddingModel: null,
       fallbackConfig: {
         enabled: false,
         fallbackChain: []
@@ -33,6 +38,8 @@ export default function GeneralSettingsPage() {
     }
   })
   const [models, setModels] = useState<Model[]>([])
+  const [ocrModels, setOcrModels] = useState<Model[]>([])
+  const [embeddingModels, setEmbeddingModels] = useState<Model[]>([])
   const [loading, setLoading] = useState(true)
   const [modelsLoading, setModelsLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
@@ -49,6 +56,8 @@ export default function GeneralSettingsPage() {
             ...response.data,
             settingConfig: {
               ...response.data.settingConfig,
+              defaultOcrModel: response.data.settingConfig.defaultOcrModel || null,
+              defaultEmbeddingModel: response.data.settingConfig.defaultEmbeddingModel || null,
               fallbackConfig: response.data.settingConfig.fallbackConfig || {
                 enabled: false,
                 fallbackChain: []
@@ -71,14 +80,27 @@ export default function GeneralSettingsPage() {
     async function fetchModels() {
       try {
         setModelsLoading(true)
-        const response = await getAllModelsWithToast()
         
-        if (response.code === 200 && response.data) {
-          // 只显示激活的聊天模型
-          const activeModels = response.data.filter((model: Model) => 
-            model.status && model.type === 'CHAT'
-          )
+        // 并行获取所有类型的模型
+        const [chatResponse, ocrResponse, embeddingResponse] = await Promise.all([
+          getChatModelsWithToast(),
+          getOcrModelsWithToast(),
+          getEmbeddingModelsWithToast()
+        ])
+        
+        if (chatResponse.code === 200 && chatResponse.data) {
+          const activeModels = chatResponse.data.filter((model: Model) => model.status)
           setModels(activeModels)
+        }
+        
+        if (ocrResponse.code === 200 && ocrResponse.data) {
+          const activeOcrModels = ocrResponse.data.filter((model: Model) => model.status)
+          setOcrModels(activeOcrModels)
+        }
+        
+        if (embeddingResponse.code === 200 && embeddingResponse.data) {
+          const activeEmbeddingModels = embeddingResponse.data.filter((model: Model) => model.status)
+          setEmbeddingModels(activeEmbeddingModels)
         }
       } catch (error) {
         console.error("获取模型列表失败:", error)
@@ -96,6 +118,26 @@ export default function GeneralSettingsPage() {
       settingConfig: {
         ...prev.settingConfig,
         defaultModel: modelId
+      }
+    }))
+  }
+
+  const handleDefaultOcrModelChange = (modelId: string) => {
+    setSettings(prev => ({
+      ...prev,
+      settingConfig: {
+        ...prev.settingConfig,
+        defaultOcrModel: modelId
+      }
+    }))
+  }
+
+  const handleDefaultEmbeddingModelChange = (modelId: string) => {
+    setSettings(prev => ({
+      ...prev,
+      settingConfig: {
+        ...prev.settingConfig,
+        defaultEmbeddingModel: modelId
       }
     }))
   }
@@ -119,6 +161,8 @@ export default function GeneralSettingsPage() {
       const updateData: UserSettingsUpdateRequest = {
         settingConfig: {
           defaultModel: settings.settingConfig.defaultModel,
+          defaultOcrModel: settings.settingConfig.defaultOcrModel,
+          defaultEmbeddingModel: settings.settingConfig.defaultEmbeddingModel,
           fallbackConfig: settings.settingConfig.fallbackConfig
         }
       }
@@ -190,6 +234,88 @@ export default function GeneralSettingsPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {models.map((model) => (
+                      <SelectItem key={model.id} value={model.id}>
+                        <div className="flex items-center gap-2">
+                          <span>{model.name}</span>
+                          {model.providerName && (
+                            <Badge variant="secondary" className="text-xs">
+                              {model.providerName}
+                            </Badge>
+                          )}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* 默认OCR模型设置 */}
+        <Card>
+          <CardHeader>
+            <CardTitle>默认OCR模型</CardTitle>
+            <CardDescription>
+              选择用于文档OCR识别的默认模型，用于RAG系统的文档处理
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <Label htmlFor="default-ocr-model">默认OCR模型</Label>
+              {modelsLoading ? (
+                <Skeleton className="h-10 w-full" />
+              ) : (
+                <Select 
+                  value={settings.settingConfig.defaultOcrModel || ""} 
+                  onValueChange={handleDefaultOcrModelChange}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="选择默认OCR模型" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ocrModels.map((model) => (
+                      <SelectItem key={model.id} value={model.id}>
+                        <div className="flex items-center gap-2">
+                          <span>{model.name}</span>
+                          {model.providerName && (
+                            <Badge variant="secondary" className="text-xs">
+                              {model.providerName}
+                            </Badge>
+                          )}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* 默认嵌入模型设置 */}
+        <Card>
+          <CardHeader>
+            <CardTitle>默认嵌入模型</CardTitle>
+            <CardDescription>
+              选择用于向量化的默认嵌入模型，用于RAG系统的语义搜索
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <Label htmlFor="default-embedding-model">默认嵌入模型</Label>
+              {modelsLoading ? (
+                <Skeleton className="h-10 w-full" />
+              ) : (
+                <Select 
+                  value={settings.settingConfig.defaultEmbeddingModel || ""} 
+                  onValueChange={handleDefaultEmbeddingModelChange}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="选择默认嵌入模型" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {embeddingModels.map((model) => (
                       <SelectItem key={model.id} value={model.id}>
                         <div className="flex items-center gap-2">
                           <span>{model.name}</span>

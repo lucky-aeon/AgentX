@@ -23,6 +23,29 @@ services:
     networks:
       - agentx-network
 
+  # RabbitMQ消息队列服务
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: agentx-rabbitmq
+    environment:
+      - RABBITMQ_DEFAULT_USER=root
+      - RABBITMQ_DEFAULT_PASS=zangzang
+      - RABBITMQ_DEFAULT_VHOST=/
+    ports:
+      - "5672:5672"   # AMQP port
+      - "15672:15672" # Management UI port
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    networks:
+      - agentx-network
+    restart: unless-stopped
+
   # API网关 PostgreSQL数据库
   gateway-postgres:
     image: postgres:15-alpine
@@ -82,8 +105,19 @@ services:
       - SPRING_DATASOURCE_PASSWORD=postgres
       - MCP_GATEWAY_URL=http://mcp-gateway:8080
       - HIGH_AVAILABILITY_GATEWAY_URL=http://api-gateway:8081
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_RABBITMQ_PORT=5672
+      - SPRING_RABBITMQ_USERNAME=root
+      - SPRING_RABBITMQ_PASSWORD=zangzang
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=agentx
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
     depends_on:
       postgres:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
       api-gateway:
         condition: service_started
@@ -127,6 +161,8 @@ volumes:
     name: agentx-postgres-data
   gateway-postgres-data:
     name: api-gateway-postgres-data
+  rabbitmq-data:
+    name: agentx-rabbitmq-data
 
 networks:
   agentx-network:

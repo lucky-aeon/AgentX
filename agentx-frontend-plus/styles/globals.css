@@ -38,6 +38,44 @@ body {
   white-space: pre-wrap;
 }
 
+/* 优化Markdown内容间距 - 使用更紧凑的间距 */
+.react-markdown {
+  line-height: 1.2 !important; /* 进一步缩短行间距 */
+}
+
+.react-markdown p {
+  margin-top: 0.25rem !important;
+  margin-bottom: 0.25rem !important; /* 大幅缩短段落间距 */
+  line-height: 1.2 !important;
+}
+
+.react-markdown h1, 
+.react-markdown h2, 
+.react-markdown h3, 
+.react-markdown h4, 
+.react-markdown h5, 
+.react-markdown h6 {
+  margin-top: 0.5rem !important;   /* 进一步缩短标题上方间距 */
+  margin-bottom: 0.25rem !important; /* 进一步缩短标题下方间距 */
+  line-height: 1.1 !important;      /* 标题使用最紧凑的行间距 */
+}
+
+/* 代码块间距优化 */
+.react-markdown pre {
+  margin-top: 0.25rem !important;
+  margin-bottom: 0.25rem !important;
+  line-height: 1.2 !important;
+}
+
+/* 整体容器的行高优化 - 使用最紧凑设置 */
+.prose, .prose-sm, .react-markdown {
+  line-height: 1.2 !important;
+}
+
+.prose *, .prose-sm *, .react-markdown * {
+  line-height: 1.2 !important;
+}
+
 /* 代码块容器样式 */
 .code-block-container {
   max-width: 100%;
@@ -92,15 +130,96 @@ body {
 .react-markdown ul,
 .react-markdown ol {
   padding-left: 2rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem; /* 缩短列表间距 */
+}
+
+.react-markdown li {
+  margin-bottom: 0.25rem; /* 缩短列表项间距 */
+}
+
+/* 优化Prose样式的间距 - 使用更激进的紧凑间距 */
+.prose, .prose-sm {
+  --tw-prose-body: theme('colors.gray.700');
+  --tw-prose-headings: theme('colors.gray.900');
+  line-height: 1.2 !important;
+}
+
+.prose p, .prose-sm p {
+  margin-top: 0.25rem !important;
+  margin-bottom: 0.25rem !important;
+  line-height: 1.2 !important;
+}
+
+.prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6,
+.prose-sm h1, .prose-sm h2, .prose-sm h3, .prose-sm h4, .prose-sm h5, .prose-sm h6 {
+  margin-top: 0.5rem !important;
+  margin-bottom: 0.25rem !important;
+  line-height: 1.1 !important;
+}
+
+.prose ul, .prose ol, .prose-sm ul, .prose-sm ol {
+  margin-top: 0.25rem !important;
+  margin-bottom: 0.25rem !important;
+  line-height: 1.2 !important;
+}
+
+.prose li, .prose-sm li {
+  margin-top: 0.1rem !important;
+  margin-bottom: 0.1rem !important;
+  line-height: 1.2 !important;
+}
+
+.prose blockquote, .prose-sm blockquote {
+  margin-top: 0.25rem !important;
+  margin-bottom: 0.25rem !important;
+  line-height: 1.2 !important;
+}
+
+/* 强制覆盖所有 prose 元素的行间距 */
+.prose > *, .prose-sm > * {
+  line-height: 1.2 !important;
+}
+
+/* 最终的通用行间距覆盖 - 确保所有文本都使用紧凑间距 */
+.prose p, .prose-sm p,
+.prose li, .prose-sm li,
+.prose h1, .prose-sm h1,
+.prose h2, .prose-sm h2,
+.prose h3, .prose-sm h3,
+.prose h4, .prose-sm h4,
+.prose h5, .prose-sm h5,
+.prose h6, .prose-sm h6,
+.prose blockquote, .prose-sm blockquote,
+.prose pre, .prose-sm pre,
+.react-markdown p,
+.react-markdown li,
+.react-markdown h1,
+.react-markdown h2,
+.react-markdown h3,
+.react-markdown h4,
+.react-markdown h5,
+.react-markdown h6,
+.react-markdown blockquote,
+.react-markdown pre {
+  line-height: 1.2 !important;
+}
+
+/* 确保段落和其他块级元素的紧凑间距 */
+.prose p + p, .prose-sm p + p,
+.react-markdown p + p {
+  margin-top: 0.25rem !important;
 }
 
 /* 引用块样式 */
-.react-markdown blockquote {
+.react-markdown blockquote,
+.prose blockquote, .prose-sm blockquote {
   border-left: 4px solid #ddd;
   padding-left: 1rem;
   margin-left: 0;
+  margin-top: 0.5rem !important;
+  margin-bottom: 0.5rem !important;
   color: #666;
+  line-height: 1.4 !important;
 }
 
 /* 链接样式 */

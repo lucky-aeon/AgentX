@@ -4,6 +4,7 @@ import dev.langchain4j.service.tool.ToolProvider;
 import org.springframework.stereotype.Component;
 import org.xhy.application.conversation.service.handler.context.ChatContext;
 import org.xhy.application.conversation.service.message.AbstractMessageHandler;
+import org.xhy.application.conversation.service.message.agent.tool.RagToolManager;
 import org.xhy.domain.conversation.service.MessageDomainService;
 import org.xhy.domain.conversation.service.SessionDomainService;
 import org.xhy.domain.llm.service.HighAvailabilityDomainService;
@@ -17,24 +18,13 @@ public class AgentMessageHandler extends AbstractMessageHandler {
 
     private final AgentToolManager agentToolManager;
 
-    protected final HighAvailabilityDomainService highAvailabilityDomainService;
-    protected final SessionDomainService sessionDomainService;
-    protected final UserSettingsDomainService userSettingsDomainService;
-    protected final LLMDomainService llmDomainService;
-
     public AgentMessageHandler(LLMServiceFactory llmServiceFactory, MessageDomainService messageDomainService,
             HighAvailabilityDomainService highAvailabilityDomainService, SessionDomainService sessionDomainService,
             UserSettingsDomainService userSettingsDomainService, LLMDomainService llmDomainService,
-            AgentToolManager agentToolManager, HighAvailabilityDomainService highAvailabilityDomainService1,
-            SessionDomainService sessionDomainService1, UserSettingsDomainService userSettingsDomainService1,
-            LLMDomainService llmDomainService1) {
+            AgentToolManager agentToolManager, RagToolManager ragToolManager) {
         super(llmServiceFactory, messageDomainService, highAvailabilityDomainService, sessionDomainService,
-                userSettingsDomainService, llmDomainService);
+                userSettingsDomainService, llmDomainService, ragToolManager);
         this.agentToolManager = agentToolManager;
-        this.highAvailabilityDomainService = highAvailabilityDomainService1;
-        this.sessionDomainService = sessionDomainService1;
-        this.userSettingsDomainService = userSettingsDomainService1;
-        this.llmDomainService = llmDomainService1;
     }
 
     @Override

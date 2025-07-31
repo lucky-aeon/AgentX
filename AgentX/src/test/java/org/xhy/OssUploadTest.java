@@ -1,6 +1,6 @@
 package org.xhy;
 
-import org.xhy.infrastructure.config.S3Properties;
+import org.xhy.infrastructure.config.OssProperties;
 import org.xhy.infrastructure.storage.OssUploadService;
 import org.xhy.infrastructure.storage.OssUploadService.UploadCredential;
 
@@ -11,24 +11,24 @@ public class OssUploadTest {
         System.out.println("开始OSS上传凭证测试...");
 
         try {
-            // 创建S3配置
-            S3Properties s3Properties = new S3Properties();
-            s3Properties.setEndpoint("");
-            s3Properties.setAccessKey("");
-            s3Properties.setSecretKey("");
-            s3Properties.setBucketName("");
-            s3Properties.setRegion("cn-beijing");
-            s3Properties.setPathStyleAccess(false);
+            // 创建OSS配置
+            OssProperties ossProperties = new OssProperties();
+            ossProperties.setEndpoint("");
+            ossProperties.setAccessKey("");
+            ossProperties.setSecretKey("");
+            ossProperties.setBucketName("");
+            ossProperties.setRegion("cn-beijing");
+            ossProperties.setPathStyleAccess(false);
 
             System.out.println("OSS配置信息:");
-            System.out.println("  端点: " + s3Properties.getEndpoint());
-            System.out.println("  存储桶: " + s3Properties.getBucketName());
-            System.out.println("  区域: " + s3Properties.getRegion());
-            System.out.println("  访问密钥: " + s3Properties.getAccessKey().substring(0, 8) + "...");
+            System.out.println("  端点: " + ossProperties.getEndpoint());
+            System.out.println("  存储桶: " + ossProperties.getBucketName());
+            System.out.println("  区域: " + ossProperties.getRegion());
+            System.out.println("  访问密钥: " + ossProperties.getAccessKey().substring(0, 8) + "...");
             System.out.println();
 
             // 创建OSS上传服务
-            OssUploadService ossUploadService = new OssUploadService(s3Properties);
+            OssUploadService ossUploadService = new OssUploadService(ossProperties);
             System.out.println("OSS上传服务创建成功");
 
             // 生成上传凭证

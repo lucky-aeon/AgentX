@@ -5,6 +5,7 @@ import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.xhy.infrastructure.exception.BusinessException;
 
 import java.util.Properties;
 
@@ -50,7 +51,7 @@ public class EmailService {
 
             Transport.send(message);
         } catch (MessagingException e) {
-            throw new RuntimeException("发送邮件失败: " + e.getMessage(), e);
+            throw new BusinessException("发送邮件失败: " + e.getMessage(), e);
         }
     }
 }
