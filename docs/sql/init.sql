@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS messages (
     role VARCHAR(20) NOT NULL,
     content TEXT NOT NULL,
     token_count INTEGER DEFAULT 0,
+    body_token_count INTEGER DEFAULT 0,
     provider VARCHAR(100),
     model VARCHAR(100),
     metadata TEXT,
@@ -171,6 +172,7 @@ COMMENT ON COLUMN messages.session_id IS '所属会话ID';
 COMMENT ON COLUMN messages.role IS '消息角色(user/assistant/system)';
 COMMENT ON COLUMN messages.content IS '消息内容';
 COMMENT ON COLUMN messages.token_count IS 'Token数量';
+COMMENT ON COLUMN messages.body_token_count IS '消息本体Token数量（不含上下文）';
 COMMENT ON COLUMN messages.provider IS '服务提供商';
 COMMENT ON COLUMN messages.model IS '使用的模型';
 COMMENT ON COLUMN messages.metadata IS '消息元数据';

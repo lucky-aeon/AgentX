@@ -25,9 +25,14 @@ public class TokenMessage {
     private String role;
     
     /**
-     * 消息Token数量
+     * 消息Token数量（包含上下文）
      */
     private Integer tokenCount;
+
+    /**
+     * 消息本体Token数量（不包含上下文）
+     */
+    private Integer bodyTokenCount;
 
     /**
      * 创建时间
@@ -123,5 +128,13 @@ public class TokenMessage {
             java.time.Instant.ofEpochMilli(createdAtMillis), 
             ZoneOffset.UTC
         );
+    }
+
+    public Integer getBodyTokenCount() {
+        return bodyTokenCount;
+    }
+
+    public void setBodyTokenCount(Integer bodyTokenCount) {
+        this.bodyTokenCount = bodyTokenCount;
     }
 }

@@ -1,5 +1,6 @@
 package org.xhy.domain.conversation.handler;
 
+import cn.hutool.core.collection.CollectionUtil;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import dev.langchain4j.data.message.*;
 import dev.langchain4j.model.chat.StreamingChatLanguageModel;
@@ -170,18 +171,24 @@ public class StandardMessageHandler implements MessageHandler {
             
             @Override
             public void onCompleteResponse(ChatResponse completeResponse) {
+                int historyBodyTokenCountSum = 0;
+                if (CollectionUtil.isNotEmpty(environment.getMessageHistory())) {
+                    historyBodyTokenCountSum = environment.getMessageHistory().stream()
+                            .mapToInt(MessageEntity::getBodyTokenCount)
+                            .sum();
+                }
                 // 设置token使用情况
                 TokenUsage tokenUsage = completeResponse.metadata().tokenUsage();
                 
-                // 设置用户消息token数
+                // 设置用户消息token数和消息本体token数
                 Integer inputTokenCount = tokenUsage.inputTokenCount();
                 userMessageEntity.setTokenCount(inputTokenCount);
-                
+                userMessageEntity.setBodyTokenCount(inputTokenCount - historyBodyTokenCountSum);
                 // 设置LLM消息内容和token数
                 Integer outputTokenCount = tokenUsage.outputTokenCount();
                 llmMessageEntity.setTokenCount(outputTokenCount);
+                llmMessageEntity.setBodyTokenCount(outputTokenCount);
                 llmMessageEntity.setContent(completeResponse.aiMessage().text());
-                
                 // 发送完成消息
                 transport.sendMessage(
                         connection,

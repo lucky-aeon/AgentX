@@ -277,6 +277,7 @@ public class ConversationAppService {
             tokenMessage.setContent(message.getContent());
             tokenMessage.setTokenCount(message.getTokenCount());
             tokenMessage.setCreatedAt(message.getCreatedAt());
+            tokenMessage.setBodyTokenCount(message.getBodyTokenCount());
             return tokenMessage;
         }).collect(Collectors.toList());
     }
