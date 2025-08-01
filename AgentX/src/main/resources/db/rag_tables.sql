@@ -180,6 +180,8 @@ CREATE TABLE `rag_version_documents` (
     KEY `idx_deleted_at` (`deleted_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='RAG版本文档表（文档内容快照）';
 
+-- 向量化表也应该是一个快照版本
+
 -- ============================================
 -- 7. 用户RAG表（用户安装的RAG）
 -- ============================================
@@ -257,7 +259,7 @@ CREATE TABLE `user_rag_documents` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户RAG文档表（用户RAG文档快照）';
 
 -- ============================================
--- 10. 文档分片表（可选，用于向量存储）
+-- 10. 文档分片表（用于向量存储）
 -- ============================================
 create table public.vector_store (
                                      embedding_id uuid primary key not null,
