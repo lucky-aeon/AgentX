@@ -1,1 +1,0 @@
-CREATE TABLE IF NOT EXISTS agent.document_chunks (embedding_id UUID PRIMARY KEY, embedding vector(1024), text TEXT NULL, metadata JSON NULL )
