@@ -84,4 +84,28 @@ public class PortalTraceController {
 
         return Result.success(response);
     }
+
+    /** 获取用户的Agent执行链路统计信息
+     * 
+     * @param request 查询条件
+     * @return Agent统计信息列表 */
+    @GetMapping("/agents")
+    public Result<List<AgentTraceStatisticsDTO>> getUserAgentTraceStatistics(AgentTraceListRequest request) {
+        String userId = UserContext.getCurrentUserId();
+        List<AgentTraceStatisticsDTO> result = traceAppService.getUserAgentTraceStatistics(request, userId);
+        return Result.success(result);
+    }
+
+    /** 获取指定Agent下的会话执行链路统计信息
+     * 
+     * @param agentId Agent ID
+     * @param request 查询条件
+     * @return 会话统计信息列表 */
+    @GetMapping("/agents/{agentId}/sessions")
+    public Result<List<SessionTraceStatisticsDTO>> getAgentSessionTraceStatistics(
+            @PathVariable String agentId, SessionTraceListRequest request) {
+        String userId = UserContext.getCurrentUserId();
+        List<SessionTraceStatisticsDTO> result = traceAppService.getAgentSessionTraceStatistics(agentId, request, userId);
+        return Result.success(result);
+    }
 }

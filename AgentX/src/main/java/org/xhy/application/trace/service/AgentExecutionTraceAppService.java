@@ -4,21 +4,33 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.stereotype.Service;
 import org.xhy.application.trace.assembler.AgentExecutionTraceAssembler;
 import org.xhy.application.trace.dto.*;
+import org.xhy.domain.agent.model.AgentEntity;
+import org.xhy.domain.agent.service.AgentDomainService;
+import org.xhy.domain.conversation.model.SessionEntity;
+import org.xhy.domain.conversation.service.SessionDomainService;
 import org.xhy.domain.trace.model.AgentExecutionDetailEntity;
 import org.xhy.domain.trace.model.AgentExecutionSummaryEntity;
 import org.xhy.domain.trace.service.AgentExecutionTraceDomainService;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /** Agent执行链路追踪应用服务 协调追踪数据的查询和展示逻辑 */
 @Service
 public class AgentExecutionTraceAppService {
 
     private final AgentExecutionTraceDomainService traceDomainService;
+    private final AgentDomainService agentDomainService;
+    private final SessionDomainService sessionDomainService;
 
-    public AgentExecutionTraceAppService(AgentExecutionTraceDomainService traceDomainService) {
+    public AgentExecutionTraceAppService(AgentExecutionTraceDomainService traceDomainService,
+            AgentDomainService agentDomainService, SessionDomainService sessionDomainService) {
         this.traceDomainService = traceDomainService;
+        this.agentDomainService = agentDomainService;
+        this.sessionDomainService = sessionDomainService;
     }
 
     /** 获取完整的执行链路信息
@@ -185,5 +197,154 @@ public class AgentExecutionTraceAppService {
     public List<AgentExecutionSummaryDTO> getSessionExecutionHistoryByUserId(String sessionId, String userId) {
         List<AgentExecutionSummaryEntity> entities = traceDomainService.getSessionExecutionHistory(sessionId, userId);
         return AgentExecutionTraceAssembler.toSummaryDTOs(entities);
+    }
+
+    /** 获取用户的Agent执行链路统计信息（含Agent名称）
+     * 
+     * @param request 查询请求
+     * @param userId 用户ID
+     * @return Agent统计信息列表 */
+    public List<AgentTraceStatisticsDTO> getUserAgentTraceStatistics(AgentTraceListRequest request, String userId) {
+        // 获取领域统计数据
+        List<AgentExecutionTraceDomainService.AgentStatistics> agentStatistics = traceDomainService.getUserAgentStatistics(userId);
+        
+        if (agentStatistics.isEmpty()) {
+            return List.of();
+        }
+        
+        // 提取所有agentId，批量获取Agent信息
+        List<String> agentIds = agentStatistics.stream()
+                .map(AgentExecutionTraceDomainService.AgentStatistics::getAgentId)
+                .collect(Collectors.toList());
+        
+        // 批量获取Agent名称映射（容错处理）
+        Map<String, String> agentNameMap = getAgentNameMap(agentIds, userId);
+        
+        // 转换为DTO并填充Agent名称
+        return agentStatistics.stream()
+                .map(stats -> {
+                    AgentTraceStatisticsDTO dto = new AgentTraceStatisticsDTO();
+                    dto.setAgentId(stats.getAgentId());
+                    dto.setAgentName(agentNameMap.getOrDefault(stats.getAgentId(), "未知助理"));
+                    dto.setTotalExecutions(stats.getTotalExecutions());
+                    dto.setSuccessfulExecutions(stats.getSuccessfulExecutions());
+                    dto.setFailedExecutions(stats.getFailedExecutions());
+                    dto.setSuccessRate(stats.getSuccessRate());
+                    dto.setTotalTokens(stats.getTotalTokens());
+                    dto.setTotalInputTokens(stats.getTotalInputTokens());
+                    dto.setTotalOutputTokens(stats.getTotalOutputTokens());
+                    dto.setTotalToolCalls(stats.getTotalToolCalls());
+                    dto.setTotalCost(stats.getTotalCost());
+                    dto.setTotalSessions(stats.getTotalSessions());
+                    dto.setLastExecutionTime(stats.getLastExecutionTime());
+                    dto.setLastExecutionSuccess(stats.getLastExecutionSuccess());
+                    return dto;
+                })
+                .collect(Collectors.toList());
+    }
+
+    /** 获取指定Agent下的会话执行链路统计信息（含会话名称）
+     * 
+     * @param agentId Agent ID
+     * @param request 查询请求
+     * @param userId 用户ID
+     * @return 会话统计信息列表 */
+    public List<SessionTraceStatisticsDTO> getAgentSessionTraceStatistics(String agentId, 
+            SessionTraceListRequest request, String userId) {
+        // 获取领域统计数据
+        List<AgentExecutionTraceDomainService.SessionStatistics> sessionStatistics = 
+                traceDomainService.getAgentSessionStatistics(agentId, userId);
+        
+        if (sessionStatistics.isEmpty()) {
+            return List.of();
+        }
+        
+        // 获取Agent名称
+        String agentName = getAgentName(agentId, userId);
+        
+        // 提取所有sessionId，批量获取会话信息
+        List<String> sessionIds = sessionStatistics.stream()
+                .map(AgentExecutionTraceDomainService.SessionStatistics::getSessionId)
+                .collect(Collectors.toList());
+        
+        // 批量获取会话标题映射（容错处理）
+        Map<String, SessionEntity> sessionMap = getSessionMap(sessionIds, userId);
+        
+        // 转换为DTO并填充会话信息
+        return sessionStatistics.stream()
+                .map(stats -> {
+                    SessionTraceStatisticsDTO dto = new SessionTraceStatisticsDTO();
+                    dto.setSessionId(stats.getSessionId());
+                    dto.setAgentId(stats.getAgentId());
+                    dto.setAgentName(agentName);
+                    
+                    // 设置会话标题和创建时间
+                    SessionEntity session = sessionMap.get(stats.getSessionId());
+                    if (session != null) {
+                        dto.setSessionTitle(session.getTitle());
+                        dto.setSessionCreatedTime(session.getCreatedAt());
+                        dto.setIsArchived(session.getIsArchived());
+                    } else {
+                        dto.setSessionTitle("未知会话");
+                        dto.setIsArchived(false);
+                    }
+                    
+                    dto.setTotalExecutions(stats.getTotalExecutions());
+                    dto.setSuccessfulExecutions(stats.getSuccessfulExecutions());
+                    dto.setFailedExecutions(stats.getFailedExecutions());
+                    dto.setSuccessRate(stats.getSuccessRate());
+                    dto.setTotalTokens(stats.getTotalTokens());
+                    dto.setTotalInputTokens(stats.getTotalInputTokens());
+                    dto.setTotalOutputTokens(stats.getTotalOutputTokens());
+                    dto.setTotalToolCalls(stats.getTotalToolCalls());
+                    dto.setTotalExecutionTime(stats.getTotalExecutionTime());
+                    dto.setTotalCost(stats.getTotalCost());
+                    dto.setLastExecutionTime(stats.getLastExecutionTime());
+                    dto.setLastExecutionSuccess(stats.getLastExecutionSuccess());
+                    return dto;
+                })
+                .collect(Collectors.toList());
+    }
+
+    /** 批量获取Agent名称映射 */
+    private Map<String, String> getAgentNameMap(List<String> agentIds, String userId) {
+        return agentIds.stream()
+                .collect(Collectors.toMap(
+                        Function.identity(),
+                        agentId -> getAgentName(agentId, userId)
+                ));
+    }
+
+    /** 获取单个Agent名称（容错处理） */
+    private String getAgentName(String agentId, String userId) {
+        try {
+            AgentEntity agent = agentDomainService.getAgent(agentId, userId);
+            return agent != null ? agent.getName() : "未知助理";
+        } catch (Exception e) {
+            // 如果Agent不存在或无权限访问，返回默认名称
+            return "未知助理";
+        }
+    }
+
+    /** 批量获取会话映射 */
+    private Map<String, SessionEntity> getSessionMap(List<String> sessionIds, String userId) {
+        return sessionIds.stream()
+                .collect(Collectors.toMap(
+                        Function.identity(),
+                        sessionId -> getSession(sessionId, userId)
+                ))
+                .entrySet().stream()
+                .filter(entry -> entry.getValue() != null)
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    }
+
+    /** 获取单个会话信息（容错处理） */
+    private SessionEntity getSession(String sessionId, String userId) {
+        try {
+            return sessionDomainService.getSession(sessionId, userId);
+        } catch (Exception e) {
+            // 如果会话不存在或无权限访问，返回null
+            return null;
+        }
     }
 }
