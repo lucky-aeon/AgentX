@@ -2,11 +2,9 @@ package org.xhy.application.conversation.service.handler.context;
 
 import org.xhy.domain.trace.model.TraceContext;
 
-/**
- * 支持链路追踪的ChatContext扩展
- */
+/** 支持链路追踪的ChatContext扩展 */
 public class TracingChatContext extends ChatContext {
-    
+
     /** 追踪上下文 */
     private TraceContext traceContext;
 
@@ -14,12 +12,10 @@ public class TracingChatContext extends ChatContext {
         super();
     }
 
-    /**
-     * 从普通ChatContext创建TracingChatContext
-     */
+    /** 从普通ChatContext创建TracingChatContext */
     public static TracingChatContext from(ChatContext chatContext) {
         TracingChatContext tracingContext = new TracingChatContext();
-        
+
         // 复制所有属性
         tracingContext.setSessionId(chatContext.getSessionId());
         tracingContext.setUserId(chatContext.getUserId());
@@ -34,7 +30,7 @@ public class TracingChatContext extends ChatContext {
         tracingContext.setFileUrls(chatContext.getFileUrls());
         tracingContext.setInstanceId(chatContext.getInstanceId());
         tracingContext.setStreaming(chatContext.isStreaming());
-        
+
         return tracingContext;
     }
 

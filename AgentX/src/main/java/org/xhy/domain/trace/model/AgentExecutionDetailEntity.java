@@ -1,16 +1,14 @@
 package org.xhy.domain.trace.model;
 
 import com.baomidou.mybatisplus.annotation.*;
+import org.xhy.infrastructure.entity.BaseEntity;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-/**
- * Agent执行链路详细记录实体
- * 记录Agent执行过程中每个步骤的详细信息
- */
+/** Agent执行链路详细记录实体 记录Agent执行过程中每个步骤的详细信息 */
 @TableName("agent_execution_details")
-public class AgentExecutionDetailEntity {
+public class AgentExecutionDetailEntity extends BaseEntity {
 
     /** 主键ID */
     @TableId(value = "id", type = IdType.AUTO)
@@ -24,25 +22,13 @@ public class AgentExecutionDetailEntity {
     @TableField("sequence_no")
     private Integer sequenceNo;
 
-    /** 步骤类型：USER_MESSAGE, AI_RESPONSE, TOOL_CALL */
-    @TableField("step_type")
-    private String stepType;
+    /** 统一的消息内容 */
+    @TableField("message_content")
+    private String messageContent;
 
-    /** 用户发送的消息内容 */
-    @TableField("user_message")
-    private String userMessage;
-
-    /** 用户消息类型 */
-    @TableField("user_message_type")
-    private String userMessageType;
-
-    /** 大模型回复的消息内容 */
-    @TableField("ai_response")
-    private String aiResponse;
-
-    /** AI响应类型 */
-    @TableField("ai_response_type")
-    private String aiResponseType;
+    /** 消息类型：USER_MESSAGE, AI_RESPONSE, TOOL_CALL */
+    @TableField("message_type")
+    private String messageType;
 
     /** 此次使用的模型ID */
     @TableField("model_id")
@@ -52,13 +38,9 @@ public class AgentExecutionDetailEntity {
     @TableField("provider_name")
     private String providerName;
 
-    /** 输入Token数 */
-    @TableField("input_tokens")
-    private Integer inputTokens;
-
-    /** 输出Token数 */
-    @TableField("output_tokens")
-    private Integer outputTokens;
+    /** 消息Token数 */
+    @TableField("message_tokens")
+    private Integer messageTokens;
 
     /** 模型调用耗时(毫秒) */
     @TableField("model_call_time")
@@ -112,10 +94,6 @@ public class AgentExecutionDetailEntity {
     @TableField("step_error_message")
     private String stepErrorMessage;
 
-    /** 创建时间 */
-    @TableField(value = "created_time", fill = FieldFill.INSERT)
-    private LocalDateTime createdTime;
-
     public AgentExecutionDetailEntity() {
         this.isFallbackUsed = false;
         this.stepSuccess = true;
@@ -123,42 +101,52 @@ public class AgentExecutionDetailEntity {
     }
 
     /** 创建用户消息步骤 */
-    public static AgentExecutionDetailEntity createUserMessageStep(String traceId, Integer sequenceNo, 
+    public static AgentExecutionDetailEntity createUserMessageStep(String traceId, Integer sequenceNo,
             String userMessage, String messageType) {
         AgentExecutionDetailEntity entity = new AgentExecutionDetailEntity();
         entity.setTraceId(traceId);
         entity.setSequenceNo(sequenceNo);
-        entity.setStepType("USER_MESSAGE");
-        entity.setUserMessage(userMessage);
-        entity.setUserMessageType(messageType);
+        entity.setMessageContent(userMessage);
+        entity.setMessageType("USER_MESSAGE");
+        return entity;
+    }
+
+    /** 创建带Token信息的用户消息步骤 */
+    public static AgentExecutionDetailEntity createUserMessageStepWithTokens(String traceId, Integer sequenceNo,
+            String userMessage, String messageType, Integer messageTokens) {
+        AgentExecutionDetailEntity entity = new AgentExecutionDetailEntity();
+        entity.setTraceId(traceId);
+        entity.setSequenceNo(sequenceNo);
+        entity.setMessageContent(userMessage);
+        entity.setMessageType("USER_MESSAGE");
+        entity.setMessageTokens(messageTokens);
         return entity;
     }
 
     /** 创建AI响应步骤 */
-    public static AgentExecutionDetailEntity createAiResponseStep(String traceId, Integer sequenceNo,
-            String aiResponse, String modelId, String providerName, Integer inputTokens, Integer outputTokens,
-            Integer modelCallTime, BigDecimal stepCost) {
+    public static AgentExecutionDetailEntity createAiResponseStep(String traceId, Integer sequenceNo, String aiResponse,
+            String modelId, String providerName, Integer messageTokens, Integer modelCallTime, BigDecimal stepCost) {
         AgentExecutionDetailEntity entity = new AgentExecutionDetailEntity();
         entity.setTraceId(traceId);
         entity.setSequenceNo(sequenceNo);
-        entity.setStepType("AI_RESPONSE");
-        entity.setAiResponse(aiResponse);
+        entity.setMessageContent(aiResponse);
+        entity.setMessageType("AI_RESPONSE");
         entity.setModelId(modelId);
         entity.setProviderName(providerName);
-        entity.setInputTokens(inputTokens);
-        entity.setOutputTokens(outputTokens);
+        entity.setMessageTokens(messageTokens);
         entity.setModelCallTime(modelCallTime);
         entity.setStepCost(stepCost);
         return entity;
     }
 
     /** 创建工具调用步骤 */
-    public static AgentExecutionDetailEntity createToolCallStep(String traceId, Integer sequenceNo,
-            String toolName, String requestArgs, String responseData, Integer executionTime, Boolean success) {
+    public static AgentExecutionDetailEntity createToolCallStep(String traceId, Integer sequenceNo, String toolName,
+            String requestArgs, String responseData, Integer executionTime, Boolean success) {
         AgentExecutionDetailEntity entity = new AgentExecutionDetailEntity();
         entity.setTraceId(traceId);
         entity.setSequenceNo(sequenceNo);
-        entity.setStepType("TOOL_CALL");
+        entity.setMessageContent("执行工具：" + toolName);
+        entity.setMessageType("TOOL_CALL");
         entity.setToolName(toolName);
         entity.setToolRequestArgs(requestArgs);
         entity.setToolResponseData(responseData);
@@ -207,44 +195,20 @@ public class AgentExecutionDetailEntity {
         this.sequenceNo = sequenceNo;
     }
 
-    public String getStepType() {
-        return stepType;
+    public String getMessageContent() {
+        return messageContent;
     }
 
-    public void setStepType(String stepType) {
-        this.stepType = stepType;
+    public void setMessageContent(String messageContent) {
+        this.messageContent = messageContent;
     }
 
-    public String getUserMessage() {
-        return userMessage;
+    public String getMessageType() {
+        return messageType;
     }
 
-    public void setUserMessage(String userMessage) {
-        this.userMessage = userMessage;
-    }
-
-    public String getUserMessageType() {
-        return userMessageType;
-    }
-
-    public void setUserMessageType(String userMessageType) {
-        this.userMessageType = userMessageType;
-    }
-
-    public String getAiResponse() {
-        return aiResponse;
-    }
-
-    public void setAiResponse(String aiResponse) {
-        this.aiResponse = aiResponse;
-    }
-
-    public String getAiResponseType() {
-        return aiResponseType;
-    }
-
-    public void setAiResponseType(String aiResponseType) {
-        this.aiResponseType = aiResponseType;
+    public void setMessageType(String messageType) {
+        this.messageType = messageType;
     }
 
     public String getModelId() {
@@ -263,20 +227,12 @@ public class AgentExecutionDetailEntity {
         this.providerName = providerName;
     }
 
-    public Integer getInputTokens() {
-        return inputTokens;
+    public Integer getMessageTokens() {
+        return messageTokens;
     }
 
-    public void setInputTokens(Integer inputTokens) {
-        this.inputTokens = inputTokens;
-    }
-
-    public Integer getOutputTokens() {
-        return outputTokens;
-    }
-
-    public void setOutputTokens(Integer outputTokens) {
-        this.outputTokens = outputTokens;
+    public void setMessageTokens(Integer messageTokens) {
+        this.messageTokens = messageTokens;
     }
 
     public Integer getModelCallTime() {
@@ -383,11 +339,4 @@ public class AgentExecutionDetailEntity {
         this.stepErrorMessage = stepErrorMessage;
     }
 
-    public LocalDateTime getCreatedTime() {
-        return createdTime;
-    }
-
-    public void setCreatedTime(LocalDateTime createdTime) {
-        this.createdTime = createdTime;
-    }
 }

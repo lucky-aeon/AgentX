@@ -1,7 +1,7 @@
 package org.xhy.application.trace.dto;
 
-/** 执行统计信息DTO */
-public class ExecutionStatisticsDTO {
+/** 执行统计响应DTO */
+public class ExecutionStatisticsResponse {
 
     /** 总执行次数 */
     private Integer totalExecutions;
@@ -18,24 +18,18 @@ public class ExecutionStatisticsDTO {
     /** 总Token使用量 */
     private Long totalTokens;
 
-    /** 平均执行时间(毫秒) */
-    private Double averageExecutionTime;
-
-    /** 总工具调用次数 */
-    private Integer totalToolCalls;
-
-    public ExecutionStatisticsDTO() {
+    public ExecutionStatisticsResponse() {
     }
 
-    public ExecutionStatisticsDTO(Integer totalExecutions, Integer successfulExecutions, Long totalTokens) {
+    public ExecutionStatisticsResponse(Integer totalExecutions, Integer successfulExecutions, Integer failedExecutions,
+            Double successRate, Long totalTokens) {
         this.totalExecutions = totalExecutions;
         this.successfulExecutions = successfulExecutions;
-        this.failedExecutions = totalExecutions - successfulExecutions;
-        this.successRate = totalExecutions > 0 ? (double) successfulExecutions / totalExecutions : 0.0;
+        this.failedExecutions = failedExecutions;
+        this.successRate = successRate;
         this.totalTokens = totalTokens;
     }
 
-    // Getter和Setter方法
     public Integer getTotalExecutions() {
         return totalExecutions;
     }
@@ -74,21 +68,5 @@ public class ExecutionStatisticsDTO {
 
     public void setTotalTokens(Long totalTokens) {
         this.totalTokens = totalTokens;
-    }
-
-    public Double getAverageExecutionTime() {
-        return averageExecutionTime;
-    }
-
-    public void setAverageExecutionTime(Double averageExecutionTime) {
-        this.averageExecutionTime = averageExecutionTime;
-    }
-
-    public Integer getTotalToolCalls() {
-        return totalToolCalls;
-    }
-
-    public void setTotalToolCalls(Integer totalToolCalls) {
-        this.totalToolCalls = totalToolCalls;
     }
 }

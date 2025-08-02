@@ -6,7 +6,7 @@ import org.springframework.stereotype.Component;
 import org.xhy.application.conversation.dto.AgentChatResponse;
 import org.xhy.application.conversation.service.handler.context.ChatContext;
 import org.xhy.application.conversation.service.message.AbstractMessageHandler;
-import org.xhy.application.conversation.service.message.Agent;
+import org.xhy.application.conversation.service.handler.Agent;
 import org.xhy.application.conversation.service.message.agent.AgentToolManager;
 import org.xhy.application.conversation.service.message.agent.tool.RagToolManager;
 import org.xhy.domain.conversation.constant.MessageType;

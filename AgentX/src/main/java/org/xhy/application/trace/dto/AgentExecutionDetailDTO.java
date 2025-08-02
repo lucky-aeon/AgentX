@@ -3,86 +3,69 @@ package org.xhy.application.trace.dto;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-/**
- * Agent执行链路详细记录DTO
- */
+/** Agent执行链路详细记录DTO */
 public class AgentExecutionDetailDTO {
-    
+
     /** 追踪ID */
     private String traceId;
-    
+
     /** 执行序号 */
     private Integer sequenceNo;
-    
-    /** 步骤类型 */
-    private String stepType;
-    
-    /** 步骤类型描述 */
-    private String stepTypeDescription;
-    
-    /** 用户发送的消息内容 */
-    private String userMessage;
-    
-    /** 用户消息类型 */
-    private String userMessageType;
-    
-    /** 大模型回复的消息内容 */
-    private String aiResponse;
-    
-    /** AI响应类型 */
-    private String aiResponseType;
-    
+
+    /** 统一的消息内容 */
+    private String messageContent;
+
+    /** 消息类型 */
+    private String messageType;
+
     /** 此次使用的模型ID */
     private String modelId;
-    
+
     /** 提供商名称 */
     private String providerName;
-    
-    /** 输入Token数 */
-    private Integer inputTokens;
-    
-    /** 输出Token数 */
-    private Integer outputTokens;
-    
+
+    /** 消息Token数 */
+    private Integer messageTokens;
+
     /** 模型调用耗时(毫秒) */
     private Integer modelCallTime;
-    
+
     /** 工具名称 */
     private String toolName;
-    
+
     /** 工具调用入参 */
     private String toolRequestArgs;
-    
+
     /** 工具调用出参 */
     private String toolResponseData;
-    
+
     /** 工具执行耗时(毫秒) */
     private Integer toolExecutionTime;
-    
+
     /** 工具执行是否成功 */
     private Boolean toolSuccess;
-    
+
     /** 是否触发了降级 */
     private Boolean isFallbackUsed;
-    
+
     /** 降级原因 */
     private String fallbackReason;
-    
+
     /** 降级前的模型 */
     private String fallbackFromModel;
-    
+
     /** 降级后的模型 */
     private String fallbackToModel;
-    
+
     /** 步骤成本 */
     private BigDecimal stepCost;
-    
+
     /** 步骤执行是否成功 */
     private Boolean stepSuccess;
-    
+
     /** 步骤错误信息 */
     private String stepErrorMessage;
-    
+
     /** 创建时间 */
     private LocalDateTime createdTime;
 
@@ -106,52 +89,20 @@ public class AgentExecutionDetailDTO {
         this.sequenceNo = sequenceNo;
     }
 
-    public String getStepType() {
-        return stepType;
+    public String getMessageContent() {
+        return messageContent;
     }
 
-    public void setStepType(String stepType) {
-        this.stepType = stepType;
+    public void setMessageContent(String messageContent) {
+        this.messageContent = messageContent;
     }
 
-    public String getStepTypeDescription() {
-        return stepTypeDescription;
+    public String getMessageType() {
+        return messageType;
     }
 
-    public void setStepTypeDescription(String stepTypeDescription) {
-        this.stepTypeDescription = stepTypeDescription;
-    }
-
-    public String getUserMessage() {
-        return userMessage;
-    }
-
-    public void setUserMessage(String userMessage) {
-        this.userMessage = userMessage;
-    }
-
-    public String getUserMessageType() {
-        return userMessageType;
-    }
-
-    public void setUserMessageType(String userMessageType) {
-        this.userMessageType = userMessageType;
-    }
-
-    public String getAiResponse() {
-        return aiResponse;
-    }
-
-    public void setAiResponse(String aiResponse) {
-        this.aiResponse = aiResponse;
-    }
-
-    public String getAiResponseType() {
-        return aiResponseType;
-    }
-
-    public void setAiResponseType(String aiResponseType) {
-        this.aiResponseType = aiResponseType;
+    public void setMessageType(String messageType) {
+        this.messageType = messageType;
     }
 
     public String getModelId() {
@@ -170,20 +121,12 @@ public class AgentExecutionDetailDTO {
         this.providerName = providerName;
     }
 
-    public Integer getInputTokens() {
-        return inputTokens;
+    public Integer getMessageTokens() {
+        return messageTokens;
     }
 
-    public void setInputTokens(Integer inputTokens) {
-        this.inputTokens = inputTokens;
-    }
-
-    public Integer getOutputTokens() {
-        return outputTokens;
-    }
-
-    public void setOutputTokens(Integer outputTokens) {
-        this.outputTokens = outputTokens;
+    public void setMessageTokens(Integer messageTokens) {
+        this.messageTokens = messageTokens;
     }
 
     public Integer getModelCallTime() {

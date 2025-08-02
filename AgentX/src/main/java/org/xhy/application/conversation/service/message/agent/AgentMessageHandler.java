@@ -4,7 +4,9 @@ import dev.langchain4j.service.tool.ToolProvider;
 import org.springframework.stereotype.Component;
 import org.xhy.application.conversation.service.handler.context.ChatContext;
 import org.xhy.application.conversation.service.message.AbstractMessageHandler;
+import org.xhy.application.conversation.service.message.TracingMessageHandler;
 import org.xhy.application.conversation.service.message.agent.tool.RagToolManager;
+import org.xhy.application.trace.collector.TraceCollector;
 import org.xhy.domain.conversation.service.MessageDomainService;
 import org.xhy.domain.conversation.service.SessionDomainService;
 import org.xhy.domain.llm.service.HighAvailabilityDomainService;
@@ -14,16 +16,16 @@ import org.xhy.infrastructure.llm.LLMServiceFactory;
 
 /** Agent消息处理器 用于支持工具调用的对话模式 实现任务拆分、执行和结果汇总的工作流 使用事件驱动架构进行状态转换 */
 @Component(value = "agentMessageHandler")
-public class AgentMessageHandler extends AbstractMessageHandler {
+public class AgentMessageHandler extends TracingMessageHandler {
 
     private final AgentToolManager agentToolManager;
 
     public AgentMessageHandler(LLMServiceFactory llmServiceFactory, MessageDomainService messageDomainService,
             HighAvailabilityDomainService highAvailabilityDomainService, SessionDomainService sessionDomainService,
             UserSettingsDomainService userSettingsDomainService, LLMDomainService llmDomainService,
-            AgentToolManager agentToolManager, RagToolManager ragToolManager) {
+            AgentToolManager agentToolManager, RagToolManager ragToolManager, TraceCollector traceCollector) {
         super(llmServiceFactory, messageDomainService, highAvailabilityDomainService, sessionDomainService,
-                userSettingsDomainService, llmDomainService, ragToolManager);
+                userSettingsDomainService, llmDomainService, ragToolManager, traceCollector);
         this.agentToolManager = agentToolManager;
     }
 

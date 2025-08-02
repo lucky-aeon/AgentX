@@ -193,12 +193,10 @@ public class EmbeddingDomainService implements MetadataConstant {
 
                 for (DocumentUnitEntity doc : initialDocs) {
                     // 查询相邻页面片段（前一页、当前页、后一页）
-                    List<DocumentUnitEntity> adjacentChunks = documentUnitRepository.selectList(
-                            Wrappers.<DocumentUnitEntity>lambdaQuery()
-                                    .eq(DocumentUnitEntity::getFileId, doc.getFileId())
-                                    .between(DocumentUnitEntity::getPage, Math.max(1, doc.getPage() - 1),
-                                            doc.getPage() + 1)
-                                    .eq(DocumentUnitEntity::getIsVector, true));
+                    List<DocumentUnitEntity> adjacentChunks = documentUnitRepository.selectList(Wrappers
+                            .<DocumentUnitEntity>lambdaQuery().eq(DocumentUnitEntity::getFileId, doc.getFileId())
+                            .between(DocumentUnitEntity::getPage, Math.max(1, doc.getPage() - 1), doc.getPage() + 1)
+                            .eq(DocumentUnitEntity::getIsVector, true));
 
                     adjacentChunks.forEach(chunk -> expandedIds.add(chunk.getId()));
                 }

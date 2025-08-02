@@ -986,8 +986,7 @@ public class RagQaDatasetAppService {
         FileDetailEntity fileEntity = fileDetailRepository.selectById(fileId);
         List<String> datasetIds = List.of(fileEntity.getDataSetId());
 
-        return embeddingDomainService.ragDoc(datasetIds, question, maxResults, 0.5, true, 2, embeddingConfig,
-                false); // 文件内检索暂时不启用查询扩展，保持现有行为
+        return embeddingDomainService.ragDoc(datasetIds, question, maxResults, 0.5, true, 2, embeddingConfig, false); // 文件内检索暂时不启用查询扩展，保持现有行为
     }
 
     /** 构建检索文档的上下文 */

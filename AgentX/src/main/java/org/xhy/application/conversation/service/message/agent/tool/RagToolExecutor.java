@@ -60,13 +60,16 @@ public class RagToolExecutor implements ToolExecutor {
             int maxResults = argsNode.has("maxResults") ? argsNode.get("maxResults").asInt(10) : 10;
             double minScore = argsNode.has("minScore") ? argsNode.get("minScore").asDouble(0.5) : 0.5;
             boolean enableRerank = argsNode.has("enableRerank") ? argsNode.get("enableRerank").asBoolean(true) : true;
-            boolean enableQueryExpansion = argsNode.has("enableQueryExpansion") ? argsNode.get("enableQueryExpansion").asBoolean(false) : false;
+            boolean enableQueryExpansion = argsNode.has("enableQueryExpansion")
+                    ? argsNode.get("enableQueryExpansion").asBoolean(false)
+                    : false;
 
             if (!StringUtils.hasText(query)) {
                 return "错误：搜索查询内容为空";
             }
 
-            log.debug("RAG搜索参数 - query: {}, maxResults: {}, minScore: {}, enableRerank: {}, enableQueryExpansion: {}, knowledgeBaseCount: {}",
+            log.debug(
+                    "RAG搜索参数 - query: {}, maxResults: {}, minScore: {}, enableRerank: {}, enableQueryExpansion: {}, knowledgeBaseCount: {}",
                     query, maxResults, minScore, enableRerank, enableQueryExpansion, knowledgeBaseIds.size());
 
             // 构建RAG搜索请求，支持多个知识库

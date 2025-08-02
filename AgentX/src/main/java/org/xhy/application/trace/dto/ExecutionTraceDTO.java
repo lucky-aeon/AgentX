@@ -2,30 +2,27 @@ package org.xhy.application.trace.dto;
 
 import java.util.List;
 
-/**
- * 完整的执行链路DTO
- * 包含汇总信息和详细步骤信息
- */
+/** 完整的执行链路DTO 包含汇总信息和详细步骤信息 */
 public class ExecutionTraceDTO {
-    
+
     /** 执行汇总信息 */
     private AgentExecutionSummaryDTO summary;
-    
+
     /** 执行详细步骤列表 */
     private List<AgentExecutionDetailDTO> details;
-    
+
     /** 用户消息步骤 */
     private List<AgentExecutionDetailDTO> userMessages;
-    
+
     /** AI响应步骤 */
     private List<AgentExecutionDetailDTO> aiResponses;
-    
+
     /** 工具调用步骤 */
     private List<AgentExecutionDetailDTO> toolCalls;
-    
+
     /** 降级调用步骤 */
     private List<AgentExecutionDetailDTO> fallbackCalls;
-    
+
     /** 失败的步骤 */
     private List<AgentExecutionDetailDTO> failedSteps;
 

@@ -3,34 +3,37 @@ package org.xhy.domain.trace.model;
 import java.time.LocalDateTime;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * 追踪上下文
- * 用于在执行过程中传递追踪信息
- */
+/** 追踪上下文 用于在执行过程中传递追踪信息 */
 public class TraceContext {
-    
+
     /** 追踪ID */
     private final String traceId;
-    
+
     /** 用户ID */
-    private final Long userId;
-    
+    private final String userId;
+
     /** 会话ID */
     private final String sessionId;
-    
+
     /** Agent ID */
     private final String agentId;
-    
+
     /** 执行开始时间 */
     private final LocalDateTime startTime;
-    
+
     /** 序列号生成器 */
     private final AtomicInteger sequenceGenerator;
-    
+
     /** 是否启用追踪 */
     private final boolean traceEnabled;
 
-    public TraceContext(String traceId, Long userId, String sessionId, String agentId, boolean traceEnabled) {
+    /** 用户消息内容 */
+    private String userMessage;
+
+    /** 用户消息类型 */
+    private String userMessageType;
+
+    public TraceContext(String traceId, String userId, String sessionId, String agentId, boolean traceEnabled) {
         this.traceId = traceId;
         this.userId = userId;
         this.sessionId = sessionId;
@@ -40,37 +43,27 @@ public class TraceContext {
         this.traceEnabled = traceEnabled;
     }
 
-    /**
-     * 创建追踪上下文
-     */
-    public static TraceContext create(String traceId, Long userId, String sessionId, String agentId) {
+    /** 创建追踪上下文 */
+    public static TraceContext create(String traceId, String userId, String sessionId, String agentId) {
         return new TraceContext(traceId, userId, sessionId, agentId, true);
     }
 
-    /**
-     * 创建禁用追踪的上下文
-     */
+    /** 创建禁用追踪的上下文 */
     public static TraceContext createDisabled() {
         return new TraceContext(null, null, null, null, false);
     }
 
-    /**
-     * 生成下一个序列号
-     */
+    /** 生成下一个序列号 */
     public int nextSequence() {
         return sequenceGenerator.incrementAndGet();
     }
 
-    /**
-     * 获取当前序列号
-     */
+    /** 获取当前序列号 */
     public int getCurrentSequence() {
         return sequenceGenerator.get();
     }
 
-    /**
-     * 检查是否启用追踪
-     */
+    /** 检查是否启用追踪 */
     public boolean isTraceEnabled() {
         return traceEnabled;
     }
@@ -80,7 +73,7 @@ public class TraceContext {
         return traceId;
     }
 
-    public Long getUserId() {
+    public String getUserId() {
         return userId;
     }
 
@@ -96,16 +89,26 @@ public class TraceContext {
         return startTime;
     }
 
+    public String getUserMessage() {
+        return userMessage;
+    }
+
+    public void setUserMessage(String userMessage) {
+        this.userMessage = userMessage;
+    }
+
+    public String getUserMessageType() {
+        return userMessageType;
+    }
+
+    public void setUserMessageType(String userMessageType) {
+        this.userMessageType = userMessageType;
+    }
+
     @Override
     public String toString() {
-        return "TraceContext{" +
-                "traceId='" + traceId + '\'' +
-                ", userId=" + userId +
-                ", sessionId='" + sessionId + '\'' +
-                ", agentId=" + agentId +
-                ", startTime=" + startTime +
-                ", currentSequence=" + sequenceGenerator.get() +
-                ", traceEnabled=" + traceEnabled +
-                '}';
+        return "TraceContext{" + "traceId='" + traceId + '\'' + ", userId=" + userId + ", sessionId='" + sessionId
+                + '\'' + ", agentId=" + agentId + ", startTime=" + startTime + ", currentSequence="
+                + sequenceGenerator.get() + ", traceEnabled=" + traceEnabled + '}';
     }
 }

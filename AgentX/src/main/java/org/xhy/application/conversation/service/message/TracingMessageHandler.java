@@ -3,6 +3,7 @@ package org.xhy.application.conversation.service.message;
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.model.chat.response.ChatResponse;
+import dev.langchain4j.model.openai.OpenAiTokenCountEstimator;
 import dev.langchain4j.service.TokenStream;
 import dev.langchain4j.service.tool.ToolProvider;
 import org.xhy.application.conversation.service.handler.Agent;
@@ -24,10 +25,11 @@ import org.xhy.domain.user.service.UserSettingsDomainService;
 import org.xhy.infrastructure.llm.LLMServiceFactory;
 import org.xhy.infrastructure.transport.MessageTransport;
 
-/**
- * 带追踪功能的消息处理器基类
- * 在关键节点集成链路追踪逻辑
- */
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
+/** 带追踪功能的消息处理器基类 在关键节点集成链路追踪逻辑 */
 public abstract class TracingMessageHandler extends AbstractMessageHandler {
 
     protected final TraceCollector traceCollector;
@@ -41,9 +43,7 @@ public abstract class TracingMessageHandler extends AbstractMessageHandler {
         this.traceCollector = traceCollector;
     }
 
-    /**
-     * 重写chat方法，增加追踪逻辑
-     */
+    /** 重写chat方法，增加追踪逻辑 */
     @Override
     public <T> T chat(ChatContext chatContext, MessageTransport<T> transport) {
         // 开始执行追踪并转换为TracingChatContext
@@ -54,10 +54,10 @@ public abstract class TracingMessageHandler extends AbstractMessageHandler {
         try {
             // 执行原有的chat逻辑
             T result = super.chat(tracingContext, transport);
-            
+
             // 记录执行成功
             traceCollector.recordSuccess(traceContext);
-            
+
             return result;
         } catch (Exception e) {
             // 记录执行失败
@@ -66,13 +66,11 @@ public abstract class TracingMessageHandler extends AbstractMessageHandler {
         }
     }
 
-    /**
-     * 重写同步聊天处理，增加详细追踪
-     */
+    /** 重写同步聊天处理，增加详细追踪 */
     @Override
     protected <T> void processSyncChat(ChatContext chatContext, T connection, MessageTransport<T> transport,
-            MessageEntity userEntity, MessageEntity llmEntity, dev.langchain4j.memory.chat.MessageWindowChatMemory memory,
-            ToolProvider toolProvider) {
+            MessageEntity userEntity, MessageEntity llmEntity,
+            dev.langchain4j.memory.chat.MessageWindowChatMemory memory, ToolProvider toolProvider) {
 
         TraceContext traceContext = getTraceContext(chatContext);
 
@@ -95,13 +93,10 @@ public abstract class TracingMessageHandler extends AbstractMessageHandler {
             long endTime = System.currentTimeMillis();
             int callTime = (int) (endTime - startTime);
 
-            ModelCallInfo modelCallInfo = ModelCallInfo.builder()
-                    .modelId(chatContext.getModel().getModelId())
+            ModelCallInfo modelCallInfo = ModelCallInfo.builder().modelId(chatContext.getModel().getModelId())
                     .providerName(chatContext.getProvider().getName())
                     .inputTokens(chatResponse.tokenUsage().inputTokenCount())
-                    .outputTokens(chatResponse.tokenUsage().outputTokenCount())
-                    .callTime(callTime)
-                    .success(true)
+                    .outputTokens(chatResponse.tokenUsage().outputTokenCount()).callTime(callTime).success(true)
                     .build();
 
             // 5. 记录模型调用
@@ -129,18 +124,16 @@ public abstract class TracingMessageHandler extends AbstractMessageHandler {
 
         } catch (Exception e) {
             // 创建失败的模型调用信息
-            ModelCallInfo failedModelCallInfo = ModelCallInfo.builder()
-                    .modelId(chatContext.getModel().getModelId())
-                    .providerName(chatContext.getProvider().getName())
-                    .success(false)
-                    .errorMessage(e.getMessage())
+            ModelCallInfo failedModelCallInfo = ModelCallInfo.builder().modelId(chatContext.getModel().getModelId())
+                    .providerName(chatContext.getProvider().getName()).success(false).errorMessage(e.getMessage())
                     .build();
 
             // 记录失败的模型调用
             traceCollector.recordModelCall(traceContext, null, failedModelCallInfo);
 
             // 错误处理
-            var errorResponse = org.xhy.application.conversation.dto.AgentChatResponse.buildEndMessage(e.getMessage(), MessageType.TEXT);
+            var errorResponse = org.xhy.application.conversation.dto.AgentChatResponse.buildEndMessage(e.getMessage(),
+                    MessageType.TEXT);
             transport.sendMessage(connection, errorResponse);
 
             long latency = System.currentTimeMillis() - System.currentTimeMillis();
@@ -149,19 +142,17 @@ public abstract class TracingMessageHandler extends AbstractMessageHandler {
         }
     }
 
-    /**
-     * 重写流式聊天处理的TokenStream，增加追踪逻辑
-     */
-    protected <T> void processChat(Agent agent, T connection, MessageTransport<T> transport, 
-            ChatContext chatContext, MessageEntity userEntity, MessageEntity llmEntity) {
+    /** 重写流式聊天处理的TokenStream，增加追踪逻辑 */
+    protected <T> void processChat(Agent agent, T connection, MessageTransport<T> transport, ChatContext chatContext,
+            MessageEntity userEntity, MessageEntity llmEntity) {
 
         TraceContext traceContext = getTraceContext(chatContext);
 
         messageDomainService.saveMessageAndUpdateContext(java.util.Collections.singletonList(userEntity),
                 chatContext.getContextEntity());
 
-        java.util.concurrent.atomic.AtomicReference<StringBuilder> messageBuilder = 
-                new java.util.concurrent.atomic.AtomicReference<>(new StringBuilder());
+        java.util.concurrent.atomic.AtomicReference<StringBuilder> messageBuilder = new java.util.concurrent.atomic.AtomicReference<>(
+                new StringBuilder());
         TokenStream tokenStream = agent.chat(chatContext.getUserMessage());
 
         // 记录调用开始时间
@@ -169,17 +160,14 @@ public abstract class TracingMessageHandler extends AbstractMessageHandler {
 
         tokenStream.onError(throwable -> {
             // 记录失败的模型调用
-            ModelCallInfo failedModelCallInfo = ModelCallInfo.builder()
-                    .modelId(chatContext.getModel().getModelId())
-                    .providerName(chatContext.getProvider().getName())
-                    .success(false)
-                    .errorMessage(throwable.getMessage())
-                    .build();
+            ModelCallInfo failedModelCallInfo = ModelCallInfo.builder().modelId(chatContext.getModel().getModelId())
+                    .providerName(chatContext.getProvider().getName()).success(false)
+                    .errorMessage(throwable.getMessage()).build();
 
             traceCollector.recordModelCall(traceContext, null, failedModelCallInfo);
 
-            transport.sendMessage(connection,
-                    org.xhy.application.conversation.dto.AgentChatResponse.buildEndMessage(throwable.getMessage(), MessageType.TEXT));
+            transport.sendMessage(connection, org.xhy.application.conversation.dto.AgentChatResponse
+                    .buildEndMessage(throwable.getMessage(), MessageType.TEXT));
 
             // 上报调用失败结果
             long latency = System.currentTimeMillis() - startTime;
@@ -194,7 +182,8 @@ public abstract class TracingMessageHandler extends AbstractMessageHandler {
             if (messageBuilder.get().toString().trim().isEmpty()) {
                 return;
             }
-            transport.sendMessage(connection, org.xhy.application.conversation.dto.AgentChatResponse.build(reply, MessageType.TEXT));
+            transport.sendMessage(connection,
+                    org.xhy.application.conversation.dto.AgentChatResponse.build(reply, MessageType.TEXT));
         });
 
         // 完整响应处理
@@ -203,13 +192,10 @@ public abstract class TracingMessageHandler extends AbstractMessageHandler {
             long endTime = System.currentTimeMillis();
             int callTime = (int) (endTime - startTime);
 
-            ModelCallInfo modelCallInfo = ModelCallInfo.builder()
-                    .modelId(chatContext.getModel().getModelId())
+            ModelCallInfo modelCallInfo = ModelCallInfo.builder().modelId(chatContext.getModel().getModelId())
                     .providerName(chatContext.getProvider().getName())
                     .inputTokens(chatResponse.tokenUsage().inputTokenCount())
-                    .outputTokens(chatResponse.tokenUsage().outputTokenCount())
-                    .callTime(callTime)
-                    .success(true)
+                    .outputTokens(chatResponse.tokenUsage().outputTokenCount()).callTime(callTime).success(true)
                     .build();
 
             // 记录模型调用
@@ -227,7 +213,8 @@ public abstract class TracingMessageHandler extends AbstractMessageHandler {
                     chatContext.getContextEntity());
 
             // 发送结束消息
-            transport.sendEndMessage(connection, org.xhy.application.conversation.dto.AgentChatResponse.buildEndMessage(MessageType.TEXT));
+            transport.sendEndMessage(connection,
+                    org.xhy.application.conversation.dto.AgentChatResponse.buildEndMessage(MessageType.TEXT));
 
             // 上报调用成功结果
             highAvailabilityDomainService.reportCallResult(chatContext.getInstanceId(), chatContext.getModel().getId(),
@@ -241,7 +228,8 @@ public abstract class TracingMessageHandler extends AbstractMessageHandler {
             long toolStartTime = System.currentTimeMillis();
 
             if (!messageBuilder.get().isEmpty()) {
-                transport.sendMessage(connection, org.xhy.application.conversation.dto.AgentChatResponse.buildEndMessage(MessageType.TEXT));
+                transport.sendMessage(connection,
+                        org.xhy.application.conversation.dto.AgentChatResponse.buildEndMessage(MessageType.TEXT));
                 llmEntity.setContent(messageBuilder.toString());
                 messageDomainService.saveMessageAndUpdateContext(java.util.Collections.singletonList(llmEntity),
                         chatContext.getContextEntity());
@@ -253,13 +241,9 @@ public abstract class TracingMessageHandler extends AbstractMessageHandler {
             int toolExecutionTime = (int) (toolEndTime - toolStartTime);
 
             // 构建工具调用信息
-            ToolCallInfo toolCallInfo = ToolCallInfo.builder()
-                    .toolName(toolExecution.request().name())
-                    .requestArgs(formatToolArguments(toolExecution.request()))
-                    .responseData(toolExecution.result())
-                    .executionTime(toolExecutionTime)
-                    .success(true)
-                    .build();
+            ToolCallInfo toolCallInfo = ToolCallInfo.builder().toolName(toolExecution.request().name())
+                    .requestArgs(formatToolArguments(toolExecution.request())).responseData(toolExecution.result())
+                    .executionTime(toolExecutionTime).success(true).build();
 
             // 记录工具调用
             traceCollector.recordToolCall(traceContext, toolCallInfo);
@@ -271,29 +255,21 @@ public abstract class TracingMessageHandler extends AbstractMessageHandler {
             messageDomainService.saveMessageAndUpdateContext(java.util.Collections.singletonList(toolMessage),
                     chatContext.getContextEntity());
 
-            transport.sendMessage(connection, org.xhy.application.conversation.dto.AgentChatResponse.buildEndMessage(message, MessageType.TOOL_CALL));
+            transport.sendMessage(connection, org.xhy.application.conversation.dto.AgentChatResponse
+                    .buildEndMessage(message, MessageType.TOOL_CALL));
         });
 
         // 启动流处理
         tokenStream.start();
     }
 
-    /**
-     * 开始追踪
-     */
+    /** 开始追踪 */
     private TraceContext startTracing(ChatContext chatContext) {
-        return traceCollector.startExecution(
-                getUserId(chatContext),
-                chatContext.getSessionId(),
-                chatContext.getAgent().getId(),
-                chatContext.getUserMessage(),
-                MessageType.TEXT.name()
-        );
+        return traceCollector.startExecution(getUserId(chatContext), chatContext.getSessionId(),
+                chatContext.getAgent().getId(), chatContext.getUserMessage(), MessageType.TEXT.name());
     }
 
-    /**
-     * 从ChatContext中获取TraceContext
-     */
+    /** 从ChatContext中获取TraceContext */
     private TraceContext getTraceContext(ChatContext chatContext) {
         // 这里假设ChatContext中已经设置了TraceContext
         // 如果没有，则创建一个禁用的上下文
@@ -303,16 +279,12 @@ public abstract class TracingMessageHandler extends AbstractMessageHandler {
         return TraceContext.createDisabled();
     }
 
-    /**
-     * 从ChatContext中获取用户ID
-     */
-    private Long getUserId(ChatContext chatContext) {
-        return Long.valueOf(chatContext.getUserId());
+    /** 从ChatContext中获取用户ID */
+    private String getUserId(ChatContext chatContext) {
+        return chatContext.getUserId();
     }
 
-    /**
-     * 格式化工具参数为JSON字符串
-     */
+    /** 格式化工具参数为JSON字符串 */
     private String formatToolArguments(ToolExecutionRequest request) {
         try {
             return request.arguments();

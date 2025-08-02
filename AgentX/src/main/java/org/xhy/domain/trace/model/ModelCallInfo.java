@@ -2,42 +2,39 @@ package org.xhy.domain.trace.model;
 
 import java.math.BigDecimal;
 
-/**
- * 模型调用信息值对象
- * 封装单次模型调用的详细信息
- */
+/** 模型调用信息值对象 封装单次模型调用的详细信息 */
 public class ModelCallInfo {
-    
+
     /** 模型ID */
     private final String modelId;
-    
+
     /** 提供商名称 */
     private final String providerName;
-    
+
     /** 输入Token数 */
     private final Integer inputTokens;
-    
+
     /** 输出Token数 */
     private final Integer outputTokens;
-    
+
     /** 调用耗时(毫秒) */
     private final Integer callTime;
-    
+
     /** 调用成本 */
     private final BigDecimal cost;
-    
+
     /** 是否成功 */
     private final Boolean success;
-    
+
     /** 错误信息 */
     private final String errorMessage;
-    
+
     /** 是否使用了降级 */
     private final Boolean fallbackUsed;
-    
+
     /** 降级原因 */
     private final String fallbackReason;
-    
+
     /** 原始模型 */
     private final String originalModel;
 
@@ -177,9 +174,7 @@ public class ModelCallInfo {
         return originalModel;
     }
 
-    /**
-     * 获取总Token数
-     */
+    /** 获取总Token数 */
     public Integer getTotalTokens() {
         if (inputTokens == null || outputTokens == null) {
             return null;
@@ -189,15 +184,8 @@ public class ModelCallInfo {
 
     @Override
     public String toString() {
-        return "ModelCallInfo{" +
-                "modelId='" + modelId + '\'' +
-                ", providerName='" + providerName + '\'' +
-                ", inputTokens=" + inputTokens +
-                ", outputTokens=" + outputTokens +
-                ", callTime=" + callTime +
-                ", cost=" + cost +
-                ", success=" + success +
-                ", fallbackUsed=" + fallbackUsed +
-                '}';
+        return "ModelCallInfo{" + "modelId='" + modelId + '\'' + ", providerName='" + providerName + '\''
+                + ", inputTokens=" + inputTokens + ", outputTokens=" + outputTokens + ", callTime=" + callTime
+                + ", cost=" + cost + ", success=" + success + ", fallbackUsed=" + fallbackUsed + '}';
     }
 }

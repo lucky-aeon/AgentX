@@ -6,10 +6,7 @@ import org.xhy.infrastructure.entity.BaseEntity;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-/**
- * Agent执行链路汇总实体
- * 记录每次Agent执行的整体信息和汇总数据
- */
+/** Agent执行链路汇总实体 记录每次Agent执行的整体信息和汇总数据 */
 @TableName("agent_execution_summary")
 public class AgentExecutionSummaryEntity extends BaseEntity {
 
@@ -23,7 +20,7 @@ public class AgentExecutionSummaryEntity extends BaseEntity {
 
     /** 用户ID */
     @TableField("user_id")
-    private Long userId;
+    private String userId;
 
     /** 会话ID */
     @TableField("session_id")
@@ -91,7 +88,7 @@ public class AgentExecutionSummaryEntity extends BaseEntity {
     }
 
     /** 创建新的执行追踪汇总 */
-    public static AgentExecutionSummaryEntity create(String traceId, Long userId, String sessionId, String agentId) {
+    public static AgentExecutionSummaryEntity create(String traceId, String userId, String sessionId, String agentId) {
         AgentExecutionSummaryEntity entity = new AgentExecutionSummaryEntity();
         entity.setTraceId(traceId);
         entity.setUserId(userId);
@@ -108,7 +105,7 @@ public class AgentExecutionSummaryEntity extends BaseEntity {
         this.executionSuccess = success;
         this.errorPhase = errorPhase;
         this.errorMessage = errorMessage;
-        
+
         // 计算总执行时间
         if (this.executionStartTime != null && this.executionEndTime != null) {
             long duration = java.time.Duration.between(this.executionStartTime, this.executionEndTime).toMillis();
@@ -144,7 +141,7 @@ public class AgentExecutionSummaryEntity extends BaseEntity {
 
     /** 检查是否需要检查用户ID权限 */
     public boolean needCheckUserId() {
-        return true;  // Agent执行追踪需要用户权限检查
+        return true; // Agent执行追踪需要用户权限检查
     }
 
     // Getter和Setter方法
@@ -164,11 +161,11 @@ public class AgentExecutionSummaryEntity extends BaseEntity {
         this.traceId = traceId;
     }
 
-    public Long getUserId() {
+    public String getUserId() {
         return userId;
     }
 
-    public void setUserId(Long userId) {
+    public void setUserId(String userId) {
         this.userId = userId;
     }
 
