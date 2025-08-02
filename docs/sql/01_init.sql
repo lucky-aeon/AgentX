@@ -909,3 +909,10 @@ comment on column public.users.created_at is '创建时间';
 comment on column public.users.updated_at is '更新时间';
 comment on column public.users.deleted_at is '逻辑删除时间';
 
+
+-- 初始化认证配置数据
+INSERT INTO auth_settings (id, feature_type, feature_key, feature_name, enabled, display_order, description) VALUES
+                                                                                                                 ('auth-normal-login', 'LOGIN', 'NORMAL_LOGIN', '普通登录', TRUE, 1, '邮箱/手机号密码登录'),
+                                                                                                                 ('auth-github-login', 'LOGIN', 'GITHUB_LOGIN', 'GitHub登录', TRUE, 2, 'GitHub OAuth登录'),
+                                                                                                                 ('auth-community-login', 'LOGIN', 'COMMUNITY_LOGIN', '敲鸭登录', TRUE, 3, '敲鸭社区OAuth登录'),
+                                                                                                                 ('auth-user-register', 'REGISTER', 'USER_REGISTER', '用户注册', TRUE, 1, '允许新用户注册账号');
