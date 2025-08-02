@@ -18,6 +18,14 @@ public class TokenMessage {
     /** 消息Token数量 */
     private Integer tokenCount;
 
+    /**
+     * 消息本体Token数量（不包含上下文）
+     */
+    private Integer bodyTokenCount;
+
+    /**
+     * 创建时间
+     */
     /** 创建时间 */
     private LocalDateTime createdAt;
 
@@ -99,5 +107,13 @@ public class TokenMessage {
 
     public void setCreatedAtMillis(long createdAtMillis) {
         this.createdAt = LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(createdAtMillis), ZoneOffset.UTC);
+    }
+
+    public Integer getBodyTokenCount() {
+        return bodyTokenCount;
+    }
+
+    public void setBodyTokenCount(Integer bodyTokenCount) {
+        this.bodyTokenCount = bodyTokenCount;
     }
 }

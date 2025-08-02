@@ -21,6 +21,7 @@ pushd %~dp0\..
 set "PROJECT_ROOT=%CD%"
 popd
 set "SQL_DIR=%PROJECT_ROOT%\docs\sql"
+set "INIT_SQL=%SQL_DIR%\init.sql"
 
 echo %GREEN%AgentX PostgreSQL 数据库初始化脚本%NC%
 echo ===============================================
@@ -29,7 +30,7 @@ echo 数据库名称: %DB_NAME%
 echo 数据库用户: %DB_USER%
 echo 数据库端口: %DB_PORT%
 echo 主机映射端口: %HOST_PORT%
-echo SQL目录路径: %SQL_DIR%
+echo SQL文件路径: %INIT_SQL%
 echo ===============================================
 
 :: 检查是否安装了 Docker
@@ -39,16 +40,9 @@ if %ERRORLEVEL% neq 0 (
     exit /b 1
 )
 
-:: 检查 SQL 目录是否存在
-if not exist "%SQL_DIR%" (
-    echo %RED%Error: SQL directory '%SQL_DIR%' not found!%NC%
-    exit /b 1
-)
-
-:: 检查 SQL 目录中是否包含 .sql 文件
-dir "%SQL_DIR%\*.sql" >nul 2>nul
-if %ERRORLEVEL% neq 0 (
-    echo %RED%Error: No SQL files found in '%SQL_DIR%'!%NC%
+:: 检查 SQL 文件是否存在
+if not exist "%INIT_SQL%" (
+    echo %RED%Error: SQL file '%INIT_SQL%' not found!%NC%
     exit /b 1
 )
 

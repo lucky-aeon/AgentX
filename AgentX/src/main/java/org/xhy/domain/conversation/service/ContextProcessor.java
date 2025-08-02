@@ -88,6 +88,7 @@ public class ContextProcessor {
             tokenMessage.setRole(message.getRole().name());
             tokenMessage.setContent(message.getContent());
             tokenMessage.setTokenCount(message.getTokenCount());
+            tokenMessage.setBodyTokenCount(message.getBodyTokenCount());
             tokenMessage.setCreatedAt(message.getCreatedAt());
             return tokenMessage;
         }).collect(Collectors.toList());
