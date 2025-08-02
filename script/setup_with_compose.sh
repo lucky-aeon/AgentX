@@ -40,6 +40,13 @@ if [ ! -f "$SQL_DIR/init.sql" ]; then
     exit 1
 fi
 
+if [ ! -f "$SQL_DIR/migrate.sql" ]; then
+    echo -e "${RED}错误: 初始化 SQL 文件 '$SQL_DIR/migrate.sql' 不存在${NC}"
+    exit 1
+fi
+
+
+
 # 检查 docker-compose.yml 文件是否存在
 if [ ! -f "docker-compose.yml" ]; then
     echo -e "${RED}错误: docker-compose.yml 文件不存在${NC}"
