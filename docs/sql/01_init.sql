@@ -485,6 +485,7 @@ create table public.messages (
                                  content text not null, -- 消息内容
                                  message_type character varying(20) not null default 'TEXT', -- 消息类型
                                  token_count integer default 0, -- Token数量
+                                 body_token_count INTEGER DEFAULT 0, -- 消息本体的token数量
                                  provider character varying(50), -- 服务提供商
                                  model character varying(50), -- 使用的模型
                                  metadata jsonb, -- 消息元数据，JSON格式
@@ -501,6 +502,7 @@ comment on column public.messages.role is '消息角色 (user, assistant, system
 comment on column public.messages.content is '消息内容';
 comment on column public.messages.message_type is '消息类型';
 comment on column public.messages.token_count is 'Token数量';
+comment on column public.messages.body_token_count is '消息本体的token数量';
 comment on column public.messages.provider is '服务提供商';
 comment on column public.messages.model is '使用的模型';
 comment on column public.messages.metadata is '消息元数据，JSON格式';

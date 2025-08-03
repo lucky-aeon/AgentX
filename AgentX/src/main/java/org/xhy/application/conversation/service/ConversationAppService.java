@@ -370,8 +370,10 @@ public class ConversationAppService {
 
             contextEntity.setActiveMessages(retainedMessageIds);
         }
-        Set<String> retainedMessageIdSet = retainedMessages.stream().map(TokenMessage::getId).collect(Collectors.toSet());
-        return messageEntities.stream().filter(message -> retainedMessageIdSet.contains(message.getId())).collect(Collectors.toList());
+        Set<String> retainedMessageIdSet = retainedMessages.stream().map(TokenMessage::getId)
+                .collect(Collectors.toSet());
+        return messageEntities.stream().filter(message -> retainedMessageIdSet.contains(message.getId()))
+                .collect(Collectors.toList());
     }
 
     /** 消息实体转换为token消息 */

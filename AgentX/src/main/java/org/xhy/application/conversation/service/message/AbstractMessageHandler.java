@@ -160,7 +160,7 @@ public abstract class AbstractMessageHandler {
             ChatResponse chatResponse = syncClient.chat(messages);
 
             // 5. 处理响应 - 设置消息内容
-            setMessageTokenCount(chatContext.getMessageHistory(), userEntity, llmEntity, chatResponse);
+            this.setMessageTokenCount(chatContext.getMessageHistory(), userEntity, llmEntity, chatResponse);
 
             // 6. 保存消息
             messageDomainService.updateMessage(userEntity);
@@ -277,22 +277,21 @@ public abstract class AbstractMessageHandler {
         tokenStream.start();
     }
 
-
-    /**
+    /** 根据历史消息的本体token算出本次消息的本体token
      * @param historyMessages 历史消息列表
      * @param userEntity 用户请求消息实体
      * @param llmEntity llm回复消息实体
-     * @param chatResponse llm响应
-     */
-    private static void setMessageTokenCount(List<MessageEntity> historyMessages, MessageEntity userEntity, MessageEntity llmEntity, ChatResponse chatResponse) {
+     * @param chatResponse llm响应 */
+    private void setMessageTokenCount(List<MessageEntity> historyMessages, MessageEntity userEntity,
+            MessageEntity llmEntity, ChatResponse chatResponse) {
         llmEntity.setTokenCount(chatResponse.tokenUsage().outputTokenCount());
         llmEntity.setBodyTokenCount(chatResponse.tokenUsage().outputTokenCount());
         llmEntity.setContent(chatResponse.aiMessage().text());
 
-
         int bodyTokenSum = 0;
         if (CollectionUtil.isNotEmpty(historyMessages)) {
-            bodyTokenSum = historyMessages.stream().filter(Objects::nonNull).mapToInt(MessageEntity::getBodyTokenCount).sum();
+            bodyTokenSum = historyMessages.stream().filter(Objects::nonNull).mapToInt(MessageEntity::getBodyTokenCount)
+                    .sum();
         }
         userEntity.setTokenCount(chatResponse.tokenUsage().inputTokenCount());
         userEntity.setBodyTokenCount(chatResponse.tokenUsage().inputTokenCount() - bodyTokenSum);
