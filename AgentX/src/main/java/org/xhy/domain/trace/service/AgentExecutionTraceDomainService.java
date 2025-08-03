@@ -328,69 +328,57 @@ public class AgentExecutionTraceDomainService {
         LambdaQueryWrapper<AgentExecutionSummaryEntity> wrapper = Wrappers.<AgentExecutionSummaryEntity>lambdaQuery()
                 .eq(AgentExecutionSummaryEntity::getUserId, userId)
                 .orderByDesc(AgentExecutionSummaryEntity::getExecutionStartTime);
-        
+
         List<AgentExecutionSummaryEntity> executions = summaryRepository.selectList(wrapper);
-        
+
         // 按agentId分组统计
         return executions.stream()
-                .collect(java.util.stream.Collectors.groupingBy(AgentExecutionSummaryEntity::getAgentId))
-                .entrySet().stream()
-                .map(entry -> {
+                .collect(java.util.stream.Collectors.groupingBy(AgentExecutionSummaryEntity::getAgentId)).entrySet()
+                .stream().map(entry -> {
                     String agentId = entry.getKey();
                     List<AgentExecutionSummaryEntity> agentExecutions = entry.getValue();
-                    
+
                     // 计算统计信息
                     int totalExecutions = agentExecutions.size();
                     int successfulExecutions = (int) agentExecutions.stream()
-                            .filter(e -> Boolean.TRUE.equals(e.getExecutionSuccess()))
-                            .count();
+                            .filter(e -> Boolean.TRUE.equals(e.getExecutionSuccess())).count();
                     int failedExecutions = totalExecutions - successfulExecutions;
                     double successRate = totalExecutions > 0 ? (double) successfulExecutions / totalExecutions : 0.0;
-                    
+
                     // Token统计
                     int totalTokens = agentExecutions.stream()
-                            .mapToInt(e -> e.getTotalTokens() != null ? e.getTotalTokens() : 0)
-                            .sum();
+                            .mapToInt(e -> e.getTotalTokens() != null ? e.getTotalTokens() : 0).sum();
                     int totalInputTokens = agentExecutions.stream()
-                            .mapToInt(e -> e.getTotalInputTokens() != null ? e.getTotalInputTokens() : 0)
-                            .sum();
+                            .mapToInt(e -> e.getTotalInputTokens() != null ? e.getTotalInputTokens() : 0).sum();
                     int totalOutputTokens = agentExecutions.stream()
-                            .mapToInt(e -> e.getTotalOutputTokens() != null ? e.getTotalOutputTokens() : 0)
-                            .sum();
-                    
+                            .mapToInt(e -> e.getTotalOutputTokens() != null ? e.getTotalOutputTokens() : 0).sum();
+
                     // 工具调用统计
                     int totalToolCalls = agentExecutions.stream()
-                            .mapToInt(e -> e.getToolCallCount() != null ? e.getToolCallCount() : 0)
-                            .sum();
-                    
+                            .mapToInt(e -> e.getToolCallCount() != null ? e.getToolCallCount() : 0).sum();
+
                     // 成本统计
                     BigDecimal totalCost = agentExecutions.stream()
                             .map(e -> e.getTotalCost() != null ? e.getTotalCost() : BigDecimal.ZERO)
                             .reduce(BigDecimal.ZERO, BigDecimal::add);
-                    
+
                     // 会话数统计（去重）
-                    int totalSessions = (int) agentExecutions.stream()
-                            .map(AgentExecutionSummaryEntity::getSessionId)
-                            .distinct()
-                            .count();
-                    
+                    int totalSessions = (int) agentExecutions.stream().map(AgentExecutionSummaryEntity::getSessionId)
+                            .distinct().count();
+
                     // 最后执行时间和状态
                     LocalDateTime lastExecutionTime = agentExecutions.stream()
-                            .map(AgentExecutionSummaryEntity::getExecutionStartTime)
-                            .max(LocalDateTime::compareTo)
+                            .map(AgentExecutionSummaryEntity::getExecutionStartTime).max(LocalDateTime::compareTo)
                             .orElse(null);
-                    
+
                     Boolean lastExecutionSuccess = agentExecutions.stream()
-                            .filter(e -> e.getExecutionStartTime().equals(lastExecutionTime))
-                            .findFirst()
-                            .map(AgentExecutionSummaryEntity::getExecutionSuccess)
-                            .orElse(null);
-                    
+                            .filter(e -> e.getExecutionStartTime().equals(lastExecutionTime)).findFirst()
+                            .map(AgentExecutionSummaryEntity::getExecutionSuccess).orElse(null);
+
                     return new AgentStatistics(agentId, totalExecutions, successfulExecutions, failedExecutions,
                             successRate, totalTokens, totalInputTokens, totalOutputTokens, totalToolCalls, totalCost,
                             totalSessions, lastExecutionTime, lastExecutionSuccess);
-                })
-                .sorted((a, b) -> b.getLastExecutionTime().compareTo(a.getLastExecutionTime()))
+                }).sorted((a, b) -> b.getLastExecutionTime().compareTo(a.getLastExecutionTime()))
                 .collect(java.util.stream.Collectors.toList());
     }
 
@@ -401,71 +389,59 @@ public class AgentExecutionTraceDomainService {
      * @return Session统计数据列表 */
     public List<SessionStatistics> getAgentSessionStatistics(String agentId, String userId) {
         LambdaQueryWrapper<AgentExecutionSummaryEntity> wrapper = Wrappers.<AgentExecutionSummaryEntity>lambdaQuery()
-                .eq(AgentExecutionSummaryEntity::getAgentId, agentId)
-                .eq(AgentExecutionSummaryEntity::getUserId, userId)
+                .eq(AgentExecutionSummaryEntity::getAgentId, agentId).eq(AgentExecutionSummaryEntity::getUserId, userId)
                 .orderByDesc(AgentExecutionSummaryEntity::getExecutionStartTime);
-        
+
         List<AgentExecutionSummaryEntity> executions = summaryRepository.selectList(wrapper);
-        
+
         // 按sessionId分组统计
         return executions.stream()
-                .collect(java.util.stream.Collectors.groupingBy(AgentExecutionSummaryEntity::getSessionId))
-                .entrySet().stream()
-                .map(entry -> {
+                .collect(java.util.stream.Collectors.groupingBy(AgentExecutionSummaryEntity::getSessionId)).entrySet()
+                .stream().map(entry -> {
                     String sessionId = entry.getKey();
                     List<AgentExecutionSummaryEntity> sessionExecutions = entry.getValue();
-                    
+
                     // 计算统计信息
                     int totalExecutions = sessionExecutions.size();
                     int successfulExecutions = (int) sessionExecutions.stream()
-                            .filter(e -> Boolean.TRUE.equals(e.getExecutionSuccess()))
-                            .count();
+                            .filter(e -> Boolean.TRUE.equals(e.getExecutionSuccess())).count();
                     int failedExecutions = totalExecutions - successfulExecutions;
                     double successRate = totalExecutions > 0 ? (double) successfulExecutions / totalExecutions : 0.0;
-                    
+
                     // Token统计
                     int totalTokens = sessionExecutions.stream()
-                            .mapToInt(e -> e.getTotalTokens() != null ? e.getTotalTokens() : 0)
-                            .sum();
+                            .mapToInt(e -> e.getTotalTokens() != null ? e.getTotalTokens() : 0).sum();
                     int totalInputTokens = sessionExecutions.stream()
-                            .mapToInt(e -> e.getTotalInputTokens() != null ? e.getTotalInputTokens() : 0)
-                            .sum();
+                            .mapToInt(e -> e.getTotalInputTokens() != null ? e.getTotalInputTokens() : 0).sum();
                     int totalOutputTokens = sessionExecutions.stream()
-                            .mapToInt(e -> e.getTotalOutputTokens() != null ? e.getTotalOutputTokens() : 0)
-                            .sum();
-                    
+                            .mapToInt(e -> e.getTotalOutputTokens() != null ? e.getTotalOutputTokens() : 0).sum();
+
                     // 工具调用统计
                     int totalToolCalls = sessionExecutions.stream()
-                            .mapToInt(e -> e.getToolCallCount() != null ? e.getToolCallCount() : 0)
-                            .sum();
-                    
+                            .mapToInt(e -> e.getToolCallCount() != null ? e.getToolCallCount() : 0).sum();
+
                     // 执行时间统计
                     int totalExecutionTime = sessionExecutions.stream()
-                            .mapToInt(e -> e.getTotalExecutionTime() != null ? e.getTotalExecutionTime() : 0)
-                            .sum();
-                    
+                            .mapToInt(e -> e.getTotalExecutionTime() != null ? e.getTotalExecutionTime() : 0).sum();
+
                     // 成本统计
                     BigDecimal totalCost = sessionExecutions.stream()
                             .map(e -> e.getTotalCost() != null ? e.getTotalCost() : BigDecimal.ZERO)
                             .reduce(BigDecimal.ZERO, BigDecimal::add);
-                    
+
                     // 最后执行时间和状态
                     LocalDateTime lastExecutionTime = sessionExecutions.stream()
-                            .map(AgentExecutionSummaryEntity::getExecutionStartTime)
-                            .max(LocalDateTime::compareTo)
+                            .map(AgentExecutionSummaryEntity::getExecutionStartTime).max(LocalDateTime::compareTo)
                             .orElse(null);
-                    
+
                     Boolean lastExecutionSuccess = sessionExecutions.stream()
-                            .filter(e -> e.getExecutionStartTime().equals(lastExecutionTime))
-                            .findFirst()
-                            .map(AgentExecutionSummaryEntity::getExecutionSuccess)
-                            .orElse(null);
-                    
+                            .filter(e -> e.getExecutionStartTime().equals(lastExecutionTime)).findFirst()
+                            .map(AgentExecutionSummaryEntity::getExecutionSuccess).orElse(null);
+
                     return new SessionStatistics(sessionId, agentId, totalExecutions, successfulExecutions,
                             failedExecutions, successRate, totalTokens, totalInputTokens, totalOutputTokens,
                             totalToolCalls, totalExecutionTime, totalCost, lastExecutionTime, lastExecutionSuccess);
-                })
-                .sorted((a, b) -> b.getLastExecutionTime().compareTo(a.getLastExecutionTime()))
+                }).sorted((a, b) -> b.getLastExecutionTime().compareTo(a.getLastExecutionTime()))
                 .collect(java.util.stream.Collectors.toList());
     }
 
@@ -561,7 +537,8 @@ public class AgentExecutionTraceDomainService {
 
         public AgentStatistics(String agentId, int totalExecutions, int successfulExecutions, int failedExecutions,
                 double successRate, int totalTokens, int totalInputTokens, int totalOutputTokens, int totalToolCalls,
-                BigDecimal totalCost, int totalSessions, LocalDateTime lastExecutionTime, Boolean lastExecutionSuccess) {
+                BigDecimal totalCost, int totalSessions, LocalDateTime lastExecutionTime,
+                Boolean lastExecutionSuccess) {
             this.agentId = agentId;
             this.totalExecutions = totalExecutions;
             this.successfulExecutions = successfulExecutions;
@@ -578,19 +555,45 @@ public class AgentExecutionTraceDomainService {
         }
 
         // Getter方法
-        public String getAgentId() { return agentId; }
-        public int getTotalExecutions() { return totalExecutions; }
-        public int getSuccessfulExecutions() { return successfulExecutions; }
-        public int getFailedExecutions() { return failedExecutions; }
-        public double getSuccessRate() { return successRate; }
-        public int getTotalTokens() { return totalTokens; }
-        public int getTotalInputTokens() { return totalInputTokens; }
-        public int getTotalOutputTokens() { return totalOutputTokens; }
-        public int getTotalToolCalls() { return totalToolCalls; }
-        public BigDecimal getTotalCost() { return totalCost; }
-        public int getTotalSessions() { return totalSessions; }
-        public LocalDateTime getLastExecutionTime() { return lastExecutionTime; }
-        public Boolean getLastExecutionSuccess() { return lastExecutionSuccess; }
+        public String getAgentId() {
+            return agentId;
+        }
+        public int getTotalExecutions() {
+            return totalExecutions;
+        }
+        public int getSuccessfulExecutions() {
+            return successfulExecutions;
+        }
+        public int getFailedExecutions() {
+            return failedExecutions;
+        }
+        public double getSuccessRate() {
+            return successRate;
+        }
+        public int getTotalTokens() {
+            return totalTokens;
+        }
+        public int getTotalInputTokens() {
+            return totalInputTokens;
+        }
+        public int getTotalOutputTokens() {
+            return totalOutputTokens;
+        }
+        public int getTotalToolCalls() {
+            return totalToolCalls;
+        }
+        public BigDecimal getTotalCost() {
+            return totalCost;
+        }
+        public int getTotalSessions() {
+            return totalSessions;
+        }
+        public LocalDateTime getLastExecutionTime() {
+            return lastExecutionTime;
+        }
+        public Boolean getLastExecutionSuccess() {
+            return lastExecutionSuccess;
+        }
     }
 
     /** 会话执行统计信息 */
@@ -631,19 +634,47 @@ public class AgentExecutionTraceDomainService {
         }
 
         // Getter方法
-        public String getSessionId() { return sessionId; }
-        public String getAgentId() { return agentId; }
-        public int getTotalExecutions() { return totalExecutions; }
-        public int getSuccessfulExecutions() { return successfulExecutions; }
-        public int getFailedExecutions() { return failedExecutions; }
-        public double getSuccessRate() { return successRate; }
-        public int getTotalTokens() { return totalTokens; }
-        public int getTotalInputTokens() { return totalInputTokens; }
-        public int getTotalOutputTokens() { return totalOutputTokens; }
-        public int getTotalToolCalls() { return totalToolCalls; }
-        public int getTotalExecutionTime() { return totalExecutionTime; }
-        public BigDecimal getTotalCost() { return totalCost; }
-        public LocalDateTime getLastExecutionTime() { return lastExecutionTime; }
-        public Boolean getLastExecutionSuccess() { return lastExecutionSuccess; }
+        public String getSessionId() {
+            return sessionId;
+        }
+        public String getAgentId() {
+            return agentId;
+        }
+        public int getTotalExecutions() {
+            return totalExecutions;
+        }
+        public int getSuccessfulExecutions() {
+            return successfulExecutions;
+        }
+        public int getFailedExecutions() {
+            return failedExecutions;
+        }
+        public double getSuccessRate() {
+            return successRate;
+        }
+        public int getTotalTokens() {
+            return totalTokens;
+        }
+        public int getTotalInputTokens() {
+            return totalInputTokens;
+        }
+        public int getTotalOutputTokens() {
+            return totalOutputTokens;
+        }
+        public int getTotalToolCalls() {
+            return totalToolCalls;
+        }
+        public int getTotalExecutionTime() {
+            return totalExecutionTime;
+        }
+        public BigDecimal getTotalCost() {
+            return totalCost;
+        }
+        public LocalDateTime getLastExecutionTime() {
+            return lastExecutionTime;
+        }
+        public Boolean getLastExecutionSuccess() {
+            return lastExecutionSuccess;
+        }
     }
 }

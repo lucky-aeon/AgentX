@@ -1,10 +1,13 @@
 package org.xhy.application.trace.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.xhy.application.trace.assembler.AgentExecutionTraceAssembler;
 import org.xhy.application.trace.dto.*;
 import org.xhy.domain.agent.model.AgentEntity;
+import org.xhy.domain.agent.model.AgentVersionEntity;
 import org.xhy.domain.agent.service.AgentDomainService;
 import org.xhy.domain.conversation.model.SessionEntity;
 import org.xhy.domain.conversation.service.SessionDomainService;
@@ -21,6 +24,8 @@ import java.util.stream.Collectors;
 /** Agent执行链路追踪应用服务 协调追踪数据的查询和展示逻辑 */
 @Service
 public class AgentExecutionTraceAppService {
+
+    private static final Logger logger = LoggerFactory.getLogger(AgentExecutionTraceAppService.class);
 
     private final AgentExecutionTraceDomainService traceDomainService;
     private final AgentDomainService agentDomainService;
@@ -196,7 +201,17 @@ public class AgentExecutionTraceAppService {
      * @return 会话执行记录列表 */
     public List<AgentExecutionSummaryDTO> getSessionExecutionHistoryByUserId(String sessionId, String userId) {
         List<AgentExecutionSummaryEntity> entities = traceDomainService.getSessionExecutionHistory(sessionId, userId);
-        return AgentExecutionTraceAssembler.toSummaryDTOs(entities);
+        List<AgentExecutionSummaryDTO> dtoList = AgentExecutionTraceAssembler.toSummaryDTOs(entities);
+
+        // 填充Agent名称
+        for (AgentExecutionSummaryDTO dto : dtoList) {
+            if (dto.getAgentId() != null) {
+                String agentName = getAgentName(dto.getAgentId(), userId);
+                dto.setAgentName(agentName);
+            }
+        }
+
+        return dtoList;
     }
 
     /** 获取用户的Agent执行链路统计信息（含Agent名称）
@@ -206,41 +221,39 @@ public class AgentExecutionTraceAppService {
      * @return Agent统计信息列表 */
     public List<AgentTraceStatisticsDTO> getUserAgentTraceStatistics(AgentTraceListRequest request, String userId) {
         // 获取领域统计数据
-        List<AgentExecutionTraceDomainService.AgentStatistics> agentStatistics = traceDomainService.getUserAgentStatistics(userId);
-        
+        List<AgentExecutionTraceDomainService.AgentStatistics> agentStatistics = traceDomainService
+                .getUserAgentStatistics(userId);
+
         if (agentStatistics.isEmpty()) {
             return List.of();
         }
-        
+
         // 提取所有agentId，批量获取Agent信息
         List<String> agentIds = agentStatistics.stream()
-                .map(AgentExecutionTraceDomainService.AgentStatistics::getAgentId)
-                .collect(Collectors.toList());
-        
+                .map(AgentExecutionTraceDomainService.AgentStatistics::getAgentId).collect(Collectors.toList());
+
         // 批量获取Agent名称映射（容错处理）
         Map<String, String> agentNameMap = getAgentNameMap(agentIds, userId);
-        
+
         // 转换为DTO并填充Agent名称
-        return agentStatistics.stream()
-                .map(stats -> {
-                    AgentTraceStatisticsDTO dto = new AgentTraceStatisticsDTO();
-                    dto.setAgentId(stats.getAgentId());
-                    dto.setAgentName(agentNameMap.getOrDefault(stats.getAgentId(), "未知助理"));
-                    dto.setTotalExecutions(stats.getTotalExecutions());
-                    dto.setSuccessfulExecutions(stats.getSuccessfulExecutions());
-                    dto.setFailedExecutions(stats.getFailedExecutions());
-                    dto.setSuccessRate(stats.getSuccessRate());
-                    dto.setTotalTokens(stats.getTotalTokens());
-                    dto.setTotalInputTokens(stats.getTotalInputTokens());
-                    dto.setTotalOutputTokens(stats.getTotalOutputTokens());
-                    dto.setTotalToolCalls(stats.getTotalToolCalls());
-                    dto.setTotalCost(stats.getTotalCost());
-                    dto.setTotalSessions(stats.getTotalSessions());
-                    dto.setLastExecutionTime(stats.getLastExecutionTime());
-                    dto.setLastExecutionSuccess(stats.getLastExecutionSuccess());
-                    return dto;
-                })
-                .collect(Collectors.toList());
+        return agentStatistics.stream().map(stats -> {
+            AgentTraceStatisticsDTO dto = new AgentTraceStatisticsDTO();
+            dto.setAgentId(stats.getAgentId());
+            dto.setAgentName(agentNameMap.getOrDefault(stats.getAgentId(), "未知助理"));
+            dto.setTotalExecutions(stats.getTotalExecutions());
+            dto.setSuccessfulExecutions(stats.getSuccessfulExecutions());
+            dto.setFailedExecutions(stats.getFailedExecutions());
+            dto.setSuccessRate(stats.getSuccessRate());
+            dto.setTotalTokens(stats.getTotalTokens());
+            dto.setTotalInputTokens(stats.getTotalInputTokens());
+            dto.setTotalOutputTokens(stats.getTotalOutputTokens());
+            dto.setTotalToolCalls(stats.getTotalToolCalls());
+            dto.setTotalCost(stats.getTotalCost());
+            dto.setTotalSessions(stats.getTotalSessions());
+            dto.setLastExecutionTime(stats.getLastExecutionTime());
+            dto.setLastExecutionSuccess(stats.getLastExecutionSuccess());
+            return dto;
+        }).collect(Collectors.toList());
     }
 
     /** 获取指定Agent下的会话执行链路统计信息（含会话名称）
@@ -249,79 +262,98 @@ public class AgentExecutionTraceAppService {
      * @param request 查询请求
      * @param userId 用户ID
      * @return 会话统计信息列表 */
-    public List<SessionTraceStatisticsDTO> getAgentSessionTraceStatistics(String agentId, 
+    public List<SessionTraceStatisticsDTO> getAgentSessionTraceStatistics(String agentId,
             SessionTraceListRequest request, String userId) {
         // 获取领域统计数据
-        List<AgentExecutionTraceDomainService.SessionStatistics> sessionStatistics = 
-                traceDomainService.getAgentSessionStatistics(agentId, userId);
-        
+        List<AgentExecutionTraceDomainService.SessionStatistics> sessionStatistics = traceDomainService
+                .getAgentSessionStatistics(agentId, userId);
+
         if (sessionStatistics.isEmpty()) {
             return List.of();
         }
-        
+
         // 获取Agent名称
         String agentName = getAgentName(agentId, userId);
-        
+
         // 提取所有sessionId，批量获取会话信息
         List<String> sessionIds = sessionStatistics.stream()
-                .map(AgentExecutionTraceDomainService.SessionStatistics::getSessionId)
-                .collect(Collectors.toList());
-        
+                .map(AgentExecutionTraceDomainService.SessionStatistics::getSessionId).collect(Collectors.toList());
+
         // 批量获取会话标题映射（容错处理）
         Map<String, SessionEntity> sessionMap = getSessionMap(sessionIds, userId);
-        
+
         // 转换为DTO并填充会话信息
-        return sessionStatistics.stream()
-                .map(stats -> {
-                    SessionTraceStatisticsDTO dto = new SessionTraceStatisticsDTO();
-                    dto.setSessionId(stats.getSessionId());
-                    dto.setAgentId(stats.getAgentId());
-                    dto.setAgentName(agentName);
-                    
-                    // 设置会话标题和创建时间
-                    SessionEntity session = sessionMap.get(stats.getSessionId());
-                    if (session != null) {
-                        dto.setSessionTitle(session.getTitle());
-                        dto.setSessionCreatedTime(session.getCreatedAt());
-                        dto.setIsArchived(session.getIsArchived());
-                    } else {
-                        dto.setSessionTitle("未知会话");
-                        dto.setIsArchived(false);
-                    }
-                    
-                    dto.setTotalExecutions(stats.getTotalExecutions());
-                    dto.setSuccessfulExecutions(stats.getSuccessfulExecutions());
-                    dto.setFailedExecutions(stats.getFailedExecutions());
-                    dto.setSuccessRate(stats.getSuccessRate());
-                    dto.setTotalTokens(stats.getTotalTokens());
-                    dto.setTotalInputTokens(stats.getTotalInputTokens());
-                    dto.setTotalOutputTokens(stats.getTotalOutputTokens());
-                    dto.setTotalToolCalls(stats.getTotalToolCalls());
-                    dto.setTotalExecutionTime(stats.getTotalExecutionTime());
-                    dto.setTotalCost(stats.getTotalCost());
-                    dto.setLastExecutionTime(stats.getLastExecutionTime());
-                    dto.setLastExecutionSuccess(stats.getLastExecutionSuccess());
-                    return dto;
-                })
-                .collect(Collectors.toList());
+        return sessionStatistics.stream().map(stats -> {
+            SessionTraceStatisticsDTO dto = new SessionTraceStatisticsDTO();
+            dto.setSessionId(stats.getSessionId());
+            dto.setAgentId(stats.getAgentId());
+            dto.setAgentName(agentName);
+
+            // 设置会话标题和创建时间
+            SessionEntity session = sessionMap.get(stats.getSessionId());
+            if (session != null) {
+                dto.setSessionTitle(session.getTitle());
+                dto.setSessionCreatedTime(session.getCreatedAt());
+            } else {
+                dto.setSessionTitle("未知会话");
+                dto.setIsArchived(false);
+            }
+
+            dto.setTotalExecutions(stats.getTotalExecutions());
+            dto.setSuccessfulExecutions(stats.getSuccessfulExecutions());
+            dto.setFailedExecutions(stats.getFailedExecutions());
+            dto.setSuccessRate(stats.getSuccessRate());
+            dto.setTotalTokens(stats.getTotalTokens());
+            dto.setTotalInputTokens(stats.getTotalInputTokens());
+            dto.setTotalOutputTokens(stats.getTotalOutputTokens());
+            dto.setTotalToolCalls(stats.getTotalToolCalls());
+            dto.setTotalExecutionTime(stats.getTotalExecutionTime());
+            dto.setTotalCost(stats.getTotalCost());
+            dto.setLastExecutionTime(stats.getLastExecutionTime());
+            dto.setLastExecutionSuccess(stats.getLastExecutionSuccess());
+            return dto;
+        }).collect(Collectors.toList());
     }
 
     /** 批量获取Agent名称映射 */
     private Map<String, String> getAgentNameMap(List<String> agentIds, String userId) {
         return agentIds.stream()
-                .collect(Collectors.toMap(
-                        Function.identity(),
-                        agentId -> getAgentName(agentId, userId)
-                ));
+                .collect(Collectors.toMap(Function.identity(), agentId -> getAgentName(agentId, userId)));
     }
 
     /** 获取单个Agent名称（容错处理） */
     private String getAgentName(String agentId, String userId) {
         try {
+            // 1. 先尝试通过用户权限获取Agent（用户自己的Agent）
             AgentEntity agent = agentDomainService.getAgent(agentId, userId);
+            logger.debug("成功获取用户 {} 自己的Agent {}，名称: {}", userId, agentId, agent.getName());
             return agent != null ? agent.getName() : "未知助理";
         } catch (Exception e) {
-            // 如果Agent不存在或无权限访问，返回默认名称
+            logger.debug("无法通过用户权限获取Agent {}，尝试其他查询方式: {}", agentId, e.getMessage());
+
+            // 2. 尝试查询已发布的版本（按agent_id查询）
+            try {
+                AgentVersionEntity publishedVersion = agentDomainService.getPublishedAgentVersion(agentId);
+                if (publishedVersion != null) {
+                    logger.debug("成功获取已发布Agent版本 {}，名称: {}", agentId, publishedVersion.getName());
+                    return publishedVersion.getName();
+                }
+            } catch (Exception ex) {
+                logger.debug("按agent_id查询已发布版本失败: {}", ex.getMessage());
+            }
+
+            // 3. 如果上述都失败，可能agentId实际上是version_id，尝试直接查询版本记录
+            try {
+                AgentVersionEntity versionEntity = agentDomainService.getAgentVersionById(agentId);
+                if (versionEntity != null) {
+                    logger.debug("发现agentId {} 实际是版本ID，获取版本名称: {}", agentId, versionEntity.getName());
+                    return versionEntity.getName();
+                }
+            } catch (Exception ex) {
+                logger.debug("按版本ID查询失败: {}", ex.getMessage());
+            }
+
+            logger.warn("所有查询方式都失败，Agent ID: {}", agentId);
             return "未知助理";
         }
     }
@@ -329,12 +361,8 @@ public class AgentExecutionTraceAppService {
     /** 批量获取会话映射 */
     private Map<String, SessionEntity> getSessionMap(List<String> sessionIds, String userId) {
         return sessionIds.stream()
-                .collect(Collectors.toMap(
-                        Function.identity(),
-                        sessionId -> getSession(sessionId, userId)
-                ))
-                .entrySet().stream()
-                .filter(entry -> entry.getValue() != null)
+                .collect(Collectors.toMap(Function.identity(), sessionId -> getSession(sessionId, userId))).entrySet()
+                .stream().filter(entry -> entry.getValue() != null)
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 

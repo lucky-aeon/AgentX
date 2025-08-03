@@ -251,6 +251,16 @@ public class AgentDomainService {
         return version;
     }
 
+    /** 获取指定Agent的已发布版本信息（用于跨用户访问场景） */
+    public AgentVersionEntity getPublishedAgentVersion(String agentId) {
+        LambdaQueryWrapper<AgentVersionEntity> queryWrapper = Wrappers.<AgentVersionEntity>lambdaQuery()
+                .eq(AgentVersionEntity::getAgentId, agentId)
+                .eq(AgentVersionEntity::getPublishStatus, PublishStatus.PUBLISHED.getCode())
+                .orderByDesc(AgentVersionEntity::getPublishedAt).last("LIMIT 1");
+
+        return agentVersionRepository.selectOne(queryWrapper);
+    }
+
     /** 获取指定状态的所有版本 注：只返回每个助理的最新版本，避免同一助理多个版本同时出现 */
     public List<AgentVersionEntity> getVersionsByStatus(PublishStatus status) {
 

@@ -305,7 +305,7 @@ public class ConversationAppService {
             messageEntities = messageDomainService.listByIds(activeMessageIds);
 
             // 应用Token溢出策略
-            applyTokenOverflowStrategy(environment, contextEntity, messageEntities);
+            messageEntities = applyTokenOverflowStrategy(environment, contextEntity, messageEntities);
         } else {
             contextEntity = new ContextEntity();
             contextEntity.setSessionId(sessionId);
@@ -329,7 +329,7 @@ public class ConversationAppService {
      * @param environment 对话环境
      * @param contextEntity 上下文实体
      * @param messageEntities 消息实体列表 */
-    private void applyTokenOverflowStrategy(ChatContext environment, ContextEntity contextEntity,
+    private List<MessageEntity> applyTokenOverflowStrategy(ChatContext environment, ContextEntity contextEntity,
             List<MessageEntity> messageEntities) {
 
         LLMModelConfig llmModelConfig = environment.getLlmModelConfig();
@@ -368,7 +368,11 @@ public class ConversationAppService {
             }
 
             contextEntity.setActiveMessages(retainedMessageIds);
+            messageEntities = messageDomainService.listByIds(retainedMessageIds);
+
         }
+
+        return messageEntities;
     }
 
     /** 消息实体转换为token消息 */

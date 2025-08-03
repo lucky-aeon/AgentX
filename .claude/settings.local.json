@@ -46,7 +46,10 @@
       "Bash(claude mcp:*)",
       "Bash(env)",
       "Bash(npx @modelcontextprotocol/server-postgres:*)",
-      "mcp__postgres-server__query"
+      "mcp__postgres-server__query",
+      "Bash(npm install:*)",
+      "Bash(wc:*)",
+      "Bash(head:*)"
     ],
     "deny": []
   }

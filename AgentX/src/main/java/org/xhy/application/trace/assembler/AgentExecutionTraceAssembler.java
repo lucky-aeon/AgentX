@@ -47,6 +47,9 @@ public class AgentExecutionTraceAssembler {
         AgentExecutionDetailDTO dto = new AgentExecutionDetailDTO();
         BeanUtils.copyProperties(entity, dto);
 
+        // 设置创建时间
+        dto.setCreatedTime(entity.getCreatedAt());
+
         return dto;
     }
 
