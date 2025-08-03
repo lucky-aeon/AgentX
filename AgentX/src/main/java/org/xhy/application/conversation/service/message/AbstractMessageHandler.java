@@ -1,5 +1,6 @@
 package org.xhy.application.conversation.service.message;
 
+import cn.hutool.core.collection.CollectionUtil;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.data.message.*;
@@ -42,10 +43,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.math.BigDecimal;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
 public abstract class AbstractMessageHandler {
@@ -157,15 +155,12 @@ public abstract class AbstractMessageHandler {
 
             List<ChatMessage> messages = memory.messages();
             messages.add(new UserMessage(chatContext.getUserMessage()));
-            ChatResponse chatResponse = syncClient.chat(messages);
 
             // 4. 构建同步Agent并调用
-            String responseText = chatResponse.aiMessage().text();
+            ChatResponse chatResponse = syncClient.chat(messages);
 
             // 5. 处理响应 - 设置消息内容
-            llmEntity.setContent(responseText);
-            llmEntity.setTokenCount(chatResponse.tokenUsage().outputTokenCount());
-            userEntity.setTokenCount(chatResponse.tokenUsage().inputTokenCount());
+            setMessageTokenCount(chatContext.getMessageHistory(), userEntity, llmEntity, chatResponse);
 
             // 6. 保存消息
             messageDomainService.updateMessage(userEntity);
@@ -173,7 +168,7 @@ public abstract class AbstractMessageHandler {
                     chatContext.getContextEntity());
 
             // 7. 发送完整响应
-            AgentChatResponse response = new AgentChatResponse(responseText, true);
+            AgentChatResponse response = new AgentChatResponse(chatResponse.aiMessage().text(), true);
             response.setMessageType(MessageType.TEXT);
             transport.sendEndMessage(connection, response);
 
@@ -232,13 +227,9 @@ public abstract class AbstractMessageHandler {
 
         // 完整响应处理
         tokenStream.onCompleteResponse(chatResponse -> {
-            // 更新token信息
-            llmEntity.setTokenCount(chatResponse.tokenUsage().outputTokenCount());
-            llmEntity.setContent(chatResponse.aiMessage().text());
+            this.setMessageTokenCount(chatContext.getMessageHistory(), userEntity, llmEntity, chatResponse);
 
-            userEntity.setTokenCount(chatResponse.tokenUsage().inputTokenCount());
             messageDomainService.updateMessage(userEntity);
-
             // 保存AI消息
             messageDomainService.saveMessageAndUpdateContext(Collections.singletonList(llmEntity),
                     chatContext.getContextEntity());
@@ -284,6 +275,27 @@ public abstract class AbstractMessageHandler {
 
         // 启动流处理
         tokenStream.start();
+    }
+
+
+    /**
+     * @param historyMessages 历史消息列表
+     * @param userEntity 用户请求消息实体
+     * @param llmEntity llm回复消息实体
+     * @param chatResponse llm响应
+     */
+    private static void setMessageTokenCount(List<MessageEntity> historyMessages, MessageEntity userEntity, MessageEntity llmEntity, ChatResponse chatResponse) {
+        llmEntity.setTokenCount(chatResponse.tokenUsage().outputTokenCount());
+        llmEntity.setBodyTokenCount(chatResponse.tokenUsage().outputTokenCount());
+        llmEntity.setContent(chatResponse.aiMessage().text());
+
+
+        int bodyTokenSum = 0;
+        if (CollectionUtil.isNotEmpty(historyMessages)) {
+            bodyTokenSum = historyMessages.stream().filter(Objects::nonNull).mapToInt(MessageEntity::getBodyTokenCount).sum();
+        }
+        userEntity.setTokenCount(chatResponse.tokenUsage().inputTokenCount());
+        userEntity.setBodyTokenCount(chatResponse.tokenUsage().inputTokenCount() - bodyTokenSum);
     }
 
     /** 初始化内存 */
