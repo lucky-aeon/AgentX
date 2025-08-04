@@ -111,6 +111,18 @@ public class AgentExecutionDetailEntity extends BaseEntity {
         return entity;
     }
 
+    /** 创建用户消息步骤（带时间戳） */
+    public static AgentExecutionDetailEntity createUserMessageStep(String traceId, Integer sequenceNo,
+            String userMessage, String messageType, LocalDateTime eventTime) {
+        AgentExecutionDetailEntity entity = new AgentExecutionDetailEntity();
+        entity.setTraceId(traceId);
+        entity.setSequenceNo(sequenceNo);
+        entity.setMessageContent(userMessage);
+        entity.setMessageType("USER_MESSAGE");
+        entity.setCreatedAt(eventTime); // 手动设置事件发生时间
+        return entity;
+    }
+
     /** 创建带Token信息的用户消息步骤 */
     public static AgentExecutionDetailEntity createUserMessageStepWithTokens(String traceId, Integer sequenceNo,
             String userMessage, String messageType, Integer messageTokens) {
@@ -120,6 +132,19 @@ public class AgentExecutionDetailEntity extends BaseEntity {
         entity.setMessageContent(userMessage);
         entity.setMessageType("USER_MESSAGE");
         entity.setMessageTokens(messageTokens);
+        return entity;
+    }
+
+    /** 创建带Token信息的用户消息步骤（带时间戳） */
+    public static AgentExecutionDetailEntity createUserMessageStepWithTokens(String traceId, Integer sequenceNo,
+            String userMessage, String messageType, Integer messageTokens, LocalDateTime eventTime) {
+        AgentExecutionDetailEntity entity = new AgentExecutionDetailEntity();
+        entity.setTraceId(traceId);
+        entity.setSequenceNo(sequenceNo);
+        entity.setMessageContent(userMessage);
+        entity.setMessageType("USER_MESSAGE");
+        entity.setMessageTokens(messageTokens);
+        entity.setCreatedAt(eventTime); // 手动设置事件发生时间
         return entity;
     }
 
@@ -139,6 +164,23 @@ public class AgentExecutionDetailEntity extends BaseEntity {
         return entity;
     }
 
+    /** 创建AI响应步骤（带时间戳） */
+    public static AgentExecutionDetailEntity createAiResponseStep(String traceId, Integer sequenceNo, String aiResponse,
+            String modelId, String providerName, Integer messageTokens, Integer modelCallTime, BigDecimal stepCost, LocalDateTime eventTime) {
+        AgentExecutionDetailEntity entity = new AgentExecutionDetailEntity();
+        entity.setTraceId(traceId);
+        entity.setSequenceNo(sequenceNo);
+        entity.setMessageContent(aiResponse);
+        entity.setMessageType("AI_RESPONSE");
+        entity.setModelId(modelId);
+        entity.setProviderName(providerName);
+        entity.setMessageTokens(messageTokens);
+        entity.setModelCallTime(modelCallTime);
+        entity.setStepCost(stepCost);
+        entity.setCreatedAt(eventTime); // 手动设置事件发生时间
+        return entity;
+    }
+
     /** 创建工具调用步骤 */
     public static AgentExecutionDetailEntity createToolCallStep(String traceId, Integer sequenceNo, String toolName,
             String requestArgs, String responseData, Integer executionTime, Boolean success) {
@@ -153,6 +195,24 @@ public class AgentExecutionDetailEntity extends BaseEntity {
         entity.setToolExecutionTime(executionTime);
         entity.setToolSuccess(success);
         entity.setStepSuccess(success);
+        return entity;
+    }
+
+    /** 创建工具调用步骤（带时间戳） */
+    public static AgentExecutionDetailEntity createToolCallStep(String traceId, Integer sequenceNo, String toolName,
+            String requestArgs, String responseData, Integer executionTime, Boolean success, LocalDateTime eventTime) {
+        AgentExecutionDetailEntity entity = new AgentExecutionDetailEntity();
+        entity.setTraceId(traceId);
+        entity.setSequenceNo(sequenceNo);
+        entity.setMessageContent("执行工具：" + toolName);
+        entity.setMessageType("TOOL_CALL");
+        entity.setToolName(toolName);
+        entity.setToolRequestArgs(requestArgs);
+        entity.setToolResponseData(responseData);
+        entity.setToolExecutionTime(executionTime);
+        entity.setToolSuccess(success);
+        entity.setStepSuccess(success);
+        entity.setCreatedAt(eventTime); // 手动设置事件发生时间
         return entity;
     }
 

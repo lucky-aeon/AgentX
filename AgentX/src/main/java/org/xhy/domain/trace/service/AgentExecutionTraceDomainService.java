@@ -61,6 +61,23 @@ public class AgentExecutionTraceDomainService {
         detailRepository.insert(detail);
     }
 
+    /** 记录用户消息（带时间戳）
+     * 
+     * @param traceContext 追踪上下文
+     * @param userMessage 用户消息内容
+     * @param messageType 消息类型
+     * @param eventTime 事件发生时间 */
+    public void recordUserMessage(TraceContext traceContext, String userMessage, String messageType, LocalDateTime eventTime) {
+        if (!traceContext.isTraceEnabled()) {
+            return;
+        }
+
+        AgentExecutionDetailEntity detail = AgentExecutionDetailEntity.createUserMessageStep(traceContext.getTraceId(),
+                traceContext.nextSequence(), userMessage, messageType, eventTime);
+
+        detailRepository.insert(detail);
+    }
+
     /** 记录带Token信息的用户消息
      * 
      * @param traceContext 追踪上下文
@@ -75,6 +92,25 @@ public class AgentExecutionTraceDomainService {
 
         AgentExecutionDetailEntity detail = AgentExecutionDetailEntity.createUserMessageStepWithTokens(
                 traceContext.getTraceId(), traceContext.nextSequence(), userMessage, messageType, messageTokens);
+
+        detailRepository.insert(detail);
+    }
+
+    /** 记录带Token信息的用户消息（带时间戳）
+     * 
+     * @param traceContext 追踪上下文
+     * @param userMessage 用户消息内容
+     * @param messageType 消息类型
+     * @param messageTokens 消息Token数
+     * @param eventTime 事件发生时间 */
+    public void recordUserMessageWithTokens(TraceContext traceContext, String userMessage, String messageType,
+            Integer messageTokens, LocalDateTime eventTime) {
+        if (!traceContext.isTraceEnabled()) {
+            return;
+        }
+
+        AgentExecutionDetailEntity detail = AgentExecutionDetailEntity.createUserMessageStepWithTokens(
+                traceContext.getTraceId(), traceContext.nextSequence(), userMessage, messageType, messageTokens, eventTime);
 
         detailRepository.insert(detail);
     }
@@ -114,6 +150,42 @@ public class AgentExecutionTraceDomainService {
         }
     }
 
+    /** 记录AI响应（带时间戳）
+     * 
+     * @param traceContext 追踪上下文
+     * @param aiResponse AI响应内容
+     * @param modelCallInfo 模型调用信息
+     * @param eventTime 事件发生时间（AI开始响应的时间） */
+    public void recordAiResponse(TraceContext traceContext, String aiResponse, ModelCallInfo modelCallInfo, LocalDateTime eventTime) {
+        if (!traceContext.isTraceEnabled()) {
+            return;
+        }
+
+        AgentExecutionDetailEntity detail = AgentExecutionDetailEntity.createAiResponseStep(traceContext.getTraceId(),
+                traceContext.nextSequence(), aiResponse, modelCallInfo.getModelId(), modelCallInfo.getProviderName(),
+                modelCallInfo.getOutputTokens(), // AI响应使用输出Token数
+                modelCallInfo.getCallTime(), modelCallInfo.getCost(), eventTime);
+
+        // 设置降级信息
+        if (Boolean.TRUE.equals(modelCallInfo.getFallbackUsed())) {
+            detail.setFallbackInfo(modelCallInfo.getFallbackReason(), modelCallInfo.getOriginalModel(),
+                    modelCallInfo.getModelId());
+        }
+
+        // 设置错误信息
+        if (Boolean.FALSE.equals(modelCallInfo.getSuccess())) {
+            detail.markStepFailed(modelCallInfo.getErrorMessage());
+        }
+
+        detailRepository.insert(detail);
+
+        // 更新汇总统计
+        updateSummaryTokens(traceContext.getTraceId(), modelCallInfo.getInputTokens(), modelCallInfo.getOutputTokens());
+        if (modelCallInfo.getCost() != null) {
+            updateSummaryCost(traceContext.getTraceId(), modelCallInfo.getCost());
+        }
+    }
+
     /** 记录工具调用
      * 
      * @param traceContext 追踪上下文
@@ -126,6 +198,31 @@ public class AgentExecutionTraceDomainService {
         AgentExecutionDetailEntity detail = AgentExecutionDetailEntity.createToolCallStep(traceContext.getTraceId(),
                 traceContext.nextSequence(), toolCallInfo.getToolName(), toolCallInfo.getRequestArgs(),
                 toolCallInfo.getResponseData(), toolCallInfo.getExecutionTime(), toolCallInfo.getSuccess());
+
+        // 设置错误信息
+        if (Boolean.FALSE.equals(toolCallInfo.getSuccess())) {
+            detail.markStepFailed(toolCallInfo.getErrorMessage());
+        }
+
+        detailRepository.insert(detail);
+
+        // 更新汇总统计
+        updateSummaryToolExecution(traceContext.getTraceId(), toolCallInfo.getExecutionTime());
+    }
+
+    /** 记录工具调用（带时间戳）
+     * 
+     * @param traceContext 追踪上下文
+     * @param toolCallInfo 工具调用信息
+     * @param eventTime 事件发生时间（工具开始执行的时间） */
+    public void recordToolCall(TraceContext traceContext, ToolCallInfo toolCallInfo, LocalDateTime eventTime) {
+        if (!traceContext.isTraceEnabled()) {
+            return;
+        }
+
+        AgentExecutionDetailEntity detail = AgentExecutionDetailEntity.createToolCallStep(traceContext.getTraceId(),
+                traceContext.nextSequence(), toolCallInfo.getToolName(), toolCallInfo.getRequestArgs(),
+                toolCallInfo.getResponseData(), toolCallInfo.getExecutionTime(), toolCallInfo.getSuccess(), eventTime);
 
         // 设置错误信息
         if (Boolean.FALSE.equals(toolCallInfo.getSuccess())) {
