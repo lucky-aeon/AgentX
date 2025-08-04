@@ -22,7 +22,7 @@ RUN npm run build
 # 第三阶段：运行时镜像 - 基于pgvector镜像
 FROM pgvector/pgvector:pg15
 
-# 安装其他系统依赖
+# 安装完整运行时环境
 RUN apt-get update && apt-get install -y \
     openjdk-17-jre-headless \
     rabbitmq-server \
@@ -31,6 +31,8 @@ RUN apt-get update && apt-get install -y \
     curl \
     wget \
     sudo \
+    nodejs \
+    npm \
     && rm -rf /var/lib/apt/lists/*
 
 USER root
@@ -51,18 +53,15 @@ COPY --from=frontend-builder /build/node_modules /app/frontend/node_modules
 COPY AgentX/src/main/resources/application.yml /app/application.yml
 COPY docs/sql/01_init.sql /app/init.sql
 
-# 下载并配置API网关
-RUN mkdir -p /app/gateway && \
-    cd /app && \
-    curl -L -o gateway.jar https://github.com/lucky-aeon/API-Premium-Gateway/releases/latest/download/api-premium-gateway.jar || \
-    echo "Warning: Could not download API gateway, will skip gateway service"
+# API网关已移除 - 用户可选择独立部署
+# 如需API网关功能，请运行：docker run -d -p 8081:8081 ghcr.io/lucky-aeon/api-premium-gateway:latest
 
 # 配置Nginx
 COPY agentx-frontend-plus/ /app/frontend-src
 RUN echo 'server { \
     listen 3000; \
     location / { \
-        proxy_pass http://localhost:3001; \
+        proxy_pass http://localhost:3000; \
         proxy_set_header Host $host; \
         proxy_set_header X-Real-IP $remote_addr; \
     } \
@@ -77,15 +76,76 @@ sleep 5\n\
 sudo -u postgres psql -c "CREATE USER agentx_user WITH SUPERUSER PASSWORD '\''agentx_pass'\'';" 2>/dev/null || true\n\
 sudo -u postgres createdb -O agentx_user agentx 2>/dev/null || true\n\
 sudo -u postgres psql -d agentx -f /app/init.sql 2>/dev/null || true\n\
-sudo -u postgres psql -c "CREATE USER gateway_user WITH SUPERUSER PASSWORD '\''gateway_pass'\'';" 2>/dev/null || true\n\
-sudo -u postgres createdb -O gateway_user api_gateway 2>/dev/null || true\n\
 ' > /app/init-db.sh && chmod +x /app/init-db.sh
 
-# 创建supervisor配置
+# 创建supervisor目录和基础配置
+RUN mkdir -p /etc/supervisor/conf.d
 RUN echo '[supervisord]\n\
 nodaemon=true\n\
 user=root\n\
 \n\
+[unix_http_server]\n\
+file=/tmp/supervisor.sock\n\
+\n\
+[supervisorctl]\n\
+serverurl=unix:///tmp/supervisor.sock\n\
+\n\
+[rpcinterface:supervisor]\n\
+supervisor.rpcinterface_factory = supervisor.rpcinterface:make_main_rpcinterface\n\
+\n\
+[include]\n\
+files = /etc/supervisor/conf.d/*.conf\n\
+' > /etc/supervisor/supervisord.conf
+
+# 暴露端口
+EXPOSE 3000 8088 5432 5672 15672
+
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=3 \
+    CMD curl -f http://localhost:3000 && curl -f http://localhost:8088/api/health || exit 1
+
+# 智能启动脚本
+RUN echo '#!/bin/bash\n\
+set -e\n\
+\n\
+echo "🚀 AgentX智能启动脚本"\n\
+echo "================================"\n\
+\n\
+# 检测外部服务配置\n\
+USE_EXTERNAL_DB=false\n\
+USE_EXTERNAL_MQ=false\n\
+\n\
+if [ -n "$EXTERNAL_DB_HOST" ]; then\n\
+    echo "🔗 检测到外部数据库配置: $EXTERNAL_DB_HOST"\n\
+    USE_EXTERNAL_DB=true\n\
+    export DB_HOST="$EXTERNAL_DB_HOST"\n\
+else\n\
+    echo "🏠 使用内置数据库服务"\n\
+    export DB_HOST="localhost"\n\
+fi\n\
+\n\
+if [ -n "$EXTERNAL_RABBITMQ_HOST" ]; then\n\
+    echo "🔗 检测到外部消息队列配置: $EXTERNAL_RABBITMQ_HOST"\n\
+    USE_EXTERNAL_MQ=true\n\
+    export RABBITMQ_HOST="$EXTERNAL_RABBITMQ_HOST"\n\
+else\n\
+    echo "🏠 使用内置消息队列服务"\n\
+    export RABBITMQ_HOST="localhost"\n\
+fi\n\
+\n\
+# 动态生成supervisor配置\n\
+echo "📝 生成动态服务配置..."\n\
+cat > /etc/supervisor/conf.d/agentx.conf << EOF\n\
+[supervisord]\n\
+nodaemon=true\n\
+user=root\n\
+\n\
+EOF\n\
+\n\
+# 内置数据库服务配置\n\
+if [ "$USE_EXTERNAL_DB" = false ]; then\n\
+    echo "✅ 启用内置PostgreSQL服务"\n\
+    cat >> /etc/supervisor/conf.d/agentx.conf << EOF\n\
 [program:postgresql]\n\
 command=/usr/lib/postgresql/15/bin/postgres -D /var/lib/postgresql/15/main\n\
 user=postgres\n\
@@ -95,6 +155,27 @@ priority=10\n\
 startsecs=10\n\
 stopsignal=INT\n\
 \n\
+EOF\n\
+\n\
+    # 初始化数据库\n\
+    echo "🗄️ 初始化内置数据库..."\n\
+    # 确保数据库目录权限正确\n\
+    chown -R postgres:postgres /var/lib/postgresql\n\
+    if [ ! -d "/var/lib/postgresql/15/main" ]; then\n\
+        sudo -u postgres pg_createcluster 15 main\n\
+    fi\n\
+    service postgresql start\n\
+    sleep 10\n\
+    /app/init-db.sh\n\
+    service postgresql stop\n\
+else\n\
+    echo "⏭️ 跳过内置数据库服务"\n\
+fi\n\
+\n\
+# 内置消息队列服务配置\n\
+if [ "$USE_EXTERNAL_MQ" = false ]; then\n\
+    echo "✅ 启用内置RabbitMQ服务"\n\
+    cat >> /etc/supervisor/conf.d/agentx.conf << EOF\n\
 [program:rabbitmq]\n\
 command=/usr/lib/rabbitmq/bin/rabbitmq-server\n\
 user=rabbitmq\n\
@@ -102,58 +183,52 @@ autostart=true\n\
 autorestart=true\n\
 priority=20\n\
 \n\
+EOF\n\
+else\n\
+    echo "⏭️ 跳过内置消息队列服务"\n\
+fi\n\
+\n\
+# 后端服务配置（必需）\n\
+echo "✅ 启用后端服务"\n\
+cat >> /etc/supervisor/conf.d/agentx.conf << EOF\n\
 [program:backend]\n\
 command=java -jar /app/backend.jar --spring.profiles.active=docker\n\
 directory=/app\n\
 autostart=true\n\
 autorestart=true\n\
 priority=30\n\
-environment=DB_HOST=localhost,DB_PORT=5432,DB_NAME=agentx,DB_USER=agentx_user,DB_PASSWORD=agentx_pass\n\
+environment=DB_HOST=$DB_HOST,DB_PORT=${DB_PORT:-5432},DB_NAME=${DB_NAME:-agentx},DB_USER=${DB_USER:-agentx_user},DB_PASSWORD=${DB_PASSWORD:-agentx_pass},RABBITMQ_HOST=$RABBITMQ_HOST,RABBITMQ_PORT=${RABBITMQ_PORT:-5672},RABBITMQ_USERNAME=${RABBITMQ_USERNAME:-guest},RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-guest}\n\
 \n\
+EOF\n\
+\n\
+# 前端服务配置（必需）\n\
+echo "✅ 启用前端服务"\n\
+cat >> /etc/supervisor/conf.d/agentx.conf << EOF\n\
 [program:frontend]\n\
 command=npm start\n\
 directory=/app/frontend\n\
 autostart=true\n\
 autorestart=true\n\
 priority=40\n\
-environment=NEXT_PUBLIC_API_BASE_URL=http://localhost:8088/api\n\
+environment=NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8088/api}\n\
 \n\
-[program:gateway]\n\
-command=java -jar /app/gateway.jar --spring.profiles.active=docker\n\
-directory=/app\n\
-autostart=true\n\
-autorestart=true\n\
-priority=50\n\
-environment=DB_HOST=localhost,DB_PORT=5432,DB_NAME=api_gateway,DB_USER=gateway_user,DB_PASSWORD=gateway_pass\n\
+EOF\n\
 \n\
+# API网关已移除 - 如需使用请独立部署\n\
+echo "ℹ️ API网关未包含在此镜像中，如需使用请运行独立容器"\n\
+\n\
+# Nginx服务配置（必需）\n\
+echo "✅ 启用Nginx服务"\n\
+cat >> /etc/supervisor/conf.d/agentx.conf << EOF\n\
 [program:nginx]\n\
 command=/usr/sbin/nginx -g "daemon off;"\n\
 autostart=true\n\
 autorestart=true\n\
 priority=60\n\
-' > /etc/supervisor/conf.d/agentx.conf
-
-# 暴露端口
-EXPOSE 3000 8088 8081 5432 5672 15672 8082
-
-# 健康检查
-HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=3 \
-    CMD curl -f http://localhost:3000 && curl -f http://localhost:8088/api/health || exit 1
-
-# 启动脚本
-RUN echo '#!/bin/bash\n\
-# 创建PostgreSQL cluster（如果不存在）\n\
-if [ ! -d "/var/lib/postgresql/15/main" ]; then\n\
-    sudo -u postgres pg_createcluster 15 main\n\
-fi\n\
 \n\
-# 启动PostgreSQL并初始化数据库\n\
-service postgresql start\n\
-sleep 10\n\
-/app/init-db.sh\n\
-service postgresql stop\n\
+EOF\n\
 \n\
-# 启动supervisor管理所有服务\n\
+echo "🎯 服务配置完成，启动所有服务..."\n\
 exec /usr/bin/supervisord -c /etc/supervisor/supervisord.conf\n\
 ' > /app/start.sh && chmod +x /app/start.sh
 
