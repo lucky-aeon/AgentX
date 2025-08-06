@@ -4,40 +4,58 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
-/** 图查询响应DTO 用于返回图查询的结果数据
+/**
+ * 图查询响应DTO
+ * 用于返回图查询的结果数据
  * 
- * @author zang */
+ * @author zang
+ */
 public class GraphQueryResponse {
 
-    /** 查询是否成功 */
+    /**
+     * 查询是否成功
+     */
     private boolean success;
 
-    /** 响应消息 */
+    /**
+     * 响应消息
+     */
     private String message;
 
-    /** 查询结果节点列表 */
+    /**
+     * 查询结果节点列表
+     */
     private List<NodeResult> nodes;
 
-    /** 查询结果关系列表 */
+    /**
+     * 查询结果关系列表
+     */
     private List<RelationshipResult> relationships;
 
-    /** 查询结果总数 */
+    /**
+     * 查询结果总数
+     */
     private int totalCount;
 
-    /** 查询执行时间 */
+    /**
+     * 查询执行时间
+     */
     private LocalDateTime executedAt;
 
-    /** 查询耗时（毫秒） */
+    /**
+     * 查询耗时（毫秒）
+     */
     private long executionTimeMs;
 
-    /** 节点结果 */
+    /**
+     * 节点结果
+     */
     public static class NodeResult {
         private String id;
         private List<String> labels;
         private Map<String, Object> properties;
 
-        public NodeResult() {
-        }
+        public NodeResult() {}
 
         public NodeResult(String id, List<String> labels, Map<String, Object> properties) {
             this.id = id;
@@ -71,11 +89,17 @@ public class GraphQueryResponse {
 
         @Override
         public String toString() {
-            return "NodeResult{" + "id='" + id + '\'' + ", labels=" + labels + ", properties=" + properties + '}';
+            return "NodeResult{" +
+                    "id='" + id + '\'' +
+                    ", labels=" + labels +
+                    ", properties=" + properties +
+                    '}';
         }
     }
 
-    /** 关系结果 */
+    /**
+     * 关系结果
+     */
     public static class RelationshipResult {
         private Long id;
         private String type;
@@ -83,11 +107,10 @@ public class GraphQueryResponse {
         private String targetNodeId;
         private Map<String, Object> properties;
 
-        public RelationshipResult() {
-        }
+        public RelationshipResult() {}
 
-        public RelationshipResult(Long id, String type, String sourceNodeId, String targetNodeId,
-                Map<String, Object> properties) {
+        public RelationshipResult(Long id, String type, String sourceNodeId, String targetNodeId, 
+                                Map<String, Object> properties) {
             this.id = id;
             this.type = type;
             this.sourceNodeId = sourceNodeId;
@@ -137,8 +160,13 @@ public class GraphQueryResponse {
 
         @Override
         public String toString() {
-            return "RelationshipResult{" + "id=" + id + ", type='" + type + '\'' + ", sourceNodeId='" + sourceNodeId
-                    + '\'' + ", targetNodeId='" + targetNodeId + '\'' + ", properties=" + properties + '}';
+            return "RelationshipResult{" +
+                    "id=" + id +
+                    ", type='" + type + '\'' +
+                    ", sourceNodeId='" + sourceNodeId + '\'' +
+                    ", targetNodeId='" + targetNodeId + '\'' +
+                    ", properties=" + properties +
+                    '}';
         }
     }
 
@@ -152,7 +180,9 @@ public class GraphQueryResponse {
         this.message = message;
     }
 
-    /** 创建成功响应 */
+    /**
+     * 创建成功响应
+     */
     public static GraphQueryResponse success(List<NodeResult> nodes, List<RelationshipResult> relationships) {
         GraphQueryResponse response = new GraphQueryResponse(true, "查询成功");
         response.setNodes(nodes);
@@ -161,12 +191,16 @@ public class GraphQueryResponse {
         return response;
     }
 
-    /** 创建失败响应 */
+    /**
+     * 创建失败响应
+     */
     public static GraphQueryResponse failure(String message) {
         return new GraphQueryResponse(false, message);
     }
 
-    /** 设置执行耗时 */
+    /**
+     * 设置执行耗时
+     */
     public void setExecutionTime(long startTimeMs) {
         this.executionTimeMs = System.currentTimeMillis() - startTimeMs;
     }
@@ -229,9 +263,14 @@ public class GraphQueryResponse {
 
     @Override
     public String toString() {
-        return "GraphQueryResponse{" + "success=" + success + ", message='" + message + '\'' + ", nodes="
-                + (nodes != null ? nodes.size() : 0) + " items" + ", relationships="
-                + (relationships != null ? relationships.size() : 0) + " items" + ", totalCount=" + totalCount
-                + ", executedAt=" + executedAt + ", executionTimeMs=" + executionTimeMs + '}';
+        return "GraphQueryResponse{" +
+                "success=" + success +
+                ", message='" + message + '\'' +
+                ", nodes=" + (nodes != null ? nodes.size() : 0) + " items" +
+                ", relationships=" + (relationships != null ? relationships.size() : 0) + " items" +
+                ", totalCount=" + totalCount +
+                ", executedAt=" + executedAt +
+                ", executionTimeMs=" + executionTimeMs +
+                '}';
     }
 }

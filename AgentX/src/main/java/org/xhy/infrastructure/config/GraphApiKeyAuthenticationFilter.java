@@ -15,9 +15,12 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-/** 知识图谱API密钥认证过滤器 使用纯Servlet Filter实现，无需Spring Security
+/**
+ * 知识图谱API密钥认证过滤器
+ * 使用纯Servlet Filter实现，无需Spring Security
  * 
- * @author zang */
+ * @author zang
+ */
 @Component
 @ConfigurationProperties(prefix = "agentx.graph.security")
 public class GraphApiKeyAuthenticationFilter implements Filter {
@@ -66,7 +69,7 @@ public class GraphApiKeyAuthenticationFilter implements Filter {
 
         // 验证API密钥
         String requestApiKey = httpRequest.getHeader(headerName);
-
+        
         if (requestApiKey == null || requestApiKey.trim().isEmpty()) {
             logger.warn("API密钥缺失，请求路径: {} {}", method, requestPath);
             sendUnauthorizedResponse(httpResponse, "API密钥缺失，请在请求头中添加 " + headerName);
@@ -80,7 +83,7 @@ public class GraphApiKeyAuthenticationFilter implements Filter {
         }
 
         logger.debug("知识图谱API认证成功: {} {}", method, requestPath);
-
+        
         // 认证成功，继续处理请求
         chain.doFilter(request, response);
     }
@@ -90,24 +93,32 @@ public class GraphApiKeyAuthenticationFilter implements Filter {
         logger.info("销毁知识图谱API密钥认证过滤器");
     }
 
-    /** 验证API密钥 */
+    /**
+     * 验证API密钥
+     */
     private boolean isValidApiKey(String requestApiKey) {
         return apiKey != null && apiKey.equals(requestApiKey.trim());
     }
 
-    /** 发送未授权响应 */
+    /**
+     * 发送未授权响应
+     */
     private void sendUnauthorizedResponse(HttpServletResponse response, String message) throws IOException {
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.setContentType("application/json;charset=UTF-8");
-
-        String jsonResponse = String.format("{\"code\":401,\"message\":\"%s\",\"data\":null,\"timestamp\":%d}", message,
-                System.currentTimeMillis());
-
+        
+        String jsonResponse = String.format(
+            "{\"code\":401,\"message\":\"%s\",\"data\":null,\"timestamp\":%d}",
+            message, System.currentTimeMillis()
+        );
+        
         response.getWriter().write(jsonResponse);
         response.getWriter().flush();
     }
 
-    /** 掩码API密钥用于日志记录 */
+    /**
+     * 掩码API密钥用于日志记录
+     */
     private String maskApiKey(String apiKey) {
         if (apiKey == null || apiKey.length() <= 4) {
             return "****";
