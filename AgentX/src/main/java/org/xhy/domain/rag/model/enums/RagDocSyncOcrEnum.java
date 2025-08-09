@@ -14,7 +14,10 @@ public enum RagDocSyncOcrEnum {
     DOCX(Set.of("DOC", "DOCX", "PPT", "PPTX", "XLS", "XLSX"), "ragDocSyncOcr-WORD"),
 
     /** 纯文本策略 */
-    TXT(Set.of("TXT", "HTML", "MD"), "ragDocSyncOcr-TXT"),
+    TXT(Set.of("TXT", "HTML"), "ragDocSyncOcr-TXT"),
+
+    /** Markdown策略 */
+    MARKDOWN(Set.of("MD", "MARKDOWN"), "ragDocSyncOcr-MARKDOWN"),
 
     ;
 
