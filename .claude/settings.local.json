@@ -67,7 +67,8 @@
       "Bash(osascript:*)",
       "Bash(open:*)",
       "Bash(docker:*)",
-      "Bash(killall:*)"
+      "Bash(killall:*)",
+      "Bash(rm:*)"
     ],
     "deny": []
   }

@@ -90,7 +90,7 @@ github:
 
 # 高可用网关配置
 high-availability:
-  enabled: ${HIGH_AVAILABILITY_ENABLED:true} # 是否启用高可用功能
+  enabled: ${HIGH_AVAILABILITY_ENABLED:false} # 是否启用高可用功能
   gateway-url: ${HIGH_AVAILABILITY_GATEWAY_URL:http://localhost:8081} # 高可用网关地址
   api-key: ${HIGH_AVAILABILITY_API_KEY:default-api-key-1234567890} # API密钥
   connect-timeout: 30000 # 连接超时时间(毫秒)
