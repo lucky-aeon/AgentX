@@ -8,6 +8,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.xhy.domain.rag.enhancer.SegmentEnhancer;
 import org.xhy.domain.rag.model.ProcessedSegment;
+import org.xhy.domain.rag.model.SpecialNode;
+import org.xhy.domain.rag.model.enums.SegmentType;
 import org.xhy.domain.rag.straegy.context.ProcessingContext;
 import org.xhy.infrastructure.llm.LLMProviderService;
 import org.xhy.infrastructure.llm.protocol.enums.ProviderProtocol;
@@ -27,7 +29,9 @@ public class TableEnhancer implements SegmentEnhancer {
 
     @Override
     public boolean canEnhance(ProcessedSegment segment) {
-        return "table".equals(segment.getType());
+        // 检查是否包含表格类型的特殊节点
+        return segment.hasSpecialNodes() && 
+               segment.getSpecialNodeCount(SegmentType.TABLE) > 0;
     }
 
     @Override
@@ -39,25 +43,43 @@ public class TableEnhancer implements SegmentEnhancer {
                 return segment;
             }
 
-            // 使用LLM分析表格内容
-            String tableAnalysis = analyzeTableWithLLM(segment.getContent(), context);
+            // 处理所有表格类型的特殊节点
+            for (SpecialNode node : segment.getSpecialNodes().values()) {
+                if (node.getNodeType() == SegmentType.TABLE && !node.isProcessed()) {
+                    enhanceTableNode(node, context);
+                }
+            }
 
-            // 增强内容：保留原始表格 + 添加LLM分析
-            String enhancedContent = String.format("%s\n\n表格分析：%s", segment.getContent(), tableAnalysis);
-
-            // 创建增强后的段落
-            ProcessedSegment enhanced = new ProcessedSegment(enhancedContent, segment.getType(), segment.getMetadata());
-            enhanced.setOrder(segment.getOrder());
+            log.debug("Enhanced segment with {} table nodes", segment.getSpecialNodeCount(SegmentType.TABLE));
             
-            log.debug("Enhanced table segment: original_length={}, enhanced_length={}", 
-                     segment.getContent().length(), enhancedContent.length());
-            
-            return enhanced;
+            return segment;
 
         } catch (Exception e) {
             log.error("Failed to enhance table segment", e);
             // 增强失败时返回原始段落
             return segment;
+        }
+    }
+    
+    /** 增强单个表格节点 */
+    private void enhanceTableNode(SpecialNode node, ProcessingContext context) {
+        try {
+            // 使用LLM分析表格内容
+            String tableAnalysis = analyzeTableWithLLM(node.getOriginalContent(), context);
+
+            // 增强内容：保留原始表格 + 添加LLM分析
+            String enhancedContent = String.format("%s\n\n表格分析：%s", 
+                                                  node.getOriginalContent(), tableAnalysis);
+            
+            // 更新特殊节点的增强内容
+            node.setEnhancedContent(enhancedContent);
+            node.markAsProcessed();
+
+            log.debug("Enhanced table node: original_length={}, enhanced_length={}", 
+                     node.getOriginalContent().length(), enhancedContent.length());
+
+        } catch (Exception e) {
+            log.warn("Failed to enhance individual table node: {}", e.getMessage());
         }
     }
 

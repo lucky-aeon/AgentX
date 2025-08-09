@@ -8,6 +8,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.xhy.domain.rag.enhancer.SegmentEnhancer;
 import org.xhy.domain.rag.model.ProcessedSegment;
+import org.xhy.domain.rag.model.SpecialNode;
+import org.xhy.domain.rag.model.enums.SegmentType;
 import org.xhy.domain.rag.straegy.context.ProcessingContext;
 import org.xhy.infrastructure.llm.LLMProviderService;
 import org.xhy.infrastructure.llm.protocol.enums.ProviderProtocol;
@@ -29,7 +31,9 @@ public class CodeAnalysisEnhancer implements SegmentEnhancer {
 
     @Override
     public boolean canEnhance(ProcessedSegment segment) {
-        return "code".equals(segment.getType());
+        // 检查是否包含代码类型的特殊节点
+        return segment.hasSpecialNodes() && 
+               segment.getSpecialNodeCount(SegmentType.CODE) > 0;
     }
 
     @Override
@@ -41,32 +45,50 @@ public class CodeAnalysisEnhancer implements SegmentEnhancer {
                 return segment;
             }
 
-            // 从元数据中提取代码信息
-            Map<String, Object> metadata = segment.getMetadata();
-            String language = metadata != null ? (String) metadata.get("language") : "unknown";
-            
-            // 提取代码内容（去掉markdown格式）
-            String codeContent = extractCodeContent(segment.getContent(), language);
-            
-            // 使用LLM生成代码描述
-            String codeDescription = describeCodeWithLLM(codeContent, language, context);
+            // 处理所有代码类型的特殊节点
+            for (SpecialNode node : segment.getSpecialNodes().values()) {
+                if (node.getNodeType() == SegmentType.CODE && !node.isProcessed()) {
+                    enhanceCodeNode(node, context);
+                }
+            }
 
-            // 增强内容：保留原始代码 + 添加LLM描述
-            String enhancedContent = String.format("%s\n\n代码功能描述：%s", segment.getContent(), codeDescription);
-
-            // 创建增强后的段落
-            ProcessedSegment enhanced = new ProcessedSegment(enhancedContent, segment.getType(), segment.getMetadata());
-            enhanced.setOrder(segment.getOrder());
+            log.debug("Enhanced segment with {} code nodes", segment.getSpecialNodeCount(SegmentType.CODE));
             
-            log.debug("Enhanced code segment: language={}, original_length={}, enhanced_length={}", 
-                     language, segment.getContent().length(), enhancedContent.length());
-            
-            return enhanced;
+            return segment;
 
         } catch (Exception e) {
             log.error("Failed to enhance code segment", e);
             // 增强失败时返回原始段落
             return segment;
+        }
+    }
+    
+    /** 增强单个代码节点 */
+    private void enhanceCodeNode(SpecialNode node, ProcessingContext context) {
+        try {
+            // 从节点元数据中提取代码信息
+            Map<String, Object> metadata = node.getNodeMetadata();
+            String language = metadata != null ? (String) metadata.get("language") : "unknown";
+            
+            // 提取代码内容（去掉markdown格式）
+            String codeContent = extractCodeContent(node.getOriginalContent(), language);
+            
+            // 使用LLM生成代码描述
+            String codeDescription = describeCodeWithLLM(codeContent, language, context);
+
+            // 增强内容：保留原始代码 + 添加LLM描述
+            String enhancedContent = String.format("%s\n\n代码功能描述：%s", 
+                                                  node.getOriginalContent(), codeDescription);
+            
+            // 更新特殊节点的增强内容
+            node.setEnhancedContent(enhancedContent);
+            node.markAsProcessed();
+
+            log.debug("Enhanced code node: language={}, original_length={}, enhanced_length={}", 
+                     language, node.getOriginalContent().length(), enhancedContent.length());
+
+        } catch (Exception e) {
+            log.warn("Failed to enhance individual code node: {}", e.getMessage());
         }
     }
 

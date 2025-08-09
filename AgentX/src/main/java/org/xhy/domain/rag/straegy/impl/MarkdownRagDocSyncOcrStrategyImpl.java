@@ -11,6 +11,7 @@ import org.xhy.domain.rag.message.RagDocSyncOcrMessage;
 import org.xhy.domain.rag.model.DocumentUnitEntity;
 import org.xhy.domain.rag.model.FileDetailEntity;
 import org.xhy.domain.rag.model.ProcessedSegment;
+import org.xhy.domain.rag.model.enums.SegmentType;
 import org.xhy.domain.rag.repository.DocumentUnitRepository;
 import org.xhy.domain.rag.repository.FileDetailRepository;
 import org.xhy.domain.rag.straegy.context.ProcessingContext;
@@ -208,20 +209,23 @@ public class MarkdownRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl
             return content;
         }
 
-        String type = segment.getType();
-
-        switch (type) {
-            case "table" :
-                return enrichTableContent(content, metadata);
-            case "image" :
-                return enrichImageContent(content, metadata);
-            case "formula" :
-                return enrichFormulaContent(content, metadata);
-            case "code" :
-                return enrichCodeContent(content, metadata);
-            default :
-                return content;
+        // 使用枚举类型进行比较
+        if (segment.getType() != null) {
+            switch (segment.getType()) {
+                case TABLE:
+                    return enrichTableContent(content, metadata);
+                case IMAGE:
+                    return enrichImageContent(content, metadata);
+                case FORMULA:
+                    return enrichFormulaContent(content, metadata);
+                case CODE:
+                    return enrichCodeContent(content, metadata);
+                default:
+                    return content;
+            }
         }
+        
+        return content;
     }
 
     /** 增强表格内容 - 创建表头与数据的关联描述 */

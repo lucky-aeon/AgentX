@@ -27,8 +27,7 @@ public class FormulaEnhancer implements SegmentEnhancer {
 
     @Override
     public boolean canEnhance(ProcessedSegment segment) {
-        return "formula".equals(segment.getType()) || 
-               (segment.getContent() != null && containsFormula(segment.getContent()));
+        return segment.getContent() != null && containsFormula(segment.getContent());
     }
 
     @Override
