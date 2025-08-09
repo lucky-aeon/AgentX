@@ -1,5 +1,8 @@
 package org.xhy.infrastructure.rag.enhancer;
 
+import dev.langchain4j.data.message.ChatMessage;
+import dev.langchain4j.data.message.Content;
+import dev.langchain4j.data.message.ImageContent;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.response.ChatResponse;
@@ -8,10 +11,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.xhy.domain.rag.enhancer.SegmentEnhancer;
 import org.xhy.domain.rag.model.ProcessedSegment;
+import org.xhy.domain.rag.model.SpecialNode;
+import org.xhy.domain.rag.model.enums.SegmentType;
 import org.xhy.domain.rag.straegy.context.ProcessingContext;
 import org.xhy.infrastructure.llm.LLMProviderService;
 import org.xhy.infrastructure.llm.protocol.enums.ProviderProtocol;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 /** 图片OCR增强器
@@ -29,7 +36,9 @@ public class ImageOcrEnhancer implements SegmentEnhancer {
 
     @Override
     public boolean canEnhance(ProcessedSegment segment) {
-        return "image".equals(segment.getType());
+        // 检查是否包含图片类型的特殊节点
+        return segment.hasSpecialNodes() && 
+               segment.getSpecialNodeCount(SegmentType.IMAGE) > 0;
     }
 
     @Override
@@ -41,36 +50,54 @@ public class ImageOcrEnhancer implements SegmentEnhancer {
                 return segment;
             }
 
-            // 从元数据中提取图片信息
-            Map<String, Object> metadata = segment.getMetadata();
+            // 处理所有图片类型的特殊节点
+            for (SpecialNode node : segment.getSpecialNodes().values()) {
+                if (node.getNodeType() == SegmentType.IMAGE && !node.isProcessed()) {
+                    enhanceImageNode(node, context);
+                }
+            }
+
+            log.debug("Enhanced segment with {} image nodes", segment.getSpecialNodeCount(SegmentType.IMAGE));
+            
+            return segment;
+
+        } catch (Exception e) {
+            log.error("Failed to enhance image segment", e);
+            // 增强失败时返回原始段落
+            return segment;
+        }
+    }
+    
+    /** 增强单个图片节点 */
+    private void enhanceImageNode(SpecialNode node, ProcessingContext context) {
+        try {
+            // 从节点元数据中提取图片信息
+            Map<String, Object> metadata = node.getNodeMetadata();
             String imageUrl = metadata != null ? (String) metadata.get("url") : null;
             String altText = metadata != null ? (String) metadata.get("alt") : "";
 
             // 检查是否为可处理的图片URL
             if (imageUrl == null || imageUrl.trim().isEmpty()) {
-                log.debug("No valid image URL found, skipping OCR enhancement");
-                return segment;
+                log.debug("No valid image URL found in node, skipping OCR enhancement");
+                return;
             }
 
             // 使用视觉模型分析图片
             String imageAnalysis = analyzeImageWithVisionModel(imageUrl, altText, context);
 
             // 增强内容：保留原始图片引用 + 添加OCR分析
-            String enhancedContent = String.format("%s\n\n图片内容分析：%s", segment.getContent(), imageAnalysis);
+            String enhancedContent = String.format("%s\n\n图片内容分析：%s", 
+                                                  node.getOriginalContent(), imageAnalysis);
+            
+            // 更新特殊节点的增强内容
+            node.setEnhancedContent(enhancedContent);
+            node.markAsProcessed();
 
-            // 创建增强后的段落
-            ProcessedSegment enhanced = new ProcessedSegment(enhancedContent, segment.getType(), segment.getMetadata());
-            enhanced.setOrder(segment.getOrder());
-            
-            log.debug("Enhanced image segment: url={}, original_length={}, enhanced_length={}", 
-                     imageUrl, segment.getContent().length(), enhancedContent.length());
-            
-            return enhanced;
+            log.debug("Enhanced image node: url={}, original_length={}, enhanced_length={}", 
+                     imageUrl, node.getOriginalContent().length(), enhancedContent.length());
 
         } catch (Exception e) {
-            log.error("Failed to enhance image segment", e);
-            // 增强失败时返回原始段落
-            return segment;
+            log.warn("Failed to enhance individual image node: {}", e.getMessage());
         }
     }
 
@@ -84,10 +111,11 @@ public class ImageOcrEnhancer implements SegmentEnhancer {
         try {
             ChatModel chatModel = LLMProviderService.getStrand(ProviderProtocol.OPENAI, context.getVisionModelConfig());
 
-            String prompt = buildImageAnalysisPrompt(imageUrl, altText);
+            String prompt = buildImageAnalysisPrompt(altText);
 
             UserMessage message = UserMessage.from(prompt);
-            ChatResponse response = chatModel.chat(message);
+            ImageContent imageContent = new ImageContent(imageUrl);
+            ChatResponse response = chatModel.chat(Arrays.asList(UserMessage.from(imageContent), message));
 
             String analysis = response.aiMessage().text().trim();
             log.debug("Generated image analysis for {}: {}", imageUrl, analysis);
@@ -96,62 +124,21 @@ public class ImageOcrEnhancer implements SegmentEnhancer {
 
         } catch (Exception e) {
             log.warn("Failed to analyze image with vision model: {}", e.getMessage());
-            return generateFallbackImageDescription(imageUrl, altText);
+            return "";
         }
     }
 
     /** 构建图片分析提示词 */
-    private String buildImageAnalysisPrompt(String imageUrl, String altText) {
+    private String buildImageAnalysisPrompt(String altText) {
         StringBuilder prompt = new StringBuilder();
-        prompt.append("请分析以下图片的内容，用中文描述图片中的主要信息，包括文字、图表、对象等，便于搜索和理解。\n\n");
-        
-        // 注意：实际的视觉模型调用需要特殊的消息格式，这里简化处理
-        prompt.append("图片URL：").append(imageUrl).append("\n");
+        prompt.append("请分析以下图片的内容，用中文描述图片中的主要信息,主要用于 RAG 中便于搜索和理解。\n\n");
         
         if (altText != null && !altText.trim().isEmpty()) {
             prompt.append("图片描述：").append(altText).append("\n");
         }
         
-        prompt.append("\n请按以下格式分析：\n");
-        prompt.append("图片类型：[图片的类别，如截图、图表、照片等]\n");
-        prompt.append("主要内容：[图片中的核心信息]\n");
-        prompt.append("文字内容：[如果有文字，请提取出来]\n");
         prompt.append("关键词：[便于搜索的关键词]");
 
         return prompt.toString();
-    }
-
-    /** 生成回退描述（视觉模型不可用时） */
-    private String generateFallbackImageDescription(String imageUrl, String altText) {
-        StringBuilder description = new StringBuilder();
-        
-        description.append("图片");
-        
-        if (altText != null && !altText.trim().isEmpty()) {
-            description.append("：").append(altText);
-        }
-        
-        // 根据URL推断图片类型
-        String lowerUrl = imageUrl.toLowerCase();
-        if (lowerUrl.contains("screenshot") || lowerUrl.contains("capture")) {
-            description.append("，可能是截图");
-        } else if (lowerUrl.contains("chart") || lowerUrl.contains("graph")) {
-            description.append("，可能是图表");
-        } else if (lowerUrl.contains("diagram")) {
-            description.append("，可能是示意图");
-        }
-        
-        // 根据文件扩展名判断格式
-        if (lowerUrl.endsWith(".png")) {
-            description.append("（PNG格式）");
-        } else if (lowerUrl.endsWith(".jpg") || lowerUrl.endsWith(".jpeg")) {
-            description.append("（JPEG格式）");
-        } else if (lowerUrl.endsWith(".gif")) {
-            description.append("（GIF格式）");
-        }
-        
-        description.append("。图片链接：").append(imageUrl);
-        
-        return description.toString();
     }
 }

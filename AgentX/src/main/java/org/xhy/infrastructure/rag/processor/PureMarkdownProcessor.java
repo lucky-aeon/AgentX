@@ -9,6 +9,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.xhy.domain.rag.model.ProcessedSegment;
+import org.xhy.domain.rag.model.SpecialNode;
+import org.xhy.domain.rag.model.enums.SegmentType;
 import org.xhy.domain.rag.processor.MarkdownProcessor;
 import org.xhy.domain.rag.straegy.context.ProcessingContext;
 
@@ -16,6 +18,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /** 纯净Markdown处理器
  * 
@@ -37,6 +40,12 @@ public class PureMarkdownProcessor implements MarkdownProcessor {
     private static final Logger log = LoggerFactory.getLogger(PureMarkdownProcessor.class);
 
     private final Parser parser;
+    
+    // 占位符计数器
+    private final AtomicInteger imageCounter = new AtomicInteger(1);
+    private final AtomicInteger codeCounter = new AtomicInteger(1);
+    private final AtomicInteger tableCounter = new AtomicInteger(1);
+    private final AtomicInteger formulaCounter = new AtomicInteger(1);
 
     public PureMarkdownProcessor() {
         // 配置Flexmark解析器
@@ -67,7 +76,7 @@ public class PureMarkdownProcessor implements MarkdownProcessor {
         } catch (Exception e) {
             log.error("Failed to process markdown with pure processor", e);
             // 回退方案：整个文档作为一个段落
-            ProcessedSegment fallback = new ProcessedSegment(markdown, "text", null);
+            ProcessedSegment fallback = new ProcessedSegment(markdown, SegmentType.TEXT, null);
             fallback.setOrder(0);
             return List.of(fallback);
         }
@@ -83,20 +92,24 @@ public class PureMarkdownProcessor implements MarkdownProcessor {
 
         int currentOrder = order;
         StringBuilder currentSectionContent = new StringBuilder();
+        ProcessedSegment currentSection = null;
         boolean inHeadingSection = false;
 
         for (Node child : children) {
             if (child instanceof Heading) {
                 // 任何标题都是分段边界
-                if (currentSectionContent.length() > 0) {
+                if (currentSection != null && currentSectionContent.length() > 0) {
                     // 保存上一个段落
-                    ProcessedSegment section = new ProcessedSegment(currentSectionContent.toString().trim(), "section", null);
-                    section.setOrder(currentOrder++);
-                    segments.add(section);
+                    currentSection.setContent(currentSectionContent.toString().trim());
+                    currentSection.setOrder(currentOrder++);
+                    segments.add(currentSection);
                     currentSectionContent.setLength(0);
                 }
 
-                // 开始新段落：添加标题文本
+                // 开始新段落：创建新的段落对象
+                currentSection = new ProcessedSegment("", SegmentType.SECTION, null);
+                
+                // 添加标题文本
                 Heading heading = (Heading) child;
                 String headingPrefix = "#".repeat(heading.getLevel());
                 String headingText = extractTextContent(heading);
@@ -105,8 +118,8 @@ public class PureMarkdownProcessor implements MarkdownProcessor {
 
             } else {
                 // 所有非标题内容：归属于当前标题段落
-                if (inHeadingSection) {
-                    String nodeContent = processNodeContent(child);
+                if (inHeadingSection && currentSection != null) {
+                    String nodeContent = processNodeContentWithPlaceholders(child, currentSection);
                     if (!nodeContent.trim().isEmpty()) {
                         currentSectionContent.append(nodeContent).append("\n\n");
                     }
@@ -122,27 +135,155 @@ public class PureMarkdownProcessor implements MarkdownProcessor {
         }
 
         // 保存最后一个段落
-        if (currentSectionContent.length() > 0) {
-            ProcessedSegment section = new ProcessedSegment(currentSectionContent.toString().trim(), "section", null);
-            section.setOrder(currentOrder++);
-            segments.add(section);
+        if (currentSection != null && currentSectionContent.length() > 0) {
+            currentSection.setContent(currentSectionContent.toString().trim());
+            currentSection.setOrder(currentOrder++);
+            segments.add(currentSection);
         }
 
         return currentOrder;
     }
 
-    /** 处理节点内容，归属于当前标题段落 */
-    private String processNodeContent(Node node) {
+    /** 处理节点内容，归属于当前标题段落（占位符版本） */
+    private String processNodeContentWithPlaceholders(Node node, ProcessedSegment currentSection) {
         if (isSpecialNode(node)) {
-            // 对特殊节点进行结构化处理，但不调用LLM
-            ProcessedSegment structuredSegment = processSpecialNodePure(node);
-            if (structuredSegment != null) {
-                return structuredSegment.getContent();
-            }
+            // 对特殊节点生成占位符并收集节点信息
+            return createPlaceholderForSpecialNode(node, currentSection);
+        }
+        
+        // 检查是否为包含特殊节点的容器（如Paragraph）
+        if (containsSpecialNodes(node)) {
+            return processContainerNodeWithPlaceholders(node, currentSection);
         }
         
         // 普通节点：提取文本内容
         return extractTextContent(node);
+    }
+    
+    /** 检查节点是否包含特殊子节点 */
+    private boolean containsSpecialNodes(Node node) {
+        if (isSpecialNode(node)) {
+            return true;
+        }
+        
+        for (Node child : node.getChildren()) {
+            if (containsSpecialNodes(child)) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
+    /** 处理包含特殊节点的容器节点 */
+    private String processContainerNodeWithPlaceholders(Node containerNode, ProcessedSegment currentSection) {
+        StringBuilder result = new StringBuilder();
+        
+        for (Node child : containerNode.getChildren()) {
+            if (isSpecialNode(child)) {
+                // 直接处理特殊节点
+                String placeholder = createPlaceholderForSpecialNode(child, currentSection);
+                result.append(placeholder);
+            } else if (containsSpecialNodes(child)) {
+                // 递归处理包含特殊节点的子容器
+                String childContent = processContainerNodeWithPlaceholders(child, currentSection);
+                result.append(childContent);
+            } else {
+                // 普通子节点，提取文本内容
+                String textContent = extractTextContent(child);
+                result.append(textContent);
+            }
+        }
+        
+        return result.toString();
+    }
+    
+    /** 为特殊节点创建占位符并收集节点信息 */
+    private String createPlaceholderForSpecialNode(Node node, ProcessedSegment currentSection) {
+        SegmentType nodeType = determineNodeType(node);
+        String placeholder = generatePlaceholder(nodeType);
+        String originalContent = getOriginalNodeContent(node);
+        
+        // 创建特殊节点对象
+        SpecialNode specialNode = new SpecialNode(nodeType, placeholder, originalContent);
+        
+        // 收集节点元数据
+        Map<String, Object> nodeMetadata = extractNodeMetadata(node);
+        specialNode.setNodeMetadata(nodeMetadata);
+        
+        // 添加到当前段落
+        currentSection.addSpecialNode(specialNode);
+        
+        log.debug("Created placeholder {} for {} node", placeholder, nodeType);
+        
+        return placeholder;
+    }
+    
+    /** 确定节点类型 */
+    private SegmentType determineNodeType(Node node) {
+        if (node instanceof Image) {
+            return SegmentType.IMAGE;
+        } else if (node instanceof FencedCodeBlock || node instanceof IndentedCodeBlock) {
+            return SegmentType.CODE;
+        } else if (node instanceof com.vladsch.flexmark.ext.tables.TableBlock) {
+            return SegmentType.TABLE;
+        } else {
+            return SegmentType.RAW; // 未知特殊节点
+        }
+    }
+    
+    /** 生成占位符 */
+    private String generatePlaceholder(SegmentType nodeType) {
+        switch (nodeType) {
+            case IMAGE:
+                return SpecialNode.generatePlaceholder(SegmentType.IMAGE, imageCounter.getAndIncrement());
+            case CODE:
+                return SpecialNode.generatePlaceholder(SegmentType.CODE, codeCounter.getAndIncrement());
+            case TABLE:
+                return SpecialNode.generatePlaceholder(SegmentType.TABLE, tableCounter.getAndIncrement());
+            case FORMULA:
+                return SpecialNode.generatePlaceholder(SegmentType.FORMULA, formulaCounter.getAndIncrement());
+            default:
+                return "{{SPECIAL_NODE_UNKNOWN_001}}";
+        }
+    }
+    
+    /** 获取节点的原始内容 */
+    private String getOriginalNodeContent(Node node) {
+        if (node instanceof Image) {
+            return processImagePure((Image) node).getContent();
+        } else if (node instanceof FencedCodeBlock) {
+            return processCodeBlockPure((FencedCodeBlock) node).getContent();
+        } else if (node instanceof IndentedCodeBlock) {
+            return processCodeBlockPure((IndentedCodeBlock) node).getContent();
+        } else if (node instanceof com.vladsch.flexmark.ext.tables.TableBlock) {
+            return processTablePure((com.vladsch.flexmark.ext.tables.TableBlock) node).getContent();
+        } else {
+            return node.getChars().toString();
+        }
+    }
+    
+    /** 提取节点元数据 */
+    private Map<String, Object> extractNodeMetadata(Node node) {
+        Map<String, Object> metadata = new HashMap<>();
+        
+        if (node instanceof Image) {
+            Image image = (Image) node;
+            metadata.put("url", image.getUrl().toString());
+            metadata.put("alt", extractTextContent(image));
+        } else if (node instanceof FencedCodeBlock) {
+            FencedCodeBlock code = (FencedCodeBlock) node;
+            if (code.getInfo() != null && !code.getInfo().isBlank()) {
+                metadata.put("language", code.getInfo().toString().trim());
+            }
+            metadata.put("lines", code.getContentChars().toString().split("\n").length);
+        } else if (node instanceof IndentedCodeBlock) {
+            IndentedCodeBlock code = (IndentedCodeBlock) node;
+            metadata.put("language", "text");
+            metadata.put("lines", code.getContentChars().toString().split("\n").length);
+        }
+        
+        return metadata;
     }
 
     /** 判断是否为特殊节点（代码块、表格等） */
@@ -171,7 +312,7 @@ public class PureMarkdownProcessor implements MarkdownProcessor {
 
         // 回退：返回原始文本
         String rawText = node.getChars().toString();
-        return new ProcessedSegment(rawText, "raw", null);
+        return new ProcessedSegment(rawText, SegmentType.RAW, null);
     }
 
     /** 纯净处理代码块 */
@@ -203,7 +344,7 @@ public class PureMarkdownProcessor implements MarkdownProcessor {
         // 保留原始格式化内容
         String displayContent = String.format("```%s\n%s\n```", language != null ? language : "", codeContent);
         
-        return new ProcessedSegment(displayContent, "code", metadata);
+        return new ProcessedSegment(displayContent, SegmentType.CODE, metadata);
     }
 
     /** 纯净处理表格 */
@@ -213,7 +354,7 @@ public class PureMarkdownProcessor implements MarkdownProcessor {
         Map<String, Object> metadata = new HashMap<>();
         metadata.put("type", "table");
         
-        return new ProcessedSegment(tableContent, "table", metadata);
+        return new ProcessedSegment(tableContent, SegmentType.TABLE, metadata);
     }
 
     /** 纯净处理图片 */
@@ -228,7 +369,7 @@ public class PureMarkdownProcessor implements MarkdownProcessor {
         
         String displayContent = String.format("![%s](%s)", altText, imageUrl);
         
-        return new ProcessedSegment(displayContent, "image", metadata);
+        return new ProcessedSegment(displayContent, SegmentType.IMAGE, metadata);
     }
 
     /** 处理没有标题的独立节点 */
@@ -240,7 +381,7 @@ public class PureMarkdownProcessor implements MarkdownProcessor {
             // 普通内容作为独立段落
             String nodeText = extractTextContent(node);
             if (!nodeText.trim().isEmpty()) {
-                return new ProcessedSegment(nodeText.trim(), "text", null);
+                return new ProcessedSegment(nodeText.trim(), SegmentType.TEXT, null);
             }
         }
         return null;

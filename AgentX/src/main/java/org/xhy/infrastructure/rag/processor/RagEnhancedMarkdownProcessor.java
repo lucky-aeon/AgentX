@@ -71,10 +71,15 @@ public class RagEnhancedMarkdownProcessor implements MarkdownProcessor {
                     .map(segment -> enhanceSegment(segment, context))
                     .collect(Collectors.toList());
 
-            log.info("RAG enhanced processing completed: {} base segments -> {} enhanced segments", 
-                     baseSegments.size(), enhancedSegments.size());
+            // 第3步：应用占位符替换，合并增强内容
+            List<ProcessedSegment> finalSegments = enhancedSegments.stream()
+                    .map(ProcessedSegment::applyEnhancements)
+                    .collect(Collectors.toList());
+
+            log.info("RAG enhanced processing completed: {} base segments -> {} enhanced segments -> {} final segments", 
+                     baseSegments.size(), enhancedSegments.size(), finalSegments.size());
             
-            return enhancedSegments;
+            return finalSegments;
 
         } catch (Exception e) {
             log.error("Failed to process markdown with RAG enhancement", e);
@@ -109,6 +114,7 @@ public class RagEnhancedMarkdownProcessor implements MarkdownProcessor {
             // 依次应用所有匹配的增强器
             for (SegmentEnhancer enhancer : enhancers) {
                 try {
+
                     if (enhancer.canEnhance(currentSegment)) {
                         log.debug("Applying {} to segment (type: {}, order: {})", 
                                  enhancer.getType(), currentSegment.getType(), currentSegment.getOrder());
