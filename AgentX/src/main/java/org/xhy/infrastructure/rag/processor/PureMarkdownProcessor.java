@@ -26,16 +26,9 @@ import java.util.regex.Pattern;
 
 /** 纯净Markdown处理器
  * 
- * 设计职责：
- * - 只负责Markdown结构化解析和语义分段
- * - 不进行任何LLM调用或内容增强
- * - 按语义结构（标题层级）进行合理分段
- * - 提取基础元数据，保留原始内容
+ * 设计职责： - 只负责Markdown结构化解析和语义分段 - 不进行任何LLM调用或内容增强 - 按语义结构（标题层级）进行合理分段 - 提取基础元数据，保留原始内容
  * 
- * 适用场景：
- * - 单元测试（无需mock外部服务）
- * - 基础文档解析
- * - 性能要求高的场景
+ * 适用场景： - 单元测试（无需mock外部服务） - 基础文档解析 - 性能要求高的场景
  * 
  * @author claude */
 @Component("pureMarkdownProcessor")
@@ -44,7 +37,7 @@ public class PureMarkdownProcessor implements MarkdownProcessor {
     private static final Logger log = LoggerFactory.getLogger(PureMarkdownProcessor.class);
 
     private final Parser parser;
-    
+
     // 占位符计数器
     private final AtomicInteger imageCounter = new AtomicInteger(1);
     private final AtomicInteger codeCounter = new AtomicInteger(1);
@@ -112,7 +105,7 @@ public class PureMarkdownProcessor implements MarkdownProcessor {
 
                 // 开始新段落：创建新的段落对象
                 currentSection = new ProcessedSegment("", SegmentType.SECTION, null);
-                
+
                 // 添加标题文本
                 Heading heading = (Heading) child;
                 String headingPrefix = "#".repeat(heading.getLevel());
@@ -154,35 +147,35 @@ public class PureMarkdownProcessor implements MarkdownProcessor {
             // 对特殊节点生成占位符并收集节点信息
             return createPlaceholderForSpecialNode(node, currentSection);
         }
-        
+
         // 检查是否为包含特殊节点的容器（如Paragraph）
         if (containsSpecialNodes(node)) {
             return processContainerNodeWithPlaceholders(node, currentSection);
         }
-        
+
         // 普通节点：提取文本内容
         return extractTextContent(node);
     }
-    
+
     /** 检查节点是否包含特殊子节点 */
     private boolean containsSpecialNodes(Node node) {
         if (isSpecialNode(node)) {
             return true;
         }
-        
+
         for (Node child : node.getChildren()) {
             if (containsSpecialNodes(child)) {
                 return true;
             }
         }
-        
+
         return false;
     }
-    
+
     /** 处理包含特殊节点的容器节点 */
     private String processContainerNodeWithPlaceholders(Node containerNode, ProcessedSegment currentSection) {
         StringBuilder result = new StringBuilder();
-        
+
         for (Node child : containerNode.getChildren()) {
             if (isSpecialNode(child)) {
                 // 直接处理特殊节点
@@ -198,31 +191,31 @@ public class PureMarkdownProcessor implements MarkdownProcessor {
                 result.append(textContent);
             }
         }
-        
+
         return result.toString();
     }
-    
+
     /** 为特殊节点创建占位符并收集节点信息 */
     private String createPlaceholderForSpecialNode(Node node, ProcessedSegment currentSection) {
         SegmentType nodeType = determineNodeType(node);
         String placeholder = generatePlaceholder(nodeType);
         String originalContent = getOriginalNodeContent(node);
-        
+
         // 创建特殊节点对象
         SpecialNode specialNode = new SpecialNode(nodeType, placeholder, originalContent);
-        
+
         // 收集节点元数据
         Map<String, Object> nodeMetadata = extractNodeMetadata(node);
         specialNode.setNodeMetadata(nodeMetadata);
-        
+
         // 添加到当前段落
         currentSection.addSpecialNode(specialNode);
-        
+
         log.debug("Created placeholder {} for {} node", placeholder, nodeType);
-        
+
         return placeholder;
     }
-    
+
     /** 确定节点类型 */
     private SegmentType determineNodeType(Node node) {
         if (node instanceof Image) {
@@ -235,23 +228,23 @@ public class PureMarkdownProcessor implements MarkdownProcessor {
             return SegmentType.RAW; // 未知特殊节点
         }
     }
-    
+
     /** 生成占位符 */
     private String generatePlaceholder(SegmentType nodeType) {
         switch (nodeType) {
-            case IMAGE:
+            case IMAGE :
                 return SpecialNode.generatePlaceholder(SegmentType.IMAGE, imageCounter.getAndIncrement());
-            case CODE:
+            case CODE :
                 return SpecialNode.generatePlaceholder(SegmentType.CODE, codeCounter.getAndIncrement());
-            case TABLE:
+            case TABLE :
                 return SpecialNode.generatePlaceholder(SegmentType.TABLE, tableCounter.getAndIncrement());
-            case FORMULA:
+            case FORMULA :
                 return SpecialNode.generatePlaceholder(SegmentType.FORMULA, formulaCounter.getAndIncrement());
-            default:
+            default :
                 return "{{SPECIAL_NODE_UNKNOWN_001}}";
         }
     }
-    
+
     /** 获取节点的原始内容 */
     private String getOriginalNodeContent(Node node) {
         if (node instanceof Image) {
@@ -266,11 +259,11 @@ public class PureMarkdownProcessor implements MarkdownProcessor {
             return node.getChars().toString();
         }
     }
-    
+
     /** 提取节点元数据 */
     private Map<String, Object> extractNodeMetadata(Node node) {
         Map<String, Object> metadata = new HashMap<>();
-        
+
         if (node instanceof Image) {
             Image image = (Image) node;
             metadata.put("url", image.getUrl().toString());
@@ -286,16 +279,14 @@ public class PureMarkdownProcessor implements MarkdownProcessor {
             metadata.put("language", "text");
             metadata.put("lines", code.getContentChars().toString().split("\n").length);
         }
-        
+
         return metadata;
     }
 
     /** 判断是否为特殊节点（代码块、表格等） */
     private boolean isSpecialNode(Node node) {
-        return node instanceof FencedCodeBlock || 
-               node instanceof IndentedCodeBlock ||
-               node instanceof com.vladsch.flexmark.ext.tables.TableBlock ||
-               node instanceof Image;
+        return node instanceof FencedCodeBlock || node instanceof IndentedCodeBlock
+                || node instanceof com.vladsch.flexmark.ext.tables.TableBlock || node instanceof Image;
     }
 
     /** 纯净处理特殊节点 - 只做结构解析，不调用LLM */
@@ -347,17 +338,17 @@ public class PureMarkdownProcessor implements MarkdownProcessor {
 
         // 保留原始格式化内容
         String displayContent = String.format("```%s\n%s\n```", language != null ? language : "", codeContent);
-        
+
         return new ProcessedSegment(displayContent, SegmentType.CODE, metadata);
     }
 
     /** 纯净处理表格 */
     private ProcessedSegment processTablePure(com.vladsch.flexmark.ext.tables.TableBlock tableBlock) {
         String tableContent = tableBlock.getChars().toString();
-        
+
         Map<String, Object> metadata = new HashMap<>();
         metadata.put("type", "table");
-        
+
         return new ProcessedSegment(tableContent, SegmentType.TABLE, metadata);
     }
 
@@ -365,14 +356,14 @@ public class PureMarkdownProcessor implements MarkdownProcessor {
     private ProcessedSegment processImagePure(Image image) {
         String imageUrl = image.getUrl().toString();
         String altText = extractTextContent(image);
-        
+
         Map<String, Object> metadata = new HashMap<>();
         metadata.put("type", "image");
         metadata.put("url", imageUrl);
         metadata.put("alt", altText);
-        
+
         String displayContent = String.format("![%s](%s)", altText, imageUrl);
-        
+
         return new ProcessedSegment(displayContent, SegmentType.IMAGE, metadata);
     }
 

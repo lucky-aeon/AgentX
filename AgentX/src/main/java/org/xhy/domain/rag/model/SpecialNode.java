@@ -11,22 +11,22 @@ import java.util.Map;
  * 
  * @author claude */
 public class SpecialNode {
-    
+
     /** 节点类型 */
     private SegmentType nodeType;
-    
+
     /** 占位符标识符 */
     private String placeholder;
-    
+
     /** 原始内容 */
     private String originalContent;
-    
+
     /** 增强处理后的内容 */
     private String enhancedContent;
-    
+
     /** 节点特定的元数据 */
     private Map<String, Object> nodeMetadata;
-    
+
     /** 是否已经被处理过 */
     private boolean processed;
 
@@ -62,7 +62,7 @@ public class SpecialNode {
         if (!isPlaceholder(placeholder)) {
             throw new IllegalArgumentException("Invalid placeholder format: " + placeholder);
         }
-        
+
         // 提取类型：{{SPECIAL_NODE_IMAGE_001}} -> IMAGE
         String typeStr = placeholder.replaceAll("\\{\\{SPECIAL_NODE_([A-Z]+)_\\d{3}\\}\\}", "$1");
         return SegmentType.valueOf(typeStr);
@@ -70,9 +70,7 @@ public class SpecialNode {
 
     /** 获取最终内容（优先返回增强内容，否则返回原始内容） */
     public String getFinalContent() {
-        return enhancedContent != null && !enhancedContent.trim().isEmpty() 
-               ? enhancedContent 
-               : originalContent;
+        return enhancedContent != null && !enhancedContent.trim().isEmpty() ? enhancedContent : originalContent;
     }
 
     /** 标记为已处理 */
@@ -139,12 +137,8 @@ public class SpecialNode {
 
     @Override
     public String toString() {
-        return "SpecialNode{" +
-               "nodeType=" + nodeType +
-               ", placeholder='" + placeholder + '\'' +
-               ", originalLength=" + (originalContent != null ? originalContent.length() : 0) +
-               ", enhanced=" + (enhancedContent != null) +
-               ", processed=" + processed +
-               '}';
+        return "SpecialNode{" + "nodeType=" + nodeType + ", placeholder='" + placeholder + '\'' + ", originalLength="
+                + (originalContent != null ? originalContent.length() : 0) + ", enhanced=" + (enhancedContent != null)
+                + ", processed=" + processed + '}';
     }
 }

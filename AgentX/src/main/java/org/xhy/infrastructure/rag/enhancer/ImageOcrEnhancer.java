@@ -23,10 +23,7 @@ import java.util.Map;
 
 /** 图片OCR增强器
  * 
- * 职责：
- * - 对图片类型的段落进行视觉模型分析增强
- * - 识别图片内容并生成文本描述
- * - 提取图片中的文字和关键信息
+ * 职责： - 对图片类型的段落进行视觉模型分析增强 - 识别图片内容并生成文本描述 - 提取图片中的文字和关键信息
  * 
  * @author claude */
 @Component
@@ -37,8 +34,7 @@ public class ImageOcrEnhancer implements SegmentEnhancer {
     @Override
     public boolean canEnhance(ProcessedSegment segment) {
         // 检查是否包含图片类型的特殊节点
-        return segment.hasSpecialNodes() && 
-               segment.getSpecialNodeCount(SegmentType.IMAGE) > 0;
+        return segment.hasSpecialNodes() && segment.getSpecialNodeCount(SegmentType.IMAGE) > 0;
     }
 
     @Override
@@ -58,7 +54,7 @@ public class ImageOcrEnhancer implements SegmentEnhancer {
             }
 
             log.debug("Enhanced segment with {} image nodes", segment.getSpecialNodeCount(SegmentType.IMAGE));
-            
+
             return segment;
 
         } catch (Exception e) {
@@ -67,7 +63,7 @@ public class ImageOcrEnhancer implements SegmentEnhancer {
             return segment;
         }
     }
-    
+
     /** 增强单个图片节点 */
     private void enhanceImageNode(SpecialNode node, ProcessingContext context) {
         try {
@@ -86,15 +82,14 @@ public class ImageOcrEnhancer implements SegmentEnhancer {
             String imageAnalysis = analyzeImageWithVisionModel(imageUrl, altText, context);
 
             // 增强内容：保留原始图片引用 + 添加OCR分析
-            String enhancedContent = String.format("%s\n\n图片内容分析：%s", 
-                                                  node.getOriginalContent(), imageAnalysis);
-            
+            String enhancedContent = String.format("%s\n\n图片内容分析：%s", node.getOriginalContent(), imageAnalysis);
+
             // 更新特殊节点的增强内容
             node.setEnhancedContent(enhancedContent);
             node.markAsProcessed();
 
-            log.debug("Enhanced image node: url={}, original_length={}, enhanced_length={}", 
-                     imageUrl, node.getOriginalContent().length(), enhancedContent.length());
+            log.debug("Enhanced image node: url={}, original_length={}, enhanced_length={}", imageUrl,
+                    node.getOriginalContent().length(), enhancedContent.length());
 
         } catch (Exception e) {
             log.warn("Failed to enhance individual image node: {}", e.getMessage());
@@ -132,11 +127,11 @@ public class ImageOcrEnhancer implements SegmentEnhancer {
     private String buildImageAnalysisPrompt(String altText) {
         StringBuilder prompt = new StringBuilder();
         prompt.append("请分析以下图片的内容，用中文描述图片中的主要信息,主要用于 RAG 中便于搜索和理解。\n\n");
-        
+
         if (altText != null && !altText.trim().isEmpty()) {
             prompt.append("图片描述：").append(altText).append("\n");
         }
-        
+
         prompt.append("关键词：[便于搜索的关键词]");
 
         return prompt.toString();

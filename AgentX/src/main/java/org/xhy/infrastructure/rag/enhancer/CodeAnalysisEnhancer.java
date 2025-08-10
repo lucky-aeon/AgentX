@@ -18,10 +18,7 @@ import java.util.Map;
 
 /** 代码分析增强器
  * 
- * 职责：
- * - 对代码块类型的段落进行LLM分析增强
- * - 将代码转换为自然语言描述，便于RAG检索
- * - 生成代码功能说明和关键词
+ * 职责： - 对代码块类型的段落进行LLM分析增强 - 将代码转换为自然语言描述，便于RAG检索 - 生成代码功能说明和关键词
  * 
  * @author claude */
 @Component
@@ -32,8 +29,7 @@ public class CodeAnalysisEnhancer implements SegmentEnhancer {
     @Override
     public boolean canEnhance(ProcessedSegment segment) {
         // 检查是否包含代码类型的特殊节点
-        return segment.hasSpecialNodes() && 
-               segment.getSpecialNodeCount(SegmentType.CODE) > 0;
+        return segment.hasSpecialNodes() && segment.getSpecialNodeCount(SegmentType.CODE) > 0;
     }
 
     @Override
@@ -53,7 +49,7 @@ public class CodeAnalysisEnhancer implements SegmentEnhancer {
             }
 
             log.debug("Enhanced segment with {} code nodes", segment.getSpecialNodeCount(SegmentType.CODE));
-            
+
             return segment;
 
         } catch (Exception e) {
@@ -62,30 +58,29 @@ public class CodeAnalysisEnhancer implements SegmentEnhancer {
             return segment;
         }
     }
-    
+
     /** 增强单个代码节点 */
     private void enhanceCodeNode(SpecialNode node, ProcessingContext context) {
         try {
             // 从节点元数据中提取代码信息
             Map<String, Object> metadata = node.getNodeMetadata();
             String language = metadata != null ? (String) metadata.get("language") : "unknown";
-            
+
             // 提取代码内容（去掉markdown格式）
             String codeContent = extractCodeContent(node.getOriginalContent(), language);
-            
+
             // 使用LLM生成代码描述
             String codeDescription = describeCodeWithLLM(codeContent, language, context);
 
             // 增强内容：保留原始代码 + 添加LLM描述
-            String enhancedContent = String.format("%s\n\n代码功能描述：%s", 
-                                                  node.getOriginalContent(), codeDescription);
-            
+            String enhancedContent = String.format("%s\n\n代码功能描述：%s", node.getOriginalContent(), codeDescription);
+
             // 更新特殊节点的增强内容
             node.setEnhancedContent(enhancedContent);
             node.markAsProcessed();
 
-            log.debug("Enhanced code node: language={}, original_length={}, enhanced_length={}", 
-                     language, node.getOriginalContent().length(), enhancedContent.length());
+            log.debug("Enhanced code node: language={}, original_length={}, enhanced_length={}", language,
+                    node.getOriginalContent().length(), enhancedContent.length());
 
         } catch (Exception e) {
             log.warn("Failed to enhance individual code node: {}", e.getMessage());
@@ -101,7 +96,7 @@ public class CodeAnalysisEnhancer implements SegmentEnhancer {
     private String extractCodeContent(String markdownContent, String language) {
         // 移除代码块的markdown标记
         String content = markdownContent;
-        
+
         // 移除开头的```language
         if (content.startsWith("```")) {
             int firstNewline = content.indexOf('\n');
@@ -109,12 +104,12 @@ public class CodeAnalysisEnhancer implements SegmentEnhancer {
                 content = content.substring(firstNewline + 1);
             }
         }
-        
+
         // 移除结尾的```
         if (content.endsWith("```")) {
             content = content.substring(0, content.length() - 3);
         }
-        
+
         return content.trim();
     }
 

@@ -77,7 +77,7 @@ public class ScheduledTaskExecutionService {
         // 重新调度
         scheduleTask(task);
 
-        logger.info("任务已重新调度: taskId={},nextExecuteTime={}", task.getId(),task.getNextExecuteTime());
+        logger.info("任务已重新调度: taskId={},nextExecuteTime={}", task.getId(), task.getNextExecuteTime());
     }
 
     /** 暂停任务

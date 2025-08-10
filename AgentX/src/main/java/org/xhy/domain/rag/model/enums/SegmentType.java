@@ -6,31 +6,31 @@ package org.xhy.domain.rag.model.enums;
  *
  * @author claude */
 public enum SegmentType {
-    
+
     /** 普通文本段落 */
     TEXT("text"),
-    
+
     /** 语义段落（按标题分组的内容） */
     SECTION("section"),
-    
+
     /** 表格内容 */
     TABLE("table"),
-    
+
     /** 数学公式 */
     FORMULA("formula"),
-    
+
     /** 图片内容 */
     IMAGE("image"),
-    
+
     /** 代码块 */
     CODE("code"),
-    
+
     /** 引用块 */
     BLOCKQUOTE("blockquote"),
-    
+
     /** 混合内容（包含多种特殊节点的段落） */
     MIXED("mixed"),
-    
+
     /** 原始内容（处理失败时的回退） */
     RAW("raw");
 

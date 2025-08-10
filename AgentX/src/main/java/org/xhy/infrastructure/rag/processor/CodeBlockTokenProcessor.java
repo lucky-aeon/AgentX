@@ -77,7 +77,6 @@ public class CodeBlockTokenProcessor implements MarkdownTokenProcessor {
         return 5; // 最高优先级，优先处理代码块
     }
 
-
     /** 使用大模型生成代码描述 */
     private String describeCodeWithLLM(String code, String language, ProcessingContext context) {
         try {

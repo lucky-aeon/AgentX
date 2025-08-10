@@ -40,8 +40,9 @@ public class MarkdownRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl
     // 用于存储当前处理的文件ID
     private String currentProcessingFileId;
 
-    public MarkdownRagDocSyncOcrStrategyImpl(@Qualifier("ragEnhancedMarkdownProcessor") MarkdownProcessor markdownProcessor, 
-            DocumentUnitRepository documentUnitRepository, FileDetailRepository fileDetailRepository, 
+    public MarkdownRagDocSyncOcrStrategyImpl(
+            @Qualifier("ragEnhancedMarkdownProcessor") MarkdownProcessor markdownProcessor,
+            DocumentUnitRepository documentUnitRepository, FileDetailRepository fileDetailRepository,
             FileStorageService fileStorageService, UserModelConfigResolver userModelConfigResolver) {
         this.markdownProcessor = markdownProcessor;
         this.documentUnitRepository = documentUnitRepository;
@@ -149,8 +150,8 @@ public class MarkdownRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl
 
                 ocrData.put(i, content);
 
-                log.debug("Processed segment {}/{}: type={}, length={}", i + 1, finalSegments.size(), 
-                         segment.getType(), content.length());
+                log.debug("Processed segment {}/{}: type={}, length={}", i + 1, finalSegments.size(), segment.getType(),
+                        content.length());
             }
 
             // 更新页面大小（可能与预估的不同）
@@ -212,19 +213,19 @@ public class MarkdownRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl
         // 使用枚举类型进行比较
         if (segment.getType() != null) {
             switch (segment.getType()) {
-                case TABLE:
+                case TABLE :
                     return enrichTableContent(content, metadata);
-                case IMAGE:
+                case IMAGE :
                     return enrichImageContent(content, metadata);
-                case FORMULA:
+                case FORMULA :
                     return enrichFormulaContent(content, metadata);
-                case CODE:
+                case CODE :
                     return enrichCodeContent(content, metadata);
-                default:
+                default :
                     return content;
             }
         }
-        
+
         return content;
     }
 

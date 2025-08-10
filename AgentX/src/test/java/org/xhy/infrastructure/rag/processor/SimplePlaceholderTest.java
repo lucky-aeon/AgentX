@@ -53,14 +53,14 @@ class SimplePlaceholderTest {
         assertThat(segments).isNotEmpty();
         System.out.println("=== 图片处理测试 ===");
         System.out.println("段落数: " + segments.size());
-        
+
         for (int i = 0; i < segments.size(); i++) {
             ProcessedSegment segment = segments.get(i);
             System.out.println("\n段落 " + (i + 1) + ":");
             System.out.println("类型: " + segment.getType());
             System.out.println("内容: " + segment.getContent());
             System.out.println("有特殊节点: " + segment.hasSpecialNodes());
-            
+
             if (segment.hasSpecialNodes()) {
                 System.out.println("特殊节点数量: " + segment.getSpecialNodes().size());
                 segment.getSpecialNodes().forEach((key, value) -> {
@@ -69,12 +69,12 @@ class SimplePlaceholderTest {
                     System.out.println("- 原始内容: " + value.getOriginalContent());
                 });
             }
-            
+
             // 验证占位符内容
             if (segment.getContent().contains("{{SPECIAL_NODE_IMAGE")) {
                 System.out.println("✓ 发现图片占位符");
             }
-            
+
             // 验证最终内容
             String finalContent = segment.getFinalContent();
             System.out.println("最终内容: " + finalContent);
@@ -96,7 +96,7 @@ class SimplePlaceholderTest {
         // Then
         assertThat(segments).isNotEmpty();
         System.out.println("=== 代码处理测试 ===");
-        
+
         for (ProcessedSegment segment : segments) {
             System.out.println("内容: " + segment.getContent());
             if (segment.hasSpecialNodes()) {

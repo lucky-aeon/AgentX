@@ -61,7 +61,7 @@ public class SemanticSegmentationTest {
         for (int i = 0; i < segments.size(); i++) {
             ProcessedSegment segment = segments.get(i);
 
-            log.info("  预览: {}",  segment.getContent());
+            log.info("  预览: {}", segment.getContent());
             log.info("");
         }
 
@@ -100,7 +100,7 @@ public class SemanticSegmentationTest {
 
         // 🔄 调整期望：新架构的分段逻辑可能会产生更精细的段落
         assert segments.size() > 0 : "应该产生至少1个段落，实际：" + segments.size();
-        
+
         // 检查是否包含关键内容
         String allContent = segments.stream().map(ProcessedSegment::getContent).reduce("", String::concat);
         assert allContent.contains("主标题1") : "应该包含主标题1";

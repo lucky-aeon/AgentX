@@ -13,7 +13,7 @@ class DetailedDebugTest {
     void debugFlexmarkParsing() {
         // Given
         String markdown = "![test](url)";
-        
+
         // 配置Flexmark解析器（复制自PureMarkdownProcessor）
         MutableDataSet options = new MutableDataSet();
         Parser parser = Parser.builder(options).build();
@@ -31,10 +31,10 @@ class DetailedDebugTest {
         // Given
         String markdown = """
                 # 标题
-                
+
                 ![test](url)
                 """;
-        
+
         MutableDataSet options = new MutableDataSet();
         Parser parser = Parser.builder(options).build();
 
@@ -48,15 +48,15 @@ class DetailedDebugTest {
 
     private void printNodeTree(Node node, int depth) {
         String indent = "  ".repeat(depth);
-        System.out.println(indent + "- " + node.getClass().getSimpleName() + ": '" + 
-                          node.getChars().toString().replace("\n", "\\n") + "'");
-        
+        System.out.println(indent + "- " + node.getClass().getSimpleName() + ": '"
+                + node.getChars().toString().replace("\n", "\\n") + "'");
+
         if (node instanceof Image) {
             Image image = (Image) node;
             System.out.println(indent + "  URL: " + image.getUrl());
             System.out.println(indent + "  Title: " + image.getTitle());
         }
-        
+
         for (Node child : node.getChildren()) {
             printNodeTree(child, depth + 1);
         }

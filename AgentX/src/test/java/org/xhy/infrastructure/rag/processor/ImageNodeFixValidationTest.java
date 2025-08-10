@@ -36,38 +36,36 @@ class ImageNodeFixValidationTest {
         System.out.println("总共生成了 " + segments.size() + " 个段落");
 
         // 检查是否包含架构设计图
-        boolean hasArchitectureDiagram = segments.stream()
-                .anyMatch(segment -> {
-                    String content = segment.getContent();
-                    boolean contains = content.contains("![](https://cdn.nlark.com/yuque/0/2025/png/29091062/1754123559103-f3c118f5-ac99-4f5c-bea9-322aa1fbc95f.png)");
-                    if (contains) {
-                        System.out.println("找到架构设计图片链接！");
-                        System.out.println("段落内容片段: " + content.substring(Math.max(0, content.indexOf("架构设计图") - 20), 
-                                                                Math.min(content.length(), content.indexOf("架构设计图") + 200)));
-                    }
-                    return contains;
-                });
+        boolean hasArchitectureDiagram = segments.stream().anyMatch(segment -> {
+            String content = segment.getContent();
+            boolean contains = content.contains(
+                    "![](https://cdn.nlark.com/yuque/0/2025/png/29091062/1754123559103-f3c118f5-ac99-4f5c-bea9-322aa1fbc95f.png)");
+            if (contains) {
+                System.out.println("找到架构设计图片链接！");
+                System.out.println("段落内容片段: " + content.substring(Math.max(0, content.indexOf("架构设计图") - 20),
+                        Math.min(content.length(), content.indexOf("架构设计图") + 200)));
+            }
+            return contains;
+        });
 
         // 检查是否包含流程图
-        boolean hasFlowChart = segments.stream()
-                .anyMatch(segment -> {
-                    String content = segment.getContent();
-                    boolean contains = content.contains("![](https://cdn.nlark.com/yuque/0/2025/png/29091062/1754123580936-c9c1c769-5c47-4915-baa8-a8683b22af05.png)");
-                    if (contains) {
-                        System.out.println("找到流程图片链接！");
-                        System.out.println("段落内容片段: " + content.substring(Math.max(0, content.indexOf("流程图") - 20), 
-                                                                Math.min(content.length(), content.indexOf("流程图") + 200)));
-                    }
-                    return contains;
-                });
+        boolean hasFlowChart = segments.stream().anyMatch(segment -> {
+            String content = segment.getContent();
+            boolean contains = content.contains(
+                    "![](https://cdn.nlark.com/yuque/0/2025/png/29091062/1754123580936-c9c1c769-5c47-4915-baa8-a8683b22af05.png)");
+            if (contains) {
+                System.out.println("找到流程图片链接！");
+                System.out.println("段落内容片段: " + content.substring(Math.max(0, content.indexOf("流程图") - 20),
+                        Math.min(content.length(), content.indexOf("流程图") + 200)));
+            }
+            return contains;
+        });
 
         // 统计所有图片链接
-        long imageCount = segments.stream()
-                .mapToLong(segment -> {
-                    String content = segment.getContent();
-                    return content.split("!\\[.*?\\]\\(https://cdn\\.nlark\\.com/.*?\\)").length - 1;
-                })
-                .sum();
+        long imageCount = segments.stream().mapToLong(segment -> {
+            String content = segment.getContent();
+            return content.split("!\\[.*?\\]\\(https://cdn\\.nlark\\.com/.*?\\)").length - 1;
+        }).sum();
 
         System.out.println("检测到的图片链接总数: " + imageCount);
 
@@ -82,15 +80,15 @@ class ImageNodeFixValidationTest {
         // Given - 包含各种图片格式的markdown
         String markdown = """
                 # 图片测试
-                
+
                 ## 架构设计图
-                
+
                 ![](https://cdn.nlark.com/yuque/0/2025/png/29091062/1754123559103-f3c118f5-ac99-4f5c-bea9-322aa1fbc95f.png)
-                
+
                 **流程图**
-                
+
                 ![](https://cdn.nlark.com/yuque/0/2025/png/29091062/1754123580936-c9c1c769-5c47-4915-baa8-a8683b22af05.png)
-                
+
                 状态机：A->B->C->D
                 ![](https://cdn.nlark.com/yuque/0/2025/png/29091062/1747755486684-36919bc0-cab7-437b-a3c9-1884d5c65199.png)
                 """;
@@ -109,13 +107,12 @@ class ImageNodeFixValidationTest {
         }
 
         // 验证图片链接保留
-        boolean hasAllImages = segments.stream()
-                .anyMatch(segment -> {
-                    String content = segment.getContent();
-                    return content.contains("1754123559103-f3c118f5-ac99-4f5c-bea9-322aa1fbc95f.png") &&
-                           content.contains("1754123580936-c9c1c769-5c47-4915-baa8-a8683b22af05.png") &&
-                           content.contains("1747755486684-36919bc0-cab7-437b-a3c9-1884d5c65199.png");
-                });
+        boolean hasAllImages = segments.stream().anyMatch(segment -> {
+            String content = segment.getContent();
+            return content.contains("1754123559103-f3c118f5-ac99-4f5c-bea9-322aa1fbc95f.png")
+                    && content.contains("1754123580936-c9c1c769-5c47-4915-baa8-a8683b22af05.png")
+                    && content.contains("1747755486684-36919bc0-cab7-437b-a3c9-1884d5c65199.png");
+        });
 
         assertThat(hasAllImages).isTrue();
     }

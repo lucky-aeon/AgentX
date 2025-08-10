@@ -145,8 +145,7 @@ class MarkdownProcessorTest {
         assertThat(segments).isNotEmpty();
         // 验证包含列表项标记
         boolean hasListMarkdown = segments.stream()
-                .anyMatch(segment -> segment.getContent().contains("- 第一项") && 
-                                   segment.getContent().contains("- 第二项"));
+                .anyMatch(segment -> segment.getContent().contains("- 第一项") && segment.getContent().contains("- 第二项"));
         assertThat(hasListMarkdown).isTrue();
     }
 
@@ -168,9 +167,8 @@ class MarkdownProcessorTest {
         // Then
         assertThat(segments).isNotEmpty();
         // 验证包含有序列表标记
-        boolean hasOrderedListMarkdown = segments.stream()
-                .anyMatch(segment -> segment.getContent().contains("1. 第一步") && 
-                                   segment.getContent().contains("2. 第二步"));
+        boolean hasOrderedListMarkdown = segments.stream().anyMatch(
+                segment -> segment.getContent().contains("1. 第一步") && segment.getContent().contains("2. 第二步"));
         assertThat(hasOrderedListMarkdown).isTrue();
     }
 
@@ -228,25 +226,22 @@ class MarkdownProcessorTest {
 
         // Then
         assertThat(segments).isNotEmpty();
-        
+
         // 验证图片markdown语法保留
-        boolean hasImageMarkdown = segments.stream()
-                .anyMatch(segment -> segment.getContent().contains("![架构图](https://cdn.nlark.com/yuque/0/2025/png/29091062/1754123559103-f3c118f5-ac99-4f5c-bea9-322aa1fbc95f.png)"));
+        boolean hasImageMarkdown = segments.stream().anyMatch(segment -> segment.getContent().contains(
+                "![架构图](https://cdn.nlark.com/yuque/0/2025/png/29091062/1754123559103-f3c118f5-ac99-4f5c-bea9-322aa1fbc95f.png)"));
         assertThat(hasImageMarkdown).isTrue();
-        
+
         // 验证有序列表保留
-        boolean hasOrderedList = segments.stream()
-                .anyMatch(segment -> segment.getContent().contains("1. 支持图片处理"));
+        boolean hasOrderedList = segments.stream().anyMatch(segment -> segment.getContent().contains("1. 支持图片处理"));
         assertThat(hasOrderedList).isTrue();
-        
+
         // 验证无序列表保留
-        boolean hasBulletList = segments.stream()
-                .anyMatch(segment -> segment.getContent().contains("- 项目一"));
+        boolean hasBulletList = segments.stream().anyMatch(segment -> segment.getContent().contains("- 项目一"));
         assertThat(hasBulletList).isTrue();
-        
+
         // 验证引用块保留
-        boolean hasBlockQuote = segments.stream()
-                .anyMatch(segment -> segment.getContent().contains("> 引用：这个功能很重要"));
+        boolean hasBlockQuote = segments.stream().anyMatch(segment -> segment.getContent().contains("> 引用：这个功能很重要"));
         assertThat(hasBlockQuote).isTrue();
     }
 }

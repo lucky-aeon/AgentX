@@ -7,10 +7,7 @@ import java.util.List;
 
 /** 统一的Markdown处理器接口
  * 
- * 设计原则：
- * - 保持方法签名与现有EnhancedMarkdownProcessor一致
- * - 支持纯净解析和RAG增强两种实现模式
- * - 通过依赖注入选择具体实现，无需复杂配置
+ * 设计原则： - 保持方法签名与现有EnhancedMarkdownProcessor一致 - 支持纯净解析和RAG增强两种实现模式 - 通过依赖注入选择具体实现，无需复杂配置
  * 
  * @author claude */
 public interface MarkdownProcessor {
@@ -21,5 +18,5 @@ public interface MarkdownProcessor {
      * @param context 处理上下文，包含用户配置和LLM设置
      * @return 处理后的段落列表 */
     List<ProcessedSegment> processToSegments(String markdown, ProcessingContext context);
-    
+
 }
