@@ -9,7 +9,7 @@ import org.springframework.context.annotation.Configuration;
 public class MCPGatewayProperties {
 
     private String baseUrl; // 网关基础URL
-    private String apiKey; // API密钥
+    private String apiKey = "123456"; // API密钥
     private int connectTimeout = 30000; // 连接超时(毫秒)，默认30秒
     private int readTimeout = 60000; // 读取超时(毫秒)，默认60秒
 

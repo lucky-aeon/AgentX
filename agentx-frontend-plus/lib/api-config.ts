@@ -99,6 +99,12 @@ export const API_ENDPOINTS = {
   ADMIN_USERS: "/admin/users", // 管理员获取用户列表
   ADMIN_AGENTS: "/admin/agents", // 管理员获取Agent列表
   ADMIN_AGENT_STATISTICS: "/admin/agents/statistics", // 管理员获取Agent统计
+  ADMIN_ORDERS: "/admin/orders", // 管理员获取订单列表
+  ADMIN_ORDER_DETAIL: (id: string) => `/admin/orders/${id}`, // 管理员获取订单详情
+  
+  // 订单相关
+  ORDERS: "/orders", // 用户获取订单列表
+  ORDER_DETAIL: (id: string) => `/orders/${id}`, // 用户获取订单详情
   
   // API Key 相关
   API_KEYS: "/api-keys", // 获取用户API密钥列表

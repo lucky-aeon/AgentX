@@ -3,6 +3,7 @@
 import { Toaster } from "@/components/ui/toaster"
 import { useEffect } from "react"
 import { getCookie } from "@/lib/utils"
+import { AccountProvider } from "@/contexts/account-context"
 
 export function Providers({ children }: { children: React.ReactNode }) {
   useEffect(() => {
@@ -17,9 +18,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
   }, [])
 
   return (
-    <>
+    <AccountProvider>
       {children}
       <Toaster />
-    </>
+    </AccountProvider>
   )
 } 

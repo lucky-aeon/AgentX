@@ -13,7 +13,10 @@ import {
   Home,
   Shield,
   Container,
-  Database
+  CreditCard,
+  BookOpen,
+  Database,
+  Package
 } from "lucide-react";
 
 interface MenuItemProps {
@@ -80,6 +83,21 @@ export function AdminSidebar() {
       label: "容器管理",
     },
     {
+      href: "/admin/products",
+      icon: CreditCard,
+      label: "商品管理",
+    },
+    {
+      href: "/admin/orders",
+      icon: Package,
+      label: "订单管理",
+    },
+    {
+      href: "/admin/rules",
+      icon: BookOpen,
+      label: "规则管理",
+    },
+    {
       href: "/admin/auth-settings",
       icon: Shield,
       label: "认证配置",
@@ -106,7 +124,11 @@ export function AdminSidebar() {
             href={item.href}
             icon={item.icon}
             label={item.label}
-            isActive={pathname === item.href || (item.href === "/admin" && pathname === "/admin")}
+            isActive={
+              pathname === item.href ||
+              (item.href === "/admin" && pathname === "/admin") ||
+              (item.href !== "/admin" && pathname.startsWith(item.href))
+            }
           />
         ))}
       </nav>

@@ -26,7 +26,7 @@ jobs:
       # Generate lowercase image name
       - name: Set image name
         run: |
-          echo "IMAGE_NAME=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+          echo "IMAGE_NAME=lucky-aeon/agentx" >> $GITHUB_ENV
           echo "TAG=${{ github.ref_name }}" >> $GITHUB_ENV
 
       # Install the cosign tool except on PR

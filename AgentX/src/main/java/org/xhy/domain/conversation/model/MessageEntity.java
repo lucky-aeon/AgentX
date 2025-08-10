@@ -44,6 +44,10 @@ public class MessageEntity extends BaseEntity {
     @TableField("token_count")
     private Integer tokenCount = 0;
 
+    /** 消息本体Token数量 */
+    @TableField("body_token_count")
+    private Integer bodyTokenCount = 0;
+
     /** 服务提供商 */
     @TableField("provider")
     private String provider;
@@ -162,5 +166,13 @@ public class MessageEntity extends BaseEntity {
 
     public void setFileUrls(List<String> fileUrls) {
         this.fileUrls = fileUrls;
+    }
+
+    public Integer getBodyTokenCount() {
+        return bodyTokenCount;
+    }
+
+    public void setBodyTokenCount(Integer bodyTokenCount) {
+        this.bodyTokenCount = bodyTokenCount;
     }
 }

@@ -21,7 +21,8 @@ public class ExecutionStartedEvent extends ApplicationEvent {
         this.userMessageTime = LocalDateTime.now(); // 默认使用当前时间
     }
 
-    public ExecutionStartedEvent(Object source, TraceContext traceContext, String userMessage, String messageType, LocalDateTime userMessageTime) {
+    public ExecutionStartedEvent(Object source, TraceContext traceContext, String userMessage, String messageType,
+            LocalDateTime userMessageTime) {
         super(source);
         this.traceContext = traceContext;
         this.userMessage = userMessage;

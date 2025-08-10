@@ -1,6 +1,6 @@
 "use client"
 
-import React from "react"
+import React, { useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -70,7 +70,8 @@ export default function AgentFormModal({
     selectedToolForSidebar,
     isToolSidebarOpen,
     setIsToolSidebarOpen,
-    
+    installedTools, // 已安装工具列表，用于过滤有效工具ID
+
     // 知识库相关状态
     selectedKnowledgeBaseForSidebar,
     isKnowledgeBaseSidebarOpen,
@@ -100,6 +101,36 @@ export default function AgentFormModal({
   
   // 编辑模式下，如果没有initialData，说明还在加载
   const isLoading = mode === "edit" && !initialData
+
+  // 获取有效的工具ID列表（只包含在已安装工具列表中存在的工具）
+  const getValidToolIds = (): string[] => {
+    const formToolIds = formData.tools.map(t => t.id);
+    const installedToolIds = installedTools.map(tool => tool.toolId).filter(Boolean);
+
+    // 过滤出在已安装工具列表中存在的工具ID
+    const validToolIds = formToolIds.filter(formToolId => installedToolIds.includes(formToolId));
+
+    // 打印调试信息
+    console.log('[AgentFormModal] 表单中的工具ID:', formToolIds);
+    console.log('[AgentFormModal] 已安装工具的ID列表:', installedToolIds);
+    console.log('[AgentFormModal] 过滤后的有效工具ID:', validToolIds);
+
+    // 检查是否有无效的工具ID
+    const invalidToolIds = formToolIds.filter(formToolId => !installedToolIds.includes(formToolId));
+    if (invalidToolIds.length > 0) {
+      console.warn('[AgentFormModal] 发现无效工具ID（已删除的工具）:', invalidToolIds);
+    }
+
+    return validToolIds;
+  }
+
+  // 监控预览传递的工具ID变化
+  useEffect(() => {
+    const validToolIds = getValidToolIds();
+    if (validToolIds.length > 0) {
+      console.log('[AgentFormModal] 预览将使用的工具ID列表:', validToolIds);
+    }
+  }, [formData.tools, installedTools])
 
   // 处理提交
   const handleSubmit = async () => {
@@ -286,7 +317,7 @@ export default function AgentFormModal({
             agentAvatar={formData.avatar}
             systemPrompt={formData.systemPrompt || "你是一个智能助手，可以帮助用户解答问题和完成任务。"}
             welcomeMessage={formData.welcomeMessage}
-            toolIds={formData.tools.map(t => t.id)}
+            toolIds={getValidToolIds()}
             toolPresetParams={formData.toolPresetParams as unknown as Record<string, Record<string, Record<string, string>>>}
             multiModal={formData.multiModal}
             knowledgeBaseIds={formData.knowledgeBaseIds}

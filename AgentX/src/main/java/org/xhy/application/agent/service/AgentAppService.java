@@ -1,7 +1,8 @@
 package org.xhy.application.agent.service;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.xhy.application.agent.assembler.AgentAssembler;
@@ -20,6 +21,11 @@ import org.xhy.infrastructure.exception.ParamValidationException;
 import org.xhy.domain.agent.constant.PublishStatus;
 import org.xhy.interfaces.dto.agent.request.*;
 import org.xhy.domain.scheduledtask.service.ScheduledTaskExecutionService;
+import org.xhy.application.billing.service.BillingService;
+import org.xhy.application.billing.dto.RuleContext;
+import org.xhy.domain.product.constant.BillingType;
+import org.xhy.domain.product.constant.UsageDataKeys;
+import org.xhy.infrastructure.exception.InsufficientBalanceException;
 import org.xhy.domain.tool.service.UserToolDomainService;
 import org.xhy.domain.rag.service.UserRagDomainService;
 import org.xhy.domain.rag.service.RagVersionDomainService;
@@ -31,6 +37,7 @@ import org.xhy.infrastructure.exception.BusinessException;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -38,9 +45,12 @@ import java.util.stream.Collectors;
 @Service
 public class AgentAppService {
 
+    private static final Logger logger = LoggerFactory.getLogger(AgentAppService.class);
+
     private final AgentDomainService agentServiceDomainService;
     private final AgentWorkspaceDomainService agentWorkspaceDomainService;
     private final ScheduledTaskExecutionService scheduledTaskExecutionService;
+    private final BillingService billingService;
     private final UserToolDomainService userToolDomainService;
     private final UserRagDomainService userRagDomainService;
     private final RagVersionDomainService ragVersionDomainService;
@@ -48,10 +58,12 @@ public class AgentAppService {
     public AgentAppService(AgentDomainService agentServiceDomainService,
             AgentWorkspaceDomainService agentWorkspaceDomainService,
             ScheduledTaskExecutionService scheduledTaskExecutionService, UserToolDomainService userToolDomainService,
-            UserRagDomainService userRagDomainService, RagVersionDomainService ragVersionDomainService) {
+            UserRagDomainService userRagDomainService, RagVersionDomainService ragVersionDomainService,
+            BillingService billingService) {
         this.agentServiceDomainService = agentServiceDomainService;
         this.agentWorkspaceDomainService = agentWorkspaceDomainService;
         this.scheduledTaskExecutionService = scheduledTaskExecutionService;
+        this.billingService = billingService;
         this.userToolDomainService = userToolDomainService;
         this.userRagDomainService = userRagDomainService;
         this.ragVersionDomainService = ragVersionDomainService;
@@ -60,13 +72,40 @@ public class AgentAppService {
     /** 创建新Agent */
     @Transactional
     public AgentDTO createAgent(CreateAgentRequest request, String userId) {
-        // 使用组装器创建领域实体
+        logger.info("开始创建Agent - 用户: {}, Agent名称: {}", userId, request.getName());
+
+        // 1. 创建计费上下文进行余额预检查
+        RuleContext billingContext = RuleContext.builder().type(BillingType.AGENT_CREATION.getCode())
+                .serviceId("agent_creation") // 固定业务标识
+                .usageData(Map.of(UsageDataKeys.QUANTITY, 1)).requestId(generateRequestId(userId, "creation"))
+                .userId(userId).build();
+
+        // 2. 余额预检查 - 避免创建后发现余额不足
+        if (!billingService.checkBalance(billingContext)) {
+            logger.warn("Agent创建失败 - 用户余额不足: {}", userId);
+            throw new InsufficientBalanceException("账户余额不足，无法创建Agent。请先充值后再试。");
+        }
+
+        // 3. 执行Agent创建逻辑
         AgentEntity entity = AgentAssembler.toEntity(request, userId);
         entity.setUserId(userId);
         AgentEntity agent = agentServiceDomainService.createAgent(entity);
         AgentWorkspaceEntity agentWorkspaceEntity = new AgentWorkspaceEntity(agent.getId(), userId,
                 new LLMModelConfig());
         agentWorkspaceDomainService.save(agentWorkspaceEntity);
+
+        // 4. 创建成功后执行计费扣费
+        try {
+            billingService.charge(billingContext);
+            logger.info("Agent创建及计费成功 - 用户: {}, AgentID: {}, 请求ID: {}", userId, agent.getId(),
+                    billingContext.getRequestId());
+        } catch (Exception e) {
+            // 计费失败但Agent已创建，记录错误日志但不影响用户体验
+            // 实际场景中可能需要考虑回滚Agent创建或者重试机制
+            logger.error("Agent创建成功但计费失败 - 用户: {}, AgentID: {}, 错误: {}", userId, agent.getId(), e.getMessage(), e);
+            throw new InsufficientBalanceException("Agent创建成功，但计费处理失败: " + e.getMessage());
+        }
+
         return AgentAssembler.toDTO(agent);
     }
 
@@ -208,7 +247,7 @@ public class AgentAppService {
     }
 
     /** 分页查询Agent列表（管理员使用，包含用户信息）
-     * 
+     *
      * @param queryAgentRequest 查询条件
      * @return Agent分页数据（包含用户信息） */
     public Page<AgentWithUserDTO> getAgents(QueryAgentRequest queryAgentRequest) {
@@ -217,14 +256,14 @@ public class AgentAppService {
     }
 
     /** 获取Agent统计信息
-     * 
+     *
      * @return Agent统计数据 */
     public AgentStatisticsDTO getAgentStatistics() {
         return agentServiceDomainService.getAgentStatistics();
     }
 
     /** 验证Agent发布时依赖的工具和知识库权限
-     * 
+     *
      * @param versionEntity Agent版本实体
      * @param userId 当前用户ID
      * @throws BusinessException 当权限验证失败时抛出异常 */
@@ -245,7 +284,7 @@ public class AgentAppService {
     }
 
     /** 验证工具权限
-     * 
+     *
      * @param toolId 工具ID
      * @param userId 用户ID
      * @throws BusinessException 当用户未安装该工具或工具版本未公开时抛出异常 */
@@ -265,7 +304,7 @@ public class AgentAppService {
     }
 
     /** 获取工具显示名称（用于错误提示）
-     * 
+     *
      * @param toolId 工具ID
      * @return 工具显示名称 */
     private String getToolDisplayName(String toolId) {
@@ -278,7 +317,7 @@ public class AgentAppService {
     }
 
     /** 验证知识库权限
-     * 
+     *
      * @param knowledgeBaseId 知识库ID
      * @param userId 用户ID
      * @throws BusinessException 当用户未安装该知识库或知识库版本未发布时抛出异常 */
@@ -312,7 +351,7 @@ public class AgentAppService {
     }
 
     /** 获取知识库显示名称（用于错误提示）
-     * 
+     *
      * @param knowledgeBaseId 知识库ID
      * @return 知识库显示名称 */
     private String getKnowledgeBaseDisplayName(String knowledgeBaseId) {
@@ -328,5 +367,14 @@ public class AgentAppService {
             // 如果获取失败，返回ID的前8位作为友好显示
         }
         return knowledgeBaseId.length() > 8 ? knowledgeBaseId.substring(0, 8) + "..." : knowledgeBaseId;
+    }
+
+    /** 生成用于计费的唯一请求ID
+     *
+     * @param userId 用户ID
+     * @param action 操作类型
+     * @return 唯一请求ID */
+    private String generateRequestId(String userId, String action) {
+        return String.format("agent_%s_%s_%d", action, userId, System.currentTimeMillis());
     }
 }

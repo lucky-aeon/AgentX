@@ -22,7 +22,8 @@ public class ModelCalledEvent extends ApplicationEvent {
         this.aiResponseStartTime = LocalDateTime.now(); // 默认使用当前时间
     }
 
-    public ModelCalledEvent(Object source, TraceContext traceContext, String aiResponse, ModelCallInfo modelCallInfo, LocalDateTime aiResponseStartTime) {
+    public ModelCalledEvent(Object source, TraceContext traceContext, String aiResponse, ModelCallInfo modelCallInfo,
+            LocalDateTime aiResponseStartTime) {
         super(source);
         this.traceContext = traceContext;
         this.aiResponse = aiResponse;

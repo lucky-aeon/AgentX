@@ -144,6 +144,15 @@ public class DockerService {
      * @param containerId Docker容器ID */
     public void startContainer(String containerId) {
         try {
+            // 检查容器当前状态
+            String currentStatus = getContainerStatus(containerId);
+
+            if ("running".equalsIgnoreCase(currentStatus)) {
+                logger.info("容器已经在运行中，无需重复启动: {}", containerId);
+                return;
+            }
+
+            // 只有在容器未运行时才启动
             dockerClient.startContainerCmd(containerId).exec();
             logger.info("容器已启动: {}", containerId);
         } catch (DockerException e) {

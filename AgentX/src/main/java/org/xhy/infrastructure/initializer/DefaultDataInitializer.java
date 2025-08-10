@@ -8,7 +8,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.xhy.domain.user.model.UserEntity;
 import org.xhy.domain.user.service.UserDomainService;
-import org.xhy.infrastructure.config.MyBatisTypeHandlerConfig;
+import org.xhy.infrastructure.config.AdminUserProperties;
 import org.xhy.infrastructure.utils.PasswordUtils;
 
 /** 默认数据初始化器 在应用启动时自动初始化默认用户数据
@@ -21,9 +21,11 @@ public class DefaultDataInitializer implements ApplicationRunner {
     private static final Logger log = LoggerFactory.getLogger(DefaultDataInitializer.class);
 
     private final UserDomainService userDomainService;
+    private final AdminUserProperties adminUserProperties;
 
-    public DefaultDataInitializer(UserDomainService userDomainService) {
+    public DefaultDataInitializer(UserDomainService userDomainService, AdminUserProperties adminUserProperties) {
         this.userDomainService = userDomainService;
+        this.adminUserProperties = adminUserProperties;
     }
 
     @Override
@@ -54,7 +56,8 @@ public class DefaultDataInitializer implements ApplicationRunner {
 
     /** 初始化管理员用户 */
     private void initializeAdminUser() {
-        String adminEmail = "admin@agentx.ai";
+        AdminUserProperties.AdminConfig adminConfig = adminUserProperties.getAdmin();
+        String adminEmail = adminConfig.getEmail();
 
         try {
             // 检查管理员用户是否已存在
@@ -67,18 +70,18 @@ public class DefaultDataInitializer implements ApplicationRunner {
             // 创建管理员用户
             UserEntity adminUser = new UserEntity();
             adminUser.setId("admin-user-uuid-001");
-            adminUser.setNickname("AgentX管理员");
+            adminUser.setNickname(adminConfig.getNickname());
             adminUser.setEmail(adminEmail);
             adminUser.setPhone("");
             // 使用项目中的密码加密方法
-            adminUser.setPassword(PasswordUtils.encode("admin123"));
+            adminUser.setPassword(PasswordUtils.encode(adminConfig.getPassword()));
             // 设置为管理员
             adminUser.setIsAdmin(true);
 
             // 直接插入，绕过业务校验（因为是系统初始化）
             userDomainService.createDefaultUser(adminUser);
 
-            log.info("管理员用户初始化成功: {} (密码: admin123)", adminEmail);
+            log.info("管理员用户初始化成功: {} (昵称: {})", adminEmail, adminConfig.getNickname());
 
         } catch (Exception e) {
             log.error("管理员用户初始化失败: {}", adminEmail, e);
@@ -87,7 +90,15 @@ public class DefaultDataInitializer implements ApplicationRunner {
 
     /** 初始化测试用户 */
     private void initializeTestUser() {
-        String testEmail = "test@agentx.ai";
+        AdminUserProperties.TestConfig testConfig = adminUserProperties.getTest();
+
+        // 检查是否启用测试用户
+        if (!testConfig.getEnabled()) {
+            log.info("测试用户功能已禁用，跳过初始化");
+            return;
+        }
+
+        String testEmail = testConfig.getEmail();
 
         try {
             // 检查测试用户是否已存在
@@ -100,18 +111,18 @@ public class DefaultDataInitializer implements ApplicationRunner {
             // 创建测试用户
             UserEntity testUser = new UserEntity();
             testUser.setId("test-user-uuid-001");
-            testUser.setNickname("测试用户");
+            testUser.setNickname(testConfig.getNickname());
             testUser.setEmail(testEmail);
             testUser.setPhone("");
             // 使用项目中的密码加密方法
-            testUser.setPassword(PasswordUtils.encode("test123"));
+            testUser.setPassword(PasswordUtils.encode(testConfig.getPassword()));
             // 设置为普通用户
             testUser.setIsAdmin(false);
 
             // 直接插入，绕过业务校验（因为是系统初始化）
             userDomainService.createDefaultUser(testUser);
 
-            log.info("测试用户初始化成功: {} (密码: test123)", testEmail);
+            log.info("测试用户初始化成功: {} (昵称: {})", testEmail, testConfig.getNickname());
 
         } catch (Exception e) {
             log.error("测试用户初始化失败: {}", testEmail, e);

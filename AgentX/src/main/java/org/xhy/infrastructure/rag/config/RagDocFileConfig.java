@@ -10,7 +10,6 @@ import org.dromara.x.file.storage.core.FileInfo;
 import org.dromara.x.file.storage.core.hash.HashInfo;
 import org.dromara.x.file.storage.core.recorder.FileRecorder;
 import org.dromara.x.file.storage.core.upload.FilePartInfo;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.xhy.domain.rag.constant.FileProcessingStatusEnum;
 import org.xhy.domain.rag.constant.MetadataConstant;
@@ -28,7 +27,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.lang.Dict;
 import cn.hutool.core.util.StrUtil;
-import org.xhy.infrastructure.exception.BusinessException;
 
 /** 文件上传服务服务配置
  * @author shilong.zang

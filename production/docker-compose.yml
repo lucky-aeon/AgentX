@@ -1,0 +1,121 @@
+# AgentX 生产环境 Docker Compose 配置
+# 使用预构建镜像，无需源码
+
+networks:
+  agentx-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+    driver: local
+  rabbitmq-data:
+    driver: local
+  storage-data:
+    driver: local
+
+services:
+  # PostgreSQL 数据库
+  postgres:
+    image: postgres:15-alpine
+    container_name: agentx-postgres
+    environment:
+      POSTGRES_DB: ${DB_NAME:-agentx}
+      POSTGRES_USER: ${DB_USER:-agentx_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-agentx_pass}
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    networks:
+      - agentx-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-agentx_user} -d ${DB_NAME:-agentx}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # RabbitMQ 消息队列
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: agentx-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USERNAME:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    ports:
+      - "${RABBITMQ_PORT:-5672}:5672"
+      - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
+    networks:
+      - agentx-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # AgentX 应用服务（使用预构建镜像）
+  agentx:
+    image: ghcr.io/lucky-aeon/agentx:${IMAGE_TAG:-latest}
+    container_name: agentx-app
+    environment:
+      # 数据库配置
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-agentx}
+      DB_USER: ${DB_USER:-agentx_user}
+      DB_PASSWORD: ${DB_PASSWORD:-agentx_pass}
+      
+      # 应用配置
+      SERVER_PORT: 8080
+      FRONTEND_PORT: 3000
+      NEXT_PUBLIC_API_BASE_URL: /api
+      
+      # Spring 配置
+      SPRING_PROFILES_ACTIVE: prod
+      JPA_DDL_AUTO: update
+      SHOW_SQL: false
+      
+      # 用户配置
+      AGENTX_ADMIN_EMAIL: ${AGENTX_ADMIN_EMAIL:-admin@agentx.ai}
+      AGENTX_ADMIN_PASSWORD: ${AGENTX_ADMIN_PASSWORD:-admin123}
+      AGENTX_ADMIN_NICKNAME: ${AGENTX_ADMIN_NICKNAME:-AgentX管理员}
+      AGENTX_TEST_ENABLED: ${AGENTX_TEST_ENABLED:-false}
+      
+      # 消息队列配置
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: ${RABBITMQ_USERNAME:-guest}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
+      
+      # 安全配置
+      JWT_SECRET: ${JWT_SECRET:-please_change_this_in_production}
+      
+      # 日志配置
+      LOG_LEVEL_ROOT: warn
+      LOG_LEVEL_APP: info
+      
+      # 文件存储
+      FILE_STORAGE_PATH: /app/storage
+      
+    volumes:
+      - storage-data:/app/storage
+    ports:
+      - "${HTTP_PORT:-80}:80"
+    networks:
+      - agentx-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s

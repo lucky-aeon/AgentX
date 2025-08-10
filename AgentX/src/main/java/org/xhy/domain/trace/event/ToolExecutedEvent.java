@@ -20,7 +20,8 @@ public class ToolExecutedEvent extends ApplicationEvent {
         this.toolExecutionStartTime = LocalDateTime.now(); // 默认使用当前时间
     }
 
-    public ToolExecutedEvent(Object source, TraceContext traceContext, ToolCallInfo toolCallInfo, LocalDateTime toolExecutionStartTime) {
+    public ToolExecutedEvent(Object source, TraceContext traceContext, ToolCallInfo toolCallInfo,
+            LocalDateTime toolExecutionStartTime) {
         super(source);
         this.traceContext = traceContext;
         this.toolCallInfo = toolCallInfo;

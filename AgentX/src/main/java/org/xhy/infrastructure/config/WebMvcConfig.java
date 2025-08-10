@@ -28,8 +28,8 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         "/auth/config", // 认证配置接口
                         "/send-email-code", "/verify-email-code", "/get-captcha", "/reset-password",
                         "/send-reset-password-code", "/oauth/github/authorize", "/oauth/github/callback", "/sso/**", // SSO相关接口
-                        "/v1/**"); // 外部API接口，使用专门的API
-                                   // Key拦截器
+                        "/v1/**", "/payments/callback/**"); // 外部API接口，使用专门的API
+        // Key拦截器
 
         // 管理员权限拦截器，只拦截admin路径
         registry.addInterceptor(adminAuthInterceptor).addPathPatterns("/admin/**");

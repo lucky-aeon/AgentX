@@ -139,12 +139,15 @@ public class PortalLLMController {
 
     /** 获取所有激活模型
      * @param modelType 模型类型（可选），不传则查询所有类型
+     * @param official 是否只获取官方模型（可选），true-仅官方模型，false或不传-所有模型
      * @return 模型列表 */
     @GetMapping("/models")
-    public Result<List<ModelDTO>> getModels(@RequestParam(required = false) String modelType) {
+    public Result<List<ModelDTO>> getModels(@RequestParam(required = false) String modelType,
+            @RequestParam(required = false) Boolean official) {
         String userId = UserContext.getCurrentUserId();
         ModelType type = modelType != null ? ModelType.fromCode(modelType) : null;
-        return Result.success(llmAppService.getActiveModelsByType(ProviderType.ALL, userId, type));
+        ProviderType providerType = (official != null && official) ? ProviderType.OFFICIAL : ProviderType.ALL;
+        return Result.success(llmAppService.getActiveModelsByType(providerType, userId, type));
     }
 
     /** 获取用户默认的模型详情

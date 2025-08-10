@@ -277,8 +277,16 @@ public class AgentDomainService {
         return agent != null;
     }
 
-    /** 根据 agentIds 获取 agents /** 根据 agentIds 获取 agents */
+    /** 根据 agentIds 获取 agents */
     public List<AgentEntity> getAgentsByIds(List<String> agentIds) {
+        return agentRepository.selectByIds(agentIds);
+    }
+
+    /** 根据 agentIds 批量获取 agents (Set版本，用于业务信息映射优化) */
+    public List<AgentEntity> getAgentsByIds(Set<String> agentIds) {
+        if (agentIds == null || agentIds.isEmpty()) {
+            return Collections.emptyList();
+        }
         return agentRepository.selectByIds(agentIds);
     }
 

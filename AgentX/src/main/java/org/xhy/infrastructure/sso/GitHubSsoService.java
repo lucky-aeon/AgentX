@@ -17,10 +17,7 @@ import org.springframework.util.StringUtils;
 import org.xhy.domain.sso.model.SsoProvider;
 import org.xhy.domain.sso.model.SsoUserInfo;
 import org.xhy.domain.sso.service.SsoService;
-import org.xhy.infrastructure.config.GitHubOAuthProperties;
 import org.xhy.infrastructure.exception.BusinessException;
-import org.xhy.interfaces.dto.user.GitHubTokenResponse;
-import org.xhy.interfaces.dto.user.GitHubUserInfo;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -32,11 +29,9 @@ public class GitHubSsoService implements SsoService {
 
     private static final Logger logger = LoggerFactory.getLogger(GitHubSsoService.class);
 
-    private final GitHubOAuthProperties githubProperties;
     private final SsoConfigProvider ssoConfigProvider;
 
-    public GitHubSsoService(GitHubOAuthProperties githubProperties, SsoConfigProvider ssoConfigProvider) {
-        this.githubProperties = githubProperties;
+    public GitHubSsoService(SsoConfigProvider ssoConfigProvider) {
         this.ssoConfigProvider = ssoConfigProvider;
     }
 
@@ -52,27 +47,31 @@ public class GitHubSsoService implements SsoService {
     public SsoUserInfo getUserInfo(String authCode) {
         try {
             // 1. 获取访问令牌
-            GitHubTokenResponse tokenResponse = getAccessToken(authCode);
-            if (tokenResponse == null || !StringUtils.hasText(tokenResponse.getAccessToken())) {
+            String accessToken = getAccessToken(authCode);
+            if (!StringUtils.hasText(accessToken)) {
                 throw new BusinessException("获取GitHub访问令牌失败");
             }
 
             // 2. 获取用户信息
-            GitHubUserInfo userInfo = getGitHubUserInfo(tokenResponse.getAccessToken());
-            if (userInfo == null || userInfo.getId() == null) {
+            Map<String, Object> userInfo = getGitHubUserInfo(accessToken);
+            if (userInfo == null || userInfo.get("id") == null) {
                 throw new BusinessException("获取GitHub用户信息失败");
             }
 
             // 3. 如果用户邮箱为空，尝试获取用户主邮箱
-            if (!StringUtils.hasText(userInfo.getEmail())) {
-                String email = getPrimaryEmail(tokenResponse.getAccessToken());
-                userInfo.setEmail(email);
+            String email = (String) userInfo.get("email");
+            if (!StringUtils.hasText(email)) {
+                email = getPrimaryEmail(accessToken);
             }
 
             // 4. 转换为统一的SsoUserInfo
-            return new SsoUserInfo(String.valueOf(userInfo.getId()),
-                    userInfo.getName() != null ? userInfo.getName() : userInfo.getLogin(), userInfo.getEmail(),
-                    userInfo.getAvatarUrl(), "GitHub用户: " + userInfo.getLogin(), SsoProvider.GITHUB);
+            String name = (String) userInfo.get("name");
+            String login = (String) userInfo.get("login");
+            String avatarUrl = (String) userInfo.get("avatar_url");
+            Long id = ((Number) userInfo.get("id")).longValue();
+
+            return new SsoUserInfo(String.valueOf(id), name != null ? name : login, email, avatarUrl,
+                    "GitHub用户: " + login, SsoProvider.GITHUB);
 
         } catch (Exception e) {
             logger.error("GitHub SSO登录失败", e);
@@ -85,7 +84,7 @@ public class GitHubSsoService implements SsoService {
         return SsoProvider.GITHUB;
     }
 
-    private GitHubTokenResponse getAccessToken(String code) {
+    private String getAccessToken(String code) {
         SsoConfigProvider.GitHubSsoConfig config = getEffectiveConfig();
         try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
             HttpPost httpPost = new HttpPost(config.getTokenUrl());
@@ -109,7 +108,8 @@ public class GitHubSsoService implements SsoService {
                 HttpEntity entity = response.getEntity();
                 if (entity != null) {
                     String result = EntityUtils.toString(entity);
-                    return JSON.parseObject(result, GitHubTokenResponse.class);
+                    Map<String, Object> tokenResponse = JSON.parseObject(result, Map.class);
+                    return (String) tokenResponse.get("access_token");
                 }
             }
         } catch (IOException e) {
@@ -118,7 +118,7 @@ public class GitHubSsoService implements SsoService {
         return null;
     }
 
-    private GitHubUserInfo getGitHubUserInfo(String accessToken) {
+    private Map<String, Object> getGitHubUserInfo(String accessToken) {
         SsoConfigProvider.GitHubSsoConfig config = getEffectiveConfig();
         try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
             HttpGet httpGet = new HttpGet(config.getUserInfoUrl());
@@ -132,7 +132,7 @@ public class GitHubSsoService implements SsoService {
                 HttpEntity entity = response.getEntity();
                 if (entity != null) {
                     String result = EntityUtils.toString(entity);
-                    return JSON.parseObject(result, GitHubUserInfo.class);
+                    return JSON.parseObject(result, Map.class);
                 }
             }
         } catch (IOException e) {
@@ -168,27 +168,17 @@ public class GitHubSsoService implements SsoService {
         return null;
     }
 
-    /** 获取有效的配置（数据库优先，配置文件回退）
+    /** 获取有效的配置（仅从数据库读取）
      * 
      * @return 有效的GitHub配置 */
     private SsoConfigProvider.GitHubSsoConfig getEffectiveConfig() {
-        SsoConfigProvider.GitHubSsoConfig dbConfig = ssoConfigProvider.getGitHubConfig();
+        SsoConfigProvider.GitHubSsoConfig config = ssoConfigProvider.getGitHubConfig();
 
-        // 如果数据库配置完整，使用数据库配置
-        if (dbConfig.getClientId() != null && dbConfig.getClientSecret() != null) {
-            return dbConfig;
+        // 检查配置是否完整
+        if (config.getClientId() == null || config.getClientSecret() == null || config.getRedirectUri() == null) {
+            throw new BusinessException("GitHub SSO配置不完整，请在管理后台配置GitHub OAuth应用信息");
         }
 
-        // 否则回退到配置文件配置
-        SsoConfigProvider.GitHubSsoConfig fileConfig = new SsoConfigProvider.GitHubSsoConfig();
-        fileConfig.setClientId(githubProperties.getClientId());
-        fileConfig.setClientSecret(githubProperties.getClientSecret());
-        fileConfig.setRedirectUri(githubProperties.getRedirectUri());
-        fileConfig.setAuthorizeUrl(githubProperties.getAuthorizeUrl());
-        fileConfig.setTokenUrl(githubProperties.getTokenUrl());
-        fileConfig.setUserInfoUrl(githubProperties.getUserInfoUrl());
-        fileConfig.setUserEmailUrl(githubProperties.getUserEmailUrl());
-
-        return fileConfig;
+        return config;
     }
 }

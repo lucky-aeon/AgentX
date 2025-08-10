@@ -67,7 +67,8 @@ public class AgentExecutionTraceDomainService {
      * @param userMessage 用户消息内容
      * @param messageType 消息类型
      * @param eventTime 事件发生时间 */
-    public void recordUserMessage(TraceContext traceContext, String userMessage, String messageType, LocalDateTime eventTime) {
+    public void recordUserMessage(TraceContext traceContext, String userMessage, String messageType,
+            LocalDateTime eventTime) {
         if (!traceContext.isTraceEnabled()) {
             return;
         }
@@ -110,7 +111,8 @@ public class AgentExecutionTraceDomainService {
         }
 
         AgentExecutionDetailEntity detail = AgentExecutionDetailEntity.createUserMessageStepWithTokens(
-                traceContext.getTraceId(), traceContext.nextSequence(), userMessage, messageType, messageTokens, eventTime);
+                traceContext.getTraceId(), traceContext.nextSequence(), userMessage, messageType, messageTokens,
+                eventTime);
 
         detailRepository.insert(detail);
     }
@@ -156,7 +158,8 @@ public class AgentExecutionTraceDomainService {
      * @param aiResponse AI响应内容
      * @param modelCallInfo 模型调用信息
      * @param eventTime 事件发生时间（AI开始响应的时间） */
-    public void recordAiResponse(TraceContext traceContext, String aiResponse, ModelCallInfo modelCallInfo, LocalDateTime eventTime) {
+    public void recordAiResponse(TraceContext traceContext, String aiResponse, ModelCallInfo modelCallInfo,
+            LocalDateTime eventTime) {
         if (!traceContext.isTraceEnabled()) {
             return;
         }

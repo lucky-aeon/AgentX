@@ -1,101 +1,146 @@
-# AgentX All-in-One 镜像 - 终极版本
-# 真正的一键部署：前端 + 后端 + 数据库
+# AgentX一体化镜像 - 包含前端和后端
+# 用于生产环境部署和CI/CD构建
 
-# 多阶段构建 - 前端
+# 第一阶段：构建后端
+FROM maven:3.9.6-eclipse-temurin-17 AS backend-builder
+WORKDIR /build
+
+# 复制后端Maven配置
+COPY AgentX/pom.xml ./
+COPY AgentX/mvnw ./
+COPY AgentX/.mvn ./.mvn
+
+# 下载依赖（利用Docker缓存）
+RUN ./mvnw dependency:go-offline -B
+
+# 复制后端源代码并构建
+COPY AgentX/src ./src
+RUN ./mvnw clean package -DskipTests -B
+
+# 第二阶段：构建前端
 FROM node:18-alpine AS frontend-builder
-WORKDIR /app
+WORKDIR /build
+
+# 复制前端package文件
 COPY agentx-frontend-plus/package*.json ./
-RUN npm install --legacy-peer-deps
-COPY agentx-frontend-plus/ ./
-# 设置构建时环境变量
-ARG NEXT_PUBLIC_API_BASE_URL=http://localhost:8088/api
-ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
+
+# 安装依赖
+RUN npm ci --legacy-peer-deps --only=production
+
+# 复制前端源代码并构建
+COPY agentx-frontend-plus/ .
 RUN npm run build
 
-# 多阶段构建 - 后端
-FROM maven:3.9-eclipse-temurin-17 AS backend-builder
-WORKDIR /app
-COPY AgentX/pom.xml ./
-COPY AgentX/src ./src
-RUN mvn clean package -DskipTests
+# 第三阶段：运行时镜像
+FROM nginx:1.25-alpine
 
-# 最终运行镜像 - 基于 PostgreSQL 镜像
-FROM postgres:15-alpine
-
-# 安装 Node.js、OpenJDK 和 RabbitMQ
+# 安装必要工具
 RUN apk add --no-cache \
-    nodejs \
-    npm \
     openjdk17-jre \
     curl \
     bash \
-    supervisor \
-    rabbitmq-server
-
-# 设置 PostgreSQL 环境
-ENV POSTGRES_DB=agentx
-ENV POSTGRES_USER=agentx_user
-ENV POSTGRES_PASSWORD=agentx_pass
-ENV PGDATA=/var/lib/postgresql/data
-
-# 设置 RabbitMQ 环境
-ENV RABBITMQ_DEFAULT_USER=root
-ENV RABBITMQ_DEFAULT_PASS=zangzang
-ENV RABBITMQ_DEFAULT_VHOST=/
+    supervisor
 
 # 创建应用目录
 WORKDIR /app
 
-# 复制前端构建产物
-COPY --from=frontend-builder /app/.next/standalone /app/frontend/
-COPY --from=frontend-builder /app/.next/static /app/frontend/.next/static
-COPY --from=frontend-builder /app/public /app/frontend/public
+# 复制构建产物
+COPY --from=backend-builder /build/target/*.jar /app/backend.jar
+COPY --from=frontend-builder /build/.next/standalone /app/frontend/
+COPY --from=frontend-builder /build/.next/static /app/frontend/.next/static
+COPY --from=frontend-builder /build/public /app/frontend/public
+COPY --from=frontend-builder /build/package.json /app/frontend/
 
-# 复制后端 JAR 文件
-COPY --from=backend-builder /app/target/*.jar /app/backend.jar
+# 创建nginx配置
+RUN printf 'server {\n\
+    listen 80;\n\
+    \n\
+    location /api/ {\n\
+        proxy_pass http://localhost:8080/api/;\n\
+        proxy_set_header Host $host;\n\
+        proxy_set_header X-Real-IP $remote_addr;\n\
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n\
+        proxy_set_header X-Forwarded-Proto $scheme;\n\
+    }\n\
+    \n\
+    location / {\n\
+        proxy_pass http://localhost:3000/;\n\
+        proxy_set_header Host $host;\n\
+        proxy_set_header X-Real-IP $remote_addr;\n\
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n\
+        proxy_set_header X-Forwarded-Proto $scheme;\n\
+    }\n\
+}\n' > /etc/nginx/conf.d/default.conf
 
-# 创建数据库初始化脚本
-RUN mkdir -p /docker-entrypoint-initdb.d && \
-    printf '-- 创建用户\nCREATE USER agentx_user WITH PASSWORD '\''agentx_pass'\'';\nCREATE USER gateway_user WITH PASSWORD '\''gateway_pass'\'';\n\n-- 创建数据库\nCREATE DATABASE agentx OWNER agentx_user;\nCREATE DATABASE api_gateway OWNER gateway_user;\n\n-- 授权\nGRANT ALL PRIVILEGES ON DATABASE agentx TO agentx_user;\nGRANT ALL PRIVILEGES ON DATABASE api_gateway TO gateway_user;\n' > /docker-entrypoint-initdb.d/00-init-users.sql
-
-# 复制AgentX数据库schema
-COPY docs/sql/01_init.sql /docker-entrypoint-initdb.d/02-agentx-schema.sql
-
-# 创建切换数据库的脚本
-RUN printf '\\c agentx agentx_user;\n' > /docker-entrypoint-initdb.d/01-connect-agentx.sql
-
-# 创建AgentX应用配置文件模板
-RUN printf 'server:\n  port: ${SERVER_PORT:8088}\n  servlet:\n    context-path: /api\n\nspring:\n  application:\n    name: AgentX\n  datasource:\n    driver-class-name: org.postgresql.Driver\n    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:agentx}\n    username: ${DB_USERNAME:agentx_user}\n    password: ${DB_PASSWORD:agentx_pass}\n  jpa:\n    hibernate:\n      ddl-auto: ${JPA_DDL_AUTO:update}\n    show-sql: ${SHOW_SQL:false}\n\nmcp:\n  gateway:\n    api-key: ${MCP_API_KEY:123456}\n    base-url: ${MCP_BASE_URL:http://localhost:8005}\n\nhigh-availability:\n  enabled: ${HIGH_AVAILABILITY_ENABLED:false}\n  gateway:\n    url: ${HIGH_AVAILABILITY_GATEWAY_URL:http://localhost:8081}\n\nlogging:\n  level:\n    root: ${LOG_LEVEL_ROOT:info}\n    org.xhy: ${LOG_LEVEL_APP:debug}\n' > /app/application-allinone.yml
-
-# 创建API网关配置文件
-RUN printf 'server:\n  port: 8081\n\nspring:\n  application:\n    name: API-Premium-Gateway\n  datasource:\n    driver-class-name: org.postgresql.Driver\n    url: jdbc:postgresql://localhost:5432/api_gateway\n    username: gateway_user\n    password: gateway_pass\n  jpa:\n    hibernate:\n      ddl-auto: update\n    show-sql: false\n\nlogging:\n  level:\n    root: info\n' > /app/application-gateway.yml
-
-# 创建 supervisor 配置目录
+# 创建supervisor目录和主配置
 RUN mkdir -p /etc/supervisor/conf.d
+RUN printf '[supervisord]\n\
+nodaemon=true\n\
+user=root\n\
+\n\
+[unix_http_server]\n\
+file=/tmp/supervisor.sock\n\
+\n\
+[supervisorctl]\n\
+serverurl=unix:///tmp/supervisor.sock\n\
+\n\
+[rpcinterface:supervisor]\n\
+supervisor.rpcinterface_factory = supervisor.rpcinterface:make_main_rpcinterface\n\
+\n\
+[include]\n\
+files = /etc/supervisor/conf.d/*.conf\n' > /etc/supervisor/supervisord.conf
+RUN printf '[program:backend]\n\
+command=java -Xms512m -Xmx1024m -XX:+UseG1GC -jar /app/backend.jar\n\
+directory=/app\n\
+autostart=true\n\
+autorestart=true\n\
+priority=10\n\
+environment=SPRING_PROFILES_ACTIVE=prod\n\
+stdout_logfile=/var/log/supervisor/backend.log\n\
+stderr_logfile=/var/log/supervisor/backend.log\n\
+\n\
+[program:frontend]\n\
+command=node server.js\n\
+directory=/app/frontend\n\
+autostart=true\n\
+autorestart=true\n\
+priority=20\n\
+environment=NODE_ENV=production,PORT=3000,HOSTNAME=0.0.0.0\n\
+stdout_logfile=/var/log/supervisor/frontend.log\n\
+stderr_logfile=/var/log/supervisor/frontend.log\n\
+\n\
+[program:nginx]\n\
+command=/usr/sbin/nginx -g "daemon off;"\n\
+autostart=true\n\
+autorestart=true\n\
+priority=30\n\
+stdout_logfile=/var/log/supervisor/nginx.log\n\
+stderr_logfile=/var/log/supervisor/nginx.log\n' > /etc/supervisor/conf.d/agentx.conf
 
-# 创建智能启动脚本
-RUN printf '#!/bin/bash\n\necho "🚀 Starting AgentX All-in-One System"\necho "====================================="\n\n# 检测并加载配置文件\nif [ -f "/app/config/agentx.env" ]; then\n    echo "📄 Loading configuration from /app/config/agentx.env"\n    # 读取配置文件并导出变量\n    set -a\n    source /app/config/agentx.env\n    set +a\n    echo "✅ Configuration loaded successfully"\nelif [ -f "/app/config/agentx.conf" ]; then\n    echo "📄 Loading configuration from /app/config/agentx.conf"\n    set -a\n    source /app/config/agentx.conf\n    set +a\n    echo "✅ Configuration loaded successfully"\nelse\n    echo "📄 No configuration file found at /app/config/, using default settings"\nfi\n\n# 显示当前配置\necho "📊 Current configuration:"\necho "   DB_HOST: ${DB_HOST:-localhost}"\necho "   DB_PORT: ${DB_PORT:-5432}"\necho "   DB_NAME: ${DB_NAME:-agentx}"\necho "   DB_USERNAME: ${DB_USERNAME:-agentx_user}"\necho "   SERVER_PORT: ${SERVER_PORT:-8088}"\necho "   JPA_DDL_AUTO: ${JPA_DDL_AUTO:-update}"\necho "   LOG_LEVEL_ROOT: ${LOG_LEVEL_ROOT:-info}"\necho ""\n\n# 智能数据库模式检测\nif [ -n "$DB_HOST" ] && [ "$DB_HOST" != "localhost" ]; then\n    echo "🔗 External database mode: $DB_HOST:${DB_PORT:-5432}"\n    echo "📦 Skipping internal PostgreSQL initialization"\n    USE_EXTERNAL_DB=true\nelse\n    echo "🏠 Internal database mode"\n    USE_EXTERNAL_DB=false\nfi\n\n# 根据数据库模式生成supervisor配置\nif [ "$USE_EXTERNAL_DB" = "true" ]; then\n    # 外部数据库模式：只启动前端和后端\n    cat > /etc/supervisor/conf.d/supervisord.conf << EOF\n[supervisord]\nnodaemon=true\nuser=root\nlogfile=/dev/stdout\nlogfile_maxbytes=0\npidfile=/var/run/supervisord.pid\n\n[program:backend]\ncommand=java -jar /app/backend.jar --spring.config.additional-location=file:/app/application-allinone.yml\ndirectory=/app\nuser=root\nautostart=true\nautorestart=true\nstdout_logfile=/dev/fd/1\nstdout_logfile_maxbytes=0\nstderr_logfile=/dev/fd/2\nstderr_logfile_maxbytes=0\n\n[program:frontend]\ncommand=node server.js\ndirectory=/app/frontend\nuser=root\nautostart=true\nautorestart=true\nstdout_logfile=/dev/fd/1\nstdout_logfile_maxbytes=0\nstderr_logfile=/dev/fd/2\nstderr_logfile_maxbytes=0\nenvironment=PORT="3000",HOSTNAME="0.0.0.0"\nEOF\nelse\n    # 内置数据库模式：检查并初始化PostgreSQL\n    if [ ! -f "$PGDATA/postgresql.conf" ]; then\n        echo "🔧 Initializing PostgreSQL database..."\n        mkdir -p "$PGDATA"\n        chown postgres:postgres "$PGDATA"\n        su - postgres -c "initdb -D $PGDATA"\n        \n        echo "🔧 Starting PostgreSQL for initialization..."\n        su - postgres -c "pg_ctl -D $PGDATA -l /tmp/pg_init.log start"\n        \n        echo "⏳ Waiting for PostgreSQL to start..."\n        sleep 5\n        \n        echo "🔧 Running database initialization scripts..."\n        su - postgres -c "psql -f /docker-entrypoint-initdb.d/00-init-users.sql"\n        echo "🔧 Creating tables in agentx database..."\n        su - postgres -c "psql -d agentx -U agentx_user -f /docker-entrypoint-initdb.d/02-agentx-schema.sql"\n        \n        echo "🔧 Stopping PostgreSQL after initialization..."\n        su - postgres -c "pg_ctl -D $PGDATA stop"\n        sleep 3\n    fi\n    \n    # 使用原始的包含PostgreSQL的配置\n    cat > /etc/supervisor/conf.d/supervisord.conf << EOF\n[supervisord]\nnodaemon=true\nuser=root\nlogfile=/dev/stdout\nlogfile_maxbytes=0\npidfile=/var/run/supervisord.pid\n\n[program:postgres]\ncommand=postgres -D /var/lib/postgresql/data -c listen_addresses=*\nuser=postgres\nautostart=true\nautorestart=true\nstdout_logfile=/dev/fd/1\nstdout_logfile_maxbytes=0\nstderr_logfile=/dev/fd/2\nstderr_logfile_maxbytes=0\n\n[program:backend]\ncommand=java -jar /app/backend.jar --spring.config.additional-location=file:/app/application-allinone.yml\ndirectory=/app\nuser=root\nautostart=true\nautorestart=true\nstdout_logfile=/dev/fd/1\nstdout_logfile_maxbytes=0\nstderr_logfile=/dev/fd/2\nstderr_logfile_maxbytes=0\n\n[program:frontend]\ncommand=node server.js\ndirectory=/app/frontend\nuser=root\nautostart=true\nautorestart=true\nstdout_logfile=/dev/fd/1\nstdout_logfile_maxbytes=0\nstderr_logfile=/dev/fd/2\nstderr_logfile_maxbytes=0\nenvironment=PORT="3000",HOSTNAME="0.0.0.0"\nEOF\nfi\n\n# 创建日志目录\nmkdir -p /var/log/supervisor\n\necho "🎯 Starting services with supervisor..."\necho "📊 Configuration mode: $([ "$USE_EXTERNAL_DB" = "true" ] && echo "External Database" || echo "Internal Database")"\n\n# 启动 supervisor\nexec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf\n' > /app/start-agentx.sh
-
-RUN chmod +x /app/start-agentx.sh
-
-# 创建必要目录和设置权限
-RUN mkdir -p /var/lib/postgresql/data /var/log /app/config /var/lib/rabbitmq && \
-    chown -R postgres:postgres /var/lib/postgresql && \
-    chown -R rabbitmq:rabbitmq /var/lib/rabbitmq && \
-    chmod 755 /var/log && \
-    chmod 755 /app/config
+# 创建日志目录
+RUN mkdir -p /var/log/supervisor /app/logs /app/storage
 
 # 暴露端口
-EXPOSE 3000 8088 5432 5672 15672
+EXPOSE 80 8080 3000
 
 # 健康检查
-HEALTHCHECK --interval=30s --timeout=10s --start-period=180s --retries=3 \
-    CMD curl -f http://localhost:3000 && curl -f http://localhost:8088/api/health || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=3 \
+    CMD curl -f http://localhost:80/api/health || exit 1
 
-# 创建最终启动脚本，包含用户友好的输出
-RUN printf '#!/bin/bash\n\necho "🎉 Welcome to AgentX All-in-One!"\necho "================================"\necho ""\necho "🔧 Initializing system..."\n\n# 启动应用\n/app/start-agentx.sh &\nAPP_PID=$!\n\n# 等待服务启动\necho "⏳ Waiting for services to start (this may take 2-3 minutes)..."\nsleep 30\n\n# 检查服务状态\nfor i in {1..60}; do\n    if curl -s http://localhost:3000 >/dev/null 2>&1; then\n        echo ""\n        echo "✅ All services are ready!"\n        echo ""\n        echo "🌐 Access URLs:"\n        echo "   Frontend:  http://localhost:3000"\n        echo "   Backend:   http://localhost:8088/api"\n        echo "   Database:  postgresql://agentx_user:agentx_pass@localhost:5432/agentx"\n        echo ""\n        echo "👤 Default Accounts:"\n        echo "   Admin: admin@agentx.ai / admin123"\n        echo "   User:  test@agentx.ai / test123"\n        echo ""\n        echo "📚 Documentation: https://github.com/lucky-aeon/agentx"\n        echo "🆘 Support: https://github.com/lucky-aeon/agentx/issues"\n        echo ""\n        break\n    fi\n    \n    if [ $((i %% 10)) -eq 0 ]; then\n        echo "   Still starting... ($i/60)"\n    fi\n    sleep 3\ndone\n\n# 保持容器运行\nwait $APP_PID\n' > /docker-entrypoint.sh
+# 设置默认环境变量
+ENV SPRING_PROFILES_ACTIVE=prod \
+    NODE_ENV=production \
+    NEXT_PUBLIC_API_BASE_URL=http://localhost/api \
+    DB_HOST=localhost \
+    DB_PORT=5432 \
+    DB_NAME=agentx \
+    DB_USER=agentx_user \
+    DB_PASSWORD=agentx_pass \
+    RABBITMQ_HOST=localhost \
+    RABBITMQ_PORT=5672 \
+    RABBITMQ_USERNAME=guest \
+    RABBITMQ_PASSWORD=guest \
+    JWT_SECRET=agentx_jwt_secret_please_change_in_production
 
-RUN chmod +x /docker-entrypoint.sh
-
-# 设置入口点
-ENTRYPOINT ["/docker-entrypoint.sh"]
+# 启动命令
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf"]

@@ -61,7 +61,7 @@ public class SlidingWindowTokenOverflowStrategy implements TokenOverflowStrategy
         int totalTokens = 0;
 
         for (TokenMessage message : sortedMessages) {
-            int messageTokens = message.getTokenCount() != null ? message.getTokenCount() : 0;
+            int messageTokens = message.getBodyTokenCount() != null ? message.getBodyTokenCount() : 0;
             if (totalTokens + messageTokens <= availableTokens) {
                 retainedMessages.add(message);
                 totalTokens += messageTokens;

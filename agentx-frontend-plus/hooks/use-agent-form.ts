@@ -100,6 +100,43 @@ export function useAgentForm({ initialData, isEditMode = false }: UseAgentFormPr
     fetchInstalledTools();
   }, []);
 
+  // 清理 formData 中的无效工具ID（在已安装工具列表加载完成后）
+  useEffect(() => {
+    if (isEditMode && !isLoadingTools && installedTools.length > 0) {
+      const installedToolIds = installedTools.map(tool => tool.toolId).filter(Boolean);
+      
+      // 使用函数式更新来避免依赖数组中包含 formData.tools
+      setFormData(prev => {
+        const formToolIds = prev.tools.map(t => t.id);
+        
+        // 找出无效的工具ID
+        const invalidToolIds = formToolIds.filter(formToolId => !installedToolIds.includes(formToolId));
+        
+        if (invalidToolIds.length > 0) {
+          console.warn('[useAgentForm] 清理无效工具ID:', invalidToolIds);
+          
+          // 过滤出有效的工具
+          const validTools = prev.tools.filter(tool => installedToolIds.includes(tool.id));
+          
+          // 使用 setTimeout 延迟 toast 调用，避免在渲染期间调用
+          setTimeout(() => {
+            toast({
+              title: "工具配置已更新",
+              description: `已移除 ${invalidToolIds.length} 个无效的工具配置`,
+            });
+          }, 0);
+          
+          return {
+            ...prev,
+            tools: validTools
+          };
+        }
+        
+        return prev; // 没有无效工具，返回原状态
+      });
+    }
+  }, [isEditMode, isLoadingTools, installedTools, toast]);
+
   // 更新表单字段
   const updateFormField = (field: string, value: any) => {
     setFormData((prev) => ({
@@ -110,8 +147,25 @@ export function useAgentForm({ initialData, isEditMode = false }: UseAgentFormPr
 
   // 切换工具
   const toggleTool = (toolToToggle: Tool) => {
-    const toolIdentifier = toolToToggle.toolId || toolToToggle.id;
+    // 确保优先使用 toolId 作为工具的唯一标识符
+    const toolIdentifier = toolToToggle.toolId;
+    if (!toolIdentifier) {
+      console.error("工具缺少 toolId 字段:", toolToToggle);
+      toast({
+        title: "工具配置错误",
+        description: "工具缺少必要的标识符",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     const isToolCurrentlyEnabled = formData.tools.some(t => t.id === toolIdentifier);
+    console.log('[toggleTool] 切换工具:', {
+      toolName: toolToToggle.name,
+      toolId: toolIdentifier,
+      currentlyEnabled: isToolCurrentlyEnabled,
+      action: isToolCurrentlyEnabled ? '禁用' : '启用'
+    });
     
     setFormData((prev) => {
       let updatedTools: AgentTool[];
@@ -119,12 +173,14 @@ export function useAgentForm({ initialData, isEditMode = false }: UseAgentFormPr
         updatedTools = prev.tools.filter((t) => t.id !== toolIdentifier);
       } else {
         const newAgentTool: AgentTool = {
-          id: toolIdentifier,
+          id: toolIdentifier, // 使用 toolId 作为 id
           name: toolToToggle.name,
           description: toolToToggle.description || undefined,
         };
         updatedTools = [...prev.tools, newAgentTool];
       }
+      
+      console.log('[toggleTool] 更新后的工具列表:', updatedTools);
       return { ...prev, tools: updatedTools };
     });
     
@@ -180,11 +236,11 @@ export function useAgentForm({ initialData, isEditMode = false }: UseAgentFormPr
 
   // 更新工具预设参数
   const updateToolPresetParameters = (toolId: string, presetParams: Record<string, Record<string, string>>) => {
-    // 获取当前工具信息
-    const selectedTool = installedTools.find((t: Tool) => t.id === toolId || t.toolId === toolId);
+    // 获取当前工具信息，优先使用 toolId 匹配
+    const selectedTool = installedTools.find((t: Tool) => t.toolId === toolId);
     
     if (!selectedTool || !selectedTool.mcpServerName) {
-      console.error("无法找到对应的工具或工具缺少 mcpServerName");
+      console.error("无法找到对应的工具或工具缺少 mcpServerName，查找的 toolId:", toolId);
       toast({
         title: "无法更新工具参数",
         description: "工具信息不完整",

@@ -152,7 +152,7 @@ public class HighAvailabilityDomainServiceImpl implements HighAvailabilityDomain
             ModelEntity bestModel = llmDomainService.getModelById(businessId);
 
             // 返回最佳模型对应的Provider
-            ProviderEntity provider = llmDomainService.getProvider(bestModel.getProviderId(), userId);
+            ProviderEntity provider = llmDomainService.getProvider(bestModel.getProviderId());
 
             logger.info("通过高可用网关选择Provider成功: modelId={}, bestBusinessId={}, providerId={}, sessionId={}",
                     model.getId(), businessId, provider.getId(), sessionId);

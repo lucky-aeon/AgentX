@@ -16,6 +16,58 @@ AgentX 是一个基于大模型 (LLM) 和多能力平台 (MCP) 的智能 Agent �
 - 📖 **详细教学**: [敲鸭社区 - code.xhyovo.cn](https://code.xhyovo.cn/)
 - 🎯 **项目演示**: [在线PPT介绍](https://needless-comparison.surge.sh)
 
+## 🚀 快速开始
+
+### 🐳 生产环境部署（推荐）
+适用于想要快速体验或部署生产环境的用户，**无需下载源码**：
+
+```bash
+# 一键启动（包含数据库、消息队列）
+docker run -d \
+  --name agentx \
+  -p 80:80 \
+  ghcr.io/lucky-aeon/agentx:latest
+```
+
+#### 自定义配置启动
+如需自定义配置，可使用配置文件方式：
+
+```bash
+# 1. 创建 .env 配置文件
+# 2. 使用配置文件启动
+docker run -d \
+  --name agentx \
+  -p 80:80 \
+  --env-file .env \
+  ghcr.io/lucky-aeon/agentx:latest
+```
+
+**访问地址**：http://localhost
+
+**默认账号**：
+- 管理员：`admin@agentx.ai` / `admin123`
+
+### 👨‍💻 开发环境部署
+适用于需要修改代码或定制功能的开发者：
+
+```bash
+# 1. 克隆项目
+git clone https://github.com/lucky-aeon/AgentX.git
+cd AgentX/deploy
+
+# 2. 启动开发环境（Linux/macOS）
+./start.sh
+
+# 2. 启动开发环境（Windows）
+start.bat
+```
+
+**开发环境特色**：
+- 🔥 代码热重载
+- 🛠 数据库管理工具
+- 🐛 调试端口开放
+- 📊 详细开发日志
+
 ## ⏳ 功能
  - [x] Agent 管理（创建/发布）
  - [x] LLM 上下文管理（滑动窗口，摘要算法）
@@ -30,243 +82,110 @@ AgentX 是一个基于大模型 (LLM) 和多能力平台 (MCP) 的智能 Agent �
  - [x] Agent OpenAPI
  - [x] 模型高可用组件
  - [x] RAG
- - [ ] 计费
+ - [x] 计费
  - [ ] Multi Agent
  - [ ] Agent 监控
  - [ ] 知识图谱
  - [ ] 长期记忆 
  
-## 🚀 如何安装启动
+## ⚙️ 环境变量配置
 
-### 🛠️ 环境准备
+AgentX支持通过环境变量进行灵活配置。创建 `.env` 文件：
 
-#### 必需环境
-  * **Docker & Docker Compose**: 用于容器化部署（推荐）
-  * **Git**: 用于克隆项目和子模块
-
-#### 本地开发环境（可选）
-  * **Node.js & npm**: 推荐使用 LTS 版本
-  * **Java Development Kit (JDK)**: JDK 17 或更高版本
-
-#### 系统支持
-  * **Linux**: 完全支持（推荐）
-  * **macOS**: 完全支持
-  * **Windows**: 完全支持（Windows 10/11 + WSL2 或原生支持）
-
-### 🐳 All-in-One Docker 部署（最简单）
-
-**🎯 真正的一键部署**：前端 + 后端 + 数据库，一个容器搞定！
-
-#### 🚀 快速启动（使用预构建镜像）
-```bash
-# 直接拉取并启动（最快方式）
-docker pull ghcr.io/lucky-aeon/agentx:latest
-docker run -d --name agentx -p 3000:3000 -p 8088:8088 ghcr.io/lucky-aeon/agentx:latest
-
-# 查看启动日志
-docker logs agentx -f
+### 🗄️ 数据库配置
+```env
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=agentx
+DB_USER=postgres
+DB_PASSWORD=your_secure_password
 ```
 
-#### 🔨 本地构建启动
-```bash
-# 克隆仓库并构建
-git clone https://github.com/lucky-aeon/AgentX.git
-cd AgentX
-docker build -f Dockerfile.allinone -t agentx:latest .
-docker run -d --name agentx -p 3000:3000 -p 8088:8088 agentx:latest
+### 🐰 消息队列配置
+```env
+RABBITMQ_HOST=localhost
+RABBITMQ_PORT=5672
+RABBITMQ_USERNAME=guest
+RABBITMQ_PASSWORD=your_rabbitmq_password
 ```
 
-#### 📁 使用配置文件部署（推荐生产环境）
-```bash
-# 1. 获取配置文件模板
-curl -O https://raw.githubusercontent.com/lucky-aeon/AgentX/master/config-templates/production.env
-mv production.env agentx.env
-vim ./agentx.env  # 编辑配置
-
-# 2. 启动容器（使用预构建镜像）
-docker run -d \
-  --name agentx-prod \
-  -p 3000:3000 \
-  -p 8088:8088 \
-  -v $(pwd)/agentx.env:/app/config/agentx.env:ro \
-  ghcr.io/lucky-aeon/agentx:latest
+### 👤 系统用户配置
+```env
+AGENTX_ADMIN_EMAIL=admin@agentx.ai
+AGENTX_ADMIN_PASSWORD=admin123
+AGENTX_ADMIN_NICKNAME=AgentX管理员
+AGENTX_TEST_ENABLED=true
+AGENTX_TEST_EMAIL=test@agentx.ai
+AGENTX_TEST_PASSWORD=test123
 ```
 
-#### 🔗 外部数据库模式
-```bash
-# 1. 创建Docker网络
-docker network create agentx-network
-
-# 2. 启动PostgreSQL（如果需要）
-docker run -d \
-  --name postgres-db \
-  --network agentx-network \
-  -e POSTGRES_DB=agentx \
-  -e POSTGRES_USER=agentx_user \
-  -e POSTGRES_PASSWORD=your_password \
-  -p 5432:5432 \
-  postgres:15
-
-# 3. 配置外部数据库
-curl -O https://raw.githubusercontent.com/lucky-aeon/AgentX/master/config-templates/external-database.env
-mv external-database.env agentx.env
-# 编辑 agentx.env，设置 DB_HOST=postgres-db
-
-# 4. 启动AgentX容器
-docker run -d \
-  --name agentx-external \
-  --network agentx-network \
-  -p 3000:3000 \
-  -p 8088:8088 \
-  -v $(pwd)/agentx.env:/app/config/agentx.env:ro \
-  ghcr.io/lucky-aeon/agentx:latest
+### 📧 邮件服务配置（可选）
+```env
+MAIL_SMTP_HOST=smtp.qq.com
+MAIL_SMTP_PORT=587
+MAIL_SMTP_USERNAME=your_email@qq.com
+MAIL_SMTP_PASSWORD=your_email_password
 ```
 
-#### 📋 访问地址
-- **前端界面**: http://localhost:3000
-- **后端API**: http://localhost:8088/api/health
-- **管理后台**: http://localhost:3000/admin
+### 💳 支付配置（可选）
+```env
+# 支付宝配置
+ALIPAY_APP_ID=your_alipay_app_id
+ALIPAY_PRIVATE_KEY=your_alipay_private_key
+ALIPAY_PUBLIC_KEY=your_alipay_public_key
 
-#### 🔐 默认账号
-| 角色 | 邮箱 | 密码 |
-|------|------|------|
-| 管理员 | admin@agentx.ai | admin123 |
-| 测试用户 | test@agentx.ai | test123 |
-
-#### 📖 详细配置说明
-查看 [config-templates/README.md](config-templates/README.md) 获取完整的配置选项和部署指南。
-
----
-
-### 🐳 开发模式部署
-
-#### 🔥 开发模式
-
-**最佳开发体验**：代码修改自动重启容器，无需手动操作！
-
-##### Linux/macOS 用户
-```bash
-# 克隆仓库
-git clone https://github.com/lucky-aeon/AgentX.git
-cd AgentX
-
-# 一键启动开发模式（包含热更新功能）
-./bin/start-dev.sh
+# Stripe配置
+STRIPE_SECRET_KEY=your_stripe_secret_key
+STRIPE_PUBLISHABLE_KEY=your_stripe_publishable_key
+STRIPE_WEBHOOK_SECRET=your_stripe_webhook_secret
 ```
 
-##### Windows 用户
-```cmd
-# 克隆仓库
-git clone https://github.com/lucky-aeon/AgentX.git
-cd AgentX
-
-# 一键启动开发模式（包含热更新功能）
-bin\start-dev.bat
+### 🔗 GitHub集成配置（可选）
+```env
+GITHUB_REPO_NAME=agent-mcp-community
+GITHUB_USERNAME=your_github_username
+GITHUB_TOKEN=your_github_token
 ```
 
-#### 🏭 生产模式
-
-##### Linux/macOS 用户
-```bash
-# 生产环境启动
-./bin/start.sh
+### 🔐 OAuth配置（可选）
+```env
+GITHUB_CLIENT_ID=your_github_client_id
+GITHUB_CLIENT_SECRET=your_github_client_secret
+GITHUB_REDIRECT_URI=https://your-domain/oauth/github/callback
+```
+### ☁️ 对象存储配置（可选）
+```env
+# AWS S3
+S3_SECRET_ID=your_s3_access_key
+S3_SECRET_KEY=your_s3_secret_key
+S3_REGION=us-east-1
+S3_ENDPOINT=https://s3.amazonaws.com
+S3_BUCKET_NAME=your_bucket
 ```
 
-##### Windows 用户
-```cmd
-# 生产环境启动
-bin\start.bat
+
+
+### 💳 支付配置（可选）
+```env
+# 支付宝配置
+ALIPAY_APP_ID=your_alipay_app_id
+ALIPAY_PRIVATE_KEY=your_alipay_private_key
+ALIPAY_PUBLIC_KEY=your_alipay_public_key
+
+# Stripe配置
+STRIPE_SECRET_KEY=your_stripe_secret_key
+STRIPE_PUBLISHABLE_KEY=your_stripe_publishable_key
 ```
 
-### 📋 开发模式服务地址
+<details>
+<summary>查看完整环境变量列表</summary>
 
-开发模式启动成功后，您可以通过以下地址访问服务：
+包含高可用网关、向量数据库等更多配置选项，请查看完整的 `application.yml` 文件了解所有可配置参数。
 
-- **前端应用**: http://localhost:3000
-- **后端API**: http://localhost:8080  
-- **API网关**: http://localhost:8081
-- **数据库连接**: localhost:5432
+</details>
 
-⚠️ **安全提示**：首次登录后请立即修改默认密码，生产环境请删除测试账号。
 
-### 🛠️ 开发管理命令
 
-#### Linux/macOS 用户
-```bash
-# 查看服务状态
-docker compose -f docker-compose.dev.yml ps
-
-# 停止所有服务（保留容器）
-./bin/stop.sh
-
-# 删除所有容器
-docker compose -f docker-compose.dev.yml down
-
-# 查看服务日志
-docker compose -f docker-compose.dev.yml logs -f [服务名]
-
-# 重启特定服务
-docker compose -f docker-compose.dev.yml restart [服务名]
-```
-
-#### Windows 用户
-```cmd
-# 查看服务状态
-docker compose -f docker-compose.dev.yml ps
-
-# 停止所有服务（保留容器）
-bin\stop.bat
-
-# 删除所有容器
-docker compose -f docker-compose.dev.yml down
-
-# 查看服务日志
-docker compose -f docker-compose.dev.yml logs -f [服务名]
-
-# 重启特定服务
-docker compose -f docker-compose.dev.yml restart [服务名]
-```
-
-### 📝 开发模式说明
-
-开发模式启动后会显示以下信息并询问是否启动文件监听：
-
-```
-🔥 是否立即启动文件监听？(推荐)
-  - 启动后修改代码会自动重启容器
-  - 可随时按 Ctrl+C 停止监听
-启动文件监听? [Y/n] (默认: Y):
-```
-
-- **选择 Y**：启动文件监听，修改代码自动生效
-- **选择 n**：跳过文件监听，需要手动重启服务
-
-### 💻 本地开发启动（传统方式）
-
-如果您更喜欢传统的本地开发方式：
-
-#### 1\. 启动数据库
-
-```bash
-cd script
-chmod +x setup_with_compose.sh
-./setup_with_compose.sh
-```
-
-#### 2\. 启动后端服务
-
-```bash
-cd AgentX
-./mvn spring-boot:run
-```
-
-#### 3\. 启动前端服务
-
-```bash
-cd agentx-frontend-plus
-npm install --legacy-peer-deps
-npm run dev
-```
 
 ## 功能介绍
 
@@ -301,4 +220,3 @@ npm run dev
 ---
 
 **如果二维码过期或无法扫描，请通过私人微信联系我。**
-

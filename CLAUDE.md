@@ -368,7 +368,7 @@ export class ExampleApiService {
 
 ## Service Access
 - **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:8080  
+- **Backend API**: http://localhost:8088  
 - **API Gateway**: http://localhost:8081
 - **Database**: localhost:5432
 

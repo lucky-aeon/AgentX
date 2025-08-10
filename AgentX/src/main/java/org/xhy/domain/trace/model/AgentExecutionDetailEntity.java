@@ -166,7 +166,8 @@ public class AgentExecutionDetailEntity extends BaseEntity {
 
     /** 创建AI响应步骤（带时间戳） */
     public static AgentExecutionDetailEntity createAiResponseStep(String traceId, Integer sequenceNo, String aiResponse,
-            String modelId, String providerName, Integer messageTokens, Integer modelCallTime, BigDecimal stepCost, LocalDateTime eventTime) {
+            String modelId, String providerName, Integer messageTokens, Integer modelCallTime, BigDecimal stepCost,
+            LocalDateTime eventTime) {
         AgentExecutionDetailEntity entity = new AgentExecutionDetailEntity();
         entity.setTraceId(traceId);
         entity.setSequenceNo(sequenceNo);

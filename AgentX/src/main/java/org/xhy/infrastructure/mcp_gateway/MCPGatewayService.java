@@ -65,7 +65,7 @@ public class MCPGatewayService {
      * @return 用户容器SSE URL */
     public String buildUserContainerUrl(String mcpServerName, String containerIp, Integer containerPort) {
         String containerBaseUrl = "http://" + containerIp + ":" + containerPort;
-        return containerBaseUrl + "/" + mcpServerName + "/sse/sse?api_key=" + properties.getApiKey();
+        return containerBaseUrl + "/" + mcpServerName + "/sse?api_key=" + properties.getApiKey();
     }
 
     /** 构建全局工具SSE URL（纯技术方法）
@@ -73,7 +73,7 @@ public class MCPGatewayService {
      * @param mcpServerName 工具服务名称
      * @return 全局工具SSE URL */
     public String buildGlobalSSEUrl(String mcpServerName) {
-        return properties.getBaseUrl() + "/" + mcpServerName + "/sse/sse?api_key=" + properties.getApiKey();
+        return properties.getBaseUrl() + "/" + mcpServerName + "/sse?api_key=" + properties.getApiKey();
     }
 
     /** 部署工具到MCP Gateway
@@ -115,7 +115,7 @@ public class MCPGatewayService {
                 if (statusCode >= 200 && statusCode < 300 && responseBody != null) {
                     Map result = JsonUtils.parseObject(responseBody, Map.class);
                     logger.info("部署响应: {}", result);
-                    return result.containsKey("status") && "success".equals(result.get("status"));
+                    return result.containsKey("success");
                 } else {
                     String errorMsg = String.format("工具部署失败，状态码: %d，响应: %s", statusCode, responseBody);
                     logger.error(errorMsg);

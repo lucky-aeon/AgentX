@@ -99,8 +99,12 @@ const AgentToolsForm: React.FC<AgentToolsFormProps> = ({
 
   // 检查工具是否被选中
   const isToolSelected = (tool: Tool): boolean => {
-    const toolIdentifier = tool.toolId || tool.id;
-    return formData.tools.some(selectedTool => selectedTool.id === toolIdentifier);
+    // 确保使用 toolId 作为工具的唯一标识符进行匹配
+    if (!tool.toolId) {
+      console.warn("工具缺少 toolId 字段:", tool);
+      return false;
+    }
+    return formData.tools.some(selectedTool => selectedTool.id === tool.toolId);
   };
 
   return (

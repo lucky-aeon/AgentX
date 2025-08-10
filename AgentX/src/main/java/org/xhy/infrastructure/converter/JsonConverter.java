@@ -28,10 +28,11 @@ public class JsonConverter extends BaseTypeHandler<Object> {
             throws SQLException {
         try {
             String json = objectMapper.writeValueAsString(parameter);
-            ps.setString(i, json);
+            // 对于PostgreSQL的JSONB类型，需要使用setObject而不是setString
+            ps.setObject(i, json, java.sql.Types.OTHER);
         } catch (JsonProcessingException e) {
             logger.error("JSON序列化失败", e);
-            ps.setString(i, null);
+            throw new SQLException("JSON序列化失败", e);
         }
     }
 

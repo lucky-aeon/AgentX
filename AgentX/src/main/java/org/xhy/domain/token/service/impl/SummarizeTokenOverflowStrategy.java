@@ -68,10 +68,10 @@ public class SummarizeTokenOverflowStrategy implements TokenOverflowStrategy {
 
         // 生成摘要消息
         String summary = generateSummary(messagesToSummarize, tokenOverflowConfig);
-        summaryMessage = createSummaryMessage(summary);
-
-        // 将摘要消息添加到保留消息列表的开头
-        retainedMessages.add(0, summaryMessage);
+        // summaryMessage = createSummaryMessage(summary);
+        //
+        // // 将摘要消息添加到保留消息列表的开头
+        // retainedMessages.add(0, summaryMessage);
 
         // 创建结果对象
         TokenProcessResult result = new TokenProcessResult();

@@ -1,0 +1,33 @@
+# AgentX后端开发环境Dockerfile
+FROM openjdk:17-jdk-slim
+
+# 开发环境不安装额外工具，直接使用Java基础镜像
+
+# 设置工作目录
+WORKDIR /app
+
+# 复制Maven包装器和配置
+COPY AgentX/mvnw .
+COPY AgentX/.mvn .mvn
+COPY AgentX/pom.xml .
+
+# 下载依赖
+RUN ./mvnw dependency:go-offline -B
+
+# 复制源代码
+COPY AgentX/src src
+
+# 创建日志和存储目录
+RUN mkdir -p logs storage
+
+# 暴露端口
+EXPOSE 8080
+
+# 开发环境JVM参数（启用调试和热重载）
+ENV JAVA_OPTS="-Xms256m -Xmx512m -Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=*:5005 -Dspring.devtools.restart.enabled=true"
+
+# 暴露调试端口
+EXPOSE 5005
+
+# 开发模式启动（支持热重载）
+CMD ["./mvnw", "spring-boot:run", "-Dspring-boot.run.jvmArguments=${JAVA_OPTS}"]

@@ -21,7 +21,9 @@
       "Bash(/Users/xhy/course/AgentX/AgentX/mvn -f /Users/xhy/course/AgentX/AgentX/pom.xml clean compile)",
       "Bash(curl:*)",
       "Bash(docker exec:*)",
-      "Bash(docker start:*)"
+      "Bash(docker start:*)",
+      "Bash(/Users/xhy/course/AgentX/AgentX/mvn clean compile)",
+      "Bash(/Users/xhy/course/AgentX/AgentX/mvnw -f /Users/xhy/course/AgentX/AgentX/pom.xml clean compile)"
     ],
     "deny": []
   }

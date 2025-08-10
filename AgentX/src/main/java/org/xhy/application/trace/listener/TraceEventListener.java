@@ -26,18 +26,16 @@ public class TraceEventListener {
     @EventListener
     public void handleExecutionStarted(ExecutionStartedEvent event) {
         try {
-            logger.debug("执行开始 - TraceId: {}, SessionId: {}, AgentId: {}, MessageTime: {}", 
-                    event.getTraceContext().getTraceId(),
-                    event.getTraceContext().getSessionId(), 
-                    event.getTraceContext().getAgentId(),
-                    event.getUserMessageTime());
+            logger.debug("执行开始 - TraceId: {}, SessionId: {}, AgentId: {}, MessageTime: {}",
+                    event.getTraceContext().getTraceId(), event.getTraceContext().getSessionId(),
+                    event.getTraceContext().getAgentId(), event.getUserMessageTime());
 
             // 保存用户消息到数据库，使用事件中的实际时间戳
             traceDomainService.recordUserMessage(event.getTraceContext(), event.getUserMessage(),
                     event.getMessageType(), event.getUserMessageTime());
 
-            logger.debug("用户消息已保存 - TraceId: {}, MessageTime: {}", 
-                    event.getTraceContext().getTraceId(), event.getUserMessageTime());
+            logger.debug("用户消息已保存 - TraceId: {}, MessageTime: {}", event.getTraceContext().getTraceId(),
+                    event.getUserMessageTime());
 
         } catch (Exception e) {
             logger.error("处理执行开始事件失败 - TraceId: {}", event.getTraceContext().getTraceId(), e);
@@ -60,25 +58,24 @@ public class TraceEventListener {
                 // 假设用户消息时间比AI响应开始时间稍早，这里使用AI响应时间减去一些时间作为估算
                 // 在实际实现中，应该在ExecutionStartedEvent中传递正确的用户消息时间
                 LocalDateTime userMessageTime = event.getAiResponseStartTime().minusSeconds(1);
-                
+
                 traceDomainService.recordUserMessageWithTokens(event.getTraceContext(),
                         event.getTraceContext().getUserMessage(), event.getTraceContext().getUserMessageType(),
                         event.getModelCallInfo().getInputTokens(), // 用户消息使用输入Token数
-                        userMessageTime
-                );
+                        userMessageTime);
 
-                logger.debug("用户消息已保存 - TraceId: {}, InputTokens: {}, MessageTime: {}", 
-                        event.getTraceContext().getTraceId(),
-                        event.getModelCallInfo().getInputTokens(), userMessageTime);
+                logger.debug("用户消息已保存 - TraceId: {}, InputTokens: {}, MessageTime: {}",
+                        event.getTraceContext().getTraceId(), event.getModelCallInfo().getInputTokens(),
+                        userMessageTime);
             }
 
             // 保存AI响应到数据库，使用事件中的AI响应开始时间
             traceDomainService.recordAiResponse(event.getTraceContext(), event.getAiResponse(),
                     event.getModelCallInfo(), event.getAiResponseStartTime());
 
-            logger.debug("AI响应已保存 - TraceId: {}, Success: {}, ResponseStartTime: {}", 
-                    event.getTraceContext().getTraceId(),
-                    event.getModelCallInfo().getSuccess(), event.getAiResponseStartTime());
+            logger.debug("AI响应已保存 - TraceId: {}, Success: {}, ResponseStartTime: {}",
+                    event.getTraceContext().getTraceId(), event.getModelCallInfo().getSuccess(),
+                    event.getAiResponseStartTime());
 
         } catch (Exception e) {
             logger.error("处理模型调用事件失败 - TraceId: {}", event.getTraceContext().getTraceId(), e);
@@ -95,13 +92,12 @@ public class TraceEventListener {
                     event.getToolExecutionStartTime());
 
             // 保存工具调用到数据库，使用事件中的工具执行开始时间
-            traceDomainService.recordToolCall(event.getTraceContext(), event.getToolCallInfo(), 
+            traceDomainService.recordToolCall(event.getTraceContext(), event.getToolCallInfo(),
                     event.getToolExecutionStartTime());
 
-            logger.debug("工具调用已保存 - TraceId: {}, ToolName: {}, Success: {}, StartTime: {}", 
-                    event.getTraceContext().getTraceId(),
-                    event.getToolCallInfo().getToolName(), event.getToolCallInfo().getSuccess(),
-                    event.getToolExecutionStartTime());
+            logger.debug("工具调用已保存 - TraceId: {}, ToolName: {}, Success: {}, StartTime: {}",
+                    event.getTraceContext().getTraceId(), event.getToolCallInfo().getToolName(),
+                    event.getToolCallInfo().getSuccess(), event.getToolExecutionStartTime());
 
         } catch (Exception e) {
             logger.error("处理工具执行事件失败 - TraceId: {}", event.getTraceContext().getTraceId(), e);
