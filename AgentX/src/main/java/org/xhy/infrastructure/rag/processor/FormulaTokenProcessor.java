@@ -69,7 +69,6 @@ public class FormulaTokenProcessor implements MarkdownTokenProcessor {
         return 10; // 高优先级，优先处理公式
     }
 
-
     /** 检查文本是否包含数学公式 */
     private boolean containsMathFormula(String text) {
         return INLINE_MATH_PATTERN.matcher(text).find() || BLOCK_MATH_PATTERN.matcher(text).find();

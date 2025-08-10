@@ -16,10 +16,7 @@ import org.xhy.infrastructure.llm.protocol.enums.ProviderProtocol;
 
 /** 表格增强器
  * 
- * 职责：
- * - 对表格类型的段落进行LLM分析增强
- * - 生成表格内容的自然语言描述
- * - 提取表格中的关键信息和数据趋势
+ * 职责： - 对表格类型的段落进行LLM分析增强 - 生成表格内容的自然语言描述 - 提取表格中的关键信息和数据趋势
  * 
  * @author claude */
 @Component
@@ -30,8 +27,7 @@ public class TableEnhancer implements SegmentEnhancer {
     @Override
     public boolean canEnhance(ProcessedSegment segment) {
         // 检查是否包含表格类型的特殊节点
-        return segment.hasSpecialNodes() && 
-               segment.getSpecialNodeCount(SegmentType.TABLE) > 0;
+        return segment.hasSpecialNodes() && segment.getSpecialNodeCount(SegmentType.TABLE) > 0;
     }
 
     @Override
@@ -51,7 +47,7 @@ public class TableEnhancer implements SegmentEnhancer {
             }
 
             log.debug("Enhanced segment with {} table nodes", segment.getSpecialNodeCount(SegmentType.TABLE));
-            
+
             return segment;
 
         } catch (Exception e) {
@@ -60,7 +56,7 @@ public class TableEnhancer implements SegmentEnhancer {
             return segment;
         }
     }
-    
+
     /** 增强单个表格节点 */
     private void enhanceTableNode(SpecialNode node, ProcessingContext context) {
         try {
@@ -68,15 +64,14 @@ public class TableEnhancer implements SegmentEnhancer {
             String tableAnalysis = analyzeTableWithLLM(node.getOriginalContent(), context);
 
             // 增强内容：保留原始表格 + 添加LLM分析
-            String enhancedContent = String.format("%s\n\n表格分析：%s", 
-                                                  node.getOriginalContent(), tableAnalysis);
-            
+            String enhancedContent = String.format("%s\n\n表格分析：%s", node.getOriginalContent(), tableAnalysis);
+
             // 更新特殊节点的增强内容
             node.setEnhancedContent(enhancedContent);
             node.markAsProcessed();
 
-            log.debug("Enhanced table node: original_length={}, enhanced_length={}", 
-                     node.getOriginalContent().length(), enhancedContent.length());
+            log.debug("Enhanced table node: original_length={}, enhanced_length={}", node.getOriginalContent().length(),
+                    enhancedContent.length());
 
         } catch (Exception e) {
             log.warn("Failed to enhance individual table node: {}", e.getMessage());
@@ -128,13 +123,13 @@ public class TableEnhancer implements SegmentEnhancer {
     /** 生成回退描述（LLM不可用时） */
     private String generateFallbackTableDescription(String tableContent) {
         StringBuilder description = new StringBuilder();
-        
+
         // 分析表格基本信息
         String[] lines = tableContent.split("\n");
         int totalLines = lines.length;
         int dataRows = 0;
         int columns = 0;
-        
+
         // 简单解析表格结构
         for (String line : lines) {
             line = line.trim();
@@ -149,7 +144,7 @@ public class TableEnhancer implements SegmentEnhancer {
                 }
             }
         }
-        
+
         description.append("表格包含");
         if (dataRows > 0) {
             description.append(dataRows).append("行数据");
@@ -157,7 +152,7 @@ public class TableEnhancer implements SegmentEnhancer {
         if (columns > 0) {
             description.append("，").append(columns).append("列信息");
         }
-        
+
         // 检测表格内容特征
         String lowerContent = tableContent.toLowerCase();
         if (lowerContent.contains("name") || lowerContent.contains("姓名")) {
@@ -166,10 +161,11 @@ public class TableEnhancer implements SegmentEnhancer {
         if (lowerContent.contains("date") || lowerContent.contains("时间") || lowerContent.contains("日期")) {
             description.append("，包含时间数据");
         }
-        if (lowerContent.contains("price") || lowerContent.contains("金额") || lowerContent.contains("￥") || lowerContent.contains("$")) {
+        if (lowerContent.contains("price") || lowerContent.contains("金额") || lowerContent.contains("￥")
+                || lowerContent.contains("$")) {
             description.append("，包含价格信息");
         }
-        
+
         return description.toString();
     }
 }

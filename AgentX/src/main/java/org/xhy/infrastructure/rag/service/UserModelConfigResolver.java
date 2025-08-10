@@ -148,7 +148,6 @@ public class UserModelConfigResolver {
                 throw new BusinessException(errorMsg);
             }
 
-
             // 检查模型是否激活
             if (!modelEntity.getStatus()) {
                 String errorMsg = String.format("用户 %s 配置的模型 %s 已禁用", userId, modelId);

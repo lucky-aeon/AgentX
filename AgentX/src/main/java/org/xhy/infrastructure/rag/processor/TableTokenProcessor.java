@@ -29,7 +29,6 @@ public class TableTokenProcessor implements MarkdownTokenProcessor {
 
     private static final Logger log = LoggerFactory.getLogger(TableTokenProcessor.class);
 
-
     public TableTokenProcessor() {
     }
 
@@ -71,7 +70,6 @@ public class TableTokenProcessor implements MarkdownTokenProcessor {
     public int getPriority() {
         return 20; // 中等优先级
     }
-
 
     /** 提取表格结构化数据 */
     private String extractTableStructure(TableBlock table) {

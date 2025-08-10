@@ -39,7 +39,7 @@ public class ProcessedSegment {
         this.metadata = metadata != null ? metadata : new HashMap<>();
         this.specialNodes = new LinkedHashMap<>();
     }
-    
+
     // 兼容旧版本的构造函数（字符串类型）
     @Deprecated
     public ProcessedSegment(String content, String type, Map<String, Object> metadata) {
@@ -61,13 +61,13 @@ public class ProcessedSegment {
     public void setType(SegmentType type) {
         this.type = type;
     }
-    
+
     // 兼容旧版本的方法（字符串类型）
     @Deprecated
     public void setType(String type) {
         this.type = SegmentType.fromValue(type);
     }
-    
+
     // 兼容旧版本，返回字符串值
     @Deprecated
     public String getTypeValue() {
@@ -123,9 +123,7 @@ public class ProcessedSegment {
         if (specialNodes == null) {
             return 0;
         }
-        return specialNodes.values().stream()
-                .filter(node -> node.getNodeType() == nodeType)
-                .count();
+        return specialNodes.values().stream().filter(node -> node.getNodeType() == nodeType).count();
     }
 
     /** 应用增强处理，将所有占位符替换为最终内容 */
@@ -161,12 +159,7 @@ public class ProcessedSegment {
 
     @Override
     public String toString() {
-        return "ProcessedSegment{" + 
-               "content='" + content + '\'' + 
-               ", type=" + type + 
-               ", order=" + order +
-               ", specialNodes=" + (specialNodes != null ? specialNodes.size() : 0) +
-               ", metadata=" + metadata + 
-               '}';
+        return "ProcessedSegment{" + "content='" + content + '\'' + ", type=" + type + ", order=" + order
+                + ", specialNodes=" + (specialNodes != null ? specialNodes.size() : 0) + ", metadata=" + metadata + '}';
     }
 }

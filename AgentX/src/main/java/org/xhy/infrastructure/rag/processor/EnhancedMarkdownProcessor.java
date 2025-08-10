@@ -28,7 +28,7 @@ public class EnhancedMarkdownProcessor {
     private final List<MarkdownTokenProcessor> processors;
 
     public EnhancedMarkdownProcessor(List<MarkdownTokenProcessor> processors,
-                                     @Qualifier("ragEnhancedMarkdownProcessor") MarkdownProcessor pureProcessor) {
+            @Qualifier("ragEnhancedMarkdownProcessor") MarkdownProcessor pureProcessor) {
         this.processors = processors;
         this.pureProcessor = pureProcessor;
         // 按优先级排序处理器
@@ -48,6 +48,5 @@ public class EnhancedMarkdownProcessor {
         log.info("EnhancedMarkdownProcessor delegating to pure processor for compatibility");
         return pureProcessor.processToSegments(markdown, context);
     }
-
 
 }

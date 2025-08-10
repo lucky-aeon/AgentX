@@ -29,7 +29,6 @@ public class ImageTokenProcessor implements MarkdownTokenProcessor {
 
     private static final Logger log = LoggerFactory.getLogger(ImageTokenProcessor.class);
 
-
     @Override
     public boolean canProcess(Node node) {
         return node instanceof Image;

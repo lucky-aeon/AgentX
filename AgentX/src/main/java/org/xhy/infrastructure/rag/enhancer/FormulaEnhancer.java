@@ -14,10 +14,7 @@ import org.xhy.infrastructure.llm.protocol.enums.ProviderProtocol;
 
 /** 公式增强器
  * 
- * 职责：
- * - 对数学公式类型的段落进行LLM分析增强
- * - 将数学公式转换为自然语言描述
- * - 解释公式的含义和应用场景
+ * 职责： - 对数学公式类型的段落进行LLM分析增强 - 将数学公式转换为自然语言描述 - 解释公式的含义和应用场景
  * 
  * @author claude */
 @Component
@@ -41,7 +38,7 @@ public class FormulaEnhancer implements SegmentEnhancer {
 
             // 提取公式内容
             String formulaContent = extractFormulaContent(segment.getContent());
-            
+
             // 使用LLM分析公式
             String formulaAnalysis = analyzeFormulaWithLLM(formulaContent, context);
 
@@ -51,10 +48,10 @@ public class FormulaEnhancer implements SegmentEnhancer {
             // 创建增强后的段落
             ProcessedSegment enhanced = new ProcessedSegment(enhancedContent, segment.getType(), segment.getMetadata());
             enhanced.setOrder(segment.getOrder());
-            
-            log.debug("Enhanced formula segment: original_length={}, enhanced_length={}", 
-                     segment.getContent().length(), enhancedContent.length());
-            
+
+            log.debug("Enhanced formula segment: original_length={}, enhanced_length={}", segment.getContent().length(),
+                    enhancedContent.length());
+
             return enhanced;
 
         } catch (Exception e) {
@@ -74,14 +71,14 @@ public class FormulaEnhancer implements SegmentEnhancer {
         if (content == null) {
             return false;
         }
-        
+
         // 检测LaTeX公式标记
-        return content.contains("$$") ||    // 独立公式
-               content.contains("$") ||     // 行内公式
-               content.contains("\\(") ||   // 替代行内公式语法
-               content.contains("\\[") ||   // 替代独立公式语法
-               content.contains("\\begin{") || // LaTeX环境
-               content.matches(".*[a-zA-Z]\\s*=\\s*.*"); // 简单等式检测
+        return content.contains("$$") || // 独立公式
+                content.contains("$") || // 行内公式
+                content.contains("\\(") || // 替代行内公式语法
+                content.contains("\\[") || // 替代独立公式语法
+                content.contains("\\begin{") || // LaTeX环境
+                content.matches(".*[a-zA-Z]\\s*=\\s*.*"); // 简单等式检测
     }
 
     /** 提取公式内容 */
@@ -89,12 +86,12 @@ public class FormulaEnhancer implements SegmentEnhancer {
         if (content == null) {
             return "";
         }
-        
+
         // 如果已经是纯公式，直接返回
         if (content.startsWith("$$") || content.startsWith("$")) {
             return content;
         }
-        
+
         // 否则返回原内容
         return content;
     }
@@ -139,9 +136,9 @@ public class FormulaEnhancer implements SegmentEnhancer {
     /** 生成回退描述（LLM不可用时） */
     private String generateFallbackFormulaDescription(String formulaContent) {
         StringBuilder description = new StringBuilder();
-        
+
         description.append("数学公式");
-        
+
         // 简单分析公式特征
         if (formulaContent.contains("=")) {
             description.append("，包含等式");
@@ -161,7 +158,7 @@ public class FormulaEnhancer implements SegmentEnhancer {
         if (formulaContent.contains("\\frac")) {
             description.append("，包含分数");
         }
-        
+
         // 检测可能的数学领域
         String lowerContent = formulaContent.toLowerCase();
         if (lowerContent.contains("sin") || lowerContent.contains("cos") || lowerContent.contains("tan")) {
@@ -173,7 +170,7 @@ public class FormulaEnhancer implements SegmentEnhancer {
         if (lowerContent.contains("lim") || lowerContent.contains("\\lim")) {
             description.append("，可能涉及极限");
         }
-        
+
         return description.toString();
     }
 }
