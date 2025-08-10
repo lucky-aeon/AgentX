@@ -39,6 +39,10 @@ import org.xhy.infrastructure.exception.InsufficientBalanceException;
 import org.xhy.domain.product.constant.BillingType;
 import org.xhy.domain.product.constant.UsageDataKeys;
 import org.xhy.domain.user.model.AccountEntity;
+import org.xhy.domain.trace.constant.ExecutionPhase;
+import org.xhy.domain.trace.model.ModelCallInfo;
+import org.xhy.domain.trace.model.ToolCallInfo;
+import dev.langchain4j.service.tool.ToolExecution;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.math.BigDecimal;
@@ -88,23 +92,29 @@ public abstract class AbstractMessageHandler {
         // 1. 创建连接
         T connection = transport.createConnection(CONNECTION_TIMEOUT);
 
-        // 2. 检查用户余额是否足够
+        // 2. 调用对话开始钩子
+        onChatStart(chatContext);
+
+        // 3. 检查用户余额是否足够
         checkBalanceBeforeChat(chatContext.getUserId(), transport, connection);
 
-        // 3. 创建消息实体
+        // 4. 创建消息实体
         MessageEntity llmMessageEntity = createLlmMessage(chatContext);
         MessageEntity userMessageEntity = createUserMessage(chatContext);
 
-        // 3. 初始化聊天内存
+        // 5. 调用用户消息处理完成钩子
+        onUserMessageProcessed(chatContext, userMessageEntity);
+
+        // 6. 初始化聊天内存
         MessageWindowChatMemory memory = initMemory();
 
-        // 4. 构建历史消息
+        // 7. 构建历史消息
         buildHistoryMessage(chatContext, memory);
 
-        // 5. 根据子类决定是否需要工具
+        // 8. 根据子类决定是否需要工具
         ToolProvider toolProvider = provideTools(chatContext);
 
-        // 6. 根据是否流式选择不同的处理方式
+        // 9. 根据是否流式选择不同的处理方式
         if (chatContext.isStreaming()) {
             processStreamingChat(chatContext, connection, transport, userMessageEntity, llmMessageEntity, memory,
                     toolProvider);
@@ -114,6 +124,57 @@ public abstract class AbstractMessageHandler {
         }
 
         return connection;
+    }
+
+    /** 追踪钩子方法 - 对话开始时调用
+     * 子类可以覆盖此方法实现追踪逻辑
+     * 
+     * @param chatContext 对话上下文 */
+    protected void onChatStart(ChatContext chatContext) {
+        // 默认空实现，子类可选择性覆盖
+    }
+
+    /** 追踪钩子方法 - 用户消息处理完成时调用
+     * 
+     * @param chatContext 对话上下文
+     * @param userMessage 用户消息实体 */
+    protected void onUserMessageProcessed(ChatContext chatContext, MessageEntity userMessage) {
+        // 默认空实现，子类可选择性覆盖
+    }
+
+    /** 追踪钩子方法 - 模型调用完成时调用
+     * 
+     * @param chatContext 对话上下文
+     * @param chatResponse 模型响应
+     * @param modelCallInfo 模型调用信息 */
+    protected void onModelCallCompleted(ChatContext chatContext, ChatResponse chatResponse, ModelCallInfo modelCallInfo) {
+        // 默认空实现，子类可选择性覆盖
+    }
+
+    /** 追踪钩子方法 - 工具调用完成时调用
+     * 
+     * @param chatContext 对话上下文
+     * @param toolCallInfo 工具调用信息 */
+    protected void onToolCallCompleted(ChatContext chatContext, ToolCallInfo toolCallInfo) {
+        // 默认空实现，子类可选择性覆盖
+    }
+
+    /** 追踪钩子方法 - 对话完成时调用
+     * 
+     * @param chatContext 对话上下文
+     * @param success 是否成功
+     * @param errorMessage 错误信息（成功时为null） */
+    protected void onChatCompleted(ChatContext chatContext, boolean success, String errorMessage) {
+        // 默认空实现，子类可选择性覆盖
+    }
+
+    /** 追踪钩子方法 - 发生异常时调用
+     * 
+     * @param chatContext 对话上下文
+     * @param errorPhase 错误阶段
+     * @param throwable 异常信息 */
+    protected void onChatError(ChatContext chatContext, ExecutionPhase errorPhase, Throwable throwable) {
+        // 默认空实现，子类可选择性覆盖
     }
 
     /** 子类可以覆盖这个方法提供工具 */
@@ -149,9 +210,10 @@ public abstract class AbstractMessageHandler {
         messageDomainService.saveMessageAndUpdateContext(Collections.singletonList(userEntity),
                 chatContext.getContextEntity());
 
+        // 3. 记录调用开始时间
+        long startTime = System.currentTimeMillis();
+        
         try {
-            // 3. 记录调用开始时间
-            long startTime = System.currentTimeMillis();
 
             List<ChatMessage> messages = memory.messages();
             messages.add(new UserMessage(chatContext.getUserMessage()));
@@ -161,34 +223,45 @@ public abstract class AbstractMessageHandler {
 
             // 5. 处理响应 - 设置消息内容
             this.setMessageTokenCount(chatContext.getMessageHistory(), userEntity, llmEntity, chatResponse);
+            
+            // 6. 调用模型调用完成钩子
+            ModelCallInfo modelCallInfo = buildModelCallInfo(chatContext, chatResponse, System.currentTimeMillis() - startTime, true);
+            onModelCallCompleted(chatContext, chatResponse, modelCallInfo);
 
-            // 6. 保存消息
+            // 7. 保存消息
             messageDomainService.updateMessage(userEntity);
             messageDomainService.saveMessageAndUpdateContext(Collections.singletonList(llmEntity),
                     chatContext.getContextEntity());
 
-            // 7. 发送完整响应
+            // 8. 发送完整响应
             AgentChatResponse response = new AgentChatResponse(chatResponse.aiMessage().text(), true);
             response.setMessageType(MessageType.TEXT);
             transport.sendEndMessage(connection, response);
 
-            // 8. 上报调用成功结果
+            // 9. 上报调用成功结果
             long latency = System.currentTimeMillis() - startTime;
             highAvailabilityDomainService.reportCallResult(chatContext.getInstanceId(), chatContext.getModel().getId(),
                     true, latency, null);
 
-            // 9. 执行模型调用计费
+            // 10. 执行模型调用计费
             performBillingWithErrorHandling(chatContext, chatResponse.tokenUsage().inputTokenCount(),
                     chatResponse.tokenUsage().outputTokenCount(), transport, connection);
+                    
+            // 11. 调用对话完成钩子
+            onChatCompleted(chatContext, true, null);
 
         } catch (Exception e) {
             // 错误处理
             AgentChatResponse errorResponse = AgentChatResponse.buildEndMessage(e.getMessage(), MessageType.TEXT);
             transport.sendMessage(connection, errorResponse);
 
-            long latency = System.currentTimeMillis() - System.currentTimeMillis();
+            long latency = System.currentTimeMillis() - startTime;
             highAvailabilityDomainService.reportCallResult(chatContext.getInstanceId(), chatContext.getModel().getId(),
                     false, latency, e.getMessage());
+                    
+            // 调用错误处理钩子
+            onChatError(chatContext, ExecutionPhase.MODEL_CALL, e);
+            onChatCompleted(chatContext, false, e.getMessage());
         }
     }
 
@@ -213,6 +286,10 @@ public abstract class AbstractMessageHandler {
             long latency = System.currentTimeMillis() - startTime;
             highAvailabilityDomainService.reportCallResult(chatContext.getInstanceId(), chatContext.getModel().getId(),
                     false, latency, throwable.getMessage());
+                    
+            // 调用错误处理钩子
+            onChatError(chatContext, ExecutionPhase.MODEL_CALL, throwable);
+            onChatCompleted(chatContext, false, throwable.getMessage());
         });
 
         // 部分响应处理
@@ -242,9 +319,16 @@ public abstract class AbstractMessageHandler {
             highAvailabilityDomainService.reportCallResult(chatContext.getInstanceId(), chatContext.getModel().getId(),
                     true, latency, null);
 
+            // 调用模型调用完成钩子
+            ModelCallInfo modelCallInfo = buildModelCallInfo(chatContext, chatResponse, latency, true);
+            onModelCallCompleted(chatContext, chatResponse, modelCallInfo);
+
             // 执行模型调用计费
             performBillingWithErrorHandling(chatContext, chatResponse.tokenUsage().inputTokenCount(),
                     chatResponse.tokenUsage().outputTokenCount(), transport, connection);
+                    
+            // 调用对话完成钩子
+            onChatCompleted(chatContext, true, null);
 
             smartRenameSession(chatContext);
         });
@@ -271,6 +355,10 @@ public abstract class AbstractMessageHandler {
                     chatContext.getContextEntity());
 
             transport.sendMessage(connection, AgentChatResponse.buildEndMessage(message, MessageType.TOOL_CALL));
+            
+            // 调用工具调用完成钩子
+            ToolCallInfo toolCallInfo = buildToolCallInfo(toolExecution);
+            onToolCallCompleted(chatContext, toolCallInfo);
         });
 
         // 启动流处理
@@ -510,5 +598,36 @@ public abstract class AbstractMessageHandler {
             // 余额检查异常时，为了不影响用户体验，允许继续对话
             logger.warn("余额检查服务异常，允许用户继续对话 - 用户: {}", userId);
         }
+    }
+    
+    /** 构建模型调用信息
+     * 
+     * @param chatContext 对话上下文
+     * @param chatResponse 模型响应
+     * @param callTime 调用耗时（毫秒）
+     * @param success 是否成功
+     * @return 模型调用信息 */
+    protected ModelCallInfo buildModelCallInfo(ChatContext chatContext, ChatResponse chatResponse, long callTime, boolean success) {
+        return ModelCallInfo.builder()
+                .modelId(chatContext.getModel().getModelId())
+                .providerName(chatContext.getProvider().getName())
+                .inputTokens(chatResponse.tokenUsage().inputTokenCount())
+                .outputTokens(chatResponse.tokenUsage().outputTokenCount())
+                .callTime((int) callTime)
+                .success(success)
+                .build();
+    }
+    
+    /** 构建工具调用信息
+     * 
+     * @param toolExecution 工具执行信息
+     * @return 工具调用信息 */
+    protected ToolCallInfo buildToolCallInfo(ToolExecution toolExecution) {
+        return ToolCallInfo.builder()
+                .toolName(toolExecution.request().name())
+                .requestArgs(toolExecution.request().arguments())
+                .responseData(toolExecution.result())
+                .success(true) // 此时表示工具执行成功
+                .build();
     }
 }

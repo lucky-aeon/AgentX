@@ -194,6 +194,25 @@ export async function getExecutionDetails(traceId: string): Promise<ApiResponse<
   }
 }
 
+// 根据会话ID直接获取执行详情列表
+export async function getExecutionDetailsBySessionId(sessionId: string): Promise<ApiResponse<any[]>> {
+  try {
+    console.log(`Fetching execution details by session ID: ${sessionId}`)
+    
+    const response = await httpClient.get<ApiResponse<any[]>>(`/traces/${sessionId}/details`);
+    
+    return response;
+  } catch (error) {
+    console.error('获取会话执行详情列表错误:', error)
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : "未知错误",
+      data: [],
+      timestamp: Date.now(),
+    }
+  }
+}
+
 // 根据会话ID获取执行历史记录
 export async function getSessionExecutionHistory(sessionId: string): Promise<ApiResponse<SessionExecutionSummary[]>> {
   try {
@@ -218,60 +237,49 @@ export async function getSessionExecutionDetails(sessionId: string): Promise<Api
   try {
     console.log(`Fetching session execution details: ${sessionId}`)
     
-    // 首先获取会话的执行历史记录
-    const historyResponse = await getSessionExecutionHistory(sessionId);
+    // 直接通过会话ID调用详情接口
+    const detailsResponse = await getExecutionDetailsBySessionId(sessionId);
     
-    if (historyResponse.code !== 200 || !historyResponse.data) {
+    if (detailsResponse.code !== 200 || !detailsResponse.data) {
       return {
-        code: historyResponse.code,
-        message: historyResponse.message,
+        code: detailsResponse.code,
+        message: detailsResponse.message,
         data: [],
         timestamp: Date.now(),
       }
     }
     
-    // 为每个执行记录获取详细步骤
-    const allDetails: SessionExecutionDetail[] = [];
-    
-    for (const summary of historyResponse.data) {
-      const detailsResponse = await getExecutionDetails(summary.traceId);
-      
-      if (detailsResponse.code === 200 && detailsResponse.data) {
-        // 为每个详情添加会话相关信息并转换数据结构
-        const sessionDetails = detailsResponse.data.map((detail: any) => ({
-          id: detail.traceId + '_' + detail.sequenceNo,
-          traceId: detail.traceId,
-          sequenceNo: detail.sequenceNo,
-          stepType: getStepTypeFromMessageType(detail.messageType),
-          messageType: detail.messageType,
-          content: detail.messageContent || '无内容',
-          modelId: detail.modelId,
-          providerName: detail.providerName,
-          tokenCount: detail.messageTokens,
-          executionTime: detail.modelCallTime || detail.toolExecutionTime,
-          cost: detail.stepCost,
-          success: detail.stepSuccess,
-          errorMessage: detail.stepErrorMessage,
-          toolName: detail.toolName,
-          createdAt: detail.createdTime,
-          // 会话相关信息
-          sessionId: sessionId,
-          agentId: summary.agentId,
-          executionStartTime: summary.executionStartTime,
-          executionEndTime: summary.executionEndTime,
-        }));
-        
-        allDetails.push(...sessionDetails);
-      }
-    }
+    // 转换数据结构
+    const sessionDetails = detailsResponse.data.map((detail: any, index: number) => ({
+      id: sessionId + '_' + (detail.sequenceNo || index),
+      traceId: detail.traceId || sessionId,
+      sequenceNo: detail.sequenceNo || index,
+      stepType: getStepTypeFromMessageType(detail.messageType),
+      messageType: detail.messageType,
+      content: detail.messageContent || '无内容',
+      modelId: detail.modelId,
+      providerName: detail.providerName,
+      tokenCount: detail.messageTokens,
+      executionTime: detail.modelCallTime || detail.toolExecutionTime,
+      cost: detail.stepCost,
+      success: detail.stepSuccess,
+      errorMessage: detail.stepErrorMessage,
+      toolName: detail.toolName,
+      createdAt: detail.createdTime,
+      // 会话相关信息
+      sessionId: sessionId,
+      agentId: detail.agentId,
+      executionStartTime: detail.executionStartTime,
+      executionEndTime: detail.executionEndTime,
+    }));
     
     // 按序号排序
-    allDetails.sort((a, b) => (a.sequenceNo || 0) - (b.sequenceNo || 0));
+    sessionDetails.sort((a, b) => (a.sequenceNo || 0) - (b.sequenceNo || 0));
     
     return {
       code: 200,
       message: "获取成功",
-      data: allDetails,
+      data: sessionDetails,
       timestamp: Date.now(),
     };
     
@@ -324,6 +332,11 @@ export const getTraceDetailWithToast = withToast(getTraceDetail, {
 export const getExecutionDetailsWithToast = withToast(getExecutionDetails, {
   showSuccessToast: false,
   errorTitle: "获取执行详情失败"
+})
+
+export const getExecutionDetailsBySessionIdWithToast = withToast(getExecutionDetailsBySessionId, {
+  showSuccessToast: false,
+  errorTitle: "获取会话执行详情失败"
 })
 
 export const getSessionExecutionDetailsWithToast = withToast(getSessionExecutionDetails, {

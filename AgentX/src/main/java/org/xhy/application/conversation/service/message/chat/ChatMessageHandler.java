@@ -1,6 +1,8 @@
 package org.xhy.application.conversation.service.message.chat;
 
 import org.springframework.stereotype.Component;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.xhy.application.conversation.service.message.AbstractMessageHandler;
 import org.xhy.application.conversation.service.message.TracingMessageHandler;
 import org.xhy.application.conversation.service.message.agent.tool.RagToolManager;
@@ -17,6 +19,8 @@ import org.xhy.domain.user.service.AccountDomainService;
 /** 标准消息处理器 */
 @Component(value = "chatMessageHandler")
 public class ChatMessageHandler extends TracingMessageHandler {
+
+    private static final Logger logger = LoggerFactory.getLogger(ChatMessageHandler.class);
 
     public ChatMessageHandler(LLMServiceFactory llmServiceFactory, MessageDomainService messageDomainService,
             HighAvailabilityDomainService highAvailabilityDomainService, SessionDomainService sessionDomainService,

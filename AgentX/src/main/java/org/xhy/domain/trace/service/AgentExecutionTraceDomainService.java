@@ -36,13 +36,12 @@ public class AgentExecutionTraceDomainService {
      * @param agentId Agent ID
      * @return 追踪上下文 */
     public TraceContext createTrace(String userId, String sessionId, String agentId) {
-        String traceId = generateTraceId();
 
         // 创建汇总记录
-        AgentExecutionSummaryEntity summary = AgentExecutionSummaryEntity.create(traceId, userId, sessionId, agentId);
+        AgentExecutionSummaryEntity summary = AgentExecutionSummaryEntity.create(sessionId, userId, sessionId, agentId);
         summaryRepository.insert(summary);
 
-        return TraceContext.create(traceId, userId, sessionId, agentId);
+        return TraceContext.create(sessionId, userId, sessionId, agentId);
     }
 
     /** 记录用户消息
@@ -55,7 +54,7 @@ public class AgentExecutionTraceDomainService {
             return;
         }
 
-        AgentExecutionDetailEntity detail = AgentExecutionDetailEntity.createUserMessageStep(traceContext.getTraceId(),
+        AgentExecutionDetailEntity detail = AgentExecutionDetailEntity.createUserMessageStep(traceContext.getSessionId(),
                 traceContext.nextSequence(), userMessage, messageType);
 
         detailRepository.insert(detail);
@@ -73,7 +72,7 @@ public class AgentExecutionTraceDomainService {
             return;
         }
 
-        AgentExecutionDetailEntity detail = AgentExecutionDetailEntity.createUserMessageStep(traceContext.getTraceId(),
+        AgentExecutionDetailEntity detail = AgentExecutionDetailEntity.createUserMessageStep(traceContext.getSessionId(),
                 traceContext.nextSequence(), userMessage, messageType, eventTime);
 
         detailRepository.insert(detail);
@@ -92,7 +91,7 @@ public class AgentExecutionTraceDomainService {
         }
 
         AgentExecutionDetailEntity detail = AgentExecutionDetailEntity.createUserMessageStepWithTokens(
-                traceContext.getTraceId(), traceContext.nextSequence(), userMessage, messageType, messageTokens);
+                traceContext.getSessionId(), traceContext.nextSequence(), userMessage, messageType, messageTokens);
 
         detailRepository.insert(detail);
     }
@@ -111,7 +110,7 @@ public class AgentExecutionTraceDomainService {
         }
 
         AgentExecutionDetailEntity detail = AgentExecutionDetailEntity.createUserMessageStepWithTokens(
-                traceContext.getTraceId(), traceContext.nextSequence(), userMessage, messageType, messageTokens,
+                traceContext.getSessionId(), traceContext.nextSequence(), userMessage, messageType, messageTokens,
                 eventTime);
 
         detailRepository.insert(detail);
@@ -127,7 +126,7 @@ public class AgentExecutionTraceDomainService {
             return;
         }
 
-        AgentExecutionDetailEntity detail = AgentExecutionDetailEntity.createAiResponseStep(traceContext.getTraceId(),
+        AgentExecutionDetailEntity detail = AgentExecutionDetailEntity.createAiResponseStep(traceContext.getSessionId(),
                 traceContext.nextSequence(), aiResponse, modelCallInfo.getModelId(), modelCallInfo.getProviderName(),
                 modelCallInfo.getOutputTokens(), // AI响应使用输出Token数
                 modelCallInfo.getCallTime(), modelCallInfo.getCost());
@@ -164,7 +163,7 @@ public class AgentExecutionTraceDomainService {
             return;
         }
 
-        AgentExecutionDetailEntity detail = AgentExecutionDetailEntity.createAiResponseStep(traceContext.getTraceId(),
+        AgentExecutionDetailEntity detail = AgentExecutionDetailEntity.createAiResponseStep(traceContext.getSessionId(),
                 traceContext.nextSequence(), aiResponse, modelCallInfo.getModelId(), modelCallInfo.getProviderName(),
                 modelCallInfo.getOutputTokens(), // AI响应使用输出Token数
                 modelCallInfo.getCallTime(), modelCallInfo.getCost(), eventTime);
@@ -198,7 +197,7 @@ public class AgentExecutionTraceDomainService {
             return;
         }
 
-        AgentExecutionDetailEntity detail = AgentExecutionDetailEntity.createToolCallStep(traceContext.getTraceId(),
+        AgentExecutionDetailEntity detail = AgentExecutionDetailEntity.createToolCallStep(traceContext.getSessionId(),
                 traceContext.nextSequence(), toolCallInfo.getToolName(), toolCallInfo.getRequestArgs(),
                 toolCallInfo.getResponseData(), toolCallInfo.getExecutionTime(), toolCallInfo.getSuccess());
 
@@ -223,7 +222,7 @@ public class AgentExecutionTraceDomainService {
             return;
         }
 
-        AgentExecutionDetailEntity detail = AgentExecutionDetailEntity.createToolCallStep(traceContext.getTraceId(),
+        AgentExecutionDetailEntity detail = AgentExecutionDetailEntity.createToolCallStep(traceContext.getSessionId(),
                 traceContext.nextSequence(), toolCallInfo.getToolName(), toolCallInfo.getRequestArgs(),
                 toolCallInfo.getResponseData(), toolCallInfo.getExecutionTime(), toolCallInfo.getSuccess(), eventTime);
 

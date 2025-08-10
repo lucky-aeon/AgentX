@@ -2,6 +2,8 @@ package org.xhy.application.conversation.service.message.agent;
 
 import dev.langchain4j.service.tool.ToolProvider;
 import org.springframework.stereotype.Component;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.xhy.application.conversation.service.handler.context.ChatContext;
 import org.xhy.application.conversation.service.message.AbstractMessageHandler;
 import org.xhy.application.conversation.service.message.TracingMessageHandler;
@@ -20,6 +22,7 @@ import org.xhy.domain.user.service.AccountDomainService;
 @Component(value = "agentMessageHandler")
 public class AgentMessageHandler extends TracingMessageHandler {
 
+    private static final Logger logger = LoggerFactory.getLogger(AgentMessageHandler.class);
     private AgentToolManager agentToolManager;
 
     public AgentMessageHandler(LLMServiceFactory llmServiceFactory, MessageDomainService messageDomainService,

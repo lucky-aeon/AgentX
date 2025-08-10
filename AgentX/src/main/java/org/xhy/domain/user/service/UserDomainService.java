@@ -73,10 +73,10 @@ public class UserDomainService {
         // 设置普通登录平台
         userEntity.setLoginPlatform("normal");
 
-        userRepository.checkInsert(userEntity);
+//        userRepository.checkInsert(userEntity);
         UserSettingsEntity userSettingsEntity = new UserSettingsEntity();
         userSettingsEntity.setUserId(userEntity.getId());
-        settingsRepository.insert(userSettingsEntity);
+//        settingsRepository.insert(userSettingsEntity);
         return userEntity;
     }
 
