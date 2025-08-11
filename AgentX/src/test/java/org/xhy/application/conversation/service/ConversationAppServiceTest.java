@@ -26,8 +26,8 @@ public class ConversationAppServiceTest {
         List<String> messageTextList = List.of("HashMap在JVM中的内存布局如何"); // 11
         String systemMessageText = "你是一个有用的AI助手。"; // token: 8
         String summaryPrefix = "以下是用户历史消息的摘要，请仅作为参考，用户没有提起则不要回答摘要中的内容：\\n"; // token: 26
-        ProviderConfig providerConfig = new ProviderConfig("",
-                "https://api.siliconflow.cn/v1", "deepseek-ai/DeepSeek-V3", ProviderProtocol.OPENAI);
+        ProviderConfig providerConfig = new ProviderConfig("", "https://api.siliconflow.cn/v1",
+                "deepseek-ai/DeepSeek-V3", ProviderProtocol.OPENAI);
         // 使用当前服务商调用大模型
         ChatModel chatLanguageModel = LLMProviderService.getStrand(providerConfig.getProtocol(), providerConfig);
         SystemMessage systemMessage = new SystemMessage(systemMessageText);
