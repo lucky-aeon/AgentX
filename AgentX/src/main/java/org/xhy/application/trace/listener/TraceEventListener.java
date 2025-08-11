@@ -51,23 +51,7 @@ public class TraceEventListener {
                     event.getModelCallInfo().getInputTokens(), event.getModelCallInfo().getOutputTokens(),
                     event.getAiResponseStartTime());
 
-            // 先保存用户消息到数据库（现在有了正确的input token信息）
-            if (event.getTraceContext().getUserMessage() != null) {
-                // 创建包含input token信息的用户消息记录，使用用户消息的原始时间
-                // 注意：这里需要用户消息的时间，而不是AI响应的时间
-                // 假设用户消息时间比AI响应开始时间稍早，这里使用AI响应时间减去一些时间作为估算
-                // 在实际实现中，应该在ExecutionStartedEvent中传递正确的用户消息时间
-                LocalDateTime userMessageTime = event.getAiResponseStartTime().minusSeconds(1);
-
-                traceDomainService.recordUserMessageWithTokens(event.getTraceContext(),
-                        event.getTraceContext().getUserMessage(), event.getTraceContext().getUserMessageType(),
-                        event.getModelCallInfo().getInputTokens(), // 用户消息使用输入Token数
-                        userMessageTime);
-
-                logger.debug("用户消息已保存 - TraceId: {}, InputTokens: {}, MessageTime: {}",
-                        event.getTraceContext().getTraceId(), event.getModelCallInfo().getInputTokens(),
-                        userMessageTime);
-            }
+            // 用户消息已在 TraceCollector.getOrStartExecution() 中保存，Token数量通过 updateUserMessageTokens() 更新
 
             // 保存AI响应到数据库，使用事件中的AI响应开始时间
             traceDomainService.recordAiResponse(event.getTraceContext(), event.getAiResponse(),

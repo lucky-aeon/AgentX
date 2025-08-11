@@ -9,9 +9,6 @@ public class AgentExecutionDetailDTO {
     /** 追踪ID */
     private String traceId;
 
-    /** 执行序号 */
-    private Integer sequenceNo;
-
     /** 统一的消息内容 */
     private String messageContent;
 
@@ -79,14 +76,6 @@ public class AgentExecutionDetailDTO {
 
     public void setTraceId(String traceId) {
         this.traceId = traceId;
-    }
-
-    public Integer getSequenceNo() {
-        return sequenceNo;
-    }
-
-    public void setSequenceNo(Integer sequenceNo) {
-        this.sequenceNo = sequenceNo;
     }
 
     public String getMessageContent() {

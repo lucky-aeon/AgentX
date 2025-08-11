@@ -6,8 +6,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 /** 追踪上下文 用于在执行过程中传递追踪信息 */
 public class TraceContext {
 
-    /** 追踪ID */
-    private final String traceId;
 
     /** 用户ID */
     private final String userId;
@@ -33,8 +31,10 @@ public class TraceContext {
     /** 用户消息类型 */
     private String userMessageType;
 
-    public TraceContext(String traceId, String userId, String sessionId, String agentId, boolean traceEnabled) {
-        this.traceId = traceId;
+    /** 当前用户消息记录ID（用于后续更新Token） */
+    private Long currentUserMessageId;
+
+    public TraceContext(String userId, String sessionId, String agentId, boolean traceEnabled) {
         this.userId = userId;
         this.sessionId = sessionId;
         this.agentId = agentId;
@@ -44,13 +44,13 @@ public class TraceContext {
     }
 
     /** 创建追踪上下文 */
-    public static TraceContext create(String traceId, String userId, String sessionId, String agentId) {
-        return new TraceContext(traceId, userId, sessionId, agentId, true);
+    public static TraceContext create(String userId, String sessionId, String agentId) {
+        return new TraceContext(userId, sessionId, agentId, true);
     }
 
     /** 创建禁用追踪的上下文 */
     public static TraceContext createDisabled() {
-        return new TraceContext(null, null, null, null, false);
+        return new TraceContext(null, null, null, false);
     }
 
     /** 生成下一个序列号 */
@@ -70,7 +70,7 @@ public class TraceContext {
 
     // Getter方法
     public String getTraceId() {
-        return traceId;
+        return sessionId; // 使用sessionId作为traceId
     }
 
     public String getUserId() {
@@ -105,10 +105,18 @@ public class TraceContext {
         this.userMessageType = userMessageType;
     }
 
+    public Long getCurrentUserMessageId() {
+        return currentUserMessageId;
+    }
+
+    public void setCurrentUserMessageId(Long currentUserMessageId) {
+        this.currentUserMessageId = currentUserMessageId;
+    }
+
     @Override
     public String toString() {
-        return "TraceContext{" + "traceId='" + traceId + '\'' + ", userId=" + userId + ", sessionId='" + sessionId
-                + '\'' + ", agentId=" + agentId + ", startTime=" + startTime + ", currentSequence="
-                + sequenceGenerator.get() + ", traceEnabled=" + traceEnabled + '}';
+        return "TraceContext{" + "sessionId='" + sessionId + '\'' + ", userId=" + userId + ", agentId=" + agentId 
+                + ", startTime=" + startTime + ", currentSequence=" + sequenceGenerator.get() + ", traceEnabled=" 
+                + traceEnabled + '}';
     }
 }

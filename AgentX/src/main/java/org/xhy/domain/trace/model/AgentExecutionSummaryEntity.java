@@ -14,9 +14,6 @@ public class AgentExecutionSummaryEntity extends BaseEntity {
     @TableId(value = "id", type = IdType.AUTO)
     private Long id;
 
-    /** 执行追踪ID，唯一标识一次完整执行 */
-    @TableField("trace_id")
-    private String traceId;
 
     /** 用户ID */
     @TableField("user_id")
@@ -88,9 +85,8 @@ public class AgentExecutionSummaryEntity extends BaseEntity {
     }
 
     /** 创建新的执行追踪汇总 */
-    public static AgentExecutionSummaryEntity create(String traceId, String userId, String sessionId, String agentId) {
+    public static AgentExecutionSummaryEntity create(String userId, String sessionId, String agentId) {
         AgentExecutionSummaryEntity entity = new AgentExecutionSummaryEntity();
-        entity.setTraceId(traceId);
         entity.setUserId(userId);
         entity.setSessionId(sessionId);
         entity.setAgentId(agentId);
@@ -153,13 +149,6 @@ public class AgentExecutionSummaryEntity extends BaseEntity {
         this.id = id;
     }
 
-    public String getTraceId() {
-        return traceId;
-    }
-
-    public void setTraceId(String traceId) {
-        this.traceId = traceId;
-    }
 
     public String getUserId() {
         return userId;

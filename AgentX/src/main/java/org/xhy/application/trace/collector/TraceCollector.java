@@ -25,7 +25,7 @@ public class TraceCollector {
         this.eventPublisher = eventPublisher;
     }
 
-    /** 开始执行追踪
+    /** 获取或开始会话级别的执行追踪
      * 
      * @param userId 用户ID
      * @param sessionId 会话ID
@@ -33,18 +33,26 @@ public class TraceCollector {
      * @param userMessage 用户消息
      * @param messageType 消息类型
      * @return 追踪上下文 */
-    public TraceContext startExecution(String userId, String sessionId, String agentId, String userMessage,
+    public TraceContext getOrStartExecution(String userId, String sessionId, String agentId, String userMessage,
             String messageType) {
         try {
-            // 创建追踪上下文，暂不记录用户消息
-            TraceContext traceContext = traceDomainService.createTrace(userId, sessionId, agentId);
+            // 获取或创建会话级别的追踪上下文
+            TraceContext traceContext = traceDomainService.getOrCreateTrace(userId, sessionId, agentId);
 
-            // 将用户消息信息存储到追踪上下文中，等待模型调用时一起处理
+            // 立即记录用户消息，并保存记录ID到上下文中
+            Long messageId = traceDomainService.recordUserMessage(traceContext, userMessage, messageType, 
+                    java.time.LocalDateTime.now());
+            if (messageId != null) {
+                traceContext.setCurrentUserMessageId(messageId);
+            }
+
+            // 将用户消息信息存储到追踪上下文中，用于后续处理
             traceContext.setUserMessage(userMessage);
             traceContext.setUserMessageType(messageType);
 
             return traceContext;
         } catch (Exception e) {
+            logger.warn("追踪初始化失败: {}", e.getMessage(), e);
             // 追踪失败不影响主流程，返回禁用的上下文
             return TraceContext.createDisabled();
         }
@@ -131,5 +139,24 @@ public class TraceCollector {
     public void recordFailure(TraceContext traceContext, ExecutionPhase errorPhase, Throwable throwable) {
         String errorMessage = throwable != null ? throwable.getMessage() : "未知错误";
         recordFailure(traceContext, errorPhase, errorMessage);
+    }
+
+    /** 更新用户消息的Token数量
+     * 
+     * @param traceContext 追踪上下文
+     * @param inputTokens 输入Token数 */
+    public void updateUserMessageTokens(TraceContext traceContext, Integer inputTokens) {
+        if (!traceContext.isTraceEnabled() || traceContext.getCurrentUserMessageId() == null || inputTokens == null) {
+            return;
+        }
+
+        try {
+            traceDomainService.updateUserMessageTokens(traceContext.getCurrentUserMessageId(), inputTokens);
+            logger.debug("更新用户消息Token数: recordId={}, tokens={}", 
+                    traceContext.getCurrentUserMessageId(), inputTokens);
+        } catch (Exception e) {
+            logger.warn("更新用户消息Token数失败: recordId={}, tokens={}, error={}", 
+                    traceContext.getCurrentUserMessageId(), inputTokens, e.getMessage());
+        }
     }
 }

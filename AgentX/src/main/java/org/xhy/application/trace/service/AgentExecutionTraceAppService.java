@@ -126,7 +126,7 @@ public class AgentExecutionTraceAppService {
         // 先检查权限
         traceDomainService.getExecutionSummary(traceId, userId);
 
-        List<AgentExecutionDetailEntity> entities = traceDomainService.getToolCallsByTraceId(traceId);
+        List<AgentExecutionDetailEntity> entities = traceDomainService.getToolCallsBySessionId(traceId);
         return AgentExecutionTraceAssembler.toDetailDTOs(entities);
     }
 
@@ -139,7 +139,7 @@ public class AgentExecutionTraceAppService {
         // 先检查权限
         traceDomainService.getExecutionSummary(traceId, userId);
 
-        List<AgentExecutionDetailEntity> entities = traceDomainService.getModelCallsByTraceId(traceId);
+        List<AgentExecutionDetailEntity> entities = traceDomainService.getModelCallsBySessionId(traceId);
         return AgentExecutionTraceAssembler.toDetailDTOs(entities);
     }
 
@@ -152,7 +152,7 @@ public class AgentExecutionTraceAppService {
         // 先检查权限
         traceDomainService.getExecutionSummary(traceId, userId);
 
-        List<AgentExecutionDetailEntity> entities = traceDomainService.getFallbackCallsByTraceId(traceId);
+        List<AgentExecutionDetailEntity> entities = traceDomainService.getFallbackCallsBySessionId(traceId);
         return AgentExecutionTraceAssembler.toDetailDTOs(entities);
     }
 

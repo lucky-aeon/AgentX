@@ -5,7 +5,6 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.stereotype.Service;
 import org.xhy.domain.trace.constant.ExecutionPhase;
-import org.xhy.domain.trace.constant.ExecutionStepType;
 import org.xhy.domain.trace.model.*;
 import org.xhy.domain.trace.repository.AgentExecutionDetailRepository;
 import org.xhy.domain.trace.repository.AgentExecutionSummaryRepository;
@@ -14,7 +13,6 @@ import org.xhy.infrastructure.exception.BusinessException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
 
 /** Agent执行链路追踪领域服务 负责处理追踪数据的核心业务逻辑 */
 @Service
@@ -29,71 +27,48 @@ public class AgentExecutionTraceDomainService {
         this.detailRepository = detailRepository;
     }
 
-    /** 创建新的执行追踪
+    /** 创建或获取会话追踪上下文
      * 
      * @param userId 用户ID
      * @param sessionId 会话ID
      * @param agentId Agent ID
      * @return 追踪上下文 */
-    public TraceContext createTrace(String userId, String sessionId, String agentId) {
-
-        // 创建汇总记录
-        AgentExecutionSummaryEntity summary = AgentExecutionSummaryEntity.create(sessionId, userId, sessionId, agentId);
-        summaryRepository.insert(summary);
-
-        return TraceContext.create(sessionId, userId, sessionId, agentId);
-    }
-
-    /** 记录用户消息
-     * 
-     * @param traceContext 追踪上下文
-     * @param userMessage 用户消息内容
-     * @param messageType 消息类型 */
-    public void recordUserMessage(TraceContext traceContext, String userMessage, String messageType) {
-        if (!traceContext.isTraceEnabled()) {
-            return;
+    public TraceContext getOrCreateTrace(String userId, String sessionId, String agentId) {
+        // 检查会话是否已有追踪记录
+        LambdaQueryWrapper<AgentExecutionSummaryEntity> wrapper = Wrappers.<AgentExecutionSummaryEntity>lambdaQuery()
+                .eq(AgentExecutionSummaryEntity::getSessionId, sessionId)
+                .eq(AgentExecutionSummaryEntity::getUserId, userId);
+        
+        AgentExecutionSummaryEntity existing = summaryRepository.selectOne(wrapper);
+        
+        if (existing == null) {
+            // 创建新的汇总记录
+            AgentExecutionSummaryEntity summary = AgentExecutionSummaryEntity.create(userId, sessionId, agentId);
+            summaryRepository.insert(summary);
         }
 
-        AgentExecutionDetailEntity detail = AgentExecutionDetailEntity.createUserMessageStep(traceContext.getSessionId(),
-                traceContext.nextSequence(), userMessage, messageType);
-
-        detailRepository.insert(detail);
+        return TraceContext.create(userId, sessionId, agentId);
     }
+
 
     /** 记录用户消息（带时间戳）
      * 
      * @param traceContext 追踪上下文
      * @param userMessage 用户消息内容
      * @param messageType 消息类型
-     * @param eventTime 事件发生时间 */
-    public void recordUserMessage(TraceContext traceContext, String userMessage, String messageType,
+     * @param eventTime 事件发生时间 
+     * @return 插入记录的ID */
+    public Long recordUserMessage(TraceContext traceContext, String userMessage, String messageType,
             LocalDateTime eventTime) {
         if (!traceContext.isTraceEnabled()) {
-            return;
+            return null;
         }
 
         AgentExecutionDetailEntity detail = AgentExecutionDetailEntity.createUserMessageStep(traceContext.getSessionId(),
                 traceContext.nextSequence(), userMessage, messageType, eventTime);
 
         detailRepository.insert(detail);
-    }
-
-    /** 记录带Token信息的用户消息
-     * 
-     * @param traceContext 追踪上下文
-     * @param userMessage 用户消息内容
-     * @param messageType 消息类型
-     * @param messageTokens 消息Token数 */
-    public void recordUserMessageWithTokens(TraceContext traceContext, String userMessage, String messageType,
-            Integer messageTokens) {
-        if (!traceContext.isTraceEnabled()) {
-            return;
-        }
-
-        AgentExecutionDetailEntity detail = AgentExecutionDetailEntity.createUserMessageStepWithTokens(
-                traceContext.getSessionId(), traceContext.nextSequence(), userMessage, messageType, messageTokens);
-
-        detailRepository.insert(detail);
+        return detail.getId();
     }
 
     /** 记录带Token信息的用户消息（带时间戳）
@@ -116,40 +91,6 @@ public class AgentExecutionTraceDomainService {
         detailRepository.insert(detail);
     }
 
-    /** 记录AI响应
-     * 
-     * @param traceContext 追踪上下文
-     * @param aiResponse AI响应内容
-     * @param modelCallInfo 模型调用信息 */
-    public void recordAiResponse(TraceContext traceContext, String aiResponse, ModelCallInfo modelCallInfo) {
-        if (!traceContext.isTraceEnabled()) {
-            return;
-        }
-
-        AgentExecutionDetailEntity detail = AgentExecutionDetailEntity.createAiResponseStep(traceContext.getSessionId(),
-                traceContext.nextSequence(), aiResponse, modelCallInfo.getModelId(), modelCallInfo.getProviderName(),
-                modelCallInfo.getOutputTokens(), // AI响应使用输出Token数
-                modelCallInfo.getCallTime(), modelCallInfo.getCost());
-
-        // 设置降级信息
-        if (Boolean.TRUE.equals(modelCallInfo.getFallbackUsed())) {
-            detail.setFallbackInfo(modelCallInfo.getFallbackReason(), modelCallInfo.getOriginalModel(),
-                    modelCallInfo.getModelId());
-        }
-
-        // 设置错误信息
-        if (Boolean.FALSE.equals(modelCallInfo.getSuccess())) {
-            detail.markStepFailed(modelCallInfo.getErrorMessage());
-        }
-
-        detailRepository.insert(detail);
-
-        // 更新汇总统计
-        updateSummaryTokens(traceContext.getTraceId(), modelCallInfo.getInputTokens(), modelCallInfo.getOutputTokens());
-        if (modelCallInfo.getCost() != null) {
-            updateSummaryCost(traceContext.getTraceId(), modelCallInfo.getCost());
-        }
-    }
 
     /** 记录AI响应（带时间戳）
      * 
@@ -182,34 +123,10 @@ public class AgentExecutionTraceDomainService {
         detailRepository.insert(detail);
 
         // 更新汇总统计
-        updateSummaryTokens(traceContext.getTraceId(), modelCallInfo.getInputTokens(), modelCallInfo.getOutputTokens());
+        updateSummaryTokens(traceContext.getSessionId(), modelCallInfo.getInputTokens(), modelCallInfo.getOutputTokens());
         if (modelCallInfo.getCost() != null) {
-            updateSummaryCost(traceContext.getTraceId(), modelCallInfo.getCost());
+            updateSummaryCost(traceContext.getSessionId(), modelCallInfo.getCost());
         }
-    }
-
-    /** 记录工具调用
-     * 
-     * @param traceContext 追踪上下文
-     * @param toolCallInfo 工具调用信息 */
-    public void recordToolCall(TraceContext traceContext, ToolCallInfo toolCallInfo) {
-        if (!traceContext.isTraceEnabled()) {
-            return;
-        }
-
-        AgentExecutionDetailEntity detail = AgentExecutionDetailEntity.createToolCallStep(traceContext.getSessionId(),
-                traceContext.nextSequence(), toolCallInfo.getToolName(), toolCallInfo.getRequestArgs(),
-                toolCallInfo.getResponseData(), toolCallInfo.getExecutionTime(), toolCallInfo.getSuccess());
-
-        // 设置错误信息
-        if (Boolean.FALSE.equals(toolCallInfo.getSuccess())) {
-            detail.markStepFailed(toolCallInfo.getErrorMessage());
-        }
-
-        detailRepository.insert(detail);
-
-        // 更新汇总统计
-        updateSummaryToolExecution(traceContext.getTraceId(), toolCallInfo.getExecutionTime());
     }
 
     /** 记录工具调用（带时间戳）
@@ -234,7 +151,7 @@ public class AgentExecutionTraceDomainService {
         detailRepository.insert(detail);
 
         // 更新汇总统计
-        updateSummaryToolExecution(traceContext.getTraceId(), toolCallInfo.getExecutionTime());
+        updateSummaryToolExecution(traceContext.getSessionId(), toolCallInfo.getExecutionTime());
     }
 
     /** 完成追踪记录
@@ -250,11 +167,11 @@ public class AgentExecutionTraceDomainService {
         }
 
         LambdaQueryWrapper<AgentExecutionSummaryEntity> wrapper = Wrappers.<AgentExecutionSummaryEntity>lambdaQuery()
-                .eq(AgentExecutionSummaryEntity::getTraceId, traceContext.getTraceId());
+                .eq(AgentExecutionSummaryEntity::getSessionId, traceContext.getSessionId());
         AgentExecutionSummaryEntity summary = summaryRepository.selectOne(wrapper);
 
         if (summary == null) {
-            throw new BusinessException("追踪记录不存在: " + traceContext.getTraceId());
+            throw new BusinessException("追踪记录不存在: " + traceContext.getSessionId());
         }
 
         String errorPhaseCode = errorPhase != null ? errorPhase.getCode() : null;
@@ -262,14 +179,14 @@ public class AgentExecutionTraceDomainService {
         summaryRepository.updateById(summary);
     }
 
-    /** 根据追踪ID获取完整的执行信息
+    /** 根据会话ID获取完整的执行信息
      * 
-     * @param traceId 追踪ID
+     * @param sessionId 会话ID
      * @param userId 用户ID
      * @return 执行汇总 */
-    public AgentExecutionSummaryEntity getExecutionSummary(String traceId, String userId) {
+    public AgentExecutionSummaryEntity getExecutionSummary(String sessionId, String userId) {
         LambdaQueryWrapper<AgentExecutionSummaryEntity> wrapper = Wrappers.<AgentExecutionSummaryEntity>lambdaQuery()
-                .eq(AgentExecutionSummaryEntity::getTraceId, traceId);
+                .eq(AgentExecutionSummaryEntity::getSessionId, sessionId);
         AgentExecutionSummaryEntity summary = summaryRepository.selectOne(wrapper);
 
         if (summary == null) {
@@ -286,16 +203,16 @@ public class AgentExecutionTraceDomainService {
 
     /** 获取执行详情列表
      * 
-     * @param traceId 追踪ID
+     * @param sessionId 会话ID
      * @param userId 用户ID
      * @return 执行详情列表 */
-    public List<AgentExecutionDetailEntity> getExecutionDetails(String traceId, String userId) {
+    public List<AgentExecutionDetailEntity> getExecutionDetails(String sessionId, String userId) {
         // 先检查权限
-        getExecutionSummary(traceId, userId);
+        getExecutionSummary(sessionId, userId);
 
         LambdaQueryWrapper<AgentExecutionDetailEntity> wrapper = Wrappers.<AgentExecutionDetailEntity>lambdaQuery()
-                .eq(AgentExecutionDetailEntity::getTraceId, traceId)
-                .orderByAsc(AgentExecutionDetailEntity::getSequenceNo);
+                .eq(AgentExecutionDetailEntity::getSessionId, sessionId)
+                .orderByAsc(AgentExecutionDetailEntity::getCreatedAt);
         return detailRepository.selectList(wrapper);
     }
 
@@ -354,44 +271,44 @@ public class AgentExecutionTraceDomainService {
         return summaryRepository.selectList(wrapper);
     }
 
-    /** 根据追踪ID和消息类型查询执行详情
+    /** 根据会话ID和消息类型查询执行详情
      * 
-     * @param traceId 追踪ID
+     * @param sessionId 会话ID
      * @param messageType 消息类型
      * @return 执行详情列表 */
-    public List<AgentExecutionDetailEntity> getExecutionDetailsByMessageType(String traceId, String messageType) {
+    public List<AgentExecutionDetailEntity> getExecutionDetailsByMessageType(String sessionId, String messageType) {
         LambdaQueryWrapper<AgentExecutionDetailEntity> wrapper = Wrappers.<AgentExecutionDetailEntity>lambdaQuery()
-                .eq(AgentExecutionDetailEntity::getTraceId, traceId)
+                .eq(AgentExecutionDetailEntity::getSessionId, sessionId)
                 .eq(AgentExecutionDetailEntity::getMessageType, messageType)
-                .orderByAsc(AgentExecutionDetailEntity::getSequenceNo);
+                .orderByAsc(AgentExecutionDetailEntity::getCreatedAt);
         return detailRepository.selectList(wrapper);
     }
 
-    /** 查询追踪中的工具调用记录
+    /** 查询会话中的工具调用记录
      * 
-     * @param traceId 追踪ID
+     * @param sessionId 会话ID
      * @return 工具调用记录列表 */
-    public List<AgentExecutionDetailEntity> getToolCallsByTraceId(String traceId) {
-        return getExecutionDetailsByMessageType(traceId, "TOOL_CALL");
+    public List<AgentExecutionDetailEntity> getToolCallsBySessionId(String sessionId) {
+        return getExecutionDetailsByMessageType(sessionId, "TOOL_CALL");
     }
 
-    /** 查询追踪中的模型调用记录
+    /** 查询会话中的模型调用记录
      * 
-     * @param traceId 追踪ID
+     * @param sessionId 会话ID
      * @return 模型调用记录列表 */
-    public List<AgentExecutionDetailEntity> getModelCallsByTraceId(String traceId) {
-        return getExecutionDetailsByMessageType(traceId, "AI_RESPONSE");
+    public List<AgentExecutionDetailEntity> getModelCallsBySessionId(String sessionId) {
+        return getExecutionDetailsByMessageType(sessionId, "AI_RESPONSE");
     }
 
-    /** 查询追踪中使用降级的记录
+    /** 查询会话中使用降级的记录
      * 
-     * @param traceId 追踪ID
+     * @param sessionId 会话ID
      * @return 使用降级的记录列表 */
-    public List<AgentExecutionDetailEntity> getFallbackCallsByTraceId(String traceId) {
+    public List<AgentExecutionDetailEntity> getFallbackCallsBySessionId(String sessionId) {
         LambdaQueryWrapper<AgentExecutionDetailEntity> wrapper = Wrappers.<AgentExecutionDetailEntity>lambdaQuery()
-                .eq(AgentExecutionDetailEntity::getTraceId, traceId)
+                .eq(AgentExecutionDetailEntity::getSessionId, sessionId)
                 .eq(AgentExecutionDetailEntity::getIsFallbackUsed, true)
-                .orderByAsc(AgentExecutionDetailEntity::getSequenceNo);
+                .orderByAsc(AgentExecutionDetailEntity::getCreatedAt);
         return detailRepository.selectList(wrapper);
     }
 
@@ -545,9 +462,9 @@ public class AgentExecutionTraceDomainService {
     }
 
     /** 更新汇总的Token统计 */
-    private void updateSummaryTokens(String traceId, Integer inputTokens, Integer outputTokens) {
+    private void updateSummaryTokens(String sessionId, Integer inputTokens, Integer outputTokens) {
         LambdaQueryWrapper<AgentExecutionSummaryEntity> wrapper = Wrappers.<AgentExecutionSummaryEntity>lambdaQuery()
-                .eq(AgentExecutionSummaryEntity::getTraceId, traceId);
+                .eq(AgentExecutionSummaryEntity::getSessionId, sessionId);
         AgentExecutionSummaryEntity summary = summaryRepository.selectOne(wrapper);
 
         if (summary != null) {
@@ -557,9 +474,9 @@ public class AgentExecutionTraceDomainService {
     }
 
     /** 更新汇总的成本统计 */
-    private void updateSummaryCost(String traceId, BigDecimal cost) {
+    private void updateSummaryCost(String sessionId, BigDecimal cost) {
         LambdaQueryWrapper<AgentExecutionSummaryEntity> wrapper = Wrappers.<AgentExecutionSummaryEntity>lambdaQuery()
-                .eq(AgentExecutionSummaryEntity::getTraceId, traceId);
+                .eq(AgentExecutionSummaryEntity::getSessionId, sessionId);
         AgentExecutionSummaryEntity summary = summaryRepository.selectOne(wrapper);
 
         if (summary != null) {
@@ -569,9 +486,9 @@ public class AgentExecutionTraceDomainService {
     }
 
     /** 更新汇总的工具执行统计 */
-    private void updateSummaryToolExecution(String traceId, Integer executionTime) {
+    private void updateSummaryToolExecution(String sessionId, Integer executionTime) {
         LambdaQueryWrapper<AgentExecutionSummaryEntity> wrapper = Wrappers.<AgentExecutionSummaryEntity>lambdaQuery()
-                .eq(AgentExecutionSummaryEntity::getTraceId, traceId);
+                .eq(AgentExecutionSummaryEntity::getSessionId, sessionId);
         AgentExecutionSummaryEntity summary = summaryRepository.selectOne(wrapper);
 
         if (summary != null) {
@@ -580,10 +497,22 @@ public class AgentExecutionTraceDomainService {
         }
     }
 
-    /** 生成追踪ID */
-    private String generateTraceId() {
-        return "trace_" + System.currentTimeMillis() + "_" + UUID.randomUUID().toString().substring(0, 8);
+    /** 更新用户消息的Token数量
+     * 
+     * @param recordId 记录ID
+     * @param messageTokens 消息Token数 */
+    public void updateUserMessageTokens(Long recordId, Integer messageTokens) {
+        if (recordId == null || messageTokens == null) {
+            return;
+        }
+
+        AgentExecutionDetailEntity detail = detailRepository.selectById(recordId);
+        if (detail != null) {
+            detail.setMessageTokens(messageTokens);
+            detailRepository.updateById(detail);
+        }
     }
+
 
     /** 执行统计信息 */
     public static class ExecutionStatistics {

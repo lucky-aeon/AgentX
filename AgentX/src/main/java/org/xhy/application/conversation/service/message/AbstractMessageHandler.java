@@ -610,7 +610,7 @@ public abstract class AbstractMessageHandler {
     protected ModelCallInfo buildModelCallInfo(ChatContext chatContext, ChatResponse chatResponse, long callTime, boolean success) {
         return ModelCallInfo.builder()
                 .modelId(chatContext.getModel().getModelId())
-                .providerName(chatContext.getProvider().getName())
+                .providerName(chatContext.getProvider().getName()+(chatContext.getProvider().getIsOfficial()?"官方":""))
                 .inputTokens(chatResponse.tokenUsage().inputTokenCount())
                 .outputTokens(chatResponse.tokenUsage().outputTokenCount())
                 .callTime((int) callTime)

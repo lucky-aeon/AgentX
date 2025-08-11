@@ -14,13 +14,9 @@ public class AgentExecutionDetailEntity extends BaseEntity {
     @TableId(value = "id", type = IdType.AUTO)
     private Long id;
 
-    /** 关联汇总表的追踪ID */
-    @TableField("trace_id")
-    private String traceId;
-
-    /** 执行序号，同一trace_id内递增 */
-    @TableField("sequence_no")
-    private Integer sequenceNo;
+    /** 关联汇总表的会话ID */
+    @TableField("session_id")
+    private String sessionId;
 
     /** 统一的消息内容 */
     @TableField("message_content")
@@ -101,22 +97,20 @@ public class AgentExecutionDetailEntity extends BaseEntity {
     }
 
     /** 创建用户消息步骤 */
-    public static AgentExecutionDetailEntity createUserMessageStep(String traceId, Integer sequenceNo,
+    public static AgentExecutionDetailEntity createUserMessageStep(String sessionId, Integer sequenceNo,
             String userMessage, String messageType) {
         AgentExecutionDetailEntity entity = new AgentExecutionDetailEntity();
-        entity.setTraceId(traceId);
-        entity.setSequenceNo(sequenceNo);
+        entity.setSessionId(sessionId);
         entity.setMessageContent(userMessage);
         entity.setMessageType("USER_MESSAGE");
         return entity;
     }
 
     /** 创建用户消息步骤（带时间戳） */
-    public static AgentExecutionDetailEntity createUserMessageStep(String traceId, Integer sequenceNo,
+    public static AgentExecutionDetailEntity createUserMessageStep(String sessionId, Integer sequenceNo,
             String userMessage, String messageType, LocalDateTime eventTime) {
         AgentExecutionDetailEntity entity = new AgentExecutionDetailEntity();
-        entity.setTraceId(traceId);
-        entity.setSequenceNo(sequenceNo);
+        entity.setSessionId(sessionId);
         entity.setMessageContent(userMessage);
         entity.setMessageType("USER_MESSAGE");
         entity.setCreatedAt(eventTime); // 手动设置事件发生时间
@@ -124,11 +118,10 @@ public class AgentExecutionDetailEntity extends BaseEntity {
     }
 
     /** 创建带Token信息的用户消息步骤 */
-    public static AgentExecutionDetailEntity createUserMessageStepWithTokens(String traceId, Integer sequenceNo,
+    public static AgentExecutionDetailEntity createUserMessageStepWithTokens(String sessionId, Integer sequenceNo,
             String userMessage, String messageType, Integer messageTokens) {
         AgentExecutionDetailEntity entity = new AgentExecutionDetailEntity();
-        entity.setTraceId(traceId);
-        entity.setSequenceNo(sequenceNo);
+        entity.setSessionId(sessionId);
         entity.setMessageContent(userMessage);
         entity.setMessageType("USER_MESSAGE");
         entity.setMessageTokens(messageTokens);
@@ -136,11 +129,10 @@ public class AgentExecutionDetailEntity extends BaseEntity {
     }
 
     /** 创建带Token信息的用户消息步骤（带时间戳） */
-    public static AgentExecutionDetailEntity createUserMessageStepWithTokens(String traceId, Integer sequenceNo,
+    public static AgentExecutionDetailEntity createUserMessageStepWithTokens(String sessionId, Integer sequenceNo,
             String userMessage, String messageType, Integer messageTokens, LocalDateTime eventTime) {
         AgentExecutionDetailEntity entity = new AgentExecutionDetailEntity();
-        entity.setTraceId(traceId);
-        entity.setSequenceNo(sequenceNo);
+        entity.setSessionId(sessionId);
         entity.setMessageContent(userMessage);
         entity.setMessageType("USER_MESSAGE");
         entity.setMessageTokens(messageTokens);
@@ -149,11 +141,10 @@ public class AgentExecutionDetailEntity extends BaseEntity {
     }
 
     /** 创建AI响应步骤 */
-    public static AgentExecutionDetailEntity createAiResponseStep(String traceId, Integer sequenceNo, String aiResponse,
+    public static AgentExecutionDetailEntity createAiResponseStep(String sessionId, Integer sequenceNo, String aiResponse,
             String modelId, String providerName, Integer messageTokens, Integer modelCallTime, BigDecimal stepCost) {
         AgentExecutionDetailEntity entity = new AgentExecutionDetailEntity();
-        entity.setTraceId(traceId);
-        entity.setSequenceNo(sequenceNo);
+        entity.setSessionId(sessionId);
         entity.setMessageContent(aiResponse);
         entity.setMessageType("AI_RESPONSE");
         entity.setModelId(modelId);
@@ -165,12 +156,11 @@ public class AgentExecutionDetailEntity extends BaseEntity {
     }
 
     /** 创建AI响应步骤（带时间戳） */
-    public static AgentExecutionDetailEntity createAiResponseStep(String traceId, Integer sequenceNo, String aiResponse,
+    public static AgentExecutionDetailEntity createAiResponseStep(String sessionId, Integer sequenceNo, String aiResponse,
             String modelId, String providerName, Integer messageTokens, Integer modelCallTime, BigDecimal stepCost,
             LocalDateTime eventTime) {
         AgentExecutionDetailEntity entity = new AgentExecutionDetailEntity();
-        entity.setTraceId(traceId);
-        entity.setSequenceNo(sequenceNo);
+        entity.setSessionId(sessionId);
         entity.setMessageContent(aiResponse);
         entity.setMessageType("AI_RESPONSE");
         entity.setModelId(modelId);
@@ -183,11 +173,10 @@ public class AgentExecutionDetailEntity extends BaseEntity {
     }
 
     /** 创建工具调用步骤 */
-    public static AgentExecutionDetailEntity createToolCallStep(String traceId, Integer sequenceNo, String toolName,
+    public static AgentExecutionDetailEntity createToolCallStep(String sessionId, Integer sequenceNo, String toolName,
             String requestArgs, String responseData, Integer executionTime, Boolean success) {
         AgentExecutionDetailEntity entity = new AgentExecutionDetailEntity();
-        entity.setTraceId(traceId);
-        entity.setSequenceNo(sequenceNo);
+        entity.setSessionId(sessionId);
         entity.setMessageContent("执行工具：" + toolName);
         entity.setMessageType("TOOL_CALL");
         entity.setToolName(toolName);
@@ -200,12 +189,11 @@ public class AgentExecutionDetailEntity extends BaseEntity {
     }
 
     /** 创建工具调用步骤（带时间戳） */
-    public static AgentExecutionDetailEntity createToolCallStep(String traceId, Integer sequenceNo, String toolName,
+    public static AgentExecutionDetailEntity createToolCallStep(String sessionId, Integer sequenceNo, String toolName,
             String requestArgs, String responseData, Integer executionTime, Boolean success, LocalDateTime eventTime) {
         AgentExecutionDetailEntity entity = new AgentExecutionDetailEntity();
-        entity.setTraceId(traceId);
-        entity.setSequenceNo(sequenceNo);
-        entity.setMessageContent("执行工具：" + toolName);
+        entity.setSessionId(sessionId);
+        entity.setMessageContent("执行具：" + toolName);
         entity.setMessageType("TOOL_CALL");
         entity.setToolName(toolName);
         entity.setToolRequestArgs(requestArgs);
@@ -240,20 +228,12 @@ public class AgentExecutionDetailEntity extends BaseEntity {
         this.id = id;
     }
 
-    public String getTraceId() {
-        return traceId;
+    public String getSessionId() {
+        return sessionId;
     }
 
-    public void setTraceId(String traceId) {
-        this.traceId = traceId;
-    }
-
-    public Integer getSequenceNo() {
-        return sequenceNo;
-    }
-
-    public void setSequenceNo(Integer sequenceNo) {
-        this.sequenceNo = sequenceNo;
+    public void setSessionId(String sessionId) {
+        this.sessionId = sessionId;
     }
 
     public String getMessageContent() {

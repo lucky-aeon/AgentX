@@ -77,8 +77,8 @@ public abstract class TracingMessageHandler extends AbstractMessageHandler {
             Thread.currentThread().getName(), chatContext.getUserId(), chatContext.getSessionId());
             
         try {
-            // 开始执行追踪
-            TraceContext traceContext = traceCollector.startExecution(
+            // 获取或开始会话级别的执行追踪
+            TraceContext traceContext = traceCollector.getOrStartExecution(
                 chatContext.getUserId(),
                 chatContext.getSessionId(), 
                 chatContext.getAgent().getId(),
@@ -131,6 +131,11 @@ public abstract class TracingMessageHandler extends AbstractMessageHandler {
         TraceContext traceContext = getCurrentTraceContext();
         if (traceContext != null && traceContext.isTraceEnabled()) {
             try {
+                // 更新用户消息的Token数量（两阶段处理的第二阶段）
+                if (modelCallInfo.getInputTokens() != null) {
+                    traceCollector.updateUserMessageTokens(traceContext, modelCallInfo.getInputTokens());
+                }
+                
                 // 记录模型调用和AI响应
                 String aiResponse = chatResponse.aiMessage().text();
                 traceCollector.recordModelCall(traceContext, aiResponse, modelCallInfo);
