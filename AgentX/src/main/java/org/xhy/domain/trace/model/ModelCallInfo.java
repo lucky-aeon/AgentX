@@ -20,8 +20,6 @@ public class ModelCallInfo {
     /** 调用耗时(毫秒) */
     private final Integer callTime;
 
-    /** 调用成本 */
-    private final BigDecimal cost;
 
     /** 是否成功 */
     private final Boolean success;
@@ -44,7 +42,6 @@ public class ModelCallInfo {
         this.inputTokens = builder.inputTokens;
         this.outputTokens = builder.outputTokens;
         this.callTime = builder.callTime;
-        this.cost = builder.cost;
         this.success = builder.success;
         this.errorMessage = builder.errorMessage;
         this.fallbackUsed = builder.fallbackUsed;
@@ -62,7 +59,6 @@ public class ModelCallInfo {
         private Integer inputTokens;
         private Integer outputTokens;
         private Integer callTime;
-        private BigDecimal cost;
         private Boolean success = true;
         private String errorMessage;
         private Boolean fallbackUsed = false;
@@ -94,10 +90,6 @@ public class ModelCallInfo {
             return this;
         }
 
-        public Builder cost(BigDecimal cost) {
-            this.cost = cost;
-            return this;
-        }
 
         public Builder success(Boolean success) {
             this.success = success;
@@ -150,9 +142,6 @@ public class ModelCallInfo {
         return callTime;
     }
 
-    public BigDecimal getCost() {
-        return cost;
-    }
 
     public Boolean getSuccess() {
         return success;
@@ -186,6 +175,6 @@ public class ModelCallInfo {
     public String toString() {
         return "ModelCallInfo{" + "modelId='" + modelId + '\'' + ", providerName='" + providerName + '\''
                 + ", inputTokens=" + inputTokens + ", outputTokens=" + outputTokens + ", callTime=" + callTime
-                + ", cost=" + cost + ", success=" + success + ", fallbackUsed=" + fallbackUsed + '}';
+                + ", success=" + success + ", fallbackUsed=" + fallbackUsed + '}';
     }
 }

@@ -36,8 +36,6 @@ public class AgentTraceStatisticsDTO {
     /** 工具调用总次数 */
     private Integer totalToolCalls;
 
-    /** 总成本费用 */
-    private BigDecimal totalCost;
 
     /** 会话总数 */
     private Integer totalSessions;
@@ -132,13 +130,6 @@ public class AgentTraceStatisticsDTO {
         this.totalToolCalls = totalToolCalls;
     }
 
-    public BigDecimal getTotalCost() {
-        return totalCost;
-    }
-
-    public void setTotalCost(BigDecimal totalCost) {
-        this.totalCost = totalCost;
-    }
 
     public Integer getTotalSessions() {
         return totalSessions;

@@ -78,9 +78,6 @@ public class AgentExecutionDetailEntity extends BaseEntity {
     @TableField("fallback_to_model")
     private String fallbackToModel;
 
-    /** 步骤成本 */
-    @TableField("step_cost")
-    private BigDecimal stepCost;
 
     /** 步骤执行是否成功 */
     @TableField("step_success")
@@ -93,7 +90,6 @@ public class AgentExecutionDetailEntity extends BaseEntity {
     public AgentExecutionDetailEntity() {
         this.isFallbackUsed = false;
         this.stepSuccess = true;
-        this.stepCost = BigDecimal.ZERO;
     }
 
     /** 创建用户消息步骤 */
@@ -142,7 +138,7 @@ public class AgentExecutionDetailEntity extends BaseEntity {
 
     /** 创建AI响应步骤 */
     public static AgentExecutionDetailEntity createAiResponseStep(String sessionId, Integer sequenceNo, String aiResponse,
-            String modelId, String providerName, Integer messageTokens, Integer modelCallTime, BigDecimal stepCost) {
+            String modelId, String providerName, Integer messageTokens, Integer modelCallTime) {
         AgentExecutionDetailEntity entity = new AgentExecutionDetailEntity();
         entity.setSessionId(sessionId);
         entity.setMessageContent(aiResponse);
@@ -151,13 +147,12 @@ public class AgentExecutionDetailEntity extends BaseEntity {
         entity.setProviderName(providerName);
         entity.setMessageTokens(messageTokens);
         entity.setModelCallTime(modelCallTime);
-        entity.setStepCost(stepCost);
         return entity;
     }
 
     /** 创建AI响应步骤（带时间戳） */
     public static AgentExecutionDetailEntity createAiResponseStep(String sessionId, Integer sequenceNo, String aiResponse,
-            String modelId, String providerName, Integer messageTokens, Integer modelCallTime, BigDecimal stepCost,
+            String modelId, String providerName, Integer messageTokens, Integer modelCallTime,
             LocalDateTime eventTime) {
         AgentExecutionDetailEntity entity = new AgentExecutionDetailEntity();
         entity.setSessionId(sessionId);
@@ -167,7 +162,6 @@ public class AgentExecutionDetailEntity extends BaseEntity {
         entity.setProviderName(providerName);
         entity.setMessageTokens(messageTokens);
         entity.setModelCallTime(modelCallTime);
-        entity.setStepCost(stepCost);
         entity.setCreatedAt(eventTime); // 手动设置事件发生时间
         return entity;
     }
@@ -356,13 +350,6 @@ public class AgentExecutionDetailEntity extends BaseEntity {
         this.fallbackToModel = fallbackToModel;
     }
 
-    public BigDecimal getStepCost() {
-        return stepCost;
-    }
-
-    public void setStepCost(BigDecimal stepCost) {
-        this.stepCost = stepCost;
-    }
 
     public Boolean getStepSuccess() {
         return stepSuccess;

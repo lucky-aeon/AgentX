@@ -107,7 +107,7 @@ public class AgentExecutionTraceDomainService {
         AgentExecutionDetailEntity detail = AgentExecutionDetailEntity.createAiResponseStep(traceContext.getSessionId(),
                 traceContext.nextSequence(), aiResponse, modelCallInfo.getModelId(), modelCallInfo.getProviderName(),
                 modelCallInfo.getOutputTokens(), // AI响应使用输出Token数
-                modelCallInfo.getCallTime(), modelCallInfo.getCost(), eventTime);
+                modelCallInfo.getCallTime(), eventTime);
 
         // 设置降级信息
         if (Boolean.TRUE.equals(modelCallInfo.getFallbackUsed())) {
@@ -124,9 +124,6 @@ public class AgentExecutionTraceDomainService {
 
         // 更新汇总统计
         updateSummaryTokens(traceContext.getSessionId(), modelCallInfo.getInputTokens(), modelCallInfo.getOutputTokens());
-        if (modelCallInfo.getCost() != null) {
-            updateSummaryCost(traceContext.getSessionId(), modelCallInfo.getCost());
-        }
     }
 
     /** 记录工具调用（带时间戳）
@@ -373,10 +370,6 @@ public class AgentExecutionTraceDomainService {
                     int totalToolCalls = agentExecutions.stream()
                             .mapToInt(e -> e.getToolCallCount() != null ? e.getToolCallCount() : 0).sum();
 
-                    // 成本统计
-                    BigDecimal totalCost = agentExecutions.stream()
-                            .map(e -> e.getTotalCost() != null ? e.getTotalCost() : BigDecimal.ZERO)
-                            .reduce(BigDecimal.ZERO, BigDecimal::add);
 
                     // 会话数统计（去重）
                     int totalSessions = (int) agentExecutions.stream().map(AgentExecutionSummaryEntity::getSessionId)
@@ -392,7 +385,7 @@ public class AgentExecutionTraceDomainService {
                             .map(AgentExecutionSummaryEntity::getExecutionSuccess).orElse(null);
 
                     return new AgentStatistics(agentId, totalExecutions, successfulExecutions, failedExecutions,
-                            successRate, totalTokens, totalInputTokens, totalOutputTokens, totalToolCalls, totalCost,
+                            successRate, totalTokens, totalInputTokens, totalOutputTokens, totalToolCalls,
                             totalSessions, lastExecutionTime, lastExecutionSuccess);
                 }).sorted((a, b) -> b.getLastExecutionTime().compareTo(a.getLastExecutionTime()))
                 .collect(java.util.stream.Collectors.toList());
@@ -440,10 +433,6 @@ public class AgentExecutionTraceDomainService {
                     int totalExecutionTime = sessionExecutions.stream()
                             .mapToInt(e -> e.getTotalExecutionTime() != null ? e.getTotalExecutionTime() : 0).sum();
 
-                    // 成本统计
-                    BigDecimal totalCost = sessionExecutions.stream()
-                            .map(e -> e.getTotalCost() != null ? e.getTotalCost() : BigDecimal.ZERO)
-                            .reduce(BigDecimal.ZERO, BigDecimal::add);
 
                     // 最后执行时间和状态
                     LocalDateTime lastExecutionTime = sessionExecutions.stream()
@@ -456,7 +445,7 @@ public class AgentExecutionTraceDomainService {
 
                     return new SessionStatistics(sessionId, agentId, totalExecutions, successfulExecutions,
                             failedExecutions, successRate, totalTokens, totalInputTokens, totalOutputTokens,
-                            totalToolCalls, totalExecutionTime, totalCost, lastExecutionTime, lastExecutionSuccess);
+                            totalToolCalls, totalExecutionTime, lastExecutionTime, lastExecutionSuccess);
                 }).sorted((a, b) -> b.getLastExecutionTime().compareTo(a.getLastExecutionTime()))
                 .collect(java.util.stream.Collectors.toList());
     }
@@ -473,17 +462,6 @@ public class AgentExecutionTraceDomainService {
         }
     }
 
-    /** 更新汇总的成本统计 */
-    private void updateSummaryCost(String sessionId, BigDecimal cost) {
-        LambdaQueryWrapper<AgentExecutionSummaryEntity> wrapper = Wrappers.<AgentExecutionSummaryEntity>lambdaQuery()
-                .eq(AgentExecutionSummaryEntity::getSessionId, sessionId);
-        AgentExecutionSummaryEntity summary = summaryRepository.selectOne(wrapper);
-
-        if (summary != null) {
-            summary.addCost(cost);
-            summaryRepository.updateById(summary);
-        }
-    }
 
     /** 更新汇总的工具执行统计 */
     private void updateSummaryToolExecution(String sessionId, Integer executionTime) {
@@ -558,14 +536,13 @@ public class AgentExecutionTraceDomainService {
         private final int totalInputTokens;
         private final int totalOutputTokens;
         private final int totalToolCalls;
-        private final BigDecimal totalCost;
         private final int totalSessions;
         private final LocalDateTime lastExecutionTime;
         private final Boolean lastExecutionSuccess;
 
         public AgentStatistics(String agentId, int totalExecutions, int successfulExecutions, int failedExecutions,
                 double successRate, int totalTokens, int totalInputTokens, int totalOutputTokens, int totalToolCalls,
-                BigDecimal totalCost, int totalSessions, LocalDateTime lastExecutionTime,
+                int totalSessions, LocalDateTime lastExecutionTime,
                 Boolean lastExecutionSuccess) {
             this.agentId = agentId;
             this.totalExecutions = totalExecutions;
@@ -576,7 +553,6 @@ public class AgentExecutionTraceDomainService {
             this.totalInputTokens = totalInputTokens;
             this.totalOutputTokens = totalOutputTokens;
             this.totalToolCalls = totalToolCalls;
-            this.totalCost = totalCost;
             this.totalSessions = totalSessions;
             this.lastExecutionTime = lastExecutionTime;
             this.lastExecutionSuccess = lastExecutionSuccess;
@@ -610,9 +586,6 @@ public class AgentExecutionTraceDomainService {
         public int getTotalToolCalls() {
             return totalToolCalls;
         }
-        public BigDecimal getTotalCost() {
-            return totalCost;
-        }
         public int getTotalSessions() {
             return totalSessions;
         }
@@ -637,13 +610,12 @@ public class AgentExecutionTraceDomainService {
         private final int totalOutputTokens;
         private final int totalToolCalls;
         private final int totalExecutionTime;
-        private final BigDecimal totalCost;
         private final LocalDateTime lastExecutionTime;
         private final Boolean lastExecutionSuccess;
 
         public SessionStatistics(String sessionId, String agentId, int totalExecutions, int successfulExecutions,
                 int failedExecutions, double successRate, int totalTokens, int totalInputTokens, int totalOutputTokens,
-                int totalToolCalls, int totalExecutionTime, BigDecimal totalCost, LocalDateTime lastExecutionTime,
+                int totalToolCalls, int totalExecutionTime, LocalDateTime lastExecutionTime,
                 Boolean lastExecutionSuccess) {
             this.sessionId = sessionId;
             this.agentId = agentId;
@@ -656,7 +628,6 @@ public class AgentExecutionTraceDomainService {
             this.totalOutputTokens = totalOutputTokens;
             this.totalToolCalls = totalToolCalls;
             this.totalExecutionTime = totalExecutionTime;
-            this.totalCost = totalCost;
             this.lastExecutionTime = lastExecutionTime;
             this.lastExecutionSuccess = lastExecutionSuccess;
         }
@@ -694,9 +665,6 @@ public class AgentExecutionTraceDomainService {
         }
         public int getTotalExecutionTime() {
             return totalExecutionTime;
-        }
-        public BigDecimal getTotalCost() {
-            return totalCost;
         }
         public LocalDateTime getLastExecutionTime() {
             return lastExecutionTime;

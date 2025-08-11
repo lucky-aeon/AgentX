@@ -248,7 +248,6 @@ public class AgentExecutionTraceAppService {
             dto.setTotalInputTokens(stats.getTotalInputTokens());
             dto.setTotalOutputTokens(stats.getTotalOutputTokens());
             dto.setTotalToolCalls(stats.getTotalToolCalls());
-            dto.setTotalCost(stats.getTotalCost());
             dto.setTotalSessions(stats.getTotalSessions());
             dto.setLastExecutionTime(stats.getLastExecutionTime());
             dto.setLastExecutionSuccess(stats.getLastExecutionSuccess());
@@ -308,7 +307,6 @@ public class AgentExecutionTraceAppService {
             dto.setTotalOutputTokens(stats.getTotalOutputTokens());
             dto.setTotalToolCalls(stats.getTotalToolCalls());
             dto.setTotalExecutionTime(stats.getTotalExecutionTime());
-            dto.setTotalCost(stats.getTotalCost());
             dto.setLastExecutionTime(stats.getLastExecutionTime());
             dto.setLastExecutionSuccess(stats.getLastExecutionSuccess());
             return dto;

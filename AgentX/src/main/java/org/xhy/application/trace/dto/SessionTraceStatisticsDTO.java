@@ -45,8 +45,6 @@ public class SessionTraceStatisticsDTO {
     /** 总执行时间(毫秒) */
     private Integer totalExecutionTime;
 
-    /** 总成本费用 */
-    private BigDecimal totalCost;
 
     /** 会话创建时间 */
     private LocalDateTime sessionCreatedTime;
@@ -168,13 +166,6 @@ public class SessionTraceStatisticsDTO {
         this.totalExecutionTime = totalExecutionTime;
     }
 
-    public BigDecimal getTotalCost() {
-        return totalCost;
-    }
-
-    public void setTotalCost(BigDecimal totalCost) {
-        this.totalCost = totalCost;
-    }
 
     public LocalDateTime getSessionCreatedTime() {
         return sessionCreatedTime;

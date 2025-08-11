@@ -59,9 +59,6 @@ public class AgentExecutionSummaryEntity extends BaseEntity {
     @TableField("total_tool_execution_time")
     private Integer totalToolExecutionTime;
 
-    /** 总成本费用 */
-    @TableField("total_cost")
-    private BigDecimal totalCost;
 
     /** 执行是否成功 */
     @TableField("execution_success")
@@ -81,7 +78,6 @@ public class AgentExecutionSummaryEntity extends BaseEntity {
         this.totalTokens = 0;
         this.toolCallCount = 0;
         this.totalToolExecutionTime = 0;
-        this.totalCost = BigDecimal.ZERO;
     }
 
     /** 创建新的执行追踪汇总 */
@@ -128,12 +124,6 @@ public class AgentExecutionSummaryEntity extends BaseEntity {
         }
     }
 
-    /** 添加成本 */
-    public void addCost(BigDecimal cost) {
-        if (cost != null) {
-            this.totalCost = this.totalCost.add(cost);
-        }
-    }
 
     /** 检查是否需要检查用户ID权限 */
     public boolean needCheckUserId() {
@@ -238,13 +228,6 @@ public class AgentExecutionSummaryEntity extends BaseEntity {
         this.totalToolExecutionTime = totalToolExecutionTime;
     }
 
-    public BigDecimal getTotalCost() {
-        return totalCost;
-    }
-
-    public void setTotalCost(BigDecimal totalCost) {
-        this.totalCost = totalCost;
-    }
 
     public Boolean getExecutionSuccess() {
         return executionSuccess;

@@ -45,8 +45,6 @@ public class AgentExecutionSummaryDTO {
     /** 工具执行总耗时(毫秒) */
     private Integer totalToolExecutionTime;
 
-    /** 总成本费用 */
-    private BigDecimal totalCost;
 
     /** 执行是否成功 */
     private Boolean executionSuccess;
@@ -168,13 +166,6 @@ public class AgentExecutionSummaryDTO {
         this.totalToolExecutionTime = totalToolExecutionTime;
     }
 
-    public BigDecimal getTotalCost() {
-        return totalCost;
-    }
-
-    public void setTotalCost(BigDecimal totalCost) {
-        this.totalCost = totalCost;
-    }
 
     public Boolean getExecutionSuccess() {
         return executionSuccess;
