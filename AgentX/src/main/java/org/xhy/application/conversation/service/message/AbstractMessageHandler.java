@@ -20,6 +20,7 @@ import org.xhy.application.conversation.service.message.agent.tool.RagToolManage
 import org.xhy.domain.agent.model.AgentEntity;
 import org.xhy.domain.conversation.constant.MessageType;
 import org.xhy.domain.conversation.constant.Role;
+import org.xhy.domain.conversation.model.ContextEntity;
 import org.xhy.domain.conversation.model.MessageEntity;
 import org.xhy.domain.conversation.service.MessageDomainService;
 import org.xhy.domain.conversation.service.SessionDomainService;
@@ -41,10 +42,13 @@ import org.xhy.domain.product.constant.UsageDataKeys;
 import org.xhy.domain.user.model.AccountEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.annotation.Nullable;
 import java.math.BigDecimal;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 public abstract class AbstractMessageHandler {
 
@@ -145,9 +149,8 @@ public abstract class AbstractMessageHandler {
         // 1. 获取同步LLM客户端
         ChatModel syncClient = llmServiceFactory.getStrandClient(chatContext.getProvider(), chatContext.getModel());
 
-        // 2. 保存用户消息
-        messageDomainService.saveMessageAndUpdateContext(Collections.singletonList(userEntity),
-                chatContext.getContextEntity());
+        // 2. 保存用户消息和摘要
+        this.saveMessageAndUpdateContext(chatContext, userEntity);
 
         try {
             // 3. 记录调用开始时间
@@ -159,7 +162,7 @@ public abstract class AbstractMessageHandler {
             // 4. 构建同步Agent并调用
             ChatResponse chatResponse = syncClient.chat(messages);
 
-            // 5. 处理响应 - 设置消息内容
+            // 5. 处理响应 - 设置消息token
             this.setMessageTokenCount(chatContext.getMessageHistory(), userEntity, llmEntity, chatResponse);
 
             // 6. 保存消息
@@ -192,12 +195,30 @@ public abstract class AbstractMessageHandler {
         }
     }
 
+    /** 保存消息记录和更新上下文
+     * @param chatContext 对话环境
+     * @param userEntity 此次的用户消息 */
+    private void saveMessageAndUpdateContext(ChatContext chatContext, MessageEntity userEntity) {
+        MessageEntity summary = getSummaryFromHistory(chatContext.getMessageHistory());
+        ContextEntity contextEntity = chatContext.getContextEntity();
+        if (summary != null) {
+            // 不重置 created_at 字段
+            messageDomainService.saveMessage(Collections.singletonList(summary));
+            // 去除摘要消息的空id
+            contextEntity.setActiveMessages(
+                    contextEntity.getActiveMessages().stream().filter(Objects::nonNull).collect(Collectors.toList()));
+            contextEntity.getActiveMessages().add(0, summary.getId());
+        }
+        // 保存用户消息
+        messageDomainService.saveMessageAndUpdateContext(Collections.singletonList(userEntity), contextEntity);
+    }
+
     /** 子类实现具体的聊天处理逻辑 */
     protected <T> void processChat(Agent agent, T connection, MessageTransport<T> transport, ChatContext chatContext,
             MessageEntity userEntity, MessageEntity llmEntity) {
 
-        messageDomainService.saveMessageAndUpdateContext(Collections.singletonList(userEntity),
-                chatContext.getContextEntity());
+        // 保存用户消息和摘要
+        this.saveMessageAndUpdateContext(chatContext, userEntity);
 
         AtomicReference<StringBuilder> messageBuilder = new AtomicReference<>(new StringBuilder());
         TokenStream tokenStream = agent.chat(chatContext.getUserMessage());
@@ -227,6 +248,7 @@ public abstract class AbstractMessageHandler {
 
         // 完整响应处理
         tokenStream.onCompleteResponse(chatResponse -> {
+
             this.setMessageTokenCount(chatContext.getMessageHistory(), userEntity, llmEntity, chatResponse);
 
             messageDomainService.updateMessage(userEntity);
@@ -277,6 +299,15 @@ public abstract class AbstractMessageHandler {
         tokenStream.start();
     }
 
+    @Nullable
+    private static MessageEntity getSummaryFromHistory(List<MessageEntity> historyMessages) {
+        List<MessageEntity> list = historyMessages.stream().filter(MessageEntity::isSummaryMessage).toList();
+        if (list.isEmpty()) {
+            return null;
+        }
+        return list.get(0);
+    }
+
     /** 根据历史消息的本体token算出本次消息的本体token
      * @param historyMessages 历史消息列表
      * @param userEntity 用户请求消息实体
@@ -290,8 +321,9 @@ public abstract class AbstractMessageHandler {
 
         int bodyTokenSum = 0;
         if (CollectionUtil.isNotEmpty(historyMessages)) {
-            bodyTokenSum = historyMessages.stream().filter(Objects::nonNull).mapToInt(MessageEntity::getBodyTokenCount)
-                    .sum();
+            bodyTokenSum = historyMessages.stream()
+                    // .filter(Objects::nonNull)
+                    .mapToInt(MessageEntity::getBodyTokenCount).sum();
         }
         userEntity.setTokenCount(chatResponse.tokenUsage().inputTokenCount());
         userEntity.setBodyTokenCount(chatResponse.tokenUsage().inputTokenCount() - bodyTokenSum);
@@ -344,10 +376,12 @@ public abstract class AbstractMessageHandler {
 
     /** 构建历史消息到内存中 */
     protected void buildHistoryMessage(ChatContext chatContext, MessageWindowChatMemory memory) {
-        String summary = chatContext.getContextEntity().getSummary();
+        // String summary = chatContext.getContextEntity().getSummary();
+        String summary = Optional.ofNullable(getSummaryFromHistory(chatContext.getMessageHistory()))
+                .map(MessageEntity::getContent).orElse("");
         if (StringUtils.isNotEmpty(summary)) {
             // 添加为AI消息，但明确标识这是摘要
-            memory.add(new AiMessage(AgentPromptTemplates.getSummaryPrefix() + summary));
+            memory.add(new AiMessage(summary));
         }
 
         String presetToolPrompt = "";
@@ -360,6 +394,7 @@ public abstract class AbstractMessageHandler {
         memory.add(new SystemMessage(chatContext.getAgent().getSystemPrompt() + "\n" + presetToolPrompt));
         List<MessageEntity> messageHistory = chatContext.getMessageHistory();
         for (MessageEntity messageEntity : messageHistory) {
+            // 注意不要重复发送摘要消息
             if (messageEntity.isUserMessage()) {
                 List<String> fileUrls = messageEntity.getFileUrls();
                 for (String fileUrl : fileUrls) {
@@ -373,10 +408,7 @@ public abstract class AbstractMessageHandler {
             } else if (messageEntity.isSystemMessage()) {
                 memory.add(new SystemMessage(messageEntity.getContent()));
             }
-            // 获取摘要消息
         }
-
-        // 将摘要消息插入到 message 第一条
     }
 
     // 智能重命名会话

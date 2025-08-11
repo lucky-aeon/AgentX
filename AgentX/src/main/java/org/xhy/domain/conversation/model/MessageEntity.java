@@ -160,6 +160,10 @@ public class MessageEntity extends BaseEntity {
         return this.role == Role.SYSTEM;
     }
 
+    public boolean isSummaryMessage() {
+        return this.role == Role.SUMMARY;
+    }
+
     public List<String> getFileUrls() {
         return fileUrls;
     }

@@ -105,7 +105,7 @@ public class SlidingWindowTokenOverflowStrategy implements TokenOverflowStrategy
 
     /** 计算消息列表的总token数 */
     private int calculateTotalTokens(List<TokenMessage> messages) {
-        return messages.stream().mapToInt(m -> m.getTokenCount() != null ? m.getTokenCount() : 0).sum();
+        return messages.stream().mapToInt(m -> m.getBodyTokenCount() != null ? m.getBodyTokenCount() : 0).sum();
     }
 
     /** 获取配置的最大Token数，如果未配置则使用默认值

@@ -1,5 +1,6 @@
 package org.xhy.application.conversation.service;
 
+import cn.hutool.core.bean.BeanUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
@@ -12,6 +13,7 @@ import org.xhy.application.conversation.dto.ChatResponse;
 import org.xhy.application.conversation.dto.MessageDTO;
 import org.xhy.application.conversation.service.message.AbstractMessageHandler;
 import org.xhy.application.conversation.service.message.preview.PreviewMessageHandler;
+import org.xhy.domain.conversation.constant.MessageType;
 import org.xhy.domain.user.service.UserSettingsDomainService;
 
 import org.xhy.domain.agent.model.AgentEntity;
@@ -49,6 +51,7 @@ import org.xhy.infrastructure.transport.MessageTransportFactory;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -300,11 +303,11 @@ public class ConversationAppService {
         List<MessageEntity> messageEntities = new ArrayList<>();
 
         if (contextEntity != null) {
-            // 获取活跃消息
+            // 获取活跃消息(包括摘要)
             List<String> activeMessageIds = contextEntity.getActiveMessages();
             messageEntities = messageDomainService.listByIds(activeMessageIds);
 
-            // 应用Token溢出策略
+            // 应用Token溢出策略, 上下文历史消息以token策略返回的为准
             messageEntities = applyTokenOverflowStrategy(environment, contextEntity, messageEntities);
         } else {
             contextEntity = new ContextEntity();
@@ -324,7 +327,7 @@ public class ConversationAppService {
         environment.setMessageHistory(messageEntities);
     }
 
-    /** 应用Token溢出策略
+    /** 应用Token溢出策略，返回处理后的历史消息
      *
      * @param environment 对话环境
      * @param contextEntity 上下文实体
@@ -356,24 +359,34 @@ public class ConversationAppService {
         // 处理Token
         TokenProcessResult result = tokenDomainService.processMessages(tokenMessages, tokenOverflowConfig);
         List<TokenMessage> retainedMessages = new ArrayList<>(tokenMessages);
+        TokenMessage newSummaryMessage = null;
         // 更新上下文
         if (result.isProcessed()) {
             retainedMessages = result.getRetainedMessages();
-            List<String> retainedMessageIds = retainedMessages.stream().map(TokenMessage::getId)
+            // 统一对 活跃消息进行时间升序排序
+            List<String> retainedMessageIds = retainedMessages.stream()
+                    .sorted(Comparator.comparing(TokenMessage::getCreatedAt)).map(TokenMessage::getId)
                     .collect(Collectors.toList());
-
             if (strategyType == TokenOverflowStrategyEnum.SUMMARIZE) {
-                String newSummary = result.getSummary();
-                String oldSummary = contextEntity.getSummary();
-                contextEntity.setSummary(oldSummary + newSummary);
+                newSummaryMessage = retainedMessages.stream()
+                        .filter(message -> message.getRole().equals(Role.SUMMARY.name())).toList().get(0);
+                contextEntity.setSummary(newSummaryMessage.getContent());
             }
 
             contextEntity.setActiveMessages(retainedMessageIds);
         }
         Set<String> retainedMessageIdSet = retainedMessages.stream().map(TokenMessage::getId)
                 .collect(Collectors.toSet());
-        return messageEntities.stream().filter(message -> retainedMessageIdSet.contains(message.getId()))
+        // 保留的用户消息和模型消息
+        List<MessageEntity> contextMessages = messageEntities.stream()
+                .filter(message -> retainedMessageIdSet.contains(message.getId()) && !message.isSummaryMessage())
                 .collect(Collectors.toList());
+        if (newSummaryMessage != null) {
+            // 添加更新后的摘要消息
+            contextMessages.add(0,
+                    this.summaryMessageToEntity(newSummaryMessage, messageEntities.get(0).getSessionId()));
+        }
+        return contextMessages;
     }
 
     /** 消息实体转换为token消息 */
@@ -388,6 +401,18 @@ public class ConversationAppService {
             tokenMessage.setCreatedAt(message.getCreatedAt());
             return tokenMessage;
         }).collect(Collectors.toList());
+    }
+
+    private MessageEntity summaryMessageToEntity(TokenMessage tokenMessage, String sessionId) {
+        MessageEntity messageEntity = new MessageEntity();
+        BeanUtil.copyProperties(tokenMessage, messageEntity);
+        messageEntity.setId(tokenMessage.getId());
+        messageEntity.setRole(Role.fromCode(tokenMessage.getRole()));
+        messageEntity.setCreatedAt(tokenMessage.getCreatedAt());
+        messageEntity.setUpdatedAt(tokenMessage.getCreatedAt());
+        messageEntity.setSessionId(sessionId);
+        messageEntity.setMessageType(MessageType.TEXT);
+        return messageEntity;
     }
 
     /** Agent预览功能 - 无需保存会话的对话体验
