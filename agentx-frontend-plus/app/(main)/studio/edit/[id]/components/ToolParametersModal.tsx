@@ -90,10 +90,12 @@ const ToolParametersModal: React.FC<ToolParametersModalProps> = ({
 
   // 保存预设参数
   const savePresetParameters = () => {
-    if (onSavePresetParameters && tool) {
-      onSavePresetParameters(tool.id, localPresetParams);
+    if (onSavePresetParameters && tool && tool.toolId) {
+      onSavePresetParameters(tool.toolId, localPresetParams);
       toast.success("参数预设已保存");
       onClose();
+    } else if (!tool?.toolId) {
+      toast.error("工具ID不存在，无法保存参数");
     }
   };
 

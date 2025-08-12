@@ -37,8 +37,17 @@ export function useAgentTools() {
     currentTools: AgentTool[], 
     setFormData: (updater: (prev: any) => any) => void
   ) => {
-    // 使用 toolId（如果存在）或 id 作为工具标识符
-    const toolIdentifier = toolToToggle.toolId || toolToToggle.id;
+    // 确保优先使用 toolId 作为工具的唯一标识符
+    const toolIdentifier = toolToToggle.toolId;
+    if (!toolIdentifier) {
+      console.error("工具缺少 toolId 字段:", toolToToggle);
+      toast({
+        title: "工具配置错误",
+        description: "工具缺少必要的标识符",
+        variant: "destructive",
+      });
+      return;
+    }
     const isToolCurrentlyEnabled = currentTools.some(t => t.id === toolIdentifier);
     
     setFormData((prev: any) => {
@@ -107,11 +116,11 @@ export function useAgentTools() {
     presetParams: Record<string, Record<string, string>>,
     setFormData: (updater: (prev: any) => any) => void
   ) => {
-    // 获取当前工具信息
-    const selectedTool = installedTools.find((t: Tool) => t.id === toolId || t.toolId === toolId);
+    // 获取当前工具信息，优先使用 toolId 匹配
+    const selectedTool = installedTools.find((t: Tool) => t.toolId === toolId);
     
     if (!selectedTool || !selectedTool.mcpServerName) {
-      console.error("无法找到对应的工具或工具缺少 mcpServerName");
+      console.error("无法找到对应的工具或工具缺少 mcpServerName，查找的 toolId:", toolId);
       toast({
         title: "无法更新工具参数",
         description: "工具信息不完整",
