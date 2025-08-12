@@ -28,7 +28,7 @@ public class ConversationDomainService {
     public List<MessageEntity> getConversationMessages(String sessionId) {
         return messageRepository
                 .selectList(Wrappers.<MessageEntity>lambdaQuery().eq(MessageEntity::getSessionId, sessionId)
-                        .ne(MessageEntity::getRole, Role.SUMMARY.name()).orderByAsc(MessageEntity::getCreatedAt));
+                        .ne(MessageEntity::getRole, Role.SUMMARY).orderByAsc(MessageEntity::getCreatedAt));
     }
 
     public void insertBathMessage(List<MessageEntity> messages) {

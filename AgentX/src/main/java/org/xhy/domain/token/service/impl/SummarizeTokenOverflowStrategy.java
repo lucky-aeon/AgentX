@@ -54,23 +54,22 @@ public class SummarizeTokenOverflowStrategy implements TokenOverflowStrategy {
             return result;
         }
 
-        // 按时间排序 不算上摘要消息
-        List<TokenMessage> sortedMessages = messages.stream()
-                .filter(message -> !message.getRole().equals(Role.SUMMARY.name()))
-                .sorted(Comparator.comparing(TokenMessage::getCreatedAt)).collect(Collectors.toList());
+        // 按时间排序
+        List<TokenMessage> sortedMessages = messages.stream().sorted(Comparator.comparing(TokenMessage::getCreatedAt))
+                .collect(Collectors.toList());
 
         // 获取需要保留的消息数量
         int threshold = config.getSummaryThreshold();
 
-        // 分割消息：需要摘要的消息和保留的消息
+        // 分割消息
         messagesToSummarize = sortedMessages.subList(0, sortedMessages.size() - threshold);
         List<TokenMessage> retainedMessages = new ArrayList<>(
                 sortedMessages.subList(sortedMessages.size() - threshold, sortedMessages.size()));
 
-        // 生成新的摘要消息（拼接旧摘要）
+        // 生成新的摘要消息
         TokenMessage newSummary = this.generateSummary(messagesToSummarize, tokenOverflowConfig, messages);
-        // 添加摘要消息到活跃消息列表(旧摘要消息一开始就不在 retainedMessage 中)
-        retainedMessages.add(newSummary);
+        // 添加摘要消息到活跃消息列表
+        retainedMessages.add(0, newSummary);
         // 创建结果对象
         TokenProcessResult result = new TokenProcessResult();
         result.setRetainedMessages(retainedMessages);
@@ -115,18 +114,14 @@ public class SummarizeTokenOverflowStrategy implements TokenOverflowStrategy {
             List<TokenMessage> historyMessages) {
 
         ProviderConfig providerConfig = tokenOverflowConfig.getProviderConfig();
-        List<TokenMessage> summaryList = historyMessages.stream()
-                .filter(message -> message.getRole().equals(Role.SUMMARY.name())).toList();
-        String summaryPrefixPrompt = CollectionUtils.isEmpty(summaryList)
-                ? "。最后请你以这段话作为生成摘要的开头返回，开头：" + AgentPromptTemplates.getSummaryPrefix()
-                : "";
+        String summaryPrefixPrompt = "。最后请你以这段话作为生成摘要的开头返回，开头：" + AgentPromptTemplates.getSummaryPrefix();
 
         // 使用当前服务商调用大模型
         ChatModel chatLanguageModel = LLMProviderService.getStrand(providerConfig.getProtocol(), providerConfig);
         SystemMessage systemMessage = new SystemMessage("你是一个专业的对话摘要生成器，请严格按照以下要求工作：\n"
                 + "1. 只基于提供的对话内容生成客观摘要，不得添加任何原对话中没有的信息\n" + "2. 特别关注：用户问题、回答中的关键信息、重要事实\n" + "3. 去除所有寒暄、表情符号和情感表达\n"
                 + "4. 使用简洁的第三人称陈述句\n" + "5. 保持时间顺序和逻辑关系\n" + "6. 示例格式：[用户]问... [AI]回答...\n" + "禁止使用任何表情符号或拟人化表达"
-                + summaryPrefixPrompt);
+                + "7. 提供的对话内容中格式与第六点的示例格式相符的，属于旧摘要，旧摘要部分必须全部保留要点" + summaryPrefixPrompt);
         List<Content> contents = messages.stream().map(message -> new TextContent(message.getContent()))
                 .collect(Collectors.toList());
         UserMessage userMessage = new UserMessage(contents);
@@ -135,25 +130,17 @@ public class SummarizeTokenOverflowStrategy implements TokenOverflowStrategy {
                 chatResponse.tokenUsage().outputTokenCount(), historyMessages);
     }
 
-    /** 拼接旧摘要并创建新的摘要消息记录
+    /** 创建新的摘要消息记录
      *
      * @param newSummary 摘要内容 */
     private TokenMessage createNewSummaryMessage(String newSummary, Integer newSummaryBodyTokenCount,
             List<TokenMessage> historyMessages) {
-        List<TokenMessage> list = historyMessages.stream()
-                .filter(message -> message.getRole().equals(Role.SUMMARY.name())).toList();
+
         TokenMessage newSummaryMessage = new TokenMessage();
-        TokenMessage oldSummary = null;
-        if (!list.isEmpty()) {
-            oldSummary = list.get(0);
-        }
         newSummaryMessage.setRole(Role.SUMMARY.name());
-        newSummaryMessage
-                .setContent(Optional.ofNullable(oldSummary).map(TokenMessage::getContent).orElse("") + newSummary);
-        newSummaryMessage.setBodyTokenCount(newSummaryBodyTokenCount
-                + Optional.ofNullable(oldSummary).map(TokenMessage::getBodyTokenCount).orElse(0));
-        newSummaryMessage.setTokenCount(
-                newSummaryBodyTokenCount + Optional.ofNullable(oldSummary).map(TokenMessage::getTokenCount).orElse(0));
+        newSummaryMessage.setContent(newSummary);
+        newSummaryMessage.setBodyTokenCount(newSummaryBodyTokenCount);
+        newSummaryMessage.setTokenCount(newSummaryBodyTokenCount);
 
         // 找到历史消息中的最早时间
         LocalDateTime earliestTime = historyMessages.stream()

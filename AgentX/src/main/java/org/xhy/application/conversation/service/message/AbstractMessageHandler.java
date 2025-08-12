@@ -195,20 +195,20 @@ public abstract class AbstractMessageHandler {
         }
     }
 
-    /** 保存消息记录和更新上下文
+    /** 保存用户、摘要消息记录和更新活跃消息
      * @param chatContext 对话环境
      * @param userEntity 此次的用户消息 */
     private void saveMessageAndUpdateContext(ChatContext chatContext, MessageEntity userEntity) {
-        MessageEntity summary = getSummaryFromHistory(chatContext.getMessageHistory());
+        MessageEntity summary = this.getSummaryFromHistory(chatContext.getMessageHistory());
         ContextEntity contextEntity = chatContext.getContextEntity();
         if (summary != null) {
             // 不重置 created_at 字段
             messageDomainService.saveMessage(Collections.singletonList(summary));
-            // 去除摘要消息的空id
-            contextEntity.setActiveMessages(
-                    contextEntity.getActiveMessages().stream().filter(Objects::nonNull).collect(Collectors.toList()));
-            contextEntity.getActiveMessages().add(0, summary.getId());
         }
+        List<String> activeMessages = chatContext.getMessageHistory().stream().filter(Objects::nonNull)
+                .sorted(Comparator.comparing(MessageEntity::getCreatedAt)).map(MessageEntity::getId)
+                .collect(Collectors.toList());
+        contextEntity.setActiveMessages(activeMessages);
         // 保存用户消息
         messageDomainService.saveMessageAndUpdateContext(Collections.singletonList(userEntity), contextEntity);
     }
@@ -300,12 +300,12 @@ public abstract class AbstractMessageHandler {
     }
 
     @Nullable
-    private static MessageEntity getSummaryFromHistory(List<MessageEntity> historyMessages) {
-        List<MessageEntity> list = historyMessages.stream().filter(MessageEntity::isSummaryMessage).toList();
-        if (list.isEmpty()) {
+    private MessageEntity getSummaryFromHistory(List<MessageEntity> historyMessages) {
+        // List<MessageEntity> list = historyMessages.stream().filter(MessageEntity::isSummaryMessage).toList();
+        if (historyMessages.isEmpty()) {
             return null;
         }
-        return list.get(0);
+        return historyMessages.get(0).isSummaryMessage() ? historyMessages.get(0) : null;
     }
 
     /** 根据历史消息的本体token算出本次消息的本体token
@@ -318,12 +318,9 @@ public abstract class AbstractMessageHandler {
         llmEntity.setTokenCount(chatResponse.tokenUsage().outputTokenCount());
         llmEntity.setBodyTokenCount(chatResponse.tokenUsage().outputTokenCount());
         llmEntity.setContent(chatResponse.aiMessage().text());
-
         int bodyTokenSum = 0;
         if (CollectionUtil.isNotEmpty(historyMessages)) {
-            bodyTokenSum = historyMessages.stream()
-                    // .filter(Objects::nonNull)
-                    .mapToInt(MessageEntity::getBodyTokenCount).sum();
+            bodyTokenSum = historyMessages.stream().mapToInt(MessageEntity::getBodyTokenCount).sum();
         }
         userEntity.setTokenCount(chatResponse.tokenUsage().inputTokenCount());
         userEntity.setBodyTokenCount(chatResponse.tokenUsage().inputTokenCount() - bodyTokenSum);
@@ -377,7 +374,7 @@ public abstract class AbstractMessageHandler {
     /** 构建历史消息到内存中 */
     protected void buildHistoryMessage(ChatContext chatContext, MessageWindowChatMemory memory) {
         // String summary = chatContext.getContextEntity().getSummary();
-        String summary = Optional.ofNullable(getSummaryFromHistory(chatContext.getMessageHistory()))
+        String summary = Optional.ofNullable(this.getSummaryFromHistory(chatContext.getMessageHistory()))
                 .map(MessageEntity::getContent).orElse("");
         if (StringUtils.isNotEmpty(summary)) {
             // 添加为AI消息，但明确标识这是摘要

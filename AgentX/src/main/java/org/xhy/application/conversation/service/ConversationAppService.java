@@ -367,9 +367,9 @@ public class ConversationAppService {
             List<String> retainedMessageIds = retainedMessages.stream()
                     .sorted(Comparator.comparing(TokenMessage::getCreatedAt)).map(TokenMessage::getId)
                     .collect(Collectors.toList());
-            if (strategyType == TokenOverflowStrategyEnum.SUMMARIZE) {
-                newSummaryMessage = retainedMessages.stream()
-                        .filter(message -> message.getRole().equals(Role.SUMMARY.name())).toList().get(0);
+            if (strategyType == TokenOverflowStrategyEnum.SUMMARIZE
+                    && retainedMessages.get(0).getRole().equals(Role.SUMMARY.name())) {
+                newSummaryMessage = retainedMessages.get(0);
                 contextEntity.setSummary(newSummaryMessage.getContent());
             }
 
@@ -377,16 +377,14 @@ public class ConversationAppService {
         }
         Set<String> retainedMessageIdSet = retainedMessages.stream().map(TokenMessage::getId)
                 .collect(Collectors.toSet());
-        // 保留的用户消息和模型消息
-        List<MessageEntity> contextMessages = messageEntities.stream()
+        // 从messageEntity中过滤出保留的消息，防止Entity字段丢失
+        List<MessageEntity> newHistoryMessages = messageEntities.stream()
                 .filter(message -> retainedMessageIdSet.contains(message.getId()) && !message.isSummaryMessage())
                 .collect(Collectors.toList());
         if (newSummaryMessage != null) {
-            // 添加更新后的摘要消息
-            contextMessages.add(0,
-                    this.summaryMessageToEntity(newSummaryMessage, messageEntities.get(0).getSessionId()));
+            newHistoryMessages.add(0, this.summaryMessageToEntity(newSummaryMessage, environment.getSessionId()));
         }
-        return contextMessages;
+        return newHistoryMessages;
     }
 
     /** 消息实体转换为token消息 */
