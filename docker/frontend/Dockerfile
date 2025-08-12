@@ -46,7 +46,7 @@ EXPOSE 3000
 
 # 健康检查
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-    CMD curl -f http://localhost:3000/api/health || exit 1
+    CMD curl -f http://localhost:3000 || exit 1
 
 # 设置环境变量
 ENV NODE_ENV=production

@@ -70,7 +70,7 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:-agentx_pass}
       
       # 应用配置
-      SERVER_PORT: 8080
+      SERVER_PORT: 8088
       FRONTEND_PORT: 3000
       NEXT_PUBLIC_API_BASE_URL: /api
       
@@ -79,11 +79,14 @@ services:
       JPA_DDL_AUTO: update
       SHOW_SQL: false
       
-      # 用户配置
+      # 用户配置 - 使用直接环境变量注入，确保配置能正确读取
       AGENTX_ADMIN_EMAIL: ${AGENTX_ADMIN_EMAIL:-admin@agentx.ai}
       AGENTX_ADMIN_PASSWORD: ${AGENTX_ADMIN_PASSWORD:-admin123}
       AGENTX_ADMIN_NICKNAME: ${AGENTX_ADMIN_NICKNAME:-AgentX管理员}
       AGENTX_TEST_ENABLED: ${AGENTX_TEST_ENABLED:-false}
+      AGENTX_TEST_EMAIL: ${AGENTX_TEST_EMAIL:-test@agentx.ai}
+      AGENTX_TEST_PASSWORD: ${AGENTX_TEST_PASSWORD:-test123}
+      AGENTX_TEST_NICKNAME: ${AGENTX_TEST_NICKNAME:-测试用户}
       
       # 消息队列配置
       RABBITMQ_HOST: rabbitmq
@@ -104,7 +107,7 @@ services:
     volumes:
       - storage-data:/app/storage
     ports:
-      - "${HTTP_PORT:-80}:80"
+      - "${HTTP_PORT:-3000}:3000"
     networks:
       - agentx-network
     depends_on:
@@ -114,7 +117,7 @@ services:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost/api/health || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:3000 || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5

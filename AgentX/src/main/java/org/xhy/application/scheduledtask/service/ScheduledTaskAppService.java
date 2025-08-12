@@ -60,6 +60,12 @@ public class ScheduledTaskAppService {
         // 使用组装器创建更新实体
         ScheduledTaskEntity updateEntity = ScheduledTaskAssembler.toEntity(request, userId);
 
+        ScheduledTaskEntity task = scheduledTaskDomainService.getTask(request.getId(), userId);
+        updateEntity.setStatus(task.getStatus());
+        updateEntity.setSessionId(task.getSessionId());
+        updateEntity.setAgentId(task.getAgentId());
+        updateEntity.setLastExecuteTime(task.getLastExecuteTime());
+
         // 如果更新了重复配置，重新计算下次执行时间
         if (updateEntity.getRepeatConfig() != null) {
             LocalDateTime nextExecuteTime = taskScheduleService.calculateNextExecuteTime(updateEntity,

@@ -5,7 +5,7 @@ import org.springframework.stereotype.Component;
 
 /** AgentX管理员用户配置属性
  * 
- * 支持通过环境变量配置管理员和测试用户信息
+ * 支持通过环境变量配置管理员和测试用户信息 环境变量格式：AGENTX_ADMIN_EMAIL, AGENTX_ADMIN_PASSWORD, AGENTX_ADMIN_NICKNAME, AGENTX_TEST_ENABLED
  * 
  * @author xhy */
 @Component

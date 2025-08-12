@@ -11,6 +11,9 @@ COPY AgentX/mvnw .
 COPY AgentX/.mvn .mvn
 COPY AgentX/pom.xml .
 
+# 修复mvnw执行权限（Windows兼容）
+RUN chmod +x ./mvnw
+
 # 下载依赖
 RUN ./mvnw dependency:go-offline -B
 

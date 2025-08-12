@@ -136,6 +136,8 @@ public class DelayedTaskQueueManager {
                             // 检查任务是否可以执行
                             if (taskExecutor.canExecute(task)) {
                                 taskExecutor.executeTask(task);
+
+                                scheduleNextExecution(task);
                             } else {
                                 logger.info("任务不满足执行条件，跳过执行: taskId={}", task.getId());
                             }
@@ -162,5 +164,25 @@ public class DelayedTaskQueueManager {
         }
 
         logger.info("延迟队列消费线程已停止");
+    }
+
+    /** 检查并调度任务的下次执行
+     * @param task 已执行的任务 */
+    private void scheduleNextExecution(ScheduledTaskEntity task) {
+        try {
+            // 重新加载任务状态（executeTask可能已更新数据库）
+            if (task.isActive() && task.getNextExecuteTime() != null) {
+                LocalDateTime nextTime = task.getNextExecuteTime();
+
+                // 只有未来的时间才需要调度
+                if (nextTime.isAfter(LocalDateTime.now())) {
+                    DelayedTaskItem newItem = new DelayedTaskItem(task, nextTime);
+                    delayQueue.offer(newItem);
+                    logger.info("任务已重新调度: taskId={}, nextTime={}", task.getId(), nextTime);
+                }
+            }
+        } catch (Exception e) {
+            logger.error("重新调度任务失败: taskId={}, error={}", task.getId(), e.getMessage(), e);
+        }
     }
 }
