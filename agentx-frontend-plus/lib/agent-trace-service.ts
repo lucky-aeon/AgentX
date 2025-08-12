@@ -99,6 +99,8 @@ export interface SessionExecutionDetail {
   success: boolean
   errorMessage?: string
   toolName?: string
+  toolRequestArgs?: string  // 工具调用入参
+  toolResponseData?: string // 工具调用出参
   createdAt: string
   // 会话相关信息
   sessionId: string
@@ -265,6 +267,8 @@ export async function getSessionExecutionDetails(sessionId: string): Promise<Api
       success: detail.stepSuccess,
       errorMessage: detail.stepErrorMessage,
       toolName: detail.toolName,
+      toolRequestArgs: detail.toolRequestArgs,  // 工具调用入参
+      toolResponseData: detail.toolResponseData, // 工具调用出参
       createdAt: detail.createdTime,
       // 会话相关信息
       sessionId: sessionId,

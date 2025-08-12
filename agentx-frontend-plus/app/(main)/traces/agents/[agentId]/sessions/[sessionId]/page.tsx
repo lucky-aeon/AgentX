@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Separator } from "@/components/ui/separator"
+import { SmartContentDisplay } from "@/components/ui/content-display"
 import { toast } from "@/hooks/use-toast"
 import {
   getSessionExecutionDetailsWithToast,
@@ -291,9 +292,12 @@ export default function TraceDetailPage() {
                   <CardContent className="pt-0">
                     {/* 主要内容 */}
                     <div className="mb-3">
-                      <p className="text-sm whitespace-pre-wrap break-words">
-                        {detail.content}
-                      </p>
+                      <SmartContentDisplay 
+                        content={detail.content || "无内容"}
+                        maxLength={150}
+                        showCopy={true}
+                        className="text-sm"
+                      />
                     </div>
                     
                     {/* 详细信息 */}
@@ -343,6 +347,43 @@ export default function TraceDetailPage() {
                           </div>
                         )}
                       </div>
+                      
+                      {/* 工具调用详情 */}
+                      {detail.stepType === 'TOOL_CALL' && (detail.toolRequestArgs || detail.toolResponseData) && (
+                        <div className="mt-3 space-y-3">
+                          <Separator />
+                          
+                          {detail.toolRequestArgs && (
+                            <div>
+                              <div className="flex items-center space-x-1 mb-2">
+                                <Wrench className="h-3 w-3 text-muted-foreground" />
+                                <span className="text-xs font-medium text-muted-foreground">工具调用入参:</span>
+                              </div>
+                              <SmartContentDisplay 
+                                content={detail.toolRequestArgs}
+                                maxLength={100}
+                                showCopy={true}
+                                className="text-xs"
+                              />
+                            </div>
+                          )}
+                          
+                          {detail.toolResponseData && (
+                            <div>
+                              <div className="flex items-center space-x-1 mb-2">
+                                <Activity className="h-3 w-3 text-muted-foreground" />
+                                <span className="text-xs font-medium text-muted-foreground">工具响应数据:</span>
+                              </div>
+                              <SmartContentDisplay 
+                                content={detail.toolResponseData}
+                                maxLength={100}
+                                showCopy={true}
+                                className="text-xs"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      )}
                       
                       {/* 错误信息 */}
                       {detail.errorMessage && (

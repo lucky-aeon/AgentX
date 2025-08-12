@@ -187,7 +187,7 @@ public class AgentExecutionDetailEntity extends BaseEntity {
             String requestArgs, String responseData, Integer executionTime, Boolean success, LocalDateTime eventTime) {
         AgentExecutionDetailEntity entity = new AgentExecutionDetailEntity();
         entity.setSessionId(sessionId);
-        entity.setMessageContent("执行具：" + toolName);
+        entity.setMessageContent("执行工具：" + toolName);
         entity.setMessageType("TOOL_CALL");
         entity.setToolName(toolName);
         entity.setToolRequestArgs(requestArgs);

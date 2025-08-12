@@ -1,6 +1,5 @@
 package org.xhy.application.trace.dto;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /** Agent执行链路详细记录DTO */
@@ -53,9 +52,6 @@ public class AgentExecutionDetailDTO {
 
     /** 降级后的模型 */
     private String fallbackToModel;
-
-    /** 步骤成本 */
-    private BigDecimal stepCost;
 
     /** 步骤执行是否成功 */
     private Boolean stepSuccess;
@@ -196,14 +192,6 @@ public class AgentExecutionDetailDTO {
 
     public void setFallbackToModel(String fallbackToModel) {
         this.fallbackToModel = fallbackToModel;
-    }
-
-    public BigDecimal getStepCost() {
-        return stepCost;
-    }
-
-    public void setStepCost(BigDecimal stepCost) {
-        this.stepCost = stepCost;
     }
 
     public Boolean getStepSuccess() {

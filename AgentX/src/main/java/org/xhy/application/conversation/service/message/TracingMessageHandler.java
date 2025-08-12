@@ -51,6 +51,8 @@ import java.util.function.Consumer;
  * 2. 将 InheritableThreadLocal 替换为 TransmittableThreadLocal
  * 3. 使用 TtlExecutors.getTtlExecutor() 包装线程池
  * 参考文档：https://github.com/alibaba/transmittable-thread-local
+ *
+ * 但是目前使用了 langchan4j 的 tokenStream，内置的线程池，不方便改，就算了
  */
 public abstract class TracingMessageHandler extends AbstractMessageHandler {
 
