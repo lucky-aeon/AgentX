@@ -6,7 +6,8 @@ import java.util.List;
 import org.xhy.infrastructure.mq.enums.EventType;
 import org.xhy.infrastructure.mq.model.MQSendEventModel;
 
-/** @author shilong.zang
+/**
+ * @author shilong.zang
  * @date 10:21 <br/>
  */
 public class DocIeInferEvent<T> extends MQSendEventModel<T> {
@@ -14,6 +15,7 @@ public class DocIeInferEvent<T> extends MQSendEventModel<T> {
     @Serial
     private static final long serialVersionUID = 1896067714032219430L;
     private final EventType[] eventType;
+    
 
     public void setDescription(String description) {
         this.description = description;

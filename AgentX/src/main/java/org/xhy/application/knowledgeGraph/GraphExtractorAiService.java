@@ -1,12 +1,17 @@
-package org.xhy.domain.neo4j.constant;
+package org.xhy.application.knowledgeGraph;
+
+import dev.langchain4j.service.UserMessage;
+import org.xhy.application.knowledgeGraph.dto.GraphIngestionRequest;
 
 /**
- * @author shilong.zang
- * @date 06:54 <br/>
+ * 基于LangChain4j的知识图谱提取AI服务接口
+ * 使用声明式AI服务从非结构化文本中提取实体和关系
+ * 
+ * @author AgentX
  */
-public interface GraphExtractorPrompt {
+public interface GraphExtractorAiService {
 
-     String graphExtractorPrompt = """
+    @UserMessage("""
         从以下提供的文本中提取所有相关的实体和它们之间的关系，构建一个知识图谱。
         请严格按照以下JSON格式返回结果，不要包含任何额外的解释、注释或markdown标记。
 
@@ -50,6 +55,6 @@ public interface GraphExtractorPrompt {
         ---
         {{text}}
         ---
-        """;
-
+        """)
+    GraphIngestionRequest extractGraph(String text);
 }
