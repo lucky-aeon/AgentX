@@ -404,10 +404,7 @@ public class ConversationAppService {
     private MessageEntity summaryMessageToEntity(TokenMessage tokenMessage, String sessionId) {
         MessageEntity messageEntity = new MessageEntity();
         BeanUtil.copyProperties(tokenMessage, messageEntity);
-        messageEntity.setId(tokenMessage.getId());
         messageEntity.setRole(Role.fromCode(tokenMessage.getRole()));
-        messageEntity.setCreatedAt(tokenMessage.getCreatedAt());
-        messageEntity.setUpdatedAt(tokenMessage.getCreatedAt());
         messageEntity.setSessionId(sessionId);
         messageEntity.setMessageType(MessageType.TEXT);
         return messageEntity;
