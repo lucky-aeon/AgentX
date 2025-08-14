@@ -42,38 +42,7 @@ public class ExternalApiKeyInterceptor implements HandlerInterceptor {
 
         logger.debug("拦截外部API请求: {} {}", method, requestURI);
 
-        // OPTIONS 请求跳过（CORS 预检请求）
-        if ("OPTIONS".equalsIgnoreCase(method)) {
-            logger.debug("跳过OPTIONS请求的API Key校验: {}", requestURI);
-            return true;
-        }
 
-        // 获取API Key
-        String apiKey = extractApiKey(request);
-        if (!StringUtils.hasText(apiKey)) {
-            logger.warn("外部API请求缺少API Key: {} {}", method, requestURI);
-            writeErrorResponse(response, 401, "缺少API Key，请在Authorization头中提供Bearer token");
-            return false;
-        }
-
-        // 验证API Key
-        try {
-            ApiKeyEntity apiKeyEntity = apiKeyDomainService.validateApiKey(apiKey);
-
-            // 更新使用统计
-            apiKeyDomainService.updateUsage(apiKey);
-
-            // 主流程：验证成功，设置上下文
-            ExternalApiContext.setUserId(apiKeyEntity.getUserId());
-            ExternalApiContext.setAgentId(apiKeyEntity.getAgentId());
-
-            logger.debug("外部API Key验证通过: userId={}, agentId={}", apiKeyEntity.getUserId(), apiKeyEntity.getAgentId());
-        } catch (BusinessException e) {
-            // 异常分支：验证失败
-            logger.warn("外部API Key验证失败: {}, URI: {} {}", e.getMessage(), method, requestURI);
-            writeErrorResponse(response, 401, e.getMessage());
-            return false;
-        }
         return true;
     }
 

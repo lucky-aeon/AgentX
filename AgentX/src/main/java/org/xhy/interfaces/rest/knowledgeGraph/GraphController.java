@@ -20,8 +20,11 @@ import org.xhy.application.knowledgeGraph.dto.GraphIngestionRequest;
 import org.xhy.application.knowledgeGraph.dto.GraphIngestionResponse;
 import org.xhy.application.knowledgeGraph.dto.GraphQueryRequest;
 import org.xhy.application.knowledgeGraph.dto.GraphQueryResponse;
+import org.xhy.application.knowledgeGraph.dto.GraphGenerateRequest;
+import org.xhy.application.knowledgeGraph.dto.GraphGenerateResponse;
 import org.xhy.application.knowledgeGraph.service.GraphIngestionService;
 import org.xhy.application.knowledgeGraph.service.GraphQueryService;
+import org.xhy.application.knowledgeGraph.service.GenerateGraphService;
 import org.xhy.infrastructure.exception.BusinessException;
 import org.xhy.interfaces.api.common.Result;
 
@@ -35,7 +38,7 @@ import java.util.Map;
  */
 @Tag(name = "Knowledge Graph API", description = "动态知识图谱服务接口")
 @RestController
-@RequestMapping("/api/v1/graph")
+@RequestMapping("/v1/graph")
 @Validated
 public class GraphController {
 
@@ -43,10 +46,12 @@ public class GraphController {
 
     private final GraphIngestionService ingestionService;
     private final GraphQueryService queryService;
+    private final GenerateGraphService generateGraphService;
 
-    public GraphController(GraphIngestionService ingestionService, GraphQueryService queryService) {
+    public GraphController(GraphIngestionService ingestionService, GraphQueryService queryService, GenerateGraphService generateGraphService) {
         this.ingestionService = ingestionService;
         this.queryService = queryService;
+        this.generateGraphService = generateGraphService;
     }
 
     /**
@@ -68,6 +73,68 @@ public class GraphController {
 
         GraphIngestionResponse response = ingestionService.ingestGraphData(request);
         return Result.success(response);
+    }
+
+    /**
+     * 生成知识图谱
+     *
+     * @param request 图谱生成请求
+     * @return 生成结果
+     */
+    @Operation(summary = "生成知识图谱", description = "根据文件ID生成知识图谱，支持异步处理")
+    @PostMapping("/generate")
+    public Result<GraphGenerateResponse> generateGraph(
+            @Parameter(description = "图谱生成请求", required = true)
+            @RequestBody @Valid GraphGenerateRequest request) {
+        
+        logger.info("收到图谱生成请求，文件ID: {}, 异步处理: {}", 
+                request.getFileId(), request.getAsync());
+
+        try {
+            // 调用服务生成图谱
+            String documentText = generateGraphService.generateGraph(request.getFileId());
+            
+            // 生成任务ID（这里可以根据实际需要生成更复杂的任务ID）
+            String taskId = "graph_" + request.getFileId() + "_" + System.currentTimeMillis();
+            
+            // 构建响应
+            GraphGenerateResponse response;
+            if (request.getAsync()) {
+                // 异步处理模式
+                response = GraphGenerateResponse.processing(
+                    taskId, 
+                    "知识图谱生成任务已提交，正在后台处理中", 
+                    documentText.length() > 200 ? documentText.substring(0, 200) + "..." : documentText
+                );
+            } else {
+                // 同步处理模式
+                response = GraphGenerateResponse.completed(
+                    taskId, 
+                    "知识图谱生成完成"
+                );
+                response.setDocumentPreview(
+                    documentText.length() > 200 ? documentText.substring(0, 200) + "..." : documentText
+                );
+            }
+            
+            return Result.success(response);
+            
+        } catch (IllegalArgumentException e) {
+            logger.warn("图谱生成请求参数错误: {}", e.getMessage());
+            GraphGenerateResponse errorResponse = GraphGenerateResponse.failed(
+                "error_" + System.currentTimeMillis(),
+                e.getMessage()
+            );
+            return Result.badRequest(e.getMessage());
+            
+        } catch (Exception e) {
+            logger.error("图谱生成失败: {}", e.getMessage(), e);
+            GraphGenerateResponse errorResponse = GraphGenerateResponse.failed(
+                "error_" + System.currentTimeMillis(),
+                "图谱生成失败: " + e.getMessage()
+            );
+            return Result.serverError( "图谱生成过程中发生错误");
+        }
     }
 
     /**
