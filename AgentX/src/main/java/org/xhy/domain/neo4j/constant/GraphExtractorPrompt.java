@@ -9,7 +9,7 @@ public interface GraphExtractorPrompt {
      String graphExtractorPrompt = """
         从以下提供的文本中提取所有相关的实体和它们之间的关系，构建一个知识图谱。
         请严格按照以下JSON格式返回结果，不要包含任何额外的解释、注释或markdown标记。
-
+        不要有```json这种
         这是目标JSON结构：
         {
           "documentId": "string", // 请为文档生成一个UUID

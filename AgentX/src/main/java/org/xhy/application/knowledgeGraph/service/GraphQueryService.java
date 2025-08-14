@@ -43,7 +43,7 @@ public class GraphQueryService {
      * @param request 图查询请求
      * @return 查询结果响应
      */
-    @Transactional(readOnly = true)
+    @Transactional(value = "neo4jTransactionManager", readOnly = true)
     public GraphQueryResponse executeQuery(GraphQueryRequest request) {
         long startTime = System.currentTimeMillis();
         
@@ -94,8 +94,7 @@ public class GraphQueryService {
      * @param limit 结果限制
      * @return 查询结果
      */
-    @Transactional(readOnly = true)
-    public GraphQueryResponse findNodesByProperty(String label, String property, Object value, Integer limit) {
+    @Transactional(value = "neo4jTransactionManager", readOnly = true)    public GraphQueryResponse findNodesByProperty(String label, String property, Object value, Integer limit) {
         GraphQueryRequest request = new GraphQueryRequest();
         
         // 设置起始节点
@@ -123,8 +122,8 @@ public class GraphQueryService {
      * @param limit 结果限制
      * @return 查询结果
      */
-    @Transactional(readOnly = true)
-    public GraphQueryResponse findNodeRelationships(String nodeId, String relationshipType, 
+    @Transactional(value = "neo4jTransactionManager", readOnly = true)
+    public GraphQueryResponse findNodeRelationships(String nodeId, String relationshipType,
                                                    String direction, Integer limit) {
         GraphQueryRequest request = new GraphQueryRequest();
         
@@ -159,7 +158,7 @@ public class GraphQueryService {
      * @param maxDepth 最大深度
      * @return 查询结果
      */
-    @Transactional(readOnly = true)
+    @Transactional(value = "neo4jTransactionManager", readOnly = true)
     public GraphQueryResponse findPathBetweenNodes(String sourceNodeId, String targetNodeId, Integer maxDepth) {
         long startTime = System.currentTimeMillis();
         
@@ -303,7 +302,7 @@ public class GraphQueryService {
     /**
      * 获取图统计信息
      */
-    @Transactional(readOnly = true)
+    @Transactional(value = "neo4jTransactionManager", readOnly = true)
     public Map<String, Object> getGraphStatistics() {
         try {
             String statsQuery = """

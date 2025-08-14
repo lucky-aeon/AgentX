@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.xhy.domain.rag.model.DocumentUnitEntity;
@@ -59,6 +60,17 @@ public class DocumentUnitDomainService {
             throw new IllegalArgumentException("语料不存在");
         }
         return entity;
+    }
+
+    /**
+     * 根据文件id获取所有语料
+     */
+    public List<DocumentUnitEntity> listDocumentUnitsByFileId(String fileId) {
+        LambdaQueryWrapper<DocumentUnitEntity> wrapper = Wrappers.<DocumentUnitEntity>lambdaQuery()
+                .eq(DocumentUnitEntity::getFileId, fileId)
+                .orderByAsc(DocumentUnitEntity::getPage);
+
+        return documentUnitRepository.selectList(wrapper);
     }
 
     /** 更新语料内容
