@@ -75,6 +75,8 @@ public class CypherQueryBuilder {
         cypherBuilder = new StringBuilder();
         parameters = new HashMap<>();
         aliasCounter = 0;
+        startNodeConditions = new ArrayList<>();
+        startNodeAliases = new ArrayList<>();
     }
 
     /**
@@ -89,6 +91,10 @@ public class CypherQueryBuilder {
             throw new BusinessException("起始节点不能为空");
         }
     }
+
+    // 存储起始节点的WHERE条件，稍后统一处理
+    private List<CypherSpecification> startNodeConditions = new ArrayList<>();
+    private List<String> startNodeAliases = new ArrayList<>();
 
     /**
      * 构建起始节点匹配子句
@@ -105,18 +111,17 @@ public class CypherQueryBuilder {
             StringBuilder nodePattern = new StringBuilder();
             nodePattern.append("(").append(nodeAlias);
             
-            // 添加标签
-            if (nodeFilter.getLabel() != null && !nodeFilter.getLabel().trim().isEmpty()) {
-                nodePattern.append(":").append(sanitizeLabel(nodeFilter.getLabel()));
-            }
+            // 统一使用GenericNode标签，因为数据摄取时所有节点都使用这个标签
+            nodePattern.append(":GenericNode");
             
             nodePattern.append(")");
             matchPatterns.add(nodePattern.toString());
             
-            // 如果有属性过滤条件，添加到WHERE子句中
+            // 如果有属性过滤条件，保存起来稍后在WHERE子句中处理
             if (nodeFilter.getProperty() != null && nodeFilter.getValue() != null) {
                 CypherSpecification spec = CypherSpecifications.fromNodeFilter(nodeFilter);
-                addWhereCondition(spec, nodeAlias);
+                startNodeConditions.add(spec);
+                startNodeAliases.add(nodeAlias);
             }
         }
         
@@ -199,27 +204,35 @@ public class CypherQueryBuilder {
      * 构建WHERE子句
      */
     private void buildWhereClause(List<GraphQueryRequest.QueryFilter> filters) {
-        if (filters == null || filters.isEmpty()) {
-            return;
+        List<CypherSpecification> allSpecifications = new ArrayList<>();
+        
+        // 添加起始节点的条件
+        for (int i = 0; i < startNodeConditions.size(); i++) {
+            CypherSpecification spec = startNodeConditions.get(i);
+            String alias = startNodeAliases.get(i);
+            
+            // 创建一个带有正确别名的包装规约
+            allSpecifications.add(new AliasedSpecification(spec, alias));
         }
         
-        List<CypherSpecification> specifications = new ArrayList<>();
-        
-        for (GraphQueryRequest.QueryFilter filter : filters) {
-            CypherSpecification spec = CypherSpecifications.fromQueryFilter(filter);
-            specifications.add(spec);
+        // 添加其他过滤条件
+        if (filters != null && !filters.isEmpty()) {
+            for (GraphQueryRequest.QueryFilter filter : filters) {
+                CypherSpecification spec = CypherSpecifications.fromQueryFilter(filter);
+                allSpecifications.add(new AliasedSpecification(spec, "n0"));
+            }
         }
         
-        if (!specifications.isEmpty()) {
+        if (!allSpecifications.isEmpty()) {
             cypherBuilder.append("\nWHERE ");
             
             // 组合所有规约
-            CypherSpecification combinedSpec = specifications.get(0);
-            for (int i = 1; i < specifications.size(); i++) {
-                combinedSpec = combinedSpec.and(specifications.get(i));
+            CypherSpecification combinedSpec = allSpecifications.get(0);
+            for (int i = 1; i < allSpecifications.size(); i++) {
+                combinedSpec = combinedSpec.and(allSpecifications.get(i));
             }
             
-            String whereClause = combinedSpec.toCypher("n0");
+            String whereClause = combinedSpec.toCypher("");
             cypherBuilder.append(whereClause);
             
             // 添加参数
@@ -227,19 +240,7 @@ public class CypherQueryBuilder {
         }
     }
 
-    /**
-     * 添加WHERE条件
-     */
-    private void addWhereCondition(CypherSpecification spec, String alias) {
-        if (cypherBuilder.toString().contains("WHERE")) {
-            cypherBuilder.append(" AND ");
-        } else {
-            cypherBuilder.append("\nWHERE ");
-        }
-        
-        cypherBuilder.append(spec.toCypher(alias));
-        parameters.putAll(spec.getParameters());
-    }
+
 
     /**
      * 构建RETURN子句
@@ -330,6 +331,29 @@ public class CypherQueryBuilder {
                     "cypher='" + cypher + '\'' +
                     ", parameters=" + parameters +
                     '}';
+        }
+    }
+
+    /**
+     * 带别名的规约包装类
+     */
+    private static class AliasedSpecification implements CypherSpecification {
+        private final CypherSpecification delegate;
+        private final String alias;
+
+        public AliasedSpecification(CypherSpecification delegate, String alias) {
+            this.delegate = delegate;
+            this.alias = alias;
+        }
+
+        @Override
+        public String toCypher(String ignored) {
+            return delegate.toCypher(alias);
+        }
+
+        @Override
+        public Map<String, Object> getParameters() {
+            return delegate.getParameters();
         }
     }
 }

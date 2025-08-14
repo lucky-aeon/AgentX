@@ -36,7 +36,7 @@ public class GraphIngestionService {
      * @param request 图数据摄取请求
      * @return 摄取结果响应
      */
-    @Transactional
+    @Transactional("neo4jTransactionManager")
     public GraphIngestionResponse ingestGraphData(GraphIngestionRequest request) {
         if (request == null) {
             throw new BusinessException("摄取请求不能为空");
