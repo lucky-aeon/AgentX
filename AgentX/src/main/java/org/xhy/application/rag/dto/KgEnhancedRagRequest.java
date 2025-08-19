@@ -10,9 +10,11 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
 
-/** 知识图谱增强RAG检索请求DTO
+/**
+ * 知识图谱增强RAG检索请求DTO
  * 
- * @author AgentX */
+ * @author AgentX
+ */
 public class KgEnhancedRagRequest {
 
     /** 数据集ID列表 */
@@ -49,8 +51,8 @@ public class KgEnhancedRagRequest {
     /** 是否启用知识图谱增强，默认true */
     private Boolean enableGraphEnhancement = true;
 
-    /** 是否包含纯图谱结果，默认true */
-    private Boolean includeGraphOnlyResults = true;
+    /** 是否包含纯图谱结果，默认false */
+    private Boolean includeGraphOnlyResults = false;
 
     /** 图谱查询权重，默认0.3 */
     @DecimalMin(value = "0.0", message = "图谱查询权重不能小于0")
@@ -70,7 +72,9 @@ public class KgEnhancedRagRequest {
     @Max(value = 20, message = "实体关系数量不能超过20")
     private Integer maxRelationsPerEntity = 5;
 
-    /** 实体提取策略枚举 */
+    /**
+     * 实体提取策略枚举
+     */
     public enum EntityExtractionStrategy {
         /** 关键词匹配 */
         KEYWORD,
@@ -187,8 +191,14 @@ public class KgEnhancedRagRequest {
 
     @Override
     public String toString() {
-        return "KgEnhancedRagRequest{" + "datasetIds=" + datasetIds + ", question='" + question + '\'' + ", maxResults="
-                + maxResults + ", minScore=" + minScore + ", enableGraphEnhancement=" + enableGraphEnhancement
-                + ", graphWeight=" + graphWeight + ", entityExtractionStrategy=" + entityExtractionStrategy + '}';
+        return "KgEnhancedRagRequest{" +
+                "datasetIds=" + datasetIds +
+                ", question='" + question + '\'' +
+                ", maxResults=" + maxResults +
+                ", minScore=" + minScore +
+                ", enableGraphEnhancement=" + enableGraphEnhancement +
+                ", graphWeight=" + graphWeight +
+                ", entityExtractionStrategy=" + entityExtractionStrategy +
+                '}';
     }
 }
