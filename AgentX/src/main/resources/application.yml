@@ -116,6 +116,16 @@ rerank:
   model: ${SILICONFLOW_MODEL_RERANK_MODEL:Pro/BAAI/bge-reranker-v2-m3}
   timeout: ${SILICONFLOW_TIMEOUT:30000}
 
+rag:
+  markdown:
+    segment-split:
+      enabled: ${RAG_MARKDOWN_SPLIT_ENABLED:true}
+      max-length: ${RAG_MARKDOWN_MAX_LENGTH:1800}
+      min-length: ${RAG_MARKDOWN_MIN_LENGTH:200}
+      buffer-size: ${RAG_MARKDOWN_BUFFER_SIZE:100}
+      enable-overlap: ${RAG_MARKDOWN_ENABLE_OVERLAP:false}
+      overlap-size: ${RAG_MARKDOWN_OVERLAP_SIZE:50}
+
 dromara:
   x-file-storage: #文件存储配置
     default-platform: amazon-s3-1 #默认使用的存储平台

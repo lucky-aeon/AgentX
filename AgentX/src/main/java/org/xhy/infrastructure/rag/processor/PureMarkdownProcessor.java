@@ -2,8 +2,6 @@ package org.xhy.infrastructure.rag.processor;
 
 import com.vladsch.flexmark.ast.*;
 import com.vladsch.flexmark.ext.tables.TablesExtension;
-import com.vladsch.flexmark.ext.superscript.SuperscriptExtension;
-import com.vladsch.flexmark.ext.subscript.SubscriptExtension;
 import com.vladsch.flexmark.parser.Parser;
 import com.vladsch.flexmark.util.ast.Node;
 import com.vladsch.flexmark.util.data.MutableDataSet;
@@ -15,11 +13,13 @@ import org.xhy.domain.rag.model.SpecialNode;
 import org.xhy.domain.rag.model.enums.SegmentType;
 import org.xhy.domain.rag.processor.MarkdownProcessor;
 import org.xhy.domain.rag.straegy.context.ProcessingContext;
+import org.xhy.infrastructure.rag.config.MarkdownProcessorProperties;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Stack;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -37,6 +37,7 @@ public class PureMarkdownProcessor implements MarkdownProcessor {
     private static final Logger log = LoggerFactory.getLogger(PureMarkdownProcessor.class);
 
     private final Parser parser;
+    private MarkdownProcessorProperties markdownProperties;
 
     // 占位符计数器
     private final AtomicInteger imageCounter = new AtomicInteger(1);
@@ -44,7 +45,26 @@ public class PureMarkdownProcessor implements MarkdownProcessor {
     private final AtomicInteger tableCounter = new AtomicInteger(1);
     private final AtomicInteger formulaCounter = new AtomicInteger(1);
 
+    public PureMarkdownProcessor(MarkdownProcessorProperties markdownProperties) {
+        this.markdownProperties = markdownProperties;
+        
+        // 配置Flexmark解析器
+        MutableDataSet options = new MutableDataSet();
+        options.set(Parser.EXTENSIONS, List.of(TablesExtension.create()));
+        this.parser = Parser.builder(options).build();
+    }
+
+    /** 默认构造函数，使用层次化分割的推荐配置 */
     public PureMarkdownProcessor() {
+        // 使用层次化分割的默认配置
+        this.markdownProperties = new MarkdownProcessorProperties();
+        MarkdownProcessorProperties.SegmentSplit segmentSplit = new MarkdownProcessorProperties.SegmentSplit();
+        segmentSplit.setEnabled(true);       // 启用层次化分割
+        segmentSplit.setMaxLength(1800);     // 默认最大长度
+        segmentSplit.setMinLength(200);      // 默认最小长度  
+        segmentSplit.setBufferSize(100);     // 默认缓冲区
+        this.markdownProperties.setSegmentSplit(segmentSplit);
+        
         // 配置Flexmark解析器
         MutableDataSet options = new MutableDataSet();
         options.set(Parser.EXTENSIONS, List.of(TablesExtension.create()));
@@ -79,66 +99,117 @@ public class PureMarkdownProcessor implements MarkdownProcessor {
         }
     }
 
-    /** 语义结构处理 - 以标题为分段边界，聚合标题下所有内容 */
+    /** 语义结构处理 - 构建文档树并执行层次化分割 */
     private int processSemanticStructure(Node document, List<ProcessedSegment> segments, int order) {
+        // 构建文档树
+        DocumentTree documentTree = buildDocumentTree(document);
+        log.debug("Built document tree: {}", documentTree.getTreeStatistics());
 
-        List<Node> children = new ArrayList<>();
-        for (Node child : document.getChildren()) {
-            children.add(child);
-        }
-
+        // 执行层次化分割
+        List<ProcessedSegment> hierarchicalSegments = documentTree.performHierarchicalSplit();
+        
+        // 设置段落顺序并添加到结果列表
         int currentOrder = order;
-        StringBuilder currentSectionContent = new StringBuilder();
-        ProcessedSegment currentSection = null;
-        boolean inHeadingSection = false;
+        for (ProcessedSegment segment : hierarchicalSegments) {
+            segment.setOrder(currentOrder++);
+            segments.add(segment);
+        }
+        
+        log.info("Hierarchical processing completed: {} segments generated", hierarchicalSegments.size());
+        return currentOrder;
+    }
 
-        for (Node child : children) {
+
+    /** 构建文档的标题层次树 */
+    private DocumentTree buildDocumentTree(Node document) {
+        DocumentTree tree = new DocumentTree(markdownProperties.getSegmentSplit());
+        
+        // 使用栈来跟踪当前的标题层次
+        Stack<HeadingNode> nodeStack = new Stack<>();
+        HeadingNode currentHeading = null;
+        
+        for (Node child : document.getChildren()) {
             if (child instanceof Heading) {
-                // 任何标题都是分段边界
-                if (currentSection != null && currentSectionContent.length() > 0) {
-                    // 保存上一个段落
-                    currentSection.setContent(currentSectionContent.toString().trim());
-                    currentSection.setOrder(currentOrder++);
-                    segments.add(currentSection);
-                    currentSectionContent.setLength(0);
-                }
-
-                // 开始新段落：创建新的段落对象
-                currentSection = new ProcessedSegment("", SegmentType.SECTION, null);
-
-                // 添加标题文本
                 Heading heading = (Heading) child;
-                String headingPrefix = "#".repeat(heading.getLevel());
                 String headingText = extractTextContent(heading);
-                currentSectionContent.append(headingPrefix).append(" ").append(headingText).append("\n\n");
-                inHeadingSection = true;
-
+                HeadingNode newNode = new HeadingNode(heading.getLevel(), headingText);
+                
+                // 找到合适的父节点
+                while (!nodeStack.isEmpty() && nodeStack.peek().getLevel() >= heading.getLevel()) {
+                    nodeStack.pop();
+                }
+                
+                if (nodeStack.isEmpty()) {
+                    // 这是一个根级别的标题
+                    tree.addRootNode(newNode);
+                } else {
+                    // 添加到父节点的子节点列表
+                    nodeStack.peek().addChild(newNode);
+                }
+                
+                nodeStack.push(newNode);
+                currentHeading = newNode;
+                
             } else {
-                // 所有非标题内容：归属于当前标题段落
-                if (inHeadingSection && currentSection != null) {
-                    String nodeContent = processNodeContentWithPlaceholders(child, currentSection);
-                    if (!nodeContent.trim().isEmpty()) {
-                        currentSectionContent.append(nodeContent).append("\n\n");
+                // 非标题内容，添加到当前标题下
+                if (currentHeading != null) {
+                    // 处理特殊节点
+                    if (isSpecialNode(child)) {
+                        SpecialNode specialNode = createSpecialNodeFromNode(child);
+                        if (specialNode != null) {
+                            currentHeading.addSpecialNode(specialNode);
+                            // 添加占位符到内容中
+                            currentHeading.addDirectContent(specialNode.getPlaceholder());
+                        }
+                    } else {
+                        String nodeContent = extractTextContent(child);
+                        if (!nodeContent.trim().isEmpty()) {
+                            currentHeading.addDirectContent(nodeContent);
+                        }
                     }
                 } else {
-                    // 没有标题的独立内容
-                    ProcessedSegment standalone = processStandaloneNode(child);
-                    if (standalone != null) {
-                        standalone.setOrder(currentOrder++);
-                        segments.add(standalone);
+                    // 没有标题的内容，创建一个虚拟的根标题
+                    if (tree.getRootNodes().isEmpty()) {
+                        HeadingNode virtualRoot = new HeadingNode(1, "文档内容");
+                        tree.addRootNode(virtualRoot);
+                        currentHeading = virtualRoot;
+                        nodeStack.push(virtualRoot);
+                    }
+                    
+                    // 处理特殊节点
+                    if (isSpecialNode(child)) {
+                        SpecialNode specialNode = createSpecialNodeFromNode(child);
+                        if (specialNode != null) {
+                            currentHeading.addSpecialNode(specialNode);
+                            currentHeading.addDirectContent(specialNode.getPlaceholder());
+                        }
+                    } else {
+                        String nodeContent = extractTextContent(child);
+                        if (!nodeContent.trim().isEmpty()) {
+                            currentHeading.addDirectContent(nodeContent);
+                        }
                     }
                 }
             }
         }
+        
+        return tree;
+    }
 
-        // 保存最后一个段落
-        if (currentSection != null && currentSectionContent.length() > 0) {
-            currentSection.setContent(currentSectionContent.toString().trim());
-            currentSection.setOrder(currentOrder++);
-            segments.add(currentSection);
-        }
-
-        return currentOrder;
+    /** 从Flexmark节点创建特殊节点对象 */
+    private SpecialNode createSpecialNodeFromNode(Node node) {
+        SegmentType nodeType = determineNodeType(node);
+        String placeholder = generatePlaceholder(nodeType);
+        String originalContent = getOriginalNodeContent(node);
+        
+        SpecialNode specialNode = new SpecialNode(nodeType, placeholder, originalContent);
+        
+        // 收集节点元数据
+        Map<String, Object> nodeMetadata = extractNodeMetadata(node);
+        specialNode.setNodeMetadata(nodeMetadata);
+        
+        log.debug("Created special node {} for {} type", placeholder, nodeType);
+        return specialNode;
     }
 
     /** 处理节点内容，归属于当前标题段落（占位符版本） */
@@ -471,4 +542,5 @@ public class PureMarkdownProcessor implements MarkdownProcessor {
             }
         }
     }
+
 }

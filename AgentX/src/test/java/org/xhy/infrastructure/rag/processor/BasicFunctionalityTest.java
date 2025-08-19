@@ -55,13 +55,15 @@ class BasicFunctionalityTest {
         assertTrue(segments.size() > 0, "应该生成多个段落");
 
         // 验证包含预期的段落类型
-        boolean hasSection = segments.stream().anyMatch(s -> "section".equals(s.getType()));
+        boolean hasSection = segments.stream().anyMatch(s -> org.xhy.domain.rag.model.enums.SegmentType.SECTION.equals(s.getType()));
         assertTrue(hasSection, "应该包含章节段落");
 
         // 验证内容完整性
         String allContent = segments.stream().map(ProcessedSegment::getContent).reduce("", (a, b) -> a + "\n" + b);
         assertTrue(allContent.contains("测试文档"), "应该包含原始内容");
-        assertTrue(allContent.contains("HelloWorld"), "应该包含代码内容");
+        // 层次化分割将代码块转换为占位符，所以检查占位符而不是原始代码内容
+        assertTrue(allContent.contains("{{SPECIAL_NODE_CODE_") || 
+                  segments.stream().anyMatch(s -> s.hasSpecialNodes()), "应该包含代码占位符或特殊节点");
 
         System.out.println("纯净处理器测试通过！生成了 " + segments.size() + " 个段落");
         for (int i = 0; i < segments.size(); i++) {

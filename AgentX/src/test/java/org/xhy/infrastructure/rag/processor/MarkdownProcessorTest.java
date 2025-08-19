@@ -8,6 +8,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.xhy.domain.rag.model.ProcessedSegment;
 import org.xhy.domain.rag.straegy.MarkdownTokenProcessor;
 import org.xhy.domain.rag.straegy.context.ProcessingContext;
+import org.xhy.infrastructure.rag.config.MarkdownProcessorProperties;
 
 import java.util.Collections;
 import java.util.List;
@@ -25,8 +26,14 @@ class MarkdownProcessorTest {
 
     @BeforeEach
     void setUp() {
+        // 创建配置
+        MarkdownProcessorProperties properties = new MarkdownProcessorProperties();
+        MarkdownProcessorProperties.SegmentSplit segmentSplit = new MarkdownProcessorProperties.SegmentSplit();
+        segmentSplit.setEnabled(false); // 在这些测试中禁用拆分，保持原有行为
+        properties.setSegmentSplit(segmentSplit);
+        
         // 创建纯净处理器作为依赖
-        PureMarkdownProcessor pureProcessor = new PureMarkdownProcessor();
+        PureMarkdownProcessor pureProcessor = new PureMarkdownProcessor(properties);
         enhancedMarkdownProcessor = new EnhancedMarkdownProcessor(Collections.emptyList(), pureProcessor);
     }
 
