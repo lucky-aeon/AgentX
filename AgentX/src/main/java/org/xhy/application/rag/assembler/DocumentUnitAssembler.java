@@ -1,13 +1,13 @@
 package org.xhy.application.rag.assembler;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.springframework.beans.BeanUtils;
 import org.xhy.application.rag.dto.DocumentUnitDTO;
 import org.xhy.application.rag.dto.UpdateDocumentUnitRequest;
 import org.xhy.domain.rag.model.DocumentUnitEntity;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.Collectors;
 
 /** 文档单元转换器
  * 
@@ -46,6 +46,24 @@ public class DocumentUnitAssembler {
             entity.setIsVector(false);
         }
         return entity;
+    }
+
+    /** Convert DTO to Entity */
+    public static DocumentUnitEntity toEntity(DocumentUnitDTO dto) {
+        if (dto == null) {
+            return null;
+        }
+        DocumentUnitEntity entity = new DocumentUnitEntity();
+        BeanUtils.copyProperties(dto, entity);
+        return entity;
+    }
+
+    /** Convert DTO list to Entity list */
+    public static List<DocumentUnitEntity> toEntities(List<DocumentUnitDTO> dtos) {
+        if (dtos == null || dtos.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return dtos.stream().map(DocumentUnitAssembler::toEntity).collect(Collectors.toList());
     }
 
     /** Convert Entity list to DTO list */
