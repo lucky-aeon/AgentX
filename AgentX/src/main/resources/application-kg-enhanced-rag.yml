@@ -1,0 +1,53 @@
+# 知识图谱增强RAG配置示例
+agentx:
+  rag:
+    kg-enhanced:
+      # 是否启用知识图谱增强RAG
+      enabled: true
+      
+      # 默认配置参数
+      default-graph-weight: 0.3
+      default-max-results: 15
+      default-min-score: 0.7
+      default-max-graph-depth: 2
+      default-max-relations-per-entity: 5
+      default-enable-rerank: true
+      default-enable-query-expansion: false
+      default-include-graph-only-results: false
+      
+      # 实体提取配置
+      entity-extraction:
+        default-strategy: "KEYWORD"
+        timeout-ms: 5000
+        max-entities: 20
+        confidence-threshold: 0.6
+      
+      # 融合策略配置
+      fusion-strategy:
+        default-strategy: "ADAPTIVE_FUSION"
+        vector-weight: 0.7
+        rrf-k: 60
+        diversity-threshold: 0.8
+      
+      # 性能配置
+      performance:
+        vector-search-timeout-ms: 10000
+        graph-query-timeout-ms: 15000
+        max-concurrent-queries: 10
+        enable-query-cache: true
+        query-cache-expiration-minutes: 30
+
+# Neo4j配置（如果需要）
+spring:
+  neo4j:
+    uri: bolt://localhost:7687
+    authentication:
+      username: neo4j
+      password: password
+
+# 日志配置
+logging:
+  level:
+    org.xhy.application.rag.service.KnowledgeGraphEnhancedRagService: DEBUG
+    org.xhy.application.rag.service.GraphEntityExtractorService: DEBUG
+    org.xhy.application.rag.service.HybridSearchStrategy: DEBUG
