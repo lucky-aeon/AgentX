@@ -1209,3 +1209,14 @@ comment on column public.agent_execution_summary.tool_call_count is '工具调�
 comment on column public.agent_execution_summary.total_cost is '总成本费用';
 comment on column public.agent_execution_summary.execution_success is '执行是否成功';
 
+create table public.vector_store (
+                                     embedding_id uuid primary key not null,
+                                     embedding vector(1024),
+                                     text text,
+                                     metadata json
+);
+comment on column public.vector_store is '文档分片表 (用于向量存储)';
+comment on column public.vector_store.embedding_id is '向量ID';
+comment on column public.vector_store.embedding is '向量数据';
+comment on column public.vector_store.text is '分片文本 (进行向量化的文本片段)';
+comment on column public.vector_store.metadata is '分片元数据';
