@@ -38,6 +38,9 @@ public class PureMarkdownProcessor implements MarkdownProcessor {
 
     private final Parser parser;
     private MarkdownProcessorProperties markdownProperties;
+    
+    // 纯原文拆分模式标志
+    private boolean rawMode = false;
 
     // 占位符计数器
     private final AtomicInteger imageCounter = new AtomicInteger(1);
@@ -78,17 +81,11 @@ public class PureMarkdownProcessor implements MarkdownProcessor {
         }
 
         try {
-            // 解析Markdown为AST
-            Node document = parser.parse(markdown);
-
-            List<ProcessedSegment> segments = new ArrayList<>();
-            int order = 0;
-
-            // 使用语义感知遍历进行分段
-            order = processSemanticStructure(document, segments, order);
-
-            log.info("Pure processing completed: {} segments generated", segments.size());
-            return segments;
+            if (rawMode) {
+                return processRawSegments(markdown, context);
+            } else {
+                return processWithPlaceholders(markdown, context);
+            }
 
         } catch (Exception e) {
             log.error("Failed to process markdown with pure processor", e);
@@ -97,6 +94,130 @@ public class PureMarkdownProcessor implements MarkdownProcessor {
             fallback.setOrder(0);
             return List.of(fallback);
         }
+    }
+    
+    /**
+     * 纯原文拆分模式 - 不使用占位符，保持原始格式
+     */
+    private List<ProcessedSegment> processRawSegments(String markdown, ProcessingContext context) {
+        log.debug("Processing markdown in raw mode (preserving original content)");
+        
+        // 解析Markdown为AST
+        Node document = parser.parse(markdown);
+        
+        // 构建保持原始内容的文档树
+        DocumentTree documentTree = buildRawDocumentTree(document);
+        
+        // 执行基于真实内容长度的分割
+        // TODO: 实现真正的Raw分割逻辑，暂时使用现有的分割方法
+        List<ProcessedSegment> segments = documentTree.performHierarchicalSplit();
+        
+        // 设置段落顺序
+        for (int i = 0; i < segments.size(); i++) {
+            segments.get(i).setOrder(i);
+        }
+        
+        log.info("Raw processing completed: {} segments generated", segments.size());
+        return segments;
+    }
+    
+    /**
+     * 占位符模式处理（原有逻辑）
+     */
+    private List<ProcessedSegment> processWithPlaceholders(String markdown, ProcessingContext context) {
+        // 解析Markdown为AST
+        Node document = parser.parse(markdown);
+
+        List<ProcessedSegment> segments = new ArrayList<>();
+        int order = 0;
+
+        // 使用语义感知遍历进行分段
+        order = processSemanticStructure(document, segments, order);
+
+        log.info("Pure processing completed: {} segments generated", segments.size());
+        return segments;
+    }
+    
+    /**
+     * 构建保持原始内容的文档树
+     */
+    private DocumentTree buildRawDocumentTree(Node document) {
+        DocumentTree tree = new DocumentTree(markdownProperties.getSegmentSplit());
+        
+        Stack<HeadingNode> nodeStack = new Stack<>();
+        HeadingNode currentHeading = null;
+        
+        for (Node child : document.getChildren()) {
+            if (child instanceof Heading) {
+                // 处理标题节点
+                Heading heading = (Heading) child;
+                String headingText = extractTextContent(heading);
+                HeadingNode newNode = new HeadingNode(heading.getLevel(), headingText);
+                
+                // 维护层级关系
+                while (!nodeStack.isEmpty() && nodeStack.peek().getLevel() >= heading.getLevel()) {
+                    nodeStack.pop();
+                }
+                
+                if (nodeStack.isEmpty()) {
+                    tree.addRootNode(newNode);
+                } else {
+                    nodeStack.peek().addChild(newNode);
+                }
+                
+                nodeStack.push(newNode);
+                currentHeading = newNode;
+                
+            } else {
+                // 处理内容节点 - 保持原始格式
+                if (currentHeading != null) {
+                    String nodeContent = extractRawContent(child);
+                    if (!nodeContent.trim().isEmpty()) {
+                        currentHeading.addDirectContent(nodeContent);
+                    }
+                } else {
+                    // 创建虚拟根节点
+                    if (tree.getRootNodes().isEmpty()) {
+                        HeadingNode virtualRoot = new HeadingNode(1, "文档内容");
+                        tree.addRootNode(virtualRoot);
+                        currentHeading = virtualRoot;
+                        nodeStack.push(virtualRoot);
+                    }
+                    
+                    String nodeContent = extractRawContent(child);
+                    if (!nodeContent.trim().isEmpty()) {
+                        currentHeading.addDirectContent(nodeContent);
+                    }
+                }
+            }
+        }
+        
+        return tree;
+    }
+    
+    /**
+     * 提取节点的原始内容（不使用占位符）
+     */
+    private String extractRawContent(Node node) {
+        // 直接返回节点的原始markdown内容
+        return node.getChars().toString();
+    }
+    
+    /**
+     * 设置原文拆分模式
+     * 
+     * @param rawMode true=纯原文模式，false=占位符模式
+     */
+    public void setRawMode(boolean rawMode) {
+        this.rawMode = rawMode;
+        log.debug("Raw mode set to: {}", rawMode);
+    }
+    
+    /**
+     * 获取当前处理模式
+     */
+    public boolean isRawMode() {
+        return rawMode;
     }
 
     /** 语义结构处理 - 构建文档树并执行层次化分割 */

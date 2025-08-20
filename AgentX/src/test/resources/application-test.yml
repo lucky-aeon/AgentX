@@ -27,3 +27,17 @@ logging:
   level:
     root: info
     org.xhy: debug
+
+rag:
+  markdown:
+    segment-split:
+      enabled: true
+      max-length: 1500
+      min-length: 100
+      buffer-size: 50
+      enable-overlap: false
+      overlap-size: 30
+  vector:
+    max-length: 1500
+    min-length: 100
+    overlap-size: 50

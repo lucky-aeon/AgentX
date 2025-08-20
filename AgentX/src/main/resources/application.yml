@@ -125,6 +125,10 @@ rag:
       buffer-size: ${RAG_MARKDOWN_BUFFER_SIZE:100}
       enable-overlap: ${RAG_MARKDOWN_ENABLE_OVERLAP:false}
       overlap-size: ${RAG_MARKDOWN_OVERLAP_SIZE:50}
+  vector:
+    max-length: ${RAG_VECTOR_MAX_LENGTH:1800}
+    min-length: ${RAG_VECTOR_MIN_LENGTH:200}
+    overlap-size: ${RAG_VECTOR_OVERLAP_SIZE:100}
 
 dromara:
   x-file-storage: #文件存储配置

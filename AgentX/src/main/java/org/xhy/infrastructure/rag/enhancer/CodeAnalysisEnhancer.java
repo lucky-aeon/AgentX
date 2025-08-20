@@ -29,7 +29,7 @@ public class CodeAnalysisEnhancer implements SegmentEnhancer {
     @Override
     public boolean canEnhance(ProcessedSegment segment) {
         // 检查是否包含代码类型的特殊节点
-        return segment.hasSpecialNodes() && segment.getSpecialNodeCount(SegmentType.CODE) > 0;
+        return segment.getType() == SegmentType.CODE;
     }
 
     @Override

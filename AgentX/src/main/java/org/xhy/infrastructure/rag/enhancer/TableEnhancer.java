@@ -27,7 +27,7 @@ public class TableEnhancer implements SegmentEnhancer {
     @Override
     public boolean canEnhance(ProcessedSegment segment) {
         // 检查是否包含表格类型的特殊节点
-        return segment.hasSpecialNodes() && segment.getSpecialNodeCount(SegmentType.TABLE) > 0;
+        return segment.getType() == SegmentType.TABLE;
     }
 
     @Override

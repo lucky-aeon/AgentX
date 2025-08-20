@@ -31,7 +31,7 @@ AgentX 平台是一款致力于零学习成本打造个性化 AI Agent 的全栈
 
 
 
-# 开发规范&项目环境搭建
+开发规范&项目环境搭建
 开发规范参考：[https://github.com/lucky-aeon/AgentX/blob/master/docs/develop_document.md](https://github.com/lucky-aeon/AgentX/blob/master/docs/develop_document.md)
 
 **模型服务商的注册**
@@ -42,8 +42,8 @@ AgentX 平台是一款致力于零学习成本打造个性化 AI Agent 的全栈
 
 3.API 密钥在：[https://cloud.siliconflow.cn/account/ak](https://cloud.siliconflow.cn/account/ak)
 
-# 流式输出 & 助理管理与发布
-## 流式输出
+流式输出 & 助理管理与发布
+流式输出
 大模型的完整回复输出等待时间较长，不过大模型提供了流式输出，因此为了让用户体验更加友好，项目中支持流式输出响应。并且使用 SSE
 
 **SSE & WebSocket**
@@ -65,7 +65,7 @@ AgentX 平台是一款致力于零学习成本打造个性化 AI Agent 的全栈
 | **服务器实现** | 比较简单，不需要额外的协议栈或复杂的控制 | 需要WebSocket服务器的支持，增加实现复杂度 |
 
 
-## 助理管理与发布
+助理管理与发布
 **需求：**
 
 创建的 Agent 需要让 TA 人也能使用，因此会有 Agent 的管理与发布。
@@ -152,7 +152,7 @@ agent_workspace：用户在添加 agent 的时候用来保存的，涉及到用�
 
 
 
-# Token 上下文策略
+Token 上下文策略
 
 
 Token 计算网站：[https://tiktoken.aigc2d.com/](https://tiktoken.aigc2d.com/)
@@ -245,7 +245,7 @@ context
 | deleted_at | timestamp without time zone | - | 逻辑删除时间（非NULL表示已删除） |
 
 
-# 大模型服务商
+大模型服务商
 **需求**
 
 个人在进行对接的时候直接使用 apiKey，baseUrl，model 就可以进行对接了，但是我们是一个平台，用户可以自行创建服务商以及模型，平台也会提供官方的服务商模型给到用户进行使用
@@ -254,7 +254,7 @@ context
 
 **用户自己创建的服务商，所涉及到的 apiKey 一定是要加密的**以下是计费系统数据库表结构的表格形式展示：
 
-### **1. rules（计费规则表）**
+ **1. rules（计费规则表）**
 | **字段名** | **数据类型** | **约束/默认值** | **说明/注释** |
 | --- | --- | --- | --- |
 | **id** | **VARCHAR(64)** | **NOT NULL, PRIMARY KEY** | **规则ID** |
@@ -266,7 +266,7 @@ context
 | **updated_at** | **TIMESTAMP** | **DEFAULT CURRENT_TIMESTAMP** | **更新时间** |
 
 
-### **2. products（计费商品表）**
+**2. products（计费商品表）**
 | **字段名** | **数据类型** | **约束/默认值** | **说明/注释** |
 | --- | --- | --- | --- |
 | **id** | **VARCHAR(64)** | **NOT NULL, PRIMARY KEY** | **商品ID** |
@@ -281,7 +281,7 @@ context
 | **updated_at** | **TIMESTAMP** | **DEFAULT CURRENT_TIMESTAMP** | **更新时间** |
 
 
-### **3. accounts（用户账户表）**
+**3. accounts（用户账户表）**
 | **字段名** | **数据类型** | **约束/默认值** | **说明/注释** |
 | --- | --- | --- | --- |
 | **id** | **VARCHAR(64)** | **NOT NULL, PRIMARY KEY** | **账户ID** |
@@ -295,7 +295,7 @@ context
 | **updated_at** | **TIMESTAMP** | **DEFAULT CURRENT_TIMESTAMP** | **更新时间** |
 
 
-### **4. usage_records（使用记录表）**
+ **4. usage_records（使用记录表）**
 | **字段名** | **数据类型** | **约束/默认值** | **说明/注释** |
 | --- | --- | --- | --- |
 | **id** | **VARCHAR(64)** | **NOT NULL, PRIMARY KEY** | **记录ID** |
@@ -374,7 +374,7 @@ models
 
 
 
-# Agent 策略
+ Agent 策略
 Agent：LLM（大模型） + 工具
 
 
@@ -391,7 +391,7 @@ Agent：LLM（大模型） + 工具
 
 
 
-# 插件 - 工具市场
+ 插件 - 工具市场
 **需求**
 
 agent 的组成：llm + 工具，因此我们就要实现工具，而工具市场指的是大家都可以上传工具，TA 人也可以使用

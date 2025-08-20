@@ -34,7 +34,7 @@ public class ImageOcrEnhancer implements SegmentEnhancer {
     @Override
     public boolean canEnhance(ProcessedSegment segment) {
         // 检查是否包含图片类型的特殊节点
-        return segment.hasSpecialNodes() && segment.getSpecialNodeCount(SegmentType.IMAGE) > 0;
+        return segment.getType() == SegmentType.IMAGE;
     }
 
     @Override

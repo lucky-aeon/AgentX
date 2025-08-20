@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.xhy.domain.rag.enhancer.SegmentEnhancer;
 import org.xhy.domain.rag.model.ProcessedSegment;
+import org.xhy.domain.rag.model.enums.SegmentType;
 import org.xhy.domain.rag.straegy.context.ProcessingContext;
 import org.xhy.infrastructure.llm.LLMProviderService;
 import org.xhy.infrastructure.llm.protocol.enums.ProviderProtocol;
@@ -24,7 +25,7 @@ public class FormulaEnhancer implements SegmentEnhancer {
 
     @Override
     public boolean canEnhance(ProcessedSegment segment) {
-        return segment.getContent() != null && containsFormula(segment.getContent());
+        return segment.getType() == SegmentType.FORMULA;
     }
 
     @Override
