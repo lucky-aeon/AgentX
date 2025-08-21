@@ -16,7 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /** 验证层次化分割算法的核心特性 */
 class MarkdownSplitterTest {
 
-    private PureMarkdownProcessor processor;
+    private StructuralMarkdownProcessor processor;
     private ProcessingContext context;
 
     @BeforeEach
@@ -30,7 +30,7 @@ class MarkdownSplitterTest {
         segmentSplit.setBufferSize(100);
         properties.setSegmentSplit(segmentSplit);
 
-        processor = new PureMarkdownProcessor(properties);
+        processor = new StructuralMarkdownProcessor();
         context = new ProcessingContext(null, null, null, "testUser", "testFile");
     }
 

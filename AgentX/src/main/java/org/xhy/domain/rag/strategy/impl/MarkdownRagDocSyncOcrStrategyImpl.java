@@ -13,7 +13,7 @@ import org.xhy.domain.rag.model.ProcessedSegment;
 import org.xhy.domain.rag.repository.DocumentUnitRepository;
 import org.xhy.domain.rag.repository.FileDetailRepository;
 import org.xhy.domain.rag.strategy.context.ProcessingContext;
-import org.xhy.infrastructure.rag.processor.PureMarkdownProcessor;
+import org.xhy.infrastructure.rag.processor.StructuralMarkdownProcessor;
 import org.xhy.infrastructure.rag.processor.DocumentVectorizationOrchestrator;
 import org.xhy.infrastructure.rag.service.UserModelConfigResolver;
 
@@ -31,7 +31,7 @@ public class MarkdownRagDocSyncOcrStrategyImpl extends DocumentProcessingStrateg
 
     private static final Logger log = LoggerFactory.getLogger(MarkdownRagDocSyncOcrStrategyImpl.class);
 
-    private final PureMarkdownProcessor pureMarkdownProcessor;
+    private final StructuralMarkdownProcessor structuralMarkdownProcessor;
     private final DocumentVectorizationOrchestrator vectorSegmentProcessor;
     private final DocumentUnitRepository documentUnitRepository;
     private final FileDetailRepository fileDetailRepository;
@@ -41,11 +41,11 @@ public class MarkdownRagDocSyncOcrStrategyImpl extends DocumentProcessingStrateg
     // 用于存储当前处理的文件ID
     private String currentProcessingFileId;
 
-    public MarkdownRagDocSyncOcrStrategyImpl(PureMarkdownProcessor pureMarkdownProcessor,
-                                             DocumentVectorizationOrchestrator vectorSegmentProcessor, DocumentUnitRepository documentUnitRepository,
-                                             FileDetailRepository fileDetailRepository, FileStorageService fileStorageService,
-                                             UserModelConfigResolver userModelConfigResolver) {
-        this.pureMarkdownProcessor = pureMarkdownProcessor;
+    public MarkdownRagDocSyncOcrStrategyImpl(StructuralMarkdownProcessor structuralMarkdownProcessor,
+            DocumentVectorizationOrchestrator vectorSegmentProcessor, DocumentUnitRepository documentUnitRepository,
+            FileDetailRepository fileDetailRepository, FileStorageService fileStorageService,
+            UserModelConfigResolver userModelConfigResolver) {
+        this.structuralMarkdownProcessor = structuralMarkdownProcessor;
         this.vectorSegmentProcessor = vectorSegmentProcessor;
         this.documentUnitRepository = documentUnitRepository;
         this.fileDetailRepository = fileDetailRepository;
@@ -75,8 +75,8 @@ public class MarkdownRagDocSyncOcrStrategyImpl extends DocumentProcessingStrateg
             ProcessingContext context = ProcessingContext.from(ragDocSyncOcrMessage, userModelConfigResolver);
 
             // 第一阶段：使用纯原文拆分模式计算段落数量
-            pureMarkdownProcessor.setRawMode(true);
-            List<ProcessedSegment> segments = pureMarkdownProcessor.processToSegments(markdown, context);
+            structuralMarkdownProcessor.setRawMode(true);
+            List<ProcessedSegment> segments = structuralMarkdownProcessor.processToSegments(markdown, context);
             int segmentCount = segments.size();
 
             ragDocSyncOcrMessage.setPageSize(segmentCount);
@@ -137,8 +137,8 @@ public class MarkdownRagDocSyncOcrStrategyImpl extends DocumentProcessingStrateg
             ProcessingContext context = ProcessingContext.from(ragDocSyncOcrMessage, userModelConfigResolver);
 
             // 第一阶段：纯原文拆分，存储到DocumentUnitEntity
-            pureMarkdownProcessor.setRawMode(true);
-            List<ProcessedSegment> rawSegments = pureMarkdownProcessor.processToSegments(markdown, context);
+            structuralMarkdownProcessor.setRawMode(true);
+            List<ProcessedSegment> rawSegments = structuralMarkdownProcessor.processToSegments(markdown, context);
 
             log.info("Stage 1 completed: {} raw segments generated", rawSegments.size());
 

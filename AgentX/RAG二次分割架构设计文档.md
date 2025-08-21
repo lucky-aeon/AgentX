@@ -37,7 +37,7 @@
 ```
 原始Markdown文档
         ↓
-   语义结构解析 (PureMarkdownProcessor)
+   语义结构解析 (StructuralMarkdownProcessor)
         ↓
    DocumentUnitEntity (原文存储层)
         ↓
@@ -51,7 +51,7 @@
 #### 阶段1：纯语义拆分
 ```
 输入：原始Markdown
-处理：PureMarkdownProcessor（纯拆分模式）
+处理：StructuralMarkdownProcessor（纯拆分模式）
 输出：DocumentUnitEntity[]（存储纯原文）
 特点：不处理特殊节点，保持原始格式
 ```
@@ -301,12 +301,12 @@ public class SecondarySegmentSplitter {
 
 ### 4.2 修改现有组件
 
-#### PureMarkdownProcessor修改
+#### StructuralMarkdownProcessor修改
 增加纯原文拆分模式
 
 ```java
-@Component("pureMarkdownProcessor")
-public class PureMarkdownProcessor implements MarkdownProcessor {
+@Component("structuralMarkdownProcessor")
+public class StructuralMarkdownProcessor implements MarkdownProcessor {
     
     // 新增：纯原文拆分模式配置
     @Value("${rag.processor.raw-mode:false}")
@@ -466,7 +466,7 @@ public class MarkdownRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl
         ProcessingContext context = ProcessingContext.from(message, userModelConfigResolver);
         
         // 使用纯原文模式处理
-        PureMarkdownProcessor processor = new PureMarkdownProcessor();
+        StructuralMarkdownProcessor processor = new StructuralMarkdownProcessor();
         processor.setRawMode(true);  // 启用原文模式
         
         return processor.processToSegments(markdown, context);

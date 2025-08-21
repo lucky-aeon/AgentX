@@ -30,13 +30,12 @@ public class MarkdownAstRewriter {
     public MarkdownAstRewriter(NodeTranslatorService translatorService) {
         this.translatorService = translatorService;
 
-        // 配置与 PureMarkdownProcessor 一致的 Flexmark 解析器
+        // 配置与 StructuralMarkdownProcessor 一致的 Flexmark 解析器
         MutableDataSet options = new MutableDataSet();
         options.set(Parser.EXTENSIONS, java.util.List.of(TablesExtension.create()));
         this.parser = Parser.builder(options).build();
 
-        log.info("MarkdownAstRewriter initialized with translator service: {}",
-                translatorService.getTranslatorInfo());
+        log.info("MarkdownAstRewriter initialized with translator service: {}", translatorService.getTranslatorInfo());
     }
 
     /** 翻译内容中的特殊节点

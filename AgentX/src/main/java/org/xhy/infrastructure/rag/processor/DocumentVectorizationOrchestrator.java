@@ -35,8 +35,8 @@ public class DocumentVectorizationOrchestrator {
     private final UserModelConfigResolver userModelConfigResolver;
 
     public DocumentVectorizationOrchestrator(MarkdownAstRewriter translator, MarkdownContentSplitter splitter,
-                                             DocumentUnitRepository documentUnitRepository, ApplicationContext applicationContext,
-                                             FileDetailDomainService fileDetailDomainService, UserModelConfigResolver userModelConfigResolver) {
+            DocumentUnitRepository documentUnitRepository, ApplicationContext applicationContext,
+            FileDetailDomainService fileDetailDomainService, UserModelConfigResolver userModelConfigResolver) {
         this.translator = translator;
         this.splitter = splitter;
         this.documentUnitRepository = documentUnitRepository;

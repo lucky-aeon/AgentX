@@ -211,7 +211,9 @@ public class EmbeddingDomainService implements MetadataConstant {
                     Wrappers.lambdaQuery(DocumentUnitEntity.class).in(DocumentUnitEntity::getId, finalDocumentIds));
 
             // 按照检索相关性顺序重新排列结果，并设置相似度分数
-            List<DocumentUnitEntity> sortedResults = finalDocumentIds.stream().map(id -> {
+            // 使用LinkedHashSet去重，保持顺序
+            Set<String> uniqueDocumentIds = new LinkedHashSet<>(finalDocumentIds);
+            List<DocumentUnitEntity> sortedResults = uniqueDocumentIds.stream().map(id -> {
                 DocumentUnitEntity doc = allDocuments.stream().filter(d -> id.equals(d.getId())).findFirst()
                         .orElse(null);
                 if (doc != null) {
@@ -338,7 +340,7 @@ public class EmbeddingDomainService implements MetadataConstant {
         final Metadata metadata = new Metadata();
         metadata.put(FILE_ID, ragDocSyncStorageMessage.getFileId());
         metadata.put(FILE_NAME, ragDocSyncStorageMessage.getFileName());
-        metadata.put(DOCUMENT_ID, ragDocSyncStorageMessage.getId());
+        metadata.put(DOCUMENT_ID, extractOriginalDocId(ragDocSyncStorageMessage.getId()));
         metadata.put(DATA_SET_ID, ragDocSyncStorageMessage.getDatasetId());
         return metadata;
     }
