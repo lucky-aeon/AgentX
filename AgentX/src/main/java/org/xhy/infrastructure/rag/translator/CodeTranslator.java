@@ -1,116 +1,80 @@
-package org.xhy.infrastructure.rag.enhancer;
+package org.xhy.infrastructure.rag.translator;
 
+import com.vladsch.flexmark.ast.FencedCodeBlock;
+import com.vladsch.flexmark.ast.IndentedCodeBlock;
+import com.vladsch.flexmark.util.ast.Node;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.response.ChatResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-import org.xhy.domain.rag.enhancer.SegmentEnhancer;
-import org.xhy.domain.rag.model.ProcessedSegment;
-import org.xhy.domain.rag.model.SpecialNode;
-import org.xhy.domain.rag.model.enums.SegmentType;
 import org.xhy.domain.rag.straegy.context.ProcessingContext;
+import org.xhy.domain.rag.translator.NodeTranslator;
 import org.xhy.infrastructure.llm.LLMProviderService;
 import org.xhy.infrastructure.llm.protocol.enums.ProviderProtocol;
 
-import java.util.Map;
-
-/** 代码分析增强器
+/** 代码翻译器
  * 
- * 职责： - 对代码块类型的段落进行LLM分析增强 - 将代码转换为自然语言描述，便于RAG检索 - 生成代码功能说明和关键词
+ * 将代码块翻译为自然语言描述，便于RAG检索
  * 
  * @author claude */
 @Component
-public class CodeAnalysisEnhancer implements SegmentEnhancer {
+public class CodeTranslator implements NodeTranslator {
 
-    private static final Logger log = LoggerFactory.getLogger(CodeAnalysisEnhancer.class);
+    private static final Logger log = LoggerFactory.getLogger(CodeTranslator.class);
 
     @Override
-    public boolean canEnhance(ProcessedSegment segment) {
-        // 检查是否包含代码类型的特殊节点
-        return segment.getType() == SegmentType.CODE;
+    public boolean canTranslate(Node node) {
+        return node instanceof FencedCodeBlock || node instanceof IndentedCodeBlock;
     }
 
     @Override
-    public ProcessedSegment enhance(ProcessedSegment segment, ProcessingContext context) {
+    public String translate(Node node, ProcessingContext context) {
         try {
+            // 基于AST节点准确提取代码信息
+            String language = null;
+            String codeContent = null;
+            String originalMarkdown = node.getChars().toString();
+
+            if (node instanceof FencedCodeBlock) {
+                FencedCodeBlock codeBlock = (FencedCodeBlock) node;
+                language = codeBlock.getInfo() != null && !codeBlock.getInfo().isBlank()
+                        ? codeBlock.getInfo().toString().trim()
+                        : "text";
+                codeContent = codeBlock.getContentChars().toString(); // 准确提取，无需字符串解析
+            } else if (node instanceof IndentedCodeBlock) {
+                IndentedCodeBlock codeBlock = (IndentedCodeBlock) node;
+                language = "text";
+                codeContent = codeBlock.getContentChars().toString(); // 准确提取，无需字符串解析
+            }
+
             // 检查是否有可用的LLM配置
             if (context.getLlmConfig() == null) {
-                log.warn("No LLM config available for code analysis, skipping enhancement");
-                return segment;
+                log.warn("No LLM config available for code analysis, using fallback translation");
+                return generateFallbackDescription(codeContent, language);
             }
-
-            // 处理所有代码类型的特殊节点
-            for (SpecialNode node : segment.getSpecialNodes().values()) {
-                if (node.getNodeType() == SegmentType.CODE && !node.isProcessed()) {
-                    enhanceCodeNode(node, context);
-                }
-            }
-
-            log.debug("Enhanced segment with {} code nodes", segment.getSpecialNodeCount(SegmentType.CODE));
-
-            return segment;
-
-        } catch (Exception e) {
-            log.error("Failed to enhance code segment", e);
-            // 增强失败时返回原始段落
-            return segment;
-        }
-    }
-
-    /** 增强单个代码节点 */
-    private void enhanceCodeNode(SpecialNode node, ProcessingContext context) {
-        try {
-            // 从节点元数据中提取代码信息
-            Map<String, Object> metadata = node.getNodeMetadata();
-            String language = metadata != null ? (String) metadata.get("language") : "unknown";
-
-            // 提取代码内容（去掉markdown格式）
-            String codeContent = extractCodeContent(node.getOriginalContent(), language);
 
             // 使用LLM生成代码描述
             String codeDescription = describeCodeWithLLM(codeContent, language, context);
 
             // 增强内容：保留原始代码 + 添加LLM描述
-            String enhancedContent = String.format("%s\n\n代码功能描述：%s", node.getOriginalContent(), codeDescription);
+            String enhancedContent = String.format("%s\n\n代码功能描述：%s", originalMarkdown, codeDescription);
 
-            // 更新特殊节点的增强内容
-            node.setEnhancedContent(enhancedContent);
-            node.markAsProcessed();
+            log.debug("Enhanced code: language={}, original_length={}, enhanced_length={}", language,
+                    originalMarkdown.length(), enhancedContent.length());
 
-            log.debug("Enhanced code node: language={}, original_length={}, enhanced_length={}", language,
-                    node.getOriginalContent().length(), enhancedContent.length());
+            return enhancedContent;
 
         } catch (Exception e) {
-            log.warn("Failed to enhance individual code node: {}", e.getMessage());
+            log.error("Failed to translate code content: {}", e.getMessage(), e);
+            return node.getChars().toString(); // 出错时返回原内容
         }
     }
 
     @Override
     public int getPriority() {
         return 10; // 高优先级处理代码块
-    }
-
-    /** 从markdown格式中提取纯代码内容 */
-    private String extractCodeContent(String markdownContent, String language) {
-        // 移除代码块的markdown标记
-        String content = markdownContent;
-
-        // 移除开头的```language
-        if (content.startsWith("```")) {
-            int firstNewline = content.indexOf('\n');
-            if (firstNewline > 0) {
-                content = content.substring(firstNewline + 1);
-            }
-        }
-
-        // 移除结尾的```
-        if (content.endsWith("```")) {
-            content = content.substring(0, content.length() - 3);
-        }
-
-        return content.trim();
     }
 
     /** 使用LLM生成代码描述 */

@@ -6,10 +6,8 @@ import com.vladsch.flexmark.util.ast.Node;
 import com.vladsch.flexmark.util.data.MutableDataSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.xhy.domain.rag.model.ProcessedSegment;
-import org.xhy.domain.rag.processor.MarkdownProcessor;
 import org.xhy.domain.rag.straegy.MarkdownTokenProcessor;
 import org.xhy.domain.rag.straegy.context.ProcessingContext;
 
@@ -24,11 +22,10 @@ public class EnhancedMarkdownProcessor {
 
     private static final Logger log = LoggerFactory.getLogger(EnhancedMarkdownProcessor.class);
 
-    private final MarkdownProcessor pureProcessor;
+    private final PureMarkdownProcessor pureProcessor;
     private final List<MarkdownTokenProcessor> processors;
 
-    public EnhancedMarkdownProcessor(List<MarkdownTokenProcessor> processors,
-            @Qualifier("ragEnhancedMarkdownProcessor") MarkdownProcessor pureProcessor) {
+    public EnhancedMarkdownProcessor(List<MarkdownTokenProcessor> processors, PureMarkdownProcessor pureProcessor) {
         this.processors = processors;
         this.pureProcessor = pureProcessor;
         // 按优先级排序处理器

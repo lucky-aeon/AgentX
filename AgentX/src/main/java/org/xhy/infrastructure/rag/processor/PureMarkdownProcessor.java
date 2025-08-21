@@ -9,7 +9,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.xhy.domain.rag.model.ProcessedSegment;
-import org.xhy.domain.rag.model.SpecialNode;
 import org.xhy.domain.rag.model.enums.SegmentType;
 import org.xhy.domain.rag.processor.MarkdownProcessor;
 import org.xhy.domain.rag.straegy.context.ProcessingContext;
@@ -20,15 +19,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Stack;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /** 纯净Markdown处理器
  * 
- * 设计职责： - 只负责Markdown结构化解析和语义分段 - 不进行任何LLM调用或内容增强 - 按语义结构（标题层级）进行合理分段 - 提取基础元数据，保留原始内容
+ * 设计职责： - 只负责Markdown结构化解析和语义分段 - 不进行任何LLM调用或内容增强 - 按语义结构（标题层级）进行合理分段 - 支持纯原文拆分模式，用于二次分割架构
  * 
- * 适用场景： - 单元测试（无需mock外部服务） - 基础文档解析 - 性能要求高的场景
+ * 适用场景： - 单元测试（无需mock外部服务） - 基础文档解析 - 性能要求高的场景 - 二次分割架构的第一阶段处理
  * 
  * @author claude */
 @Component("pureMarkdownProcessor")
@@ -38,19 +34,13 @@ public class PureMarkdownProcessor implements MarkdownProcessor {
 
     private final Parser parser;
     private MarkdownProcessorProperties markdownProperties;
-    
+
     // 纯原文拆分模式标志
     private boolean rawMode = false;
 
-    // 占位符计数器
-    private final AtomicInteger imageCounter = new AtomicInteger(1);
-    private final AtomicInteger codeCounter = new AtomicInteger(1);
-    private final AtomicInteger tableCounter = new AtomicInteger(1);
-    private final AtomicInteger formulaCounter = new AtomicInteger(1);
-
     public PureMarkdownProcessor(MarkdownProcessorProperties markdownProperties) {
         this.markdownProperties = markdownProperties;
-        
+
         // 配置Flexmark解析器
         MutableDataSet options = new MutableDataSet();
         options.set(Parser.EXTENSIONS, List.of(TablesExtension.create()));
@@ -62,12 +52,12 @@ public class PureMarkdownProcessor implements MarkdownProcessor {
         // 使用层次化分割的默认配置
         this.markdownProperties = new MarkdownProcessorProperties();
         MarkdownProcessorProperties.SegmentSplit segmentSplit = new MarkdownProcessorProperties.SegmentSplit();
-        segmentSplit.setEnabled(true);       // 启用层次化分割
-        segmentSplit.setMaxLength(1800);     // 默认最大长度
-        segmentSplit.setMinLength(200);      // 默认最小长度  
-        segmentSplit.setBufferSize(100);     // 默认缓冲区
+        segmentSplit.setEnabled(true); // 启用层次化分割
+        segmentSplit.setMaxLength(1800); // 默认最大长度
+        segmentSplit.setMinLength(200); // 默认最小长度
+        segmentSplit.setBufferSize(100); // 默认缓冲区
         this.markdownProperties.setSegmentSplit(segmentSplit);
-        
+
         // 配置Flexmark解析器
         MutableDataSet options = new MutableDataSet();
         options.set(Parser.EXTENSIONS, List.of(TablesExtension.create()));
@@ -84,7 +74,7 @@ public class PureMarkdownProcessor implements MarkdownProcessor {
             if (rawMode) {
                 return processRawSegments(markdown, context);
             } else {
-                return processWithPlaceholders(markdown, context);
+                return processRegularSegments(markdown, context);
             }
 
         } catch (Exception e) {
@@ -95,36 +85,31 @@ public class PureMarkdownProcessor implements MarkdownProcessor {
             return List.of(fallback);
         }
     }
-    
-    /**
-     * 纯原文拆分模式 - 不使用占位符，保持原始格式
-     */
+
+    /** 纯原文拆分模式 - 保持原始格式，不进行任何特殊处理 */
     private List<ProcessedSegment> processRawSegments(String markdown, ProcessingContext context) {
         log.debug("Processing markdown in raw mode (preserving original content)");
-        
+
         // 解析Markdown为AST
         Node document = parser.parse(markdown);
-        
+
         // 构建保持原始内容的文档树
         DocumentTree documentTree = buildRawDocumentTree(document);
-        
+
         // 执行基于真实内容长度的分割
-        // TODO: 实现真正的Raw分割逻辑，暂时使用现有的分割方法
         List<ProcessedSegment> segments = documentTree.performHierarchicalSplit();
-        
+
         // 设置段落顺序
         for (int i = 0; i < segments.size(); i++) {
             segments.get(i).setOrder(i);
         }
-        
+
         log.info("Raw processing completed: {} segments generated", segments.size());
         return segments;
     }
-    
-    /**
-     * 占位符模式处理（原有逻辑）
-     */
-    private List<ProcessedSegment> processWithPlaceholders(String markdown, ProcessingContext context) {
+
+    /** 常规处理模式 - 简化的语义分段 */
+    private List<ProcessedSegment> processRegularSegments(String markdown, ProcessingContext context) {
         // 解析Markdown为AST
         Node document = parser.parse(markdown);
 
@@ -134,40 +119,38 @@ public class PureMarkdownProcessor implements MarkdownProcessor {
         // 使用语义感知遍历进行分段
         order = processSemanticStructure(document, segments, order);
 
-        log.info("Pure processing completed: {} segments generated", segments.size());
+        log.info("Regular processing completed: {} segments generated", segments.size());
         return segments;
     }
-    
-    /**
-     * 构建保持原始内容的文档树
-     */
+
+    /** 构建保持原始内容的文档树 */
     private DocumentTree buildRawDocumentTree(Node document) {
         DocumentTree tree = new DocumentTree(markdownProperties.getSegmentSplit());
-        
+
         Stack<HeadingNode> nodeStack = new Stack<>();
         HeadingNode currentHeading = null;
-        
+
         for (Node child : document.getChildren()) {
             if (child instanceof Heading) {
                 // 处理标题节点
                 Heading heading = (Heading) child;
                 String headingText = extractTextContent(heading);
                 HeadingNode newNode = new HeadingNode(heading.getLevel(), headingText);
-                
+
                 // 维护层级关系
                 while (!nodeStack.isEmpty() && nodeStack.peek().getLevel() >= heading.getLevel()) {
                     nodeStack.pop();
                 }
-                
+
                 if (nodeStack.isEmpty()) {
                     tree.addRootNode(newNode);
                 } else {
                     nodeStack.peek().addChild(newNode);
                 }
-                
+
                 nodeStack.push(newNode);
                 currentHeading = newNode;
-                
+
             } else {
                 // 处理内容节点 - 保持原始格式
                 if (currentHeading != null) {
@@ -183,7 +166,7 @@ public class PureMarkdownProcessor implements MarkdownProcessor {
                         currentHeading = virtualRoot;
                         nodeStack.push(virtualRoot);
                     }
-                    
+
                     String nodeContent = extractRawContent(child);
                     if (!nodeContent.trim().isEmpty()) {
                         currentHeading.addDirectContent(nodeContent);
@@ -191,31 +174,25 @@ public class PureMarkdownProcessor implements MarkdownProcessor {
                 }
             }
         }
-        
+
         return tree;
     }
-    
-    /**
-     * 提取节点的原始内容（不使用占位符）
-     */
+
+    /** 提取节点的原始内容（不进行任何处理） */
     private String extractRawContent(Node node) {
         // 直接返回节点的原始markdown内容
         return node.getChars().toString();
     }
-    
-    /**
-     * 设置原文拆分模式
+
+    /** 设置原文拆分模式
      * 
-     * @param rawMode true=纯原文模式，false=占位符模式
-     */
+     * @param rawMode true=纯原文模式，false=常规处理模式 */
     public void setRawMode(boolean rawMode) {
         this.rawMode = rawMode;
         log.debug("Raw mode set to: {}", rawMode);
     }
-    
-    /**
-     * 获取当前处理模式
-     */
+
+    /** 获取当前处理模式 */
     public boolean isRawMode() {
         return rawMode;
     }
@@ -228,38 +205,37 @@ public class PureMarkdownProcessor implements MarkdownProcessor {
 
         // 执行层次化分割
         List<ProcessedSegment> hierarchicalSegments = documentTree.performHierarchicalSplit();
-        
+
         // 设置段落顺序并添加到结果列表
         int currentOrder = order;
         for (ProcessedSegment segment : hierarchicalSegments) {
             segment.setOrder(currentOrder++);
             segments.add(segment);
         }
-        
+
         log.info("Hierarchical processing completed: {} segments generated", hierarchicalSegments.size());
         return currentOrder;
     }
 
-
-    /** 构建文档的标题层次树 */
+    /** 构建文档的标题层次树（简化版本，不处理特殊节点） */
     private DocumentTree buildDocumentTree(Node document) {
         DocumentTree tree = new DocumentTree(markdownProperties.getSegmentSplit());
-        
+
         // 使用栈来跟踪当前的标题层次
         Stack<HeadingNode> nodeStack = new Stack<>();
         HeadingNode currentHeading = null;
-        
+
         for (Node child : document.getChildren()) {
             if (child instanceof Heading) {
                 Heading heading = (Heading) child;
                 String headingText = extractTextContent(heading);
                 HeadingNode newNode = new HeadingNode(heading.getLevel(), headingText);
-                
+
                 // 找到合适的父节点
                 while (!nodeStack.isEmpty() && nodeStack.peek().getLevel() >= heading.getLevel()) {
                     nodeStack.pop();
                 }
-                
+
                 if (nodeStack.isEmpty()) {
                     // 这是一个根级别的标题
                     tree.addRootNode(newNode);
@@ -267,26 +243,16 @@ public class PureMarkdownProcessor implements MarkdownProcessor {
                     // 添加到父节点的子节点列表
                     nodeStack.peek().addChild(newNode);
                 }
-                
+
                 nodeStack.push(newNode);
                 currentHeading = newNode;
-                
+
             } else {
                 // 非标题内容，添加到当前标题下
                 if (currentHeading != null) {
-                    // 处理特殊节点
-                    if (isSpecialNode(child)) {
-                        SpecialNode specialNode = createSpecialNodeFromNode(child);
-                        if (specialNode != null) {
-                            currentHeading.addSpecialNode(specialNode);
-                            // 添加占位符到内容中
-                            currentHeading.addDirectContent(specialNode.getPlaceholder());
-                        }
-                    } else {
-                        String nodeContent = extractTextContent(child);
-                        if (!nodeContent.trim().isEmpty()) {
-                            currentHeading.addDirectContent(nodeContent);
-                        }
+                    String nodeContent = extractTextContent(child);
+                    if (!nodeContent.trim().isEmpty()) {
+                        currentHeading.addDirectContent(nodeContent);
                     }
                 } else {
                     // 没有标题的内容，创建一个虚拟的根标题
@@ -296,189 +262,16 @@ public class PureMarkdownProcessor implements MarkdownProcessor {
                         currentHeading = virtualRoot;
                         nodeStack.push(virtualRoot);
                     }
-                    
-                    // 处理特殊节点
-                    if (isSpecialNode(child)) {
-                        SpecialNode specialNode = createSpecialNodeFromNode(child);
-                        if (specialNode != null) {
-                            currentHeading.addSpecialNode(specialNode);
-                            currentHeading.addDirectContent(specialNode.getPlaceholder());
-                        }
-                    } else {
-                        String nodeContent = extractTextContent(child);
-                        if (!nodeContent.trim().isEmpty()) {
-                            currentHeading.addDirectContent(nodeContent);
-                        }
+
+                    String nodeContent = extractTextContent(child);
+                    if (!nodeContent.trim().isEmpty()) {
+                        currentHeading.addDirectContent(nodeContent);
                     }
                 }
             }
         }
-        
+
         return tree;
-    }
-
-    /** 从Flexmark节点创建特殊节点对象 */
-    private SpecialNode createSpecialNodeFromNode(Node node) {
-        SegmentType nodeType = determineNodeType(node);
-        String placeholder = generatePlaceholder(nodeType);
-        String originalContent = getOriginalNodeContent(node);
-        
-        SpecialNode specialNode = new SpecialNode(nodeType, placeholder, originalContent);
-        
-        // 收集节点元数据
-        Map<String, Object> nodeMetadata = extractNodeMetadata(node);
-        specialNode.setNodeMetadata(nodeMetadata);
-        
-        log.debug("Created special node {} for {} type", placeholder, nodeType);
-        return specialNode;
-    }
-
-    /** 处理节点内容，归属于当前标题段落（占位符版本） */
-    private String processNodeContentWithPlaceholders(Node node, ProcessedSegment currentSection) {
-        if (isSpecialNode(node)) {
-            // 对特殊节点生成占位符并收集节点信息
-            return createPlaceholderForSpecialNode(node, currentSection);
-        }
-
-        // 检查是否为包含特殊节点的容器（如Paragraph）
-        if (containsSpecialNodes(node)) {
-            return processContainerNodeWithPlaceholders(node, currentSection);
-        }
-
-        // 普通节点：提取文本内容
-        return extractTextContent(node);
-    }
-
-    /** 检查节点是否包含特殊子节点 */
-    private boolean containsSpecialNodes(Node node) {
-        if (isSpecialNode(node)) {
-            return true;
-        }
-
-        for (Node child : node.getChildren()) {
-            if (containsSpecialNodes(child)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /** 处理包含特殊节点的容器节点 */
-    private String processContainerNodeWithPlaceholders(Node containerNode, ProcessedSegment currentSection) {
-        StringBuilder result = new StringBuilder();
-
-        for (Node child : containerNode.getChildren()) {
-            if (isSpecialNode(child)) {
-                // 直接处理特殊节点
-                String placeholder = createPlaceholderForSpecialNode(child, currentSection);
-                result.append(placeholder);
-            } else if (containsSpecialNodes(child)) {
-                // 递归处理包含特殊节点的子容器
-                String childContent = processContainerNodeWithPlaceholders(child, currentSection);
-                result.append(childContent);
-            } else {
-                // 普通子节点，提取文本内容
-                String textContent = extractTextContent(child);
-                result.append(textContent);
-            }
-        }
-
-        return result.toString();
-    }
-
-    /** 为特殊节点创建占位符并收集节点信息 */
-    private String createPlaceholderForSpecialNode(Node node, ProcessedSegment currentSection) {
-        SegmentType nodeType = determineNodeType(node);
-        String placeholder = generatePlaceholder(nodeType);
-        String originalContent = getOriginalNodeContent(node);
-
-        // 创建特殊节点对象
-        SpecialNode specialNode = new SpecialNode(nodeType, placeholder, originalContent);
-
-        // 收集节点元数据
-        Map<String, Object> nodeMetadata = extractNodeMetadata(node);
-        specialNode.setNodeMetadata(nodeMetadata);
-
-        // 添加到当前段落
-        currentSection.addSpecialNode(specialNode);
-
-        log.debug("Created placeholder {} for {} node", placeholder, nodeType);
-
-        return placeholder;
-    }
-
-    /** 确定节点类型 */
-    private SegmentType determineNodeType(Node node) {
-        if (node instanceof Image) {
-            return SegmentType.IMAGE;
-        } else if (node instanceof FencedCodeBlock || node instanceof IndentedCodeBlock) {
-            return SegmentType.CODE;
-        } else if (node instanceof com.vladsch.flexmark.ext.tables.TableBlock) {
-            return SegmentType.TABLE;
-        } else {
-            return SegmentType.RAW; // 未知特殊节点
-        }
-    }
-
-    /** 生成占位符 */
-    private String generatePlaceholder(SegmentType nodeType) {
-        switch (nodeType) {
-            case IMAGE :
-                return SpecialNode.generatePlaceholder(SegmentType.IMAGE, imageCounter.getAndIncrement());
-            case CODE :
-                return SpecialNode.generatePlaceholder(SegmentType.CODE, codeCounter.getAndIncrement());
-            case TABLE :
-                return SpecialNode.generatePlaceholder(SegmentType.TABLE, tableCounter.getAndIncrement());
-            case FORMULA :
-                return SpecialNode.generatePlaceholder(SegmentType.FORMULA, formulaCounter.getAndIncrement());
-            default :
-                return "{{SPECIAL_NODE_UNKNOWN_001}}";
-        }
-    }
-
-    /** 获取节点的原始内容 */
-    private String getOriginalNodeContent(Node node) {
-        if (node instanceof Image) {
-            return processImagePure((Image) node).getContent();
-        } else if (node instanceof FencedCodeBlock) {
-            return processCodeBlockPure((FencedCodeBlock) node).getContent();
-        } else if (node instanceof IndentedCodeBlock) {
-            return processCodeBlockPure((IndentedCodeBlock) node).getContent();
-        } else if (node instanceof com.vladsch.flexmark.ext.tables.TableBlock) {
-            return processTablePure((com.vladsch.flexmark.ext.tables.TableBlock) node).getContent();
-        } else {
-            return node.getChars().toString();
-        }
-    }
-
-    /** 提取节点元数据 */
-    private Map<String, Object> extractNodeMetadata(Node node) {
-        Map<String, Object> metadata = new HashMap<>();
-
-        if (node instanceof Image) {
-            Image image = (Image) node;
-            metadata.put("url", image.getUrl().toString());
-            metadata.put("alt", extractTextContent(image));
-        } else if (node instanceof FencedCodeBlock) {
-            FencedCodeBlock code = (FencedCodeBlock) node;
-            if (code.getInfo() != null && !code.getInfo().isBlank()) {
-                metadata.put("language", code.getInfo().toString().trim());
-            }
-            metadata.put("lines", code.getContentChars().toString().split("\n").length);
-        } else if (node instanceof IndentedCodeBlock) {
-            IndentedCodeBlock code = (IndentedCodeBlock) node;
-            metadata.put("language", "text");
-            metadata.put("lines", code.getContentChars().toString().split("\n").length);
-        }
-
-        return metadata;
-    }
-
-    /** 判断是否为特殊节点（代码块、表格等） */
-    private boolean isSpecialNode(Node node) {
-        return node instanceof FencedCodeBlock || node instanceof IndentedCodeBlock
-                || node instanceof com.vladsch.flexmark.ext.tables.TableBlock || node instanceof Image;
     }
 
     /** 纯净处理特殊节点 - 只做结构解析，不调用LLM */
@@ -561,15 +354,10 @@ public class PureMarkdownProcessor implements MarkdownProcessor {
 
     /** 处理没有标题的独立节点 */
     private ProcessedSegment processStandaloneNode(Node node) {
-        if (isSpecialNode(node)) {
-            // 特殊节点作为独立段落
-            return processSpecialNodePure(node);
-        } else {
-            // 普通内容作为独立段落
-            String nodeText = extractTextContent(node);
-            if (!nodeText.trim().isEmpty()) {
-                return new ProcessedSegment(nodeText.trim(), SegmentType.TEXT, null);
-            }
+        // 普通内容作为独立段落
+        String nodeText = extractTextContent(node);
+        if (!nodeText.trim().isEmpty()) {
+            return new ProcessedSegment(nodeText.trim(), SegmentType.TEXT, null);
         }
         return null;
     }
@@ -663,5 +451,4 @@ public class PureMarkdownProcessor implements MarkdownProcessor {
             }
         }
     }
-
 }

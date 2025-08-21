@@ -5,7 +5,6 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import org.dromara.x.file.storage.core.FileStorageService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.xhy.domain.rag.message.RagDocSyncOcrMessage;
 import org.xhy.domain.rag.model.DocumentUnitEntity;
@@ -15,7 +14,6 @@ import org.xhy.domain.rag.model.enums.SegmentType;
 import org.xhy.domain.rag.repository.DocumentUnitRepository;
 import org.xhy.domain.rag.repository.FileDetailRepository;
 import org.xhy.domain.rag.straegy.context.ProcessingContext;
-import org.xhy.domain.rag.processor.MarkdownProcessor;
 import org.xhy.infrastructure.rag.processor.PureMarkdownProcessor;
 import org.xhy.infrastructure.rag.processor.VectorSegmentProcessor;
 import org.xhy.infrastructure.rag.service.UserModelConfigResolver;
@@ -34,7 +32,6 @@ public class MarkdownRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl
 
     private static final Logger log = LoggerFactory.getLogger(MarkdownRagDocSyncOcrStrategyImpl.class);
 
-    private final MarkdownProcessor markdownProcessor;
     private final PureMarkdownProcessor pureMarkdownProcessor;
     private final VectorSegmentProcessor vectorSegmentProcessor;
     private final DocumentUnitRepository documentUnitRepository;
@@ -45,15 +42,10 @@ public class MarkdownRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl
     // 用于存储当前处理的文件ID
     private String currentProcessingFileId;
 
-    public MarkdownRagDocSyncOcrStrategyImpl(
-            @Qualifier("ragEnhancedMarkdownProcessor") MarkdownProcessor markdownProcessor,
-            PureMarkdownProcessor pureMarkdownProcessor,
-            VectorSegmentProcessor vectorSegmentProcessor,
-            DocumentUnitRepository documentUnitRepository, 
-            FileDetailRepository fileDetailRepository,
-            FileStorageService fileStorageService, 
+    public MarkdownRagDocSyncOcrStrategyImpl(PureMarkdownProcessor pureMarkdownProcessor,
+            VectorSegmentProcessor vectorSegmentProcessor, DocumentUnitRepository documentUnitRepository,
+            FileDetailRepository fileDetailRepository, FileStorageService fileStorageService,
             UserModelConfigResolver userModelConfigResolver) {
-        this.markdownProcessor = markdownProcessor;
         this.pureMarkdownProcessor = pureMarkdownProcessor;
         this.vectorSegmentProcessor = vectorSegmentProcessor;
         this.documentUnitRepository = documentUnitRepository;
@@ -148,16 +140,16 @@ public class MarkdownRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl
             // 第一阶段：纯原文拆分，存储到DocumentUnitEntity
             pureMarkdownProcessor.setRawMode(true);
             List<ProcessedSegment> rawSegments = pureMarkdownProcessor.processToSegments(markdown, context);
-            
+
             log.info("Stage 1 completed: {} raw segments generated", rawSegments.size());
-            
+
             Map<Integer, String> ocrData = new HashMap<>();
 
             // 存储纯原文到ocrData（用于insertData方法保存到DocumentUnitEntity）
             for (int i = 0; i < rawSegments.size(); i++) {
                 ProcessedSegment segment = rawSegments.get(i);
                 String content = segment.getContent();
-                ocrData.put(i, content);  // 存储纯原文内容
+                ocrData.put(i, content); // 存储纯原文内容
             }
 
             // 更新页面大小（可能与预估的不同）
@@ -195,8 +187,8 @@ public class MarkdownRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl
             documentUnitEntity.setContent(content);
             documentUnitEntity.setPage(pageIndex);
             documentUnitEntity.setFileId(ragDocSyncOcrMessage.getFileId());
-            documentUnitEntity.setIsVector(false);  // 原文段落暂未向量化
-            documentUnitEntity.setIsOcr(true);      // 标记为已处理的内容
+            documentUnitEntity.setIsVector(false); // 原文段落暂未向量化
+            documentUnitEntity.setIsOcr(true); // 标记为已处理的内容
 
             if (content == null || content.trim().isEmpty()) {
                 documentUnitEntity.setIsOcr(false);
@@ -214,26 +206,25 @@ public class MarkdownRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl
         // 第二阶段：触发向量处理（翻译 + 二次分割 + 向量化）
         try {
             log.info("Stage 2: Starting vector segment processing...");
-            
+
             // 构建处理上下文
             ProcessingContext context = ProcessingContext.from(ragDocSyncOcrMessage, userModelConfigResolver);
-            
+
             // 使用VectorSegmentProcessor处理所有原文段落
             vectorSegmentProcessor.processDocumentUnits(savedUnits, context);
-            
+
             log.info("Stage 2 completed: Vector segment processing finished");
-            
+
         } catch (Exception e) {
-            log.error("Stage 2 failed: Vector segment processing error for file {}: {}", 
+            log.error("Stage 2 failed: Vector segment processing error for file {}: {}",
                     ragDocSyncOcrMessage.getFileId(), e.getMessage(), e);
-            
+
             // 第二阶段失败不影响第一阶段的原文保存
             // 原文已经保存，可以后续重试向量化处理
             log.warn("Raw content has been saved, vector processing can be retried later");
         }
 
-        log.info("Two-stage Markdown document processing completed for file: {}", 
-                ragDocSyncOcrMessage.getFileId());
+        log.info("Two-stage Markdown document processing completed for file: {}", ragDocSyncOcrMessage.getFileId());
     }
 
     /** 为内容添加元数据信息，增强可搜索性 针对不同类型的内容提供专门的增强逻辑 */

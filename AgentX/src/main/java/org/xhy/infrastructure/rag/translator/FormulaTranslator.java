@@ -1,64 +1,65 @@
-package org.xhy.infrastructure.rag.enhancer;
+package org.xhy.infrastructure.rag.translator;
 
+import com.vladsch.flexmark.ast.Text;
+import com.vladsch.flexmark.util.ast.Node;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.response.ChatResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-import org.xhy.domain.rag.enhancer.SegmentEnhancer;
-import org.xhy.domain.rag.model.ProcessedSegment;
-import org.xhy.domain.rag.model.enums.SegmentType;
 import org.xhy.domain.rag.straegy.context.ProcessingContext;
+import org.xhy.domain.rag.translator.NodeTranslator;
 import org.xhy.infrastructure.llm.LLMProviderService;
 import org.xhy.infrastructure.llm.protocol.enums.ProviderProtocol;
 
-/** 公式增强器
+/** 公式翻译器
  * 
- * 职责： - 对数学公式类型的段落进行LLM分析增强 - 将数学公式转换为自然语言描述 - 解释公式的含义和应用场景
+ * 将数学公式翻译为自然语言描述，便于RAG检索
  * 
  * @author claude */
 @Component
-public class FormulaEnhancer implements SegmentEnhancer {
+public class FormulaTranslator implements NodeTranslator {
 
-    private static final Logger log = LoggerFactory.getLogger(FormulaEnhancer.class);
+    private static final Logger log = LoggerFactory.getLogger(FormulaTranslator.class);
 
     @Override
-    public boolean canEnhance(ProcessedSegment segment) {
-        return segment.getType() == SegmentType.FORMULA;
+    public boolean canTranslate(Node node) {
+        // 检测文本节点中的公式
+        if (node instanceof Text) {
+            String text = node.getChars().toString();
+            return containsFormula(text);
+        }
+        return false;
     }
 
     @Override
-    public ProcessedSegment enhance(ProcessedSegment segment, ProcessingContext context) {
+    public String translate(Node node, ProcessingContext context) {
         try {
+            // 基于AST节点准确提取公式信息
+            String originalContent = node.getChars().toString();
+            String formulaContent = originalContent.trim();
+
             // 检查是否有可用的LLM配置
             if (context.getLlmConfig() == null) {
-                log.warn("No LLM config available for formula analysis, skipping enhancement");
-                return segment;
+                log.warn("No LLM config available for formula analysis, using fallback translation");
+                return generateFallbackFormulaDescription(formulaContent);
             }
-
-            // 提取公式内容
-            String formulaContent = extractFormulaContent(segment.getContent());
 
             // 使用LLM分析公式
             String formulaAnalysis = analyzeFormulaWithLLM(formulaContent, context);
 
             // 增强内容：保留原始公式 + 添加LLM解释
-            String enhancedContent = String.format("%s\n\n公式解释：%s", segment.getContent(), formulaAnalysis);
+            String enhancedContent = String.format("%s\n\n公式解释：%s", originalContent, formulaAnalysis);
 
-            // 创建增强后的段落
-            ProcessedSegment enhanced = new ProcessedSegment(enhancedContent, segment.getType(), segment.getMetadata());
-            enhanced.setOrder(segment.getOrder());
-
-            log.debug("Enhanced formula segment: original_length={}, enhanced_length={}", segment.getContent().length(),
+            log.debug("Enhanced formula: original_length={}, enhanced_length={}", originalContent.length(),
                     enhancedContent.length());
 
-            return enhanced;
+            return enhancedContent;
 
         } catch (Exception e) {
-            log.error("Failed to enhance formula segment", e);
-            // 增强失败时返回原始段落
-            return segment;
+            log.error("Failed to translate formula content: {}", e.getMessage(), e);
+            return node.getChars().toString(); // 出错时返回原内容
         }
     }
 
@@ -80,21 +81,6 @@ public class FormulaEnhancer implements SegmentEnhancer {
                 content.contains("\\[") || // 替代独立公式语法
                 content.contains("\\begin{") || // LaTeX环境
                 content.matches(".*[a-zA-Z]\\s*=\\s*.*"); // 简单等式检测
-    }
-
-    /** 提取公式内容 */
-    private String extractFormulaContent(String content) {
-        if (content == null) {
-            return "";
-        }
-
-        // 如果已经是纯公式，直接返回
-        if (content.startsWith("$$") || content.startsWith("$")) {
-            return content;
-        }
-
-        // 否则返回原内容
-        return content;
     }
 
     /** 使用LLM分析公式 */
@@ -171,6 +157,8 @@ public class FormulaEnhancer implements SegmentEnhancer {
         if (lowerContent.contains("lim") || lowerContent.contains("\\lim")) {
             description.append("，可能涉及极限");
         }
+
+        description.append("。此内容为数学公式，适合查询计算和数学推理问题。");
 
         return description.toString();
     }

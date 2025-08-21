@@ -39,8 +39,8 @@ public class DynamicRagToolTest {
         };
 
         McpTransport transport = new HttpMcpTransport.Builder()
-                .sseUrl("http://127.0.0.1:8005/file-system/sse/sse?api_key=123456").logRequests(true)
-                .logResponses(true).timeout(Duration.ofHours(1)).build();
+                .sseUrl("http://127.0.0.1:8005/file-system/sse/sse?api_key=123456").logRequests(true).logResponses(true)
+                .timeout(Duration.ofHours(1)).build();
 
         McpClient mcpClient = new DefaultMcpClient.Builder().transport(transport).build();
 

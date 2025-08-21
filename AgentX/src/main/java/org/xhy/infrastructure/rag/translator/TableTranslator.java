@@ -1,80 +1,60 @@
-package org.xhy.infrastructure.rag.enhancer;
+package org.xhy.infrastructure.rag.translator;
 
+import com.vladsch.flexmark.ext.tables.TableBlock;
+import com.vladsch.flexmark.util.ast.Node;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.response.ChatResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-import org.xhy.domain.rag.enhancer.SegmentEnhancer;
-import org.xhy.domain.rag.model.ProcessedSegment;
-import org.xhy.domain.rag.model.SpecialNode;
-import org.xhy.domain.rag.model.enums.SegmentType;
 import org.xhy.domain.rag.straegy.context.ProcessingContext;
+import org.xhy.domain.rag.translator.NodeTranslator;
 import org.xhy.infrastructure.llm.LLMProviderService;
 import org.xhy.infrastructure.llm.protocol.enums.ProviderProtocol;
 
-/** 表格增强器
+/** 表格翻译器
  * 
- * 职责： - 对表格类型的段落进行LLM分析增强 - 生成表格内容的自然语言描述 - 提取表格中的关键信息和数据趋势
+ * 将表格内容翻译为自然语言描述，便于RAG检索
  * 
  * @author claude */
 @Component
-public class TableEnhancer implements SegmentEnhancer {
+public class TableTranslator implements NodeTranslator {
 
-    private static final Logger log = LoggerFactory.getLogger(TableEnhancer.class);
+    private static final Logger log = LoggerFactory.getLogger(TableTranslator.class);
 
     @Override
-    public boolean canEnhance(ProcessedSegment segment) {
-        // 检查是否包含表格类型的特殊节点
-        return segment.getType() == SegmentType.TABLE;
+    public boolean canTranslate(Node node) {
+        return node instanceof TableBlock;
     }
 
     @Override
-    public ProcessedSegment enhance(ProcessedSegment segment, ProcessingContext context) {
+    public String translate(Node node, ProcessingContext context) {
         try {
+            // 基于AST节点准确提取表格信息
+            String originalMarkdown = node.getChars().toString();
+            String tableContent = originalMarkdown.trim();
+
             // 检查是否有可用的LLM配置
             if (context.getLlmConfig() == null) {
-                log.warn("No LLM config available for table analysis, skipping enhancement");
-                return segment;
+                log.warn("No LLM config available for table analysis, using fallback translation");
+                return generateFallbackTableDescription(tableContent);
             }
 
-            // 处理所有表格类型的特殊节点
-            for (SpecialNode node : segment.getSpecialNodes().values()) {
-                if (node.getNodeType() == SegmentType.TABLE && !node.isProcessed()) {
-                    enhanceTableNode(node, context);
-                }
-            }
-
-            log.debug("Enhanced segment with {} table nodes", segment.getSpecialNodeCount(SegmentType.TABLE));
-
-            return segment;
-
-        } catch (Exception e) {
-            log.error("Failed to enhance table segment", e);
-            // 增强失败时返回原始段落
-            return segment;
-        }
-    }
-
-    /** 增强单个表格节点 */
-    private void enhanceTableNode(SpecialNode node, ProcessingContext context) {
-        try {
             // 使用LLM分析表格内容
-            String tableAnalysis = analyzeTableWithLLM(node.getOriginalContent(), context);
+            String tableAnalysis = analyzeTableWithLLM(tableContent, context);
 
             // 增强内容：保留原始表格 + 添加LLM分析
-            String enhancedContent = String.format("%s\n\n表格分析：%s", node.getOriginalContent(), tableAnalysis);
+            String enhancedContent = String.format("%s\n\n表格分析：%s", originalMarkdown, tableAnalysis);
 
-            // 更新特殊节点的增强内容
-            node.setEnhancedContent(enhancedContent);
-            node.markAsProcessed();
-
-            log.debug("Enhanced table node: original_length={}, enhanced_length={}", node.getOriginalContent().length(),
+            log.debug("Enhanced table: original_length={}, enhanced_length={}", originalMarkdown.length(),
                     enhancedContent.length());
 
+            return enhancedContent;
+
         } catch (Exception e) {
-            log.warn("Failed to enhance individual table node: {}", e.getMessage());
+            log.error("Failed to translate table content: {}", e.getMessage(), e);
+            return node.getChars().toString(); // 出错时返回原内容
         }
     }
 

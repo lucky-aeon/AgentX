@@ -270,16 +270,16 @@ public class EmbeddingDomainService implements MetadataConstant {
     /** 文本向量化 */
     public void syncStorage(RagDocSyncStorageMessage ragDocSyncStorageMessage) {
 
-        final String docId = ragDocSyncStorageMessage.getId();
-
-        final DocumentUnitEntity documentUnitEntity = documentUnitRepository.selectById(docId);
-
+        final String vectorId = ragDocSyncStorageMessage.getId();
         final FileDetailEntity fileDetailEntity = fileDetailRepository.selectById(ragDocSyncStorageMessage.getFileId());
-        if (documentUnitEntity == null) {
+
+        // 🎯 核心修复：使用消息中的翻译后内容，而不是从数据库读取原文
+        final String content = ragDocSyncStorageMessage.getContent();
+
+        if (content == null || content.trim().isEmpty()) {
+            log.warn("Empty content in storage message {}, skipping vectorization", vectorId);
             return;
         }
-
-        final String content = documentUnitEntity.getContent();
 
         final Metadata documentMetadata = buildMetadata(ragDocSyncStorageMessage);
 
@@ -291,14 +291,20 @@ public class EmbeddingDomainService implements MetadataConstant {
 
         embeddingStore.add(embeddings, textSegment);
 
-        documentUnitRepository.update(Wrappers.lambdaUpdate(DocumentUnitEntity.class)
-                .eq(DocumentUnitEntity::getId, docId).set(DocumentUnitEntity::getIsVector, true));
+        // 🎯 提取原始DocumentUnit ID（移除segment后缀）
+        String originalDocId = extractOriginalDocId(vectorId);
+
+        // 更新原始DocumentUnit的向量化状态
+        if (originalDocId != null) {
+            documentUnitRepository.update(Wrappers.lambdaUpdate(DocumentUnitEntity.class)
+                    .eq(DocumentUnitEntity::getId, originalDocId).set(DocumentUnitEntity::getIsVector, true));
+        }
 
         // 修改文件状态
         final Integer pageSize = fileDetailEntity.getFilePageSize();
 
         final Long isVector = documentUnitRepository.selectCount(Wrappers.lambdaQuery(DocumentUnitEntity.class)
-                .eq(DocumentUnitEntity::getFileId, documentUnitEntity.getFileId())
+                .eq(DocumentUnitEntity::getFileId, ragDocSyncStorageMessage.getFileId())
                 .eq(DocumentUnitEntity::getIsVector, true));
 
         final Integer anInt = Convert.toInt(isVector);
@@ -310,6 +316,21 @@ public class EmbeddingDomainService implements MetadataConstant {
                             .set(FileDetailEntity::getProcessingStatus, FileProcessingStatusEnum.COMPLETED.getCode()));
         }
 
+    }
+
+    /** 从向量ID中提取原始DocumentUnit ID */
+    private String extractOriginalDocId(String vectorId) {
+        if (vectorId == null) {
+            return null;
+        }
+
+        // 如果ID包含segment后缀，则提取原始ID
+        if (vectorId.contains("_segment_")) {
+            return vectorId.substring(0, vectorId.indexOf("_segment_"));
+        }
+
+        // 否则直接返回（兼容旧格式）
+        return vectorId;
     }
 
     private Metadata buildMetadata(RagDocSyncStorageMessage ragDocSyncStorageMessage) {

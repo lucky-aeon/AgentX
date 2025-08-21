@@ -31,7 +31,7 @@ class MarkdownProcessorTest {
         MarkdownProcessorProperties.SegmentSplit segmentSplit = new MarkdownProcessorProperties.SegmentSplit();
         segmentSplit.setEnabled(false); // 在这些测试中禁用拆分，保持原有行为
         properties.setSegmentSplit(segmentSplit);
-        
+
         // 创建纯净处理器作为依赖
         PureMarkdownProcessor pureProcessor = new PureMarkdownProcessor(properties);
         enhancedMarkdownProcessor = new EnhancedMarkdownProcessor(Collections.emptyList(), pureProcessor);
