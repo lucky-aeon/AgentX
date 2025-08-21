@@ -10,8 +10,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.xhy.domain.rag.model.ProcessedSegment;
 import org.xhy.domain.rag.model.enums.SegmentType;
-import org.xhy.domain.rag.processor.MarkdownProcessor;
-import org.xhy.domain.rag.straegy.context.ProcessingContext;
+import org.xhy.domain.rag.strategy.context.ProcessingContext;
 import org.xhy.infrastructure.rag.config.MarkdownProcessorProperties;
 
 import java.util.ArrayList;

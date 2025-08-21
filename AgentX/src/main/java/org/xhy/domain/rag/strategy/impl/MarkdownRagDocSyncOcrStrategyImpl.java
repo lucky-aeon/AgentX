@@ -1,4 +1,4 @@
-package org.xhy.domain.rag.straegy.impl;
+package org.xhy.domain.rag.strategy.impl;
 
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
@@ -10,12 +10,11 @@ import org.xhy.domain.rag.message.RagDocSyncOcrMessage;
 import org.xhy.domain.rag.model.DocumentUnitEntity;
 import org.xhy.domain.rag.model.FileDetailEntity;
 import org.xhy.domain.rag.model.ProcessedSegment;
-import org.xhy.domain.rag.model.enums.SegmentType;
 import org.xhy.domain.rag.repository.DocumentUnitRepository;
 import org.xhy.domain.rag.repository.FileDetailRepository;
-import org.xhy.domain.rag.straegy.context.ProcessingContext;
+import org.xhy.domain.rag.strategy.context.ProcessingContext;
 import org.xhy.infrastructure.rag.processor.PureMarkdownProcessor;
-import org.xhy.infrastructure.rag.processor.VectorSegmentProcessor;
+import org.xhy.infrastructure.rag.processor.DocumentVectorizationOrchestrator;
 import org.xhy.infrastructure.rag.service.UserModelConfigResolver;
 
 import java.nio.charset.StandardCharsets;
@@ -28,12 +27,12 @@ import java.util.Map;
  * 
  * @author claude */
 @Service("ragDocSyncOcr-MARKDOWN")
-public class MarkdownRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl {
+public class MarkdownRagDocSyncOcrStrategyImpl extends DocumentProcessingStrategy {
 
     private static final Logger log = LoggerFactory.getLogger(MarkdownRagDocSyncOcrStrategyImpl.class);
 
     private final PureMarkdownProcessor pureMarkdownProcessor;
-    private final VectorSegmentProcessor vectorSegmentProcessor;
+    private final DocumentVectorizationOrchestrator vectorSegmentProcessor;
     private final DocumentUnitRepository documentUnitRepository;
     private final FileDetailRepository fileDetailRepository;
     private final FileStorageService fileStorageService;
@@ -43,9 +42,9 @@ public class MarkdownRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl
     private String currentProcessingFileId;
 
     public MarkdownRagDocSyncOcrStrategyImpl(PureMarkdownProcessor pureMarkdownProcessor,
-            VectorSegmentProcessor vectorSegmentProcessor, DocumentUnitRepository documentUnitRepository,
-            FileDetailRepository fileDetailRepository, FileStorageService fileStorageService,
-            UserModelConfigResolver userModelConfigResolver) {
+                                             DocumentVectorizationOrchestrator vectorSegmentProcessor, DocumentUnitRepository documentUnitRepository,
+                                             FileDetailRepository fileDetailRepository, FileStorageService fileStorageService,
+                                             UserModelConfigResolver userModelConfigResolver) {
         this.pureMarkdownProcessor = pureMarkdownProcessor;
         this.vectorSegmentProcessor = vectorSegmentProcessor;
         this.documentUnitRepository = documentUnitRepository;

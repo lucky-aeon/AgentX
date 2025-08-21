@@ -1,4 +1,4 @@
-package org.xhy.domain.rag.straegy;
+package org.xhy.domain.rag.strategy;
 
 import org.xhy.domain.rag.message.RagDocSyncOcrMessage;
 

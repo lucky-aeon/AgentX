@@ -15,9 +15,9 @@ import java.util.regex.Pattern;
  * 
  * @author claude */
 @Component
-public class SecondarySegmentSplitter {
+public class MarkdownContentSplitter {
 
-    private static final Logger log = LoggerFactory.getLogger(SecondarySegmentSplitter.class);
+    private static final Logger log = LoggerFactory.getLogger(MarkdownContentSplitter.class);
 
     @Value("${rag.vector.max-length:1800}")
     private int maxVectorLength;
@@ -54,7 +54,7 @@ public class SecondarySegmentSplitter {
 
         log.debug("Content length {} > max length {}, performing smart split", fullContent.length(), maxVectorLength);
 
-        return performSmartSplit(fullContent, titleContext);
+        return performSplit(fullContent, titleContext);
     }
 
     /** 重载方法，无标题上下文 */
@@ -76,8 +76,8 @@ public class SecondarySegmentSplitter {
         return titleContext + "\n\n" + content;
     }
 
-    /** 执行智能分割 */
-    private List<String> performSmartSplit(String fullContent, String titleContext) {
+    /** 执行分割 */
+    private List<String> performSplit(String fullContent, String titleContext) {
         List<String> chunks = new ArrayList<>();
 
         try {

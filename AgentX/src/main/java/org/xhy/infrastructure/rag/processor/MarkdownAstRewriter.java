@@ -9,11 +9,10 @@ import com.vladsch.flexmark.util.data.MutableDataSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-import org.xhy.domain.rag.model.enums.SegmentType;
-import org.xhy.domain.rag.straegy.context.ProcessingContext;
+import org.xhy.domain.rag.strategy.context.ProcessingContext;
 import org.xhy.infrastructure.rag.translator.NodeTranslatorService;
 
-/** 特殊节点翻译器
+/** Markdown AST 重写器
  * 
  * 使用 Flexmark AST 重写 markdown 文档，翻译特殊节点： - 代码块 -> 自然语言描述 - 表格 -> 结构化文本描述 - 图片 -> OCR文本识别 - 公式 -> 数学表达式描述
  * 
@@ -21,14 +20,14 @@ import org.xhy.infrastructure.rag.translator.NodeTranslatorService;
  * 
  * @author claude */
 @Component
-public class SpecialNodeTranslator {
+public class MarkdownAstRewriter {
 
-    private static final Logger log = LoggerFactory.getLogger(SpecialNodeTranslator.class);
+    private static final Logger log = LoggerFactory.getLogger(MarkdownAstRewriter.class);
 
     private final NodeTranslatorService translatorService;
     private final Parser parser;
 
-    public SpecialNodeTranslator(NodeTranslatorService translatorService) {
+    public MarkdownAstRewriter(NodeTranslatorService translatorService) {
         this.translatorService = translatorService;
 
         // 配置与 PureMarkdownProcessor 一致的 Flexmark 解析器
@@ -36,7 +35,7 @@ public class SpecialNodeTranslator {
         options.set(Parser.EXTENSIONS, java.util.List.of(TablesExtension.create()));
         this.parser = Parser.builder(options).build();
 
-        log.info("SpecialNodeTranslator initialized with translator service: {}",
+        log.info("MarkdownAstRewriter initialized with translator service: {}",
                 translatorService.getTranslatorInfo());
     }
 

@@ -5,7 +5,7 @@ import java.util.Set;
 /** @author shilong.zang
  * @date 09:45 <br/>
  */
-public enum RagDocSyncOcrEnum {
+public enum DocumentProcessingType {
 
     /** pdf策略 */
     PDF(Set.of("PDF"), "ragDocSyncOcr-PDF"),
@@ -24,13 +24,13 @@ public enum RagDocSyncOcrEnum {
     private final Set<String> value;
     private final String label;
 
-    RagDocSyncOcrEnum(Set<String> value, String label) {
+    DocumentProcessingType(Set<String> value, String label) {
         this.value = value;
         this.label = label;
     }
 
     public static String getLabelByValue(String label) {
-        for (RagDocSyncOcrEnum enumValue : RagDocSyncOcrEnum.values()) {
+        for (DocumentProcessingType enumValue : DocumentProcessingType.values()) {
             if (enumValue.value.contains(label)) {
                 return enumValue.label;
             }

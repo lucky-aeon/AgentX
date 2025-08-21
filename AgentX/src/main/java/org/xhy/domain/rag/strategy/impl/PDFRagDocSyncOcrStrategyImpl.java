@@ -1,4 +1,4 @@
-package org.xhy.domain.rag.straegy.impl;
+package org.xhy.domain.rag.strategy.impl;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -9,8 +9,6 @@ import java.util.regex.Pattern;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import dev.langchain4j.model.chat.ChatModel;
-import org.dromara.streamquery.stream.core.bean.BeanHelper;
-import org.dromara.x.file.storage.core.FileInfo;
 import org.dromara.x.file.storage.core.FileStorageService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,7 +37,7 @@ import jakarta.annotation.Resource;
  * @date 10:20 <br/>
  */
 @Service(value = "ragDocSyncOcr-PDF")
-public class PDFRagDocSyncOcrStrategyImpl extends RagDocSyncOcrStrategyImpl implements RAGSystemPrompt {
+public class PDFRagDocSyncOcrStrategyImpl extends DocumentProcessingStrategy implements RAGSystemPrompt {
 
     private static final Logger log = LoggerFactory.getLogger(PDFRagDocSyncOcrStrategyImpl.class);
 
