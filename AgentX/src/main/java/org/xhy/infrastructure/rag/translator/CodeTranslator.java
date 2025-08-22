@@ -15,9 +15,7 @@ import org.xhy.infrastructure.llm.protocol.enums.ProviderProtocol;
 
 /** 代码翻译器
  * 
- * 将代码块翻译为自然语言描述，便于RAG检索
- * 
- * @author claude */
+ * 将代码块翻译为自然语言描述，便于RAG检索 */
 @Component
 public class CodeTranslator implements NodeTranslator {
 

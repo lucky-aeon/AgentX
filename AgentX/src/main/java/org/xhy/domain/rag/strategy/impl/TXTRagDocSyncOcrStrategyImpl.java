@@ -14,7 +14,7 @@ import org.dromara.x.file.storage.core.FileStorageService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import org.xhy.domain.rag.message.RagDocSyncOcrMessage;
+import org.xhy.domain.rag.message.RagDocMessage;
 import org.xhy.domain.rag.model.DocumentUnitEntity;
 import org.xhy.domain.rag.model.FileDetailEntity;
 import org.xhy.domain.rag.repository.DocumentUnitRepository;
@@ -27,10 +27,7 @@ import dev.langchain4j.data.document.splitter.DocumentBySentenceSplitter;
 import dev.langchain4j.data.segment.TextSegment;
 import jakarta.annotation.Resource;
 
-/** @author shilong.zang
- * @date 19:07 <br/>
- */
-@Service
+@Service("txt")
 public class TXTRagDocSyncOcrStrategyImpl extends AbstractDocumentProcessingStrategy {
 
     private static final Logger log = LoggerFactory.getLogger(TXTRagDocSyncOcrStrategyImpl.class);
@@ -55,7 +52,7 @@ public class TXTRagDocSyncOcrStrategyImpl extends AbstractDocumentProcessingStra
      * @param ragDocSyncOcrMessage 消息数据
      * @param strategy 当前策略 */
     @Override
-    public void handle(RagDocSyncOcrMessage ragDocSyncOcrMessage, String strategy) throws Exception {
+    public void handle(RagDocMessage ragDocSyncOcrMessage, String strategy) throws Exception {
         // 设置当前处理的文件ID，用于更新页数
         this.currentProcessingFileId = ragDocSyncOcrMessage.getFileId();
 
@@ -68,7 +65,7 @@ public class TXTRagDocSyncOcrStrategyImpl extends AbstractDocumentProcessingStra
      * @param bytes
      * @param ragDocSyncOcrMessage */
     @Override
-    public void pushPageSize(byte[] bytes, RagDocSyncOcrMessage ragDocSyncOcrMessage) {
+    public void pushPageSize(byte[] bytes, RagDocMessage ragDocSyncOcrMessage) {
         try {
             DocumentParser parser = new TextDocumentParser();
             InputStream inputStream = new ByteArrayInputStream(bytes);
@@ -103,7 +100,7 @@ public class TXTRagDocSyncOcrStrategyImpl extends AbstractDocumentProcessingStra
      * @param ragDocSyncOcrMessage 消息数据
      * @param strategy 当前策略 */
     @Override
-    public byte[] getFileData(RagDocSyncOcrMessage ragDocSyncOcrMessage, String strategy) {
+    public byte[] getFileData(RagDocMessage ragDocSyncOcrMessage, String strategy) {
         // 从数据库中获取文件详情
         FileDetailEntity fileDetailEntity = fileDetailRepository.selectById(ragDocSyncOcrMessage.getFileId());
         if (fileDetailEntity == null) {
@@ -166,7 +163,7 @@ public class TXTRagDocSyncOcrStrategyImpl extends AbstractDocumentProcessingStra
      * @param ragDocSyncOcrMessage
      * @param ocrData */
     @Override
-    public void insertData(RagDocSyncOcrMessage ragDocSyncOcrMessage, Map<Integer, String> ocrData) throws Exception {
+    public void insertData(RagDocMessage ragDocSyncOcrMessage, Map<Integer, String> ocrData) throws Exception {
 
         log.info("Start saving document content, split into {} segments in total.", ocrData.size());
 

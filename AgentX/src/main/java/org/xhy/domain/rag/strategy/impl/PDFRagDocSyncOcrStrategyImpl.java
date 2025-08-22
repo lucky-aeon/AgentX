@@ -14,7 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.xhy.domain.rag.constant.RAGSystemPrompt;
-import org.xhy.domain.rag.message.RagDocSyncOcrMessage;
+import org.xhy.domain.rag.message.RagDocMessage;
 import org.xhy.domain.rag.model.DocumentUnitEntity;
 import org.xhy.domain.rag.model.FileDetailEntity;
 import org.xhy.domain.rag.repository.DocumentUnitRepository;
@@ -33,10 +33,7 @@ import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.chat.response.ChatResponse;
 import jakarta.annotation.Resource;
 
-/** @author shilong.zang
- * @date 10:20 <br/>
- */
-@Service
+@Service("pdf")
 public class PDFRagDocSyncOcrStrategyImpl extends AbstractDocumentProcessingStrategy implements RAGSystemPrompt {
 
     private static final Logger log = LoggerFactory.getLogger(PDFRagDocSyncOcrStrategyImpl.class);
@@ -61,7 +58,7 @@ public class PDFRagDocSyncOcrStrategyImpl extends AbstractDocumentProcessingStra
      * @param ragDocSyncOcrMessage 消息数据
      * @param strategy 当前策略 */
     @Override
-    public void handle(RagDocSyncOcrMessage ragDocSyncOcrMessage, String strategy) throws Exception {
+    public void handle(RagDocMessage ragDocSyncOcrMessage, String strategy) throws Exception {
         // 设置当前处理的文件ID，用于进度更新
         this.currentProcessingFileId = ragDocSyncOcrMessage.getFileId();
 
@@ -71,7 +68,7 @@ public class PDFRagDocSyncOcrStrategyImpl extends AbstractDocumentProcessingStra
 
     /** 获取文件页数 */
     @Override
-    public void pushPageSize(byte[] bytes, RagDocSyncOcrMessage ragDocSyncOcrMessage) {
+    public void pushPageSize(byte[] bytes, RagDocMessage ragDocSyncOcrMessage) {
 
         try {
             final int pdfPageCount = PdfToBase64Converter.getPdfPageCount(bytes);
@@ -97,7 +94,7 @@ public class PDFRagDocSyncOcrStrategyImpl extends AbstractDocumentProcessingStra
      * @param ragDocSyncOcrMessage 消息数据
      * @param strategy 当前策略 */
     @Override
-    public byte[] getFileData(RagDocSyncOcrMessage ragDocSyncOcrMessage, String strategy) {
+    public byte[] getFileData(RagDocMessage ragDocSyncOcrMessage, String strategy) {
 
         final FileDetailEntity fileDetailEntity = fileDetailRepository.selectById(ragDocSyncOcrMessage.getFileId());
 
@@ -112,8 +109,7 @@ public class PDFRagDocSyncOcrStrategyImpl extends AbstractDocumentProcessingStra
 
     /** 处理PDF文件 - 按页处理逻辑（带消息参数） */
     @Override
-    public Map<Integer, String> processFile(byte[] fileBytes, int totalPages,
-            RagDocSyncOcrMessage ragDocSyncOcrMessage) {
+    public Map<Integer, String> processFile(byte[] fileBytes, int totalPages, RagDocMessage ragDocSyncOcrMessage) {
 
         final HashMap<Integer, String> ocrData = new HashMap<>();
         for (int pageIndex = 0; pageIndex < totalPages; pageIndex++) {
@@ -164,7 +160,7 @@ public class PDFRagDocSyncOcrStrategyImpl extends AbstractDocumentProcessingStra
      * @param ragDocSyncOcrMessage 消息数据
      * @param ocrData ocr数据 */
     @Override
-    public void insertData(RagDocSyncOcrMessage ragDocSyncOcrMessage, Map<Integer, String> ocrData) {
+    public void insertData(RagDocMessage ragDocSyncOcrMessage, Map<Integer, String> ocrData) {
 
         for (int pageIndex = 0; pageIndex < ragDocSyncOcrMessage.getPageSize(); pageIndex++) {
 
@@ -234,7 +230,7 @@ public class PDFRagDocSyncOcrStrategyImpl extends AbstractDocumentProcessingStra
      * @param ragDocSyncOcrMessage OCR消息
      * @return ChatModel实例
      * @throws RuntimeException 如果没有配置OCR模型或创建失败 */
-    private ChatModel createOcrModelFromMessage(RagDocSyncOcrMessage ragDocSyncOcrMessage) {
+    private ChatModel createOcrModelFromMessage(RagDocMessage ragDocSyncOcrMessage) {
         // 检查消息和模型配置是否存在
         if (ragDocSyncOcrMessage == null || ragDocSyncOcrMessage.getOcrModelConfig() == null) {
             String errorMsg = String.format("用户 %s 未配置OCR模型，无法进行文档OCR处理",

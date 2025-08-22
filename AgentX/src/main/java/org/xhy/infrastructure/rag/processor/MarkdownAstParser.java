@@ -10,9 +10,7 @@ import java.util.List;
 
 /** Markdown AST 解析器
  * 
- * 职责： - 配置和管理Flexmark Parser - 将Markdown文本解析为AST - 提供统一的解析接口
- * 
- * @author claude */
+ * 职责： - 配置和管理Flexmark Parser - 将Markdown文本解析为AST - 提供统一的解析接口 */
 @Component
 public class MarkdownAstParser {
 

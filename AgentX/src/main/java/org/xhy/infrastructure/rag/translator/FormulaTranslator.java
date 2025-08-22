@@ -14,9 +14,7 @@ import org.xhy.infrastructure.llm.protocol.enums.ProviderProtocol;
 
 /** 公式翻译器
  * 
- * 将数学公式翻译为自然语言描述，便于RAG检索
- * 
- * @author claude */
+ * 将数学公式翻译为自然语言描述，便于RAG检索 */
 @Component
 public class FormulaTranslator implements NodeTranslator {
 

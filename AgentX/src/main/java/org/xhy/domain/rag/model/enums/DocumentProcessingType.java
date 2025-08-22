@@ -8,16 +8,16 @@ import java.util.Set;
 public enum DocumentProcessingType {
 
     /** pdf策略 */
-    PDF(Set.of("PDF"), "ragDocSyncOcr-PDF"),
+    PDF(Set.of("PDF"), "pdf"),
 
     /** word策略 */
-    DOCX(Set.of("DOC", "DOCX", "PPT", "PPTX", "XLS", "XLSX"), "ragDocSyncOcr-WORD"),
+    DOCX(Set.of("DOC", "DOCX", "PPT", "PPTX", "XLS", "XLSX"), "word"),
 
     /** 纯文本策略 */
-    TXT(Set.of("TXT", "HTML"), "ragDocSyncOcr-TXT"),
+    TXT(Set.of("TXT", "HTML"), "txt"),
 
     /** Markdown策略 */
-    MARKDOWN(Set.of("MD", "MARKDOWN"), "ragDocSyncOcr-MARKDOWN"),
+    MARKDOWN(Set.of("MD", "MARKDOWN"), "markdown"),
 
     ;
 

@@ -7,9 +7,7 @@ import org.xhy.domain.rag.strategy.context.ProcessingContext;
  * 
  * 用于将特殊节点（代码块、表格、图片等）翻译为自然语言描述
  * 
- * 设计原则： - 单一职责：每个翻译器专注处理特定类型的节点 - AST直接处理：输入AST节点，输出翻译文本 - 无状态：不依赖复杂的对象状态 - 准确性：基于AST结构准确提取内容，避免字符串解析错误
- * 
- * @author claude */
+ * 设计原则： - 单一职责：每个翻译器专注处理特定类型的节点 - AST直接处理：输入AST节点，输出翻译文本 - 无状态：不依赖复杂的对象状态 - 准确性：基于AST结构准确提取内容，避免字符串解析错误 */
 public interface NodeTranslator {
 
     /** 判断是否可以翻译该类型的节点

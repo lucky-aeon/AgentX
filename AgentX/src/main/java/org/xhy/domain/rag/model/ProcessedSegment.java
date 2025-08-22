@@ -7,9 +7,7 @@ import java.util.Map;
 
 /** 处理后的Markdown段落
  * 
- * 用于表示文档分段处理后的结果
- * 
- * @author claude */
+ * 用于表示文档分段处理后的结果 */
 public class ProcessedSegment {
 
     /** 处理后的可搜索文本内容（可能包含占位符） */

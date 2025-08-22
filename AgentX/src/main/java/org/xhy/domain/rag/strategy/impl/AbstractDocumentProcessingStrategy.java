@@ -4,12 +4,9 @@ import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.xhy.domain.rag.message.RagDocSyncOcrMessage;
+import org.xhy.domain.rag.message.RagDocMessage;
 import org.xhy.domain.rag.strategy.DocumentProcessingStrategy;
 
-/** @author shilong.zang
- * @date 17:32 <br/>
- */
 public abstract class AbstractDocumentProcessingStrategy implements DocumentProcessingStrategy {
 
     private static final Logger LOG = LoggerFactory.getLogger(AbstractDocumentProcessingStrategy.class);
@@ -18,7 +15,7 @@ public abstract class AbstractDocumentProcessingStrategy implements DocumentProc
      * @param ragDocSyncOcrMessage 消息数据
      * @param strategy 当前策略 */
     @Override
-    public void handle(RagDocSyncOcrMessage ragDocSyncOcrMessage, String strategy) throws Exception {
+    public void handle(RagDocMessage ragDocSyncOcrMessage, String strategy) throws Exception {
 
         final byte[] fileData = getFileData(ragDocSyncOcrMessage, strategy);
         pushPageSize(fileData, ragDocSyncOcrMessage);
@@ -41,23 +38,21 @@ public abstract class AbstractDocumentProcessingStrategy implements DocumentProc
     };
 
     /** 获取文件页数 */
-    abstract public void pushPageSize(byte[] bytes, RagDocSyncOcrMessage ragDocSyncOcrMessage);
+    abstract public void pushPageSize(byte[] bytes, RagDocMessage ragDocSyncOcrMessage);
 
     /** 获取文件
      * @param ragDocSyncOcrMessage 消息数据
      * @param strategy 当前策略 */
-    abstract public byte[] getFileData(RagDocSyncOcrMessage ragDocSyncOcrMessage, String strategy);
+    abstract public byte[] getFileData(RagDocMessage ragDocSyncOcrMessage, String strategy);
 
     /** ocr数据 */
     abstract public Map<Integer, String> processFile(byte[] fileBytes, int totalPages);
 
     /** ocr数据 (带消息参数，子类可选择性重写此方法) */
-    public Map<Integer, String> processFile(byte[] fileBytes, int totalPages,
-            RagDocSyncOcrMessage ragDocSyncOcrMessage) {
+    public Map<Integer, String> processFile(byte[] fileBytes, int totalPages, RagDocMessage ragDocSyncOcrMessage) {
         return processFile(fileBytes, totalPages);
     }
 
     /** 保存数据 */
-    abstract public void insertData(RagDocSyncOcrMessage ragDocSyncOcrMessage, Map<Integer, String> ocrData)
-            throws Exception;
+    abstract public void insertData(RagDocMessage ragDocSyncOcrMessage, Map<Integer, String> ocrData) throws Exception;
 }

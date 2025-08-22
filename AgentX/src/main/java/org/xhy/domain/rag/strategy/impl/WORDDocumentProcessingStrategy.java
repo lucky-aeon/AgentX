@@ -15,7 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.xhy.domain.rag.constant.RAGSystemPrompt;
-import org.xhy.domain.rag.message.RagDocSyncOcrMessage;
+import org.xhy.domain.rag.message.RagDocMessage;
 import org.xhy.domain.rag.model.DocumentUnitEntity;
 import org.xhy.domain.rag.model.FileDetailEntity;
 import org.xhy.domain.rag.repository.DocumentUnitRepository;
@@ -28,11 +28,7 @@ import dev.langchain4j.data.document.splitter.DocumentBySentenceSplitter;
 import dev.langchain4j.data.segment.TextSegment;
 import jakarta.annotation.Resource;
 
-/** Word文档处理策略实现
- * @author shilong.zang
- * @date 10:07 <br/>
- */
-@Service
+@Service("word")
 public class WORDDocumentProcessingStrategy extends AbstractDocumentProcessingStrategy implements RAGSystemPrompt {
 
     private static final Logger log = LoggerFactory.getLogger(WORDDocumentProcessingStrategy.class);
@@ -48,7 +44,7 @@ public class WORDDocumentProcessingStrategy extends AbstractDocumentProcessingSt
     private String currentProcessingFileId;
 
     public WORDDocumentProcessingStrategy(DocumentUnitRepository documentUnitRepository,
-                                          FileDetailRepository fileDetailRepository) {
+            FileDetailRepository fileDetailRepository) {
         this.documentUnitRepository = documentUnitRepository;
         this.fileDetailRepository = fileDetailRepository;
     }
@@ -57,7 +53,7 @@ public class WORDDocumentProcessingStrategy extends AbstractDocumentProcessingSt
      * @param ragDocSyncOcrMessage 消息数据
      * @param strategy 当前策略 */
     @Override
-    public void handle(RagDocSyncOcrMessage ragDocSyncOcrMessage, String strategy) throws Exception {
+    public void handle(RagDocMessage ragDocSyncOcrMessage, String strategy) throws Exception {
         // 设置当前处理的文件ID，用于更新页数
         this.currentProcessingFileId = ragDocSyncOcrMessage.getFileId();
 
@@ -70,7 +66,7 @@ public class WORDDocumentProcessingStrategy extends AbstractDocumentProcessingSt
      * @param bytes Word文档字节数组
      * @param ragDocSyncOcrMessage 消息数据 */
     @Override
-    public void pushPageSize(byte[] bytes, RagDocSyncOcrMessage ragDocSyncOcrMessage) {
+    public void pushPageSize(byte[] bytes, RagDocMessage ragDocSyncOcrMessage) {
         try {
             DocumentParser parser = new ApachePoiDocumentParser();
             InputStream inputStream = new ByteArrayInputStream(bytes);
@@ -106,7 +102,7 @@ public class WORDDocumentProcessingStrategy extends AbstractDocumentProcessingSt
      * @param strategy 当前策略
      * @return Word文档字节数组 */
     @Override
-    public byte[] getFileData(RagDocSyncOcrMessage ragDocSyncOcrMessage, String strategy) {
+    public byte[] getFileData(RagDocMessage ragDocSyncOcrMessage, String strategy) {
         // 从数据库中获取文件详情
         FileDetailEntity fileDetailEntity = fileDetailRepository.selectById(ragDocSyncOcrMessage.getFileId());
         if (fileDetailEntity == null) {
@@ -169,7 +165,7 @@ public class WORDDocumentProcessingStrategy extends AbstractDocumentProcessingSt
      * @param ragDocSyncOcrMessage 消息数据
      * @param ocrData 按页索引分组的内容Map */
     @Override
-    public void insertData(RagDocSyncOcrMessage ragDocSyncOcrMessage, Map<Integer, String> ocrData) throws Exception {
+    public void insertData(RagDocMessage ragDocSyncOcrMessage, Map<Integer, String> ocrData) throws Exception {
         log.info("开始保存文档内容，共拆分{}段", ocrData.size());
 
         // 遍历每一页，将内容保存到数据库

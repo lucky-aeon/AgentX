@@ -4,7 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
-import org.xhy.domain.rag.message.RagDocSyncOcrMessage;
+import org.xhy.domain.rag.message.RagDocMessage;
 import org.xhy.domain.rag.message.RagDocSyncStorageMessage;
 import org.xhy.domain.rag.model.DocumentUnitEntity;
 import org.xhy.domain.rag.model.FileDetailEntity;
@@ -19,9 +19,7 @@ import java.util.List;
 
 /** 向量段落处理器
  * 
- * 负责翻译+分割+向量化的完整处理链： 1. 读取DocumentUnitEntity原文 2. 翻译特殊节点（内存处理） 3. 检查翻译后长度 4. 如超限则二次分割 5. 触发向量化处理
- * 
- * @author claude */
+ * 负责翻译+分割+向量化的完整处理链： 1. 读取DocumentUnitEntity原文 2. 翻译特殊节点（内存处理） 3. 检查翻译后长度 4. 如超限则二次分割 5. 触发向量化处理 */
 @Service
 public class DocumentVectorizationOrchestrator {
 
@@ -289,8 +287,8 @@ public class DocumentVectorizationOrchestrator {
     }
 
     /** 从FileDetailEntity创建RagDocSyncOcrMessage（用于构建ProcessingContext） */
-    private RagDocSyncOcrMessage createRagDocSyncOcrMessage(FileDetailEntity fileEntity) {
-        RagDocSyncOcrMessage message = new RagDocSyncOcrMessage();
+    private RagDocMessage createRagDocSyncOcrMessage(FileDetailEntity fileEntity) {
+        RagDocMessage message = new RagDocMessage();
         message.setFileId(fileEntity.getId());
         message.setUserId(fileEntity.getUserId());
         // 其他字段可以为null，ProcessingContext.from会处理

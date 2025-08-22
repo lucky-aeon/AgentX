@@ -3,9 +3,7 @@ package org.xhy.infrastructure.rag.config;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
-/** Markdown处理器配置属性类 用于配置Markdown文档处理和段落拆分的相关参数
- * 
- * @author claude */
+/** Markdown处理器配置属性类 用于配置Markdown文档处理和段落拆分的相关参数 */
 @Configuration
 @ConfigurationProperties(prefix = "rag.markdown")
 public class MarkdownProcessorProperties {

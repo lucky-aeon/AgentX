@@ -2,9 +2,7 @@ package org.xhy.domain.rag.model.enums;
 
 /** 段落类型枚举
  *
- * 定义了Markdown处理后的段落类型，避免魔法字符串的使用
- *
- * @author claude */
+ * 定义了Markdown处理后的段落类型，避免魔法字符串的使用 */
 public enum SegmentType {
 
     /** 普通文本段落 */

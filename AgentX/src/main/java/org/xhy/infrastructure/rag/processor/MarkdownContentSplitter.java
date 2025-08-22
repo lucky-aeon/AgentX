@@ -11,9 +11,7 @@ import java.util.regex.Pattern;
 
 /** 智能二次分割器
  * 
- * 基于翻译后的真实内容长度进行智能分割： 1. 优先在段落边界分割 2. 其次在句子边界分割 3. 最后强制截断分割 4. 支持重叠分割以保持上下文
- * 
- * @author claude */
+ * 基于翻译后的真实内容长度进行智能分割： 1. 优先在段落边界分割 2. 其次在句子边界分割 3. 最后强制截断分割 4. 支持重叠分割以保持上下文 */
 @Component
 public class MarkdownContentSplitter {
 

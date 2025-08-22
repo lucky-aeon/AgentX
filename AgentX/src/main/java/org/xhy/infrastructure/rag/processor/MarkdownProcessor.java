@@ -7,9 +7,7 @@ import java.util.List;
 
 /** 统一的Markdown处理器接口
  * 
- * 设计原则： - 提供统一的Markdown处理接口 - 支持纯净解析和RAG增强两种实现模式 - 通过依赖注入选择具体实现，无需复杂配置
- * 
- * @author claude */
+ * 设计原则： - 提供统一的Markdown处理接口 - 支持纯净解析和RAG增强两种实现模式 - 通过依赖注入选择具体实现，无需复杂配置 */
 public interface MarkdownProcessor {
 
     /** 将Markdown文本处理为段落列表

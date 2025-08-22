@@ -17,9 +17,7 @@ import java.util.Arrays;
 
 /** 图片翻译器
  * 
- * 使用视觉模型分析图片内容，转换为文本描述
- * 
- * @author claude */
+ * 使用视觉模型分析图片内容，转换为文本描述 */
 @Component
 public class ImageTranslator implements NodeTranslator {
 

@@ -7,7 +7,7 @@ import org.xhy.domain.rag.model.ModelConfig;
 /** @author shilong.zang
  * @date 09:55 <br/>
  */
-public class RagDocSyncOcrMessage implements Serializable {
+public class RagDocMessage implements Serializable {
 
     @Serial
     private static final long serialVersionUID = 5517731583403276913L;

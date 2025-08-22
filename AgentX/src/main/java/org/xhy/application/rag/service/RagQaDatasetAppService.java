@@ -30,7 +30,7 @@ import org.xhy.application.rag.request.PublishRagRequest;
 import org.xhy.domain.rag.model.ModelConfig;
 import org.xhy.infrastructure.rag.factory.EmbeddingModelFactory;
 import org.xhy.domain.rag.constant.FileProcessingStatusEnum;
-import org.xhy.domain.rag.message.RagDocSyncOcrMessage;
+import org.xhy.domain.rag.message.RagDocMessage;
 import org.xhy.domain.rag.message.RagDocSyncStorageMessage;
 import org.xhy.domain.rag.model.DocumentUnitEntity;
 import org.xhy.domain.rag.model.FileDetailEntity;
@@ -439,14 +439,14 @@ public class RagQaDatasetAppService {
             FileDetailEntity fileEntity = fileDetailDomainService.getFileByIdWithoutUserCheck(fileId);
 
             // 发送OCR处理MQ消息
-            RagDocSyncOcrMessage ocrMessage = new RagDocSyncOcrMessage();
+            RagDocMessage ocrMessage = new RagDocMessage();
             ocrMessage.setFileId(fileId);
             ocrMessage.setPageSize(fileEntity.getFilePageSize());
             ocrMessage.setUserId(userId);
             // 获取用户的OCR模型配置并设置到消息中
             ocrMessage.setOcrModelConfig(ragModelConfigService.getUserOcrModelConfig(userId));
 
-            RagDocSyncOcrEvent<RagDocSyncOcrMessage> ocrEvent = new RagDocSyncOcrEvent<>(ocrMessage,
+            RagDocSyncOcrEvent<RagDocMessage> ocrEvent = new RagDocSyncOcrEvent<>(ocrMessage,
                     EventType.DOC_REFRESH_ORG);
             ocrEvent.setDescription("文件自动预处理任务");
             applicationEventPublisher.publishEvent(ocrEvent);
@@ -528,11 +528,11 @@ public class RagQaDatasetAppService {
             fileDetailDomainService.resetFileProcessing(request.getFileId(), userId);
 
             // 发送OCR处理MQ消息
-            RagDocSyncOcrMessage ocrMessage = new RagDocSyncOcrMessage();
+            RagDocMessage ocrMessage = new RagDocMessage();
             ocrMessage.setFileId(request.getFileId());
             ocrMessage.setPageSize(fileEntity.getFilePageSize());
 
-            RagDocSyncOcrEvent<RagDocSyncOcrMessage> ocrEvent = new RagDocSyncOcrEvent<>(ocrMessage,
+            RagDocSyncOcrEvent<RagDocMessage> ocrEvent = new RagDocSyncOcrEvent<>(ocrMessage,
                     EventType.DOC_REFRESH_ORG);
             ocrEvent.setDescription("文件OCR预处理任务");
             applicationEventPublisher.publishEvent(ocrEvent);
@@ -633,11 +633,11 @@ public class RagQaDatasetAppService {
             fileDetailDomainService.resetFileProcessing(request.getFileId(), userId);
 
             // 发送OCR处理MQ消息
-            RagDocSyncOcrMessage ocrMessage = new RagDocSyncOcrMessage();
+            RagDocMessage ocrMessage = new RagDocMessage();
             ocrMessage.setFileId(request.getFileId());
             ocrMessage.setPageSize(fileEntity.getFilePageSize());
 
-            RagDocSyncOcrEvent<RagDocSyncOcrMessage> ocrEvent = new RagDocSyncOcrEvent<>(ocrMessage,
+            RagDocSyncOcrEvent<RagDocMessage> ocrEvent = new RagDocSyncOcrEvent<>(ocrMessage,
                     EventType.DOC_REFRESH_ORG);
             ocrEvent.setDescription("文件强制重新OCR预处理任务");
             applicationEventPublisher.publishEvent(ocrEvent);

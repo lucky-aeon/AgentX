@@ -2,16 +2,14 @@ package org.xhy.domain.rag.strategy.context;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.xhy.domain.rag.message.RagDocSyncOcrMessage;
+import org.xhy.domain.rag.message.RagDocMessage;
 import org.xhy.domain.rag.model.ModelConfig;
 import org.xhy.infrastructure.llm.config.ProviderConfig;
 import org.xhy.infrastructure.llm.protocol.enums.ProviderProtocol;
 import org.xhy.infrastructure.rag.factory.EmbeddingModelFactory;
 import org.xhy.infrastructure.rag.service.UserModelConfigResolver;
 
-/** Markdown处理上下文
- * 
- * @author claude */
+/** Markdown处理上下文 */
 public class ProcessingContext {
 
     private static final Logger log = LoggerFactory.getLogger(ProcessingContext.class);
@@ -45,8 +43,7 @@ public class ProcessingContext {
      * @param message 消息对象
      * @param userModelConfigResolver 用户模型配置解析器
      * @return 处理上下文 */
-    public static ProcessingContext from(RagDocSyncOcrMessage message,
-            UserModelConfigResolver userModelConfigResolver) {
+    public static ProcessingContext from(RagDocMessage message, UserModelConfigResolver userModelConfigResolver) {
         try {
             String userId = message.getUserId();
 

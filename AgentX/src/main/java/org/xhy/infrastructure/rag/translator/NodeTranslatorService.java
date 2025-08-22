@@ -11,9 +11,7 @@ import java.util.List;
 
 /** 节点翻译服务
  * 
- * 负责协调所有的 NodeTranslator 实现，选择合适的翻译器处理特定类型的节点
- * 
- * @author claude */
+ * 负责协调所有的 NodeTranslator 实现，选择合适的翻译器处理特定类型的节点 */
 @Service
 public class NodeTranslatorService {
 

@@ -6,7 +6,7 @@ import org.dromara.x.file.storage.core.FileStorageService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import org.xhy.domain.rag.message.RagDocSyncOcrMessage;
+import org.xhy.domain.rag.message.RagDocMessage;
 import org.xhy.domain.rag.model.DocumentUnitEntity;
 import org.xhy.domain.rag.model.FileDetailEntity;
 import org.xhy.domain.rag.model.ProcessedSegment;
@@ -23,10 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/** Markdown文档处理策略实现 支持表格、公式、图片的增强处理
- * 
- * @author claude */
-@Service
+@Service(value = "markdown")
 public class MarkdownRagDocSyncOcrStrategyImpl extends AbstractDocumentProcessingStrategy {
 
     private static final Logger log = LoggerFactory.getLogger(MarkdownRagDocSyncOcrStrategyImpl.class);
@@ -54,7 +51,7 @@ public class MarkdownRagDocSyncOcrStrategyImpl extends AbstractDocumentProcessin
     }
 
     @Override
-    public void handle(RagDocSyncOcrMessage ragDocSyncOcrMessage, String strategy) throws Exception {
+    public void handle(RagDocMessage ragDocSyncOcrMessage, String strategy) throws Exception {
         // 设置当前处理的文件ID
         this.currentProcessingFileId = ragDocSyncOcrMessage.getFileId();
 
@@ -67,7 +64,7 @@ public class MarkdownRagDocSyncOcrStrategyImpl extends AbstractDocumentProcessin
     }
 
     @Override
-    public void pushPageSize(byte[] bytes, RagDocSyncOcrMessage ragDocSyncOcrMessage) {
+    public void pushPageSize(byte[] bytes, RagDocMessage ragDocSyncOcrMessage) {
         try {
             String markdown = new String(bytes, StandardCharsets.UTF_8);
 
@@ -100,7 +97,7 @@ public class MarkdownRagDocSyncOcrStrategyImpl extends AbstractDocumentProcessin
     }
 
     @Override
-    public byte[] getFileData(RagDocSyncOcrMessage ragDocSyncOcrMessage, String strategy) {
+    public byte[] getFileData(RagDocMessage ragDocSyncOcrMessage, String strategy) {
         try {
             // 从数据库中获取文件详情
             FileDetailEntity fileDetailEntity = fileDetailRepository.selectById(ragDocSyncOcrMessage.getFileId());
@@ -125,8 +122,7 @@ public class MarkdownRagDocSyncOcrStrategyImpl extends AbstractDocumentProcessin
     }
 
     @Override
-    public Map<Integer, String> processFile(byte[] fileBytes, int totalPages,
-            RagDocSyncOcrMessage ragDocSyncOcrMessage) {
+    public Map<Integer, String> processFile(byte[] fileBytes, int totalPages, RagDocMessage ragDocSyncOcrMessage) {
 
         log.info("Processing Markdown document with two-stage approach");
 
@@ -172,7 +168,7 @@ public class MarkdownRagDocSyncOcrStrategyImpl extends AbstractDocumentProcessin
     }
 
     @Override
-    public void insertData(RagDocSyncOcrMessage ragDocSyncOcrMessage, Map<Integer, String> ocrData) throws Exception {
+    public void insertData(RagDocMessage ragDocSyncOcrMessage, Map<Integer, String> ocrData) throws Exception {
 
         log.info("Stage 1: Saving Markdown document content, split into {} segments", ocrData.size());
 

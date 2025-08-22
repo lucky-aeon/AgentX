@@ -19,7 +19,7 @@ import org.springframework.amqp.rabbit.annotation.RabbitHandler;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
-import org.xhy.domain.rag.message.RagDocSyncOcrMessage;
+import org.xhy.domain.rag.message.RagDocMessage;
 import org.xhy.domain.rag.message.RagDocSyncStorageMessage;
 import org.xhy.domain.rag.model.DocumentUnitEntity;
 import org.xhy.domain.rag.model.FileDetailEntity;
@@ -40,25 +40,25 @@ import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.rabbitmq.client.Channel;
 
-/** OCR预处理消费者
+/** document预处理消费者
  * @author zang
  * @date 2025-01-10 */
 @RabbitListener(bindings = @QueueBinding(value = @Queue(RagDocSyncOcrEvent.QUEUE_NAME), exchange = @Exchange(value = RagDocSyncOcrEvent.EXCHANGE_NAME, type = ExchangeTypes.TOPIC), key = RagDocSyncOcrEvent.ROUTE_KEY))
 @Component
-public class RagDocOcrConsumer {
+public class RagDocConsumer {
 
-    private static final Logger log = LoggerFactory.getLogger(RagDocOcrConsumer.class);
+    private static final Logger log = LoggerFactory.getLogger(RagDocConsumer.class);
 
-    private final DocumentProcessingContext ragDocSyncOcrContext;
+    private final DocumentProcessingContext documentProcessingContext;
     private final FileDetailDomainService fileDetailDomainService;
     private final DocumentUnitRepository documentUnitRepository;
     private final ApplicationEventPublisher applicationEventPublisher;
     private final UserModelConfigResolver userModelConfigResolver;
 
-    public RagDocOcrConsumer(DocumentProcessingContext ragDocSyncOcrContext, FileDetailDomainService fileDetailDomainService,
-                             DocumentUnitRepository documentUnitRepository, ApplicationEventPublisher applicationEventPublisher,
-                             UserModelConfigResolver userModelConfigResolver) {
-        this.ragDocSyncOcrContext = ragDocSyncOcrContext;
+    public RagDocConsumer(DocumentProcessingContext ragDocSyncOcrContext,
+            FileDetailDomainService fileDetailDomainService, DocumentUnitRepository documentUnitRepository,
+            ApplicationEventPublisher applicationEventPublisher, UserModelConfigResolver userModelConfigResolver) {
+        this.documentProcessingContext = ragDocSyncOcrContext;
         this.fileDetailDomainService = fileDetailDomainService;
         this.documentUnitRepository = documentUnitRepository;
         this.applicationEventPublisher = applicationEventPublisher;
@@ -73,15 +73,14 @@ public class RagDocOcrConsumer {
                 Objects.nonNull(mqMessageBody.getTraceId()) ? mqMessageBody.getTraceId() : IdWorker.getTimeId());
         MessageProperties messageProperties = message.getMessageProperties();
         long deliveryTag = messageProperties.getDeliveryTag();
-        RagDocSyncOcrMessage ocrMessage = JSON.parseObject(JSON.toJSONString(mqMessageBody.getData()),
-                RagDocSyncOcrMessage.class);
+        RagDocMessage docMessage = JSON.parseObject(JSON.toJSONString(mqMessageBody.getData()), RagDocMessage.class);
 
         try {
-            log.info("Starting OCR processing for file: {}", ocrMessage.getFileId());
+            log.info("Starting OCR processing for file: {}", docMessage.getFileId());
 
             // 获取文件并开始OCR处理
-            FileDetailEntity fileEntity = fileDetailDomainService.getFileByIdWithoutUserCheck(ocrMessage.getFileId());
-            boolean startSuccess = fileDetailDomainService.startFileOcrProcessing(ocrMessage.getFileId(),
+            FileDetailEntity fileEntity = fileDetailDomainService.getFileByIdWithoutUserCheck(docMessage.getFileId());
+            boolean startSuccess = fileDetailDomainService.startFileOcrProcessing(docMessage.getFileId(),
                     fileEntity.getUserId());
 
             if (!startSuccess) {
@@ -89,47 +88,48 @@ public class RagDocOcrConsumer {
             }
 
             // 获取文件扩展名并选择处理策略
-            String fileExt = fileDetailDomainService.getFileExtension(ocrMessage.getFileId());
+            String fileExt = fileDetailDomainService.getFileExtension(docMessage.getFileId());
             if (fileExt == null) {
                 throw new BusinessException("文件扩展名不能为空");
             }
 
-            DocumentProcessingStrategy strategy = ragDocSyncOcrContext.getDocumentStrategyHandler(fileExt.toUpperCase());
+            DocumentProcessingStrategy strategy = documentProcessingContext
+                    .getDocumentStrategyHandler(fileExt.toUpperCase());
             if (strategy == null) {
                 throw new BusinessException("不支持的文件类型: " + fileExt);
             }
 
             // 执行OCR处理
-            strategy.handle(ocrMessage, fileExt.toUpperCase());
+            strategy.handle(docMessage, fileExt.toUpperCase());
 
             // 完成OCR处理
-            fileEntity = fileDetailDomainService.getFileByIdWithoutUserCheck(ocrMessage.getFileId());
+            fileEntity = fileDetailDomainService.getFileByIdWithoutUserCheck(docMessage.getFileId());
             Integer totalPages = fileEntity.getFilePageSize();
             if (totalPages != null && totalPages > 0) {
-                fileDetailDomainService.updateFileOcrProgress(ocrMessage.getFileId(), totalPages, totalPages,
+                fileDetailDomainService.updateFileOcrProgress(docMessage.getFileId(), totalPages, totalPages,
                         fileEntity.getUserId());
             }
 
-            boolean completeSuccess = fileDetailDomainService.completeFileOcrProcessing(ocrMessage.getFileId(),
+            boolean completeSuccess = fileDetailDomainService.completeFileOcrProcessing(docMessage.getFileId(),
                     fileEntity.getUserId());
             if (!completeSuccess) {
-                log.warn("OCR处理完成但状态转换失败，文件ID: {}", ocrMessage.getFileId());
+                log.warn("OCR处理完成但状态转换失败，文件ID: {}", docMessage.getFileId());
             }
 
-            log.info("OCR processing completed for file: {}", ocrMessage.getFileId());
+            log.info("OCR processing completed for file: {}", docMessage.getFileId());
 
             // 自动启动向量化处理
-            autoStartVectorization(ocrMessage.getFileId(), fileEntity);
+            autoStartVectorization(docMessage.getFileId(), fileEntity);
 
         } catch (Exception e) {
-            log.error("OCR processing failed for file: {}", ocrMessage.getFileId(), e);
+            log.error("OCR processing failed for file: {}", docMessage.getFileId(), e);
             // 处理失败
             try {
                 FileDetailEntity fileEntity = fileDetailDomainService
-                        .getFileByIdWithoutUserCheck(ocrMessage.getFileId());
-                fileDetailDomainService.failFileOcrProcessing(ocrMessage.getFileId(), fileEntity.getUserId());
+                        .getFileByIdWithoutUserCheck(docMessage.getFileId());
+                fileDetailDomainService.failFileOcrProcessing(docMessage.getFileId(), fileEntity.getUserId());
             } catch (Exception ex) {
-                log.error("Failed to update file status to failed for file: {}", ocrMessage.getFileId(), ex);
+                log.error("Failed to update file status to failed for file: {}", docMessage.getFileId(), ex);
             }
         } finally {
             channel.basicAck(deliveryTag, false);

@@ -9,9 +9,7 @@ import java.util.Stack;
 
 /** 文档树 - 表示整个Markdown文档的层次结构
  * 
- * 负责构建标题层次树和执行递归分割算法
- * 
- * @author claude */
+ * 负责构建标题层次树和执行递归分割算法 */
 public class DocumentTree {
 
     /** 根节点列表（顶级标题） */

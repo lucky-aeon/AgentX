@@ -7,9 +7,7 @@ import java.util.List;
 
 /** 标题节点 - 表示Markdown文档中的标题层次结构
  * 
- * 用于递归分割算法，维护标题的层级关系和内容聚合
- * 
- * @author claude */
+ * 用于递归分割算法，维护标题的层级关系和内容聚合 */
 public class HeadingNode {
 
     /** 标题级别 (1-6，对应H1-H6) */

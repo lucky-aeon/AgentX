@@ -6,9 +6,7 @@ import org.springframework.stereotype.Component;
 
 /** Markdown 文本提取器
  * 
- * 职责： - 从AST节点提取纯文本内容 - 从AST节点提取原始内容（保持格式） - 递归处理嵌套节点结构
- * 
- * @author claude */
+ * 职责： - 从AST节点提取纯文本内容 - 从AST节点提取原始内容（保持格式） - 递归处理嵌套节点结构 */
 @Component
 public class MarkdownTextExtractor {
 

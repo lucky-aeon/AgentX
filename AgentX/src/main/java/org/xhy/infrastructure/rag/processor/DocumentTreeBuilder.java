@@ -9,9 +9,7 @@ import java.util.Stack;
 
 /** 文档树构建器
  * 
- * 职责： - 根据AST构建层次化的文档树 - 支持原始内容模式和常规处理模式 - 维护标题层级关系
- * 
- * @author claude */
+ * 职责： - 根据AST构建层次化的文档树 - 支持原始内容模式和常规处理模式 - 维护标题层级关系 */
 @Component
 public class DocumentTreeBuilder {
 

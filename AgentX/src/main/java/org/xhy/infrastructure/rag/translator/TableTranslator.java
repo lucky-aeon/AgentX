@@ -14,9 +14,7 @@ import org.xhy.infrastructure.llm.protocol.enums.ProviderProtocol;
 
 /** 表格翻译器
  * 
- * 将表格内容翻译为自然语言描述，便于RAG检索
- * 
- * @author claude */
+ * 将表格内容翻译为自然语言描述，便于RAG检索 */
 @Component
 public class TableTranslator implements NodeTranslator {
 

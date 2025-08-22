@@ -16,9 +16,7 @@ import java.util.List;
  * 
  * 设计职责： - 协调各个组件完成Markdown结构化解析和语义分段 - 不进行任何LLM调用或内容增强 - 按语义结构（标题层级）进行合理分段 - 支持纯原文拆分模式，用于二次分割架构
  * 
- * 适用场景： - 单元测试（无需mock外部服务） - 基础文档解析 - 性能要求高的场景 - 二次分割架构的第一阶段处理
- * 
- * @author claude */
+ * 适用场景： - 单元测试（无需mock外部服务） - 基础文档解析 - 性能要求高的场景 - 二次分割架构的第一阶段处理 */
 @Component("structuralMarkdownProcessor")
 public class StructuralMarkdownProcessor implements MarkdownProcessor {
 

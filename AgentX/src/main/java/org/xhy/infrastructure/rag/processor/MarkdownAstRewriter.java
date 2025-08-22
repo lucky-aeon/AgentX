@@ -16,9 +16,7 @@ import org.xhy.infrastructure.rag.translator.NodeTranslatorService;
  * 
  * 使用 Flexmark AST 重写 markdown 文档，翻译特殊节点： - 代码块 -> 自然语言描述 - 表格 -> 结构化文本描述 - 图片 -> OCR文本识别 - 公式 -> 数学表达式描述
  * 
- * 设计原则： - 基于 AST 的文档重写，保持结构和位置的准确性 - 直接输出翻译后的完整文本，不使用占位符 - 集成 NodeTranslatorService 进行实际的翻译工作 - 递归处理嵌套节点，保持格式完整性
- * 
- * @author claude */
+ * 设计原则： - 基于 AST 的文档重写，保持结构和位置的准确性 - 直接输出翻译后的完整文本，不使用占位符 - 集成 NodeTranslatorService 进行实际的翻译工作 - 递归处理嵌套节点，保持格式完整性 */
 @Component
 public class MarkdownAstRewriter {
 
