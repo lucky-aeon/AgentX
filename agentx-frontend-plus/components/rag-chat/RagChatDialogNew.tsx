@@ -10,7 +10,7 @@ import { FileDetailPanel } from "./FileDetailPanel";
 import { useRagChatSession } from "@/hooks/rag-chat/useRagChatSession";
 import { useChatLayout } from "@/hooks/rag-chat/useChatLayout";
 import { toast } from "@/hooks/use-toast";
-import type { RagDataset, RetrievedFileInfo } from "@/types/rag-dataset";
+import type { RagDataset, RetrievedFileInfo, DocumentSegment } from "@/types/rag-dataset";
 
 interface RagChatDialogProps {
   open: boolean;
@@ -22,6 +22,7 @@ export function RagChatDialog({ open, onOpenChange, dataset }: RagChatDialogProp
   const {
     uiState,
     selectFile,
+    selectSegment,
     closeFileDetail,
     setFileDetailData,
     resetState
@@ -46,6 +47,11 @@ export function RagChatDialog({ open, onOpenChange, dataset }: RagChatDialogProp
   // 处理文件点击
   const handleFileClick = (file: RetrievedFileInfo) => {
     selectFile(file);
+  };
+
+  // 处理文档片段点击
+  const handleSegmentClick = (segment: DocumentSegment) => {
+    selectSegment(segment);
   };
 
   // 处理文件详情数据加载
@@ -91,7 +97,9 @@ export function RagChatDialog({ open, onOpenChange, dataset }: RagChatDialogProp
             <ChatMessageList
               messages={messages}
               onFileClick={handleFileClick}
+              onSegmentClick={handleSegmentClick}
               selectedFileId={uiState.selectedFile?.fileId}
+              selectedSegmentId={uiState.selectedSegment?.documentId}
               className="flex-1"
             />
             
@@ -107,6 +115,7 @@ export function RagChatDialog({ open, onOpenChange, dataset }: RagChatDialogProp
         rightPanel={
           <FileDetailPanel
             selectedFile={uiState.selectedFile}
+            selectedSegment={uiState.selectedSegment}
             onDataLoad={handleFileDetailDataLoad}
           />
         }

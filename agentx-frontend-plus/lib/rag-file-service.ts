@@ -87,6 +87,27 @@ export async function updateDocumentUnit(
   }
 }
 
+// 获取单个语料详情
+export async function getDocumentUnit(documentUnitId: string): Promise<ApiResponse<DocumentUnitDTO>> {
+  try {
+    console.log(`Fetching document unit: ${documentUnitId}`)
+    
+    const response = await httpClient.get<ApiResponse<DocumentUnitDTO>>(
+      API_ENDPOINTS.RAG_GET_DOCUMENT_UNIT(documentUnitId)
+    )
+    
+    return response
+  } catch (error) {
+    console.error("获取文档单元错误:", error)
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : "未知错误",
+      data: null as unknown as DocumentUnitDTO,
+      timestamp: Date.now(),
+    }
+  }
+}
+
 // 删除语料
 export async function deleteDocumentUnit(documentUnitId: string): Promise<ApiResponse<void>> {
   try {
@@ -122,6 +143,11 @@ export const getDocumentUnitsWithToast = withToast(getDocumentUnits, {
 export const updateDocumentUnitWithToast = withToast(updateDocumentUnit, {
   successTitle: "更新语料成功",
   errorTitle: "更新语料失败"
+})
+
+export const getDocumentUnitWithToast = withToast(getDocumentUnit, {
+  showSuccessToast: false,
+  errorTitle: "获取语料详情失败"
 })
 
 export const deleteDocumentUnitWithToast = withToast(deleteDocumentUnit, {

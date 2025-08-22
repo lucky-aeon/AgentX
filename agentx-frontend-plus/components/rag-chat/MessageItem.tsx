@@ -6,12 +6,14 @@ import { Card } from "@/components/ui/card";
 import { RetrievalProcess } from "./RetrievalProcess";
 import { ThinkingProcess } from "./ThinkingProcess";
 import type { Message } from '@/hooks/rag-chat/useRagChatSession';
-import type { RetrievedFileInfo } from '@/types/rag-dataset';
+import type { RetrievedFileInfo, DocumentSegment } from '@/types/rag-dataset';
 
 interface MessageItemProps {
   message: Message;
   onFileClick?: (file: RetrievedFileInfo) => void;
+  onSegmentClick?: (segment: DocumentSegment) => void;
   selectedFileId?: string;
+  selectedSegmentId?: string;
   expandedThinking?: boolean;
   onToggleThinking?: () => void;
 }
@@ -28,8 +30,10 @@ const isErrorMessage = (content: string): boolean => {
 
 export function MessageItem({ 
   message, 
-  onFileClick, 
-  selectedFileId, 
+  onFileClick,
+  onSegmentClick, 
+  selectedFileId,
+  selectedSegmentId, 
   expandedThinking = true,
   onToggleThinking 
 }: MessageItemProps) {
@@ -70,7 +74,9 @@ export function MessageItem({
           <RetrievalProcess
             retrieval={message.retrieval}
             onFileClick={onFileClick}
+            onSegmentClick={onSegmentClick}
             selectedFileId={selectedFileId}
+            selectedSegmentId={selectedSegmentId}
           />
         )}
         

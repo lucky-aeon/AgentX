@@ -76,4 +76,15 @@ public class FileOperationController {
         fileOperationAppService.deleteDocumentUnit(documentUnitId, userId);
         return Result.success();
     }
+
+    /** 根据语料ID获取单个语料详情
+     * 
+     * @param documentUnitId 语料ID
+     * @return 语料详情 */
+    @GetMapping("/document-units/{documentUnitId}")
+    public Result<DocumentUnitDTO> getDocumentUnit(@PathVariable String documentUnitId) {
+        String userId = UserContext.getCurrentUserId();
+        DocumentUnitDTO documentUnit = fileOperationAppService.getDocumentUnit(documentUnitId, userId);
+        return Result.success(documentUnit);
+    }
 }

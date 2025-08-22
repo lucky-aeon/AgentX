@@ -29,11 +29,12 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { getFileInfoWithToast, getDocumentUnitsWithToast } from '@/lib/rag-file-service';
+import { getFileInfoWithToast, getDocumentUnitsWithToast, getDocumentUnitWithToast } from '@/lib/rag-file-service';
 import { getInstalledRagFileDocumentsWithToast, getInstalledRagFileInfoWithToast } from '@/lib/rag-publish-service';
 import { useFileDetail } from '@/hooks/rag-chat/useFileDetail';
 import type { 
   RetrievedFileInfo, 
+  DocumentSegment,
   FileDetailInfoDTO, 
   DocumentUnitDTO, 
   PageResponse 
@@ -41,10 +42,11 @@ import type {
 
 interface FileDetailPanelProps {
   selectedFile: RetrievedFileInfo | null;
+  selectedSegment: DocumentSegment | null;
   onDataLoad?: (data: any) => void;
 }
 
-export function FileDetailPanel({ selectedFile, onDataLoad }: FileDetailPanelProps) {
+export function FileDetailPanel({ selectedFile, selectedSegment, onDataLoad }: FileDetailPanelProps) {
   const [fileInfo, setFileInfo] = useState<FileDetailInfoDTO | null>(null);
   const [documentUnits, setDocumentUnits] = useState<DocumentUnitDTO[]>([]);
   const [loading, setLoading] = useState(false);
@@ -75,12 +77,15 @@ export function FileDetailPanel({ selectedFile, onDataLoad }: FileDetailPanelPro
     if (selectedFile) {
       loadFileInfo();
       loadDocumentUnits(1, debouncedQuery);
+    } else if (selectedSegment) {
+      // 处理文档片段选择
+      loadSegmentInfo();
     } else {
       setFileInfo(null);
       setDocumentUnits([]);
       setError(null);
     }
-  }, [selectedFile, debouncedQuery]);
+  }, [selectedFile, selectedSegment, debouncedQuery]);
 
   // 加载文件信息
   const loadFileInfo = async () => {
@@ -235,6 +240,62 @@ export function FileDetailPanel({ selectedFile, onDataLoad }: FileDetailPanelPro
     }
   };
 
+  // 加载文档片段信息
+  const loadSegmentInfo = async () => {
+    if (!selectedSegment) return;
+    
+    console.log('[FileDetailPanel] Loading segment info for:', selectedSegment);
+    
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // 调用API获取真实的文档单元数据
+      const response = await getDocumentUnitWithToast(selectedSegment.documentId);
+      
+      if (response.code === 200 && response.data) {
+        const documentUnit = response.data;
+        
+        // 创建基于文档单元的文件信息
+        const segmentFileInfo: FileDetailInfoDTO = {
+          id: documentUnit.fileId,
+          originalFilename: selectedSegment.fileName,
+          filename: selectedSegment.fileName,
+          url: '',
+          size: 0,
+          ext: '',
+          contentType: '',
+          dataSetId: '',
+          filePageSize: 1,
+          isInitialize: documentUnit.isOcr ? 1 : 0,
+          isEmbedding: documentUnit.isVector ? 1 : 0,
+          userId: '',
+          createdAt: documentUnit.createdAt,
+          updatedAt: documentUnit.updatedAt
+        };
+        
+        setFileInfo(segmentFileInfo);
+        setDocumentUnits([documentUnit]);
+        setPageData({
+          records: [documentUnit],
+          total: 1,
+          size: 1,
+          current: 1,
+          pages: 1
+        });
+        
+        onDataLoad?.(documentUnit);
+      } else {
+        setError(response.message || '获取文档片段失败');
+      }
+    } catch (error) {
+      console.error('Failed to load segment info:', error);
+      setError('加载文档片段失败');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // 分页处理
   const handlePageChange = (page: number) => {
     if (page < 1 || page > pageData.pages) return;
@@ -278,12 +339,12 @@ export function FileDetailPanel({ selectedFile, onDataLoad }: FileDetailPanelPro
     return pages;
   };
 
-  if (!selectedFile) {
+  if (!selectedFile && !selectedSegment) {
     return (
       <div className="flex items-center justify-center h-full text-muted-foreground">
         <div className="text-center">
           <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-          <p>请选择一个文件查看详情</p>
+          <p>请选择一个文件或文档查看详情</p>
         </div>
       </div>
     );
@@ -308,13 +369,20 @@ export function FileDetailPanel({ selectedFile, onDataLoad }: FileDetailPanelPro
           <div className="flex items-center gap-3">
             <FileText className="h-5 w-5 text-blue-600" />
             <div>
-              <h3 className="text-lg font-medium">{selectedFile.fileName}</h3>
-              {selectedFile.score !== undefined && (
+              <h3 className="text-lg font-medium">
+                {selectedFile ? selectedFile.fileName : selectedSegment?.fileName}
+              </h3>
+              {(selectedFile?.score !== undefined || selectedSegment?.score !== undefined) && (
                 <p className="text-sm text-muted-foreground">
-                  相似度: {(selectedFile.score * 100).toFixed(0)}%
+                  相似度: {((selectedFile?.score || selectedSegment?.score || 0) * 100).toFixed(0)}%
                 </p>
               )}
-              {selectedFile.isInstalledRag && (
+              {selectedSegment && (
+                <p className="text-sm text-muted-foreground">
+                  文档片段 #{selectedSegment.index}
+                </p>
+              )}
+              {selectedFile?.isInstalledRag && (
                 <p className="text-sm text-muted-foreground">
                   已安装知识库文件
                 </p>

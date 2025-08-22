@@ -269,6 +269,16 @@ export interface RetrievedFileInfo {
   userRagId?: string;
 }
 
+// 文档片段信息
+export interface DocumentSegment {
+  fileId: string;
+  fileName: string;
+  documentId: string;
+  score: number;
+  index: number; // 文档序号
+  contentPreview?: string;
+}
+
 // 文件详情请求
 export interface GetFileDetailRequest {
   fileId: string;
@@ -307,6 +317,7 @@ export type ChatLayout = 'single' | 'split';
 export interface ChatUIState {
   layout: ChatLayout;
   selectedFile: RetrievedFileInfo | null;
+  selectedSegment: DocumentSegment | null;
   showFileDetail: boolean;
   fileDetailData: FileContentData | null;
   fileDetailLoading: boolean;

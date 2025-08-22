@@ -95,6 +95,16 @@ public class FileOperationAppService {
         return DocumentUnitAssembler.toDTO(updatedEntity);
     }
 
+    /** 根据语料ID获取单个语料详情
+     * 
+     * @param documentUnitId 语料ID
+     * @param userId 用户ID
+     * @return 语料详情 */
+    public DocumentUnitDTO getDocumentUnit(String documentUnitId, String userId) {
+        DocumentUnitEntity entity = documentUnitDomainService.getDocumentUnit(documentUnitId, userId);
+        return DocumentUnitAssembler.toDTO(entity);
+    }
+
     /** 删除语料
      * 
      * @param documentUnitId 语料ID

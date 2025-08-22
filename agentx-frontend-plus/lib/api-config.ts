@@ -143,6 +143,7 @@ export const API_ENDPOINTS = {
   RAG_DOCUMENT_UNITS: "/rag/files/document-units/list", // 分页查询文件的语料
   RAG_UPDATE_DOCUMENT_UNIT: "/rag/files/document-units", // 更新语料内容
   RAG_DELETE_DOCUMENT_UNIT: (documentUnitId: string) => `/rag/files/document-units/${documentUnitId}`, // 删除语料
+  RAG_GET_DOCUMENT_UNIT: (documentUnitId: string) => `/rag/files/document-units/${documentUnitId}`, // 获取单个语料详情
   
   // RAG 流式聊天相关
   RAG_STREAM_CHAT: "/rag/search/stream-chat", // RAG流式问答

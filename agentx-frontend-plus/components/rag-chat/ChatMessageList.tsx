@@ -7,19 +7,23 @@ import { Button } from "@/components/ui/button";
 import { MessageItem } from "./MessageItem";
 import { useSmartScroll } from "@/hooks/rag-chat/useSmartScroll";
 import type { Message } from '@/hooks/rag-chat/useRagChatSession';
-import type { RetrievedFileInfo } from '@/types/rag-dataset';
+import type { RetrievedFileInfo, DocumentSegment } from '@/types/rag-dataset';
 
 interface ChatMessageListProps {
   messages: Message[];
   onFileClick?: (file: RetrievedFileInfo) => void;
+  onSegmentClick?: (segment: DocumentSegment) => void;
   selectedFileId?: string;
+  selectedSegmentId?: string;
   className?: string;
 }
 
 export function ChatMessageList({ 
   messages, 
-  onFileClick, 
+  onFileClick,
+  onSegmentClick, 
   selectedFileId,
+  selectedSegmentId,
   className 
 }: ChatMessageListProps) {
   console.log('[ChatMessageList] Rendering with messages:', messages.length, messages);
@@ -70,7 +74,9 @@ export function ChatMessageList({
                 key={message.id}
                 message={message}
                 onFileClick={onFileClick}
+                onSegmentClick={onSegmentClick}
                 selectedFileId={selectedFileId}
+                selectedSegmentId={selectedSegmentId}
                 expandedThinking={expandedThinking[message.id] !== false}
                 onToggleThinking={() => toggleThinking(message.id)}
               />

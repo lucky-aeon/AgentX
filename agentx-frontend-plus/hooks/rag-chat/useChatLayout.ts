@@ -1,10 +1,11 @@
 import { useState, useCallback } from 'react';
-import type { ChatLayout, RetrievedFileInfo, ChatUIState } from '@/types/rag-dataset';
+import type { ChatLayout, RetrievedFileInfo, DocumentSegment, ChatUIState } from '@/types/rag-dataset';
 
 export function useChatLayout() {
   const [uiState, setUIState] = useState<ChatUIState>({
     layout: 'single',
     selectedFile: null,
+    selectedSegment: null,
     showFileDetail: false,
     fileDetailData: null,
     fileDetailLoading: false,
@@ -24,6 +25,21 @@ export function useChatLayout() {
     setUIState(prev => ({
       ...prev,
       selectedFile: file,
+      selectedSegment: null, // 清空片段选择
+      showFileDetail: true,
+      layout: 'split',
+      fileDetailData: null, // 清空之前的数据
+      fileDetailLoading: false,
+      fileDetailError: null
+    }));
+  }, []);
+
+  // 选择文档片段并切换到分栏布局
+  const selectSegment = useCallback((segment: DocumentSegment) => {
+    setUIState(prev => ({
+      ...prev,
+      selectedFile: null, // 清空文件选择
+      selectedSegment: segment,
       showFileDetail: true,
       layout: 'split',
       fileDetailData: null, // 清空之前的数据
@@ -37,6 +53,7 @@ export function useChatLayout() {
     setUIState(prev => ({
       ...prev,
       selectedFile: null,
+      selectedSegment: null,
       showFileDetail: false,
       layout: 'single',
       fileDetailData: null,
@@ -77,6 +94,7 @@ export function useChatLayout() {
     setUIState({
       layout: 'single',
       selectedFile: null,
+      selectedSegment: null,
       showFileDetail: false,
       fileDetailData: null,
       fileDetailLoading: false,
@@ -88,6 +106,7 @@ export function useChatLayout() {
     uiState,
     switchLayout,
     selectFile,
+    selectSegment,
     closeFileDetail,
     setFileDetailLoading,
     setFileDetailData,
