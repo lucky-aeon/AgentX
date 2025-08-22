@@ -66,8 +66,8 @@ public class ToolDomainService {
 
     public ToolEntity updateApprovedToolStatus(String toolId, ToolStatus status) {
 
-        LambdaUpdateWrapper<ToolEntity> wrapper = Wrappers.<ToolEntity>lambdaUpdate()
-                .eq(ToolEntity::getId, toolId).set(ToolEntity::getStatus, status);
+        LambdaUpdateWrapper<ToolEntity> wrapper = Wrappers.<ToolEntity>lambdaUpdate().eq(ToolEntity::getId, toolId)
+                .set(ToolEntity::getStatus, status);
         toolRepository.checkedUpdate(wrapper);
         return toolRepository.selectById(toolId);
     }
@@ -129,10 +129,8 @@ public class ToolDomainService {
     }
 
     public ToolEntity updateFailedToolStatus(String toolId, ToolStatus failedStepStatus, String rejectReason) {
-        LambdaUpdateWrapper<ToolEntity> wrapper = Wrappers.<ToolEntity>lambdaUpdate()
-                .eq(ToolEntity::getId, toolId)
-                .set(ToolEntity::getFailedStepStatus, failedStepStatus)
-                .set(ToolEntity::getRejectReason, rejectReason)
+        LambdaUpdateWrapper<ToolEntity> wrapper = Wrappers.<ToolEntity>lambdaUpdate().eq(ToolEntity::getId, toolId)
+                .set(ToolEntity::getFailedStepStatus, failedStepStatus).set(ToolEntity::getRejectReason, rejectReason)
                 .set(ToolEntity::getStatus, ToolStatus.FAILED);
         toolRepository.checkedUpdate(wrapper);
         return toolRepository.selectById(toolId);

@@ -42,9 +42,9 @@ public class AdminToolAppService {
 
         if (status == ToolStatus.FAILED) {
             tool.setFailedStepStatus(tool.getStatus());
-            toolDomainService.updateFailedToolStatus(tool.getId(),tool.getStatus(),rejectReason);
-        }else {
-            toolDomainService.updateApprovedToolStatus(tool.getId(),status);
+            toolDomainService.updateFailedToolStatus(tool.getId(), tool.getStatus(), rejectReason);
+        } else {
+            toolDomainService.updateApprovedToolStatus(tool.getId(), status);
         }
     }
 }
