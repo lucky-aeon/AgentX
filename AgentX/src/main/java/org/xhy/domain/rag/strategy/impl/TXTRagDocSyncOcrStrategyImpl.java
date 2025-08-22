@@ -30,8 +30,8 @@ import jakarta.annotation.Resource;
 /** @author shilong.zang
  * @date 19:07 <br/>
  */
-@Service("ragDocSyncOcr-TXT")
-public class TXTRagDocSyncOcrStrategyImpl extends DocumentProcessingStrategy {
+@Service
+public class TXTRagDocSyncOcrStrategyImpl extends AbstractDocumentProcessingStrategy {
 
     private static final Logger log = LoggerFactory.getLogger(TXTRagDocSyncOcrStrategyImpl.class);
 

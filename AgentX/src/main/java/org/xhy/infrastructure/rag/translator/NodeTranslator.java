@@ -1,4 +1,4 @@
-package org.xhy.domain.rag.translator;
+package org.xhy.infrastructure.rag.translator;
 
 import com.vladsch.flexmark.util.ast.Node;
 import org.xhy.domain.rag.strategy.context.ProcessingContext;

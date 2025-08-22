@@ -32,10 +32,10 @@ import jakarta.annotation.Resource;
  * @author shilong.zang
  * @date 10:07 <br/>
  */
-@Service(value = "ragDocSyncOcr-WORD")
-public class WORDRagDocSyncOcrStrategyImpl extends DocumentProcessingStrategy implements RAGSystemPrompt {
+@Service
+public class WORDDocumentProcessingStrategy extends AbstractDocumentProcessingStrategy implements RAGSystemPrompt {
 
-    private static final Logger log = LoggerFactory.getLogger(WORDRagDocSyncOcrStrategyImpl.class);
+    private static final Logger log = LoggerFactory.getLogger(WORDDocumentProcessingStrategy.class);
 
     private final DocumentUnitRepository documentUnitRepository;
 
@@ -47,8 +47,8 @@ public class WORDRagDocSyncOcrStrategyImpl extends DocumentProcessingStrategy im
     // 用于存储当前处理的文件ID，以便更新页数
     private String currentProcessingFileId;
 
-    public WORDRagDocSyncOcrStrategyImpl(DocumentUnitRepository documentUnitRepository,
-            FileDetailRepository fileDetailRepository) {
+    public WORDDocumentProcessingStrategy(DocumentUnitRepository documentUnitRepository,
+                                          FileDetailRepository fileDetailRepository) {
         this.documentUnitRepository = documentUnitRepository;
         this.fileDetailRepository = fileDetailRepository;
     }

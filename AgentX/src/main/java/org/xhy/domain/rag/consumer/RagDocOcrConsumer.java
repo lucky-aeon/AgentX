@@ -25,8 +25,8 @@ import org.xhy.domain.rag.model.DocumentUnitEntity;
 import org.xhy.domain.rag.model.FileDetailEntity;
 import org.xhy.domain.rag.repository.DocumentUnitRepository;
 import org.xhy.domain.rag.service.FileDetailDomainService;
-import org.xhy.domain.rag.strategy.RagDocSyncOcrStrategy;
-import org.xhy.domain.rag.strategy.context.RagDocSyncOcrContext;
+import org.xhy.domain.rag.strategy.DocumentProcessingStrategy;
+import org.xhy.domain.rag.strategy.context.DocumentProcessingContext;
 import org.xhy.infrastructure.exception.BusinessException;
 import org.xhy.infrastructure.mq.enums.EventType;
 import org.xhy.infrastructure.mq.events.RagDocSyncOcrEvent;
@@ -49,15 +49,15 @@ public class RagDocOcrConsumer {
 
     private static final Logger log = LoggerFactory.getLogger(RagDocOcrConsumer.class);
 
-    private final RagDocSyncOcrContext ragDocSyncOcrContext;
+    private final DocumentProcessingContext ragDocSyncOcrContext;
     private final FileDetailDomainService fileDetailDomainService;
     private final DocumentUnitRepository documentUnitRepository;
     private final ApplicationEventPublisher applicationEventPublisher;
     private final UserModelConfigResolver userModelConfigResolver;
 
-    public RagDocOcrConsumer(RagDocSyncOcrContext ragDocSyncOcrContext, FileDetailDomainService fileDetailDomainService,
-            DocumentUnitRepository documentUnitRepository, ApplicationEventPublisher applicationEventPublisher,
-            UserModelConfigResolver userModelConfigResolver) {
+    public RagDocOcrConsumer(DocumentProcessingContext ragDocSyncOcrContext, FileDetailDomainService fileDetailDomainService,
+                             DocumentUnitRepository documentUnitRepository, ApplicationEventPublisher applicationEventPublisher,
+                             UserModelConfigResolver userModelConfigResolver) {
         this.ragDocSyncOcrContext = ragDocSyncOcrContext;
         this.fileDetailDomainService = fileDetailDomainService;
         this.documentUnitRepository = documentUnitRepository;
@@ -94,7 +94,7 @@ public class RagDocOcrConsumer {
                 throw new BusinessException("文件扩展名不能为空");
             }
 
-            RagDocSyncOcrStrategy strategy = ragDocSyncOcrContext.getTaskExportStrategy(fileExt.toUpperCase());
+            DocumentProcessingStrategy strategy = ragDocSyncOcrContext.getDocumentStrategyHandler(fileExt.toUpperCase());
             if (strategy == null) {
                 throw new BusinessException("不支持的文件类型: " + fileExt);
             }

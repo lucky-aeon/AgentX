@@ -36,8 +36,8 @@ import jakarta.annotation.Resource;
 /** @author shilong.zang
  * @date 10:20 <br/>
  */
-@Service(value = "ragDocSyncOcr-PDF")
-public class PDFRagDocSyncOcrStrategyImpl extends DocumentProcessingStrategy implements RAGSystemPrompt {
+@Service
+public class PDFRagDocSyncOcrStrategyImpl extends AbstractDocumentProcessingStrategy implements RAGSystemPrompt {
 
     private static final Logger log = LoggerFactory.getLogger(PDFRagDocSyncOcrStrategyImpl.class);
 

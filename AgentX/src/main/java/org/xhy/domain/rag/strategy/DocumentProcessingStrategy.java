@@ -5,7 +5,7 @@ import org.xhy.domain.rag.message.RagDocSyncOcrMessage;
 /** @author shilong.zang
  * @date 09:54 <br/>
  */
-public interface RagDocSyncOcrStrategy {
+public interface DocumentProcessingStrategy {
 
     /** 处理
      * @param ragDocSyncOcrMessage mq消息

@@ -5,14 +5,14 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xhy.domain.rag.message.RagDocSyncOcrMessage;
-import org.xhy.domain.rag.strategy.RagDocSyncOcrStrategy;
+import org.xhy.domain.rag.strategy.DocumentProcessingStrategy;
 
 /** @author shilong.zang
  * @date 17:32 <br/>
  */
-public abstract class DocumentProcessingStrategy implements RagDocSyncOcrStrategy {
+public abstract class AbstractDocumentProcessingStrategy implements DocumentProcessingStrategy {
 
-    private static final Logger LOG = LoggerFactory.getLogger(DocumentProcessingStrategy.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractDocumentProcessingStrategy.class);
 
     /** 处理消息
      * @param ragDocSyncOcrMessage 消息数据

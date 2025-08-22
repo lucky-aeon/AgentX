@@ -26,8 +26,8 @@ import java.util.Map;
 /** Markdown文档处理策略实现 支持表格、公式、图片的增强处理
  * 
  * @author claude */
-@Service("ragDocSyncOcr-MARKDOWN")
-public class MarkdownRagDocSyncOcrStrategyImpl extends DocumentProcessingStrategy {
+@Service
+public class MarkdownRagDocSyncOcrStrategyImpl extends AbstractDocumentProcessingStrategy {
 
     private static final Logger log = LoggerFactory.getLogger(MarkdownRagDocSyncOcrStrategyImpl.class);
 
