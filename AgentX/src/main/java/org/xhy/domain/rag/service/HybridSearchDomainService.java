@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 import org.xhy.domain.rag.constant.SearchType;
 import org.xhy.domain.rag.dto.HybridSearchConfig;
 import org.xhy.domain.rag.model.DocumentUnitEntity;
@@ -35,14 +34,16 @@ public class HybridSearchDomainService {
     private final KeywordSearchDomainService keywordSearchDomainService;
     private final DocumentUnitRepository documentUnitRepository;
     private final RerankDomainService rerankDomainService;
+    private final HyDEDomainService hydeDomainService;
 
     public HybridSearchDomainService(EmbeddingDomainService embeddingDomainService,
             KeywordSearchDomainService keywordSearchDomainService, DocumentUnitRepository documentUnitRepository,
-            RerankDomainService rerankDomainService) {
+            RerankDomainService rerankDomainService, HyDEDomainService hydeDomainService) {
         this.embeddingDomainService = embeddingDomainService;
         this.keywordSearchDomainService = keywordSearchDomainService;
         this.documentUnitRepository = documentUnitRepository;
         this.rerankDomainService = rerankDomainService;
+        this.hydeDomainService = hydeDomainService;
     }
 
     /** 执行混合检索 并行执行向量检索和关键词检索，使用RRF算法融合结果
@@ -63,6 +64,7 @@ public class HybridSearchDomainService {
             return Collections.emptyList();
         }
 
+
         // 设置默认值
         int finalMaxResults = config.getMaxResults() != null ? Math.min(config.getMaxResults(), 100) : 15;
         Double finalMinScore = config.getMinScore() != null ? Math.max(0.0, Math.min(config.getMinScore(), 1.0)) : 0.7;
@@ -70,22 +72,20 @@ public class HybridSearchDomainService {
         long startTime = System.currentTimeMillis();
 
         try {
-            log.info("开始混合搜索 查询: '{}', 数据集: {}, 最大结果数: {}", config.getQuestion(), config.getDataSetIds().size(),
-                    finalMaxResults);
+            log.info("开始混合搜索 查询: '{}', 数据集: {}, 最大结果数: {}, HyDE可用: {}", config.getQuestion(),
+                    config.getDataSetIds().size(), finalMaxResults, config.hasValidChatModelConfig());
 
-            // 并行执行向量检索和关键词检索
-            CompletableFuture<List<VectorStoreResult>> vectorSearchFuture = CompletableFuture.supplyAsync(() -> {
-                log.debug("在并行线程中开始向量搜索");
-                return embeddingDomainService.vectorSearch(config.getDataSetIds(), config.getQuestion(),
-                        finalMaxResults * 2, finalMinScore, false, config.getCandidateMultiplier(),
-                        config.getEmbeddingConfig());
-            });
+            // HyDE处理：生成假设文档用于向量检索
+            String hypotheticalDocument = hydeDomainService.generateHypotheticalDocument(config.getQuestion(),
+                    config.getChatModelConfig());
+            config.setQuestion(hypotheticalDocument);
 
-            CompletableFuture<List<VectorStoreResult>> keywordSearchFuture = CompletableFuture.supplyAsync(() -> {
-                log.debug("在并行线程中开始关键词搜索");
-                return keywordSearchDomainService.keywordSearch(config.getDataSetIds(), config.getQuestion(),
-                        finalMaxResults * 2);
-            });
+            CompletableFuture<List<VectorStoreResult>> vectorSearchFuture = CompletableFuture.supplyAsync(() -> embeddingDomainService.vectorSearch(config.getDataSetIds(), config.getQuestion(),
+                    finalMaxResults * 2, finalMinScore, false, config.getCandidateMultiplier(),
+                    config.getEmbeddingConfig()));
+
+            CompletableFuture<List<VectorStoreResult>> keywordSearchFuture = CompletableFuture.supplyAsync(() -> keywordSearchDomainService.keywordSearch(config.getDataSetIds(), config.getQuestion(),
+                    finalMaxResults * 2));
 
             // 等待两个检索任务完成
             List<VectorStoreResult> vectorResults = Collections.emptyList();
@@ -120,15 +120,8 @@ public class HybridSearchDomainService {
                 rerankedResults = applyRerankToFusedResults(fusedResults, config.getQuestion());
             }
 
-            // 转换为DocumentUnitEntity
-            List<DocumentUnitEntity> finalResults = convertToDocumentUnits(rerankedResults,
+            return convertToDocumentUnits(rerankedResults,
                     config.getEnableQueryExpansion());
-
-            long totalTime = System.currentTimeMillis() - startTime;
-            log.info("混合搜索完成，查询: '{}', 向量: {}, 关键词: {}, 融合: {}, 最终: {}, 耗时: {}ms", config.getQuestion(),
-                    vectorResults.size(), keywordResults.size(), fusedResults.size(), finalResults.size(), totalTime);
-
-            return finalResults;
 
         } catch (Exception e) {
             long totalTime = System.currentTimeMillis() - startTime;

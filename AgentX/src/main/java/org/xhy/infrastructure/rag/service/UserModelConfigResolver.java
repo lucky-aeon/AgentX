@@ -10,6 +10,9 @@ import org.xhy.domain.llm.model.ProviderEntity;
 import org.xhy.domain.llm.service.LLMDomainService;
 import org.xhy.domain.rag.model.ModelConfig;
 import org.xhy.infrastructure.exception.BusinessException;
+import org.xhy.infrastructure.llm.LLMProviderService;
+import org.xhy.infrastructure.llm.config.ProviderConfig;
+import dev.langchain4j.model.chat.ChatModel;
 
 import java.util.Objects;
 
@@ -181,6 +184,51 @@ public class UserModelConfigResolver {
             throw e;
         } catch (Exception e) {
             String errorMsg = String.format("用户 %s 获取模型 %s 配置时发生错误: %s", userId, modelId, e.getMessage());
+            log.error(errorMsg, e);
+            throw new BusinessException(errorMsg, e);
+        }
+    }
+
+    /** 根据ModelConfig创建ChatModel实例 用于在RAG领域中创建LLM客户端，避免跨领域依赖
+     * 
+     * @param modelConfig 模型配置
+     * @return ChatModel实例
+     * @throws BusinessException 如果创建失败 */
+    public ChatModel createChatModel(ModelConfig modelConfig) {
+        if (modelConfig == null) {
+            throw new BusinessException("模型配置不能为空");
+        }
+
+        try {
+            log.debug("使用ModelConfig创建ChatModel，modelId: {}", modelConfig.getModelId());
+
+            // 需要获取原始的ModelEntity和ProviderEntity来获取协议信息
+            // 这里仍需要访问LLM领域，但这是基础设施层的职责
+            ModelEntity modelEntity = llmDomainService.findModelById(modelConfig.getModelId());
+            if (modelEntity == null) {
+                throw new BusinessException("模型不存在: " + modelConfig.getModelId());
+            }
+
+            ProviderEntity providerEntity = llmDomainService.getProvider(modelEntity.getProviderId());
+            if (providerEntity == null) {
+                throw new BusinessException("服务提供商不存在: " + modelEntity.getProviderId());
+            }
+
+            // 创建ProviderConfig
+            ProviderConfig providerConfig = new ProviderConfig(modelConfig.getApiKey(), modelConfig.getBaseUrl(),
+                    modelEntity.getModelEndpoint(), providerEntity.getProtocol());
+
+            // 使用LLMProviderService创建ChatModel
+            ChatModel chatModel = LLMProviderService.getStrand(providerEntity.getProtocol(), providerConfig);
+
+            log.info("成功创建ChatModel，modelId: {}, protocol: {}", modelConfig.getModelId(), providerEntity.getProtocol());
+            return chatModel;
+
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            String errorMsg = String.format("创建ChatModel失败，modelId: %s, error: %s", modelConfig.getModelId(),
+                    e.getMessage());
             log.error(errorMsg, e);
             throw new BusinessException(errorMsg, e);
         }

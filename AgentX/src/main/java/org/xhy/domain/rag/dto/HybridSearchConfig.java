@@ -1,6 +1,7 @@
 package org.xhy.domain.rag.dto;
 
 import org.xhy.infrastructure.rag.factory.EmbeddingModelFactory;
+import org.xhy.domain.rag.model.ModelConfig;
 
 import java.util.List;
 
@@ -32,6 +33,9 @@ public class HybridSearchConfig {
 
     /** 是否启用查询扩展 */
     private Boolean enableQueryExpansion;
+
+    /** 聊天模型配置（用于HyDE） */
+    private ModelConfig chatModelConfig;
 
     public HybridSearchConfig() {
     }
@@ -82,6 +86,11 @@ public class HybridSearchConfig {
 
         public Builder enableQueryExpansion(Boolean enableQueryExpansion) {
             config.setEnableQueryExpansion(enableQueryExpansion);
+            return this;
+        }
+
+        public Builder chatModelConfig(ModelConfig chatModelConfig) {
+            config.setChatModelConfig(chatModelConfig);
             return this;
         }
 
@@ -182,10 +191,25 @@ public class HybridSearchConfig {
         this.enableQueryExpansion = enableQueryExpansion;
     }
 
+    public ModelConfig getChatModelConfig() {
+        return chatModelConfig;
+    }
+
+    public void setChatModelConfig(ModelConfig chatModelConfig) {
+        this.chatModelConfig = chatModelConfig;
+    }
+
+    /** 检查是否有有效的聊天模型配置用于HyDE
+     * @return 是否可以使用HyDE功能 */
+    public boolean hasValidChatModelConfig() {
+        return chatModelConfig != null;
+    }
+
     @Override
     public String toString() {
         return "HybridSearchConfig{" + "dataSetIds=" + dataSetIds + ", question='" + question + '\'' + ", maxResults="
                 + maxResults + ", minScore=" + minScore + ", enableRerank=" + enableRerank + ", candidateMultiplier="
-                + candidateMultiplier + ", enableQueryExpansion=" + enableQueryExpansion + '}';
+                + candidateMultiplier + ", enableQueryExpansion=" + enableQueryExpansion + ", hasChatModelConfig="
+                + hasValidChatModelConfig() + '}';
     }
 }
