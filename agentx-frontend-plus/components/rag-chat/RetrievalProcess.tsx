@@ -121,7 +121,7 @@ export function RetrievalProcess({
                       相关文档 ({documentSegments.length})
                     </span>
                   </div>
-                  <div className="space-y-1">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
                     {documentSegments.map((segment, idx) => (
                       <DocumentSegmentCard
                         key={`segment-${segment.documentId}-${idx}`}

@@ -37,7 +37,7 @@ export function DocumentSegmentCard({
 
   return (
     <Card 
-      className={`p-3 cursor-pointer transition-all duration-200 hover:shadow-md ${
+      className={`p-3 w-full cursor-pointer transition-all duration-200 hover:shadow-md ${
         isSelected 
           ? 'ring-2 ring-blue-500 bg-blue-50 dark:bg-blue-950/20' 
           : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'
@@ -56,15 +56,7 @@ export function DocumentSegmentCard({
             <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
               文档{segment.index || 1}
             </span>
-            <Badge variant="outline" className="text-xs">
-              {formatScore(segment.score)}
-            </Badge>
           </div>
-          
-          {/* 内容预览 */}
-          <p className="text-xs text-gray-600 dark:text-gray-400 truncate">
-            {getContentPreview()}
-          </p>
           
           {/* 文件名 */}
           <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
