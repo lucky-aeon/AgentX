@@ -76,7 +76,7 @@ public class RagDocConsumer {
         RagDocMessage docMessage = JSON.parseObject(JSON.toJSONString(mqMessageBody.getData()), RagDocMessage.class);
 
         try {
-            log.info("Starting OCR processing for file: {}", docMessage.getFileId());
+            log.info("开始OCR处理文件: {}", docMessage.getFileId());
 
             // 获取文件并开始OCR处理
             FileDetailEntity fileEntity = fileDetailDomainService.getFileByIdWithoutUserCheck(docMessage.getFileId());
@@ -116,20 +116,20 @@ public class RagDocConsumer {
                 log.warn("OCR处理完成但状态转换失败，文件ID: {}", docMessage.getFileId());
             }
 
-            log.info("OCR processing completed for file: {}", docMessage.getFileId());
+            log.info("OCR处理完成，文件ID: {}", docMessage.getFileId());
 
             // 自动启动向量化处理
             autoStartVectorization(docMessage.getFileId(), fileEntity);
 
         } catch (Exception e) {
-            log.error("OCR processing failed for file: {}", docMessage.getFileId(), e);
+            log.error("OCR处理失败，文件ID: {}", docMessage.getFileId(), e);
             // 处理失败
             try {
                 FileDetailEntity fileEntity = fileDetailDomainService
                         .getFileByIdWithoutUserCheck(docMessage.getFileId());
                 fileDetailDomainService.failFileOcrProcessing(docMessage.getFileId(), fileEntity.getUserId());
             } catch (Exception ex) {
-                log.error("Failed to update file status to failed for file: {}", docMessage.getFileId(), ex);
+                log.error("更新文件状态为失败失败，文件ID: {}", docMessage.getFileId(), ex);
             }
         } finally {
             channel.basicAck(deliveryTag, false);
@@ -141,7 +141,7 @@ public class RagDocConsumer {
      * @param fileEntity 文件实体 */
     private void autoStartVectorization(String fileId, FileDetailEntity fileEntity) {
         try {
-            log.info("Auto-starting vectorization for file: {}", fileId);
+            log.info("自动启动向量化处理，文件ID: {}", fileId);
 
             // 检查是否有可用的文档单元进行向量化
             List<DocumentUnitEntity> documentUnits = documentUnitRepository
@@ -149,7 +149,7 @@ public class RagDocConsumer {
                             .eq(DocumentUnitEntity::getIsOcr, true).eq(DocumentUnitEntity::getIsVector, false));
 
             if (documentUnits.isEmpty()) {
-                log.warn("No document units found for vectorization for file: {}", fileId);
+                log.warn("未找到用于向量化的文档单元，文件ID: {}", fileId);
                 return;
             }
 
@@ -181,15 +181,15 @@ public class RagDocConsumer {
                 applicationEventPublisher.publishEvent(storageEvent);
             }
 
-            log.info("Auto-vectorization started for file: {}, {} document units", fileId, documentUnits.size());
+            log.info("自动向量化启动完成，文件ID: {}，{}个文档单元", fileId, documentUnits.size());
 
         } catch (Exception e) {
-            log.error("Failed to auto-start vectorization for file: {}", fileId, e);
+            log.error("自动启动向量化失败，文件ID: {}", fileId, e);
             // 如果自动启动失败，重置向量化状态
             try {
                 fileDetailDomainService.failFileEmbeddingProcessing(fileId, fileEntity.getUserId());
             } catch (Exception ex) {
-                log.error("Failed to update file embedding status to failed for file: {}", fileId, ex);
+                log.error("更新文件嵌入状态为失败失败，文件ID: {}", fileId, ex);
             }
         }
     }

@@ -26,8 +26,9 @@ public interface VectorStoreRepository extends MyBatisPlusExtRepository<VectorSt
             "    ) AS score", "FROM", "    vector_store", "WHERE", "    (metadata ->> 'DATA_SET_ID') IN",
             "    <foreach collection='dataSetIds' item='dataSetId' open='(' separator=',' close=')'>",
             "        #{dataSetId}", "    </foreach>", "    AND", "    to_tsvector('chinese_cfg', text) @@ to_tsquery(",
-            "        'chinese_cfg',", "        replace(plainto_tsquery('chinese_cfg', #{userQuery})::text, '&amp;', '|')",
-            "    )", "ORDER BY", "    score DESC", "LIMIT #{maxResults}", "</script>"})
+            "        'chinese_cfg',",
+            "        replace(plainto_tsquery('chinese_cfg', #{userQuery})::text, '&amp;', '|')", "    )", "ORDER BY",
+            "    score DESC", "LIMIT #{maxResults}", "</script>"})
     List<VectorStoreResult> keywordSearch(@Param("dataSetIds") List<String> dataSetIds,
             @Param("userQuery") String userQuery, @Param("maxResults") Integer maxResults);
 }

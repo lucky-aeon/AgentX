@@ -54,7 +54,7 @@ public class ProcessingContext {
                 embeddingConfig = new EmbeddingModelFactory.EmbeddingConfig(embeddingModelConfig.getApiKey(),
                         embeddingModelConfig.getBaseUrl(), embeddingModelConfig.getModelId());
             } catch (Exception e) {
-                log.warn("Failed to get embedding model config for user {}: {}", userId, e.getMessage());
+                log.warn("获取用户 {} 嵌入模型配置失败: {}", userId, e.getMessage());
             }
 
             // 获取聊天模型配置（用于LLM处理）
@@ -64,7 +64,7 @@ public class ProcessingContext {
                 llmConfig = new ProviderConfig(chatModelConfig.getApiKey(), chatModelConfig.getBaseUrl(),
                         chatModelConfig.getModelId(), ProviderProtocol.OPENAI);
             } catch (Exception e) {
-                log.warn("Failed to get chat model config for user {}: {}", userId, e.getMessage());
+                log.warn("获取用户 {} 聊天模型配置失败: {}", userId, e.getMessage());
             }
 
             // 获取OCR/视觉模型配置
@@ -74,13 +74,13 @@ public class ProcessingContext {
                 visionModelConfig = new ProviderConfig(ocrModelConfig.getApiKey(), ocrModelConfig.getBaseUrl(),
                         ocrModelConfig.getModelId(), ProviderProtocol.OPENAI);
             } catch (Exception e) {
-                log.warn("Failed to get OCR model config for user {}: {}", userId, e.getMessage());
+                log.warn("获取用户 {} OCR模型配置失败: {}", userId, e.getMessage());
             }
 
             return new ProcessingContext(embeddingConfig, llmConfig, visionModelConfig, userId, message.getFileId());
 
         } catch (Exception e) {
-            log.error("Failed to create ProcessingContext from message: {}", e.getMessage(), e);
+            log.error("从消息创建ProcessingContext失败: {}", e.getMessage(), e);
             // 创建一个空配置的上下文作为回退
             return new ProcessingContext(null, null, null, message.getUserId(), message.getFileId());
         }

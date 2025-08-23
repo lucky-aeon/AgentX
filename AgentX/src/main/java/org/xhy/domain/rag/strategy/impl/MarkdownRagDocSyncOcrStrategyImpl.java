@@ -55,12 +55,12 @@ public class MarkdownRagDocSyncOcrStrategyImpl extends AbstractDocumentProcessin
         // 设置当前处理的文件ID
         this.currentProcessingFileId = ragDocSyncOcrMessage.getFileId();
 
-        log.info("Starting Markdown document processing for file: {}", currentProcessingFileId);
+        log.info("开始Markdown文档处理 文件: {}", currentProcessingFileId);
 
         // 调用父类处理逻辑
         super.handle(ragDocSyncOcrMessage, strategy);
 
-        log.info("Completed Markdown document processing for file: {}", currentProcessingFileId);
+        log.info("完成Markdown文档处理 文件: {}", currentProcessingFileId);
     }
 
     @Override
@@ -77,7 +77,7 @@ public class MarkdownRagDocSyncOcrStrategyImpl extends AbstractDocumentProcessin
             int segmentCount = segments.size();
 
             ragDocSyncOcrMessage.setPageSize(segmentCount);
-            log.info("Markdown document split into {} raw segments", segmentCount);
+            log.info("Markdown文档已分割为 {} 个原始段落", segmentCount);
 
             // 更新数据库中的总页数
             if (currentProcessingFileId != null) {
@@ -86,12 +86,11 @@ public class MarkdownRagDocSyncOcrStrategyImpl extends AbstractDocumentProcessin
                         .set(FileDetailEntity::getFilePageSize, segmentCount);
                 fileDetailRepository.update(wrapper);
 
-                log.info("Updated total pages for Markdown file {}: {} segments", currentProcessingFileId,
-                        segmentCount);
+                log.info("更新Markdown文件 {} 的总页数: {} 个段落", currentProcessingFileId, segmentCount);
             }
 
         } catch (Exception e) {
-            log.error("Failed to calculate page size for Markdown document", e);
+            log.error("计算Markdown文档页面大小失败", e);
             ragDocSyncOcrMessage.setPageSize(1); // 回退到单页
         }
     }
@@ -102,16 +101,16 @@ public class MarkdownRagDocSyncOcrStrategyImpl extends AbstractDocumentProcessin
             // 从数据库中获取文件详情
             FileDetailEntity fileDetailEntity = fileDetailRepository.selectById(ragDocSyncOcrMessage.getFileId());
             if (fileDetailEntity == null) {
-                log.error("File does not exist: {}", ragDocSyncOcrMessage.getFileId());
+                log.error("文件不存在: {}", ragDocSyncOcrMessage.getFileId());
                 return new byte[0];
             }
 
             // 下载文件内容
-            log.info("Downloading Markdown document: {}", fileDetailEntity.getFilename());
+            log.info("下载Markdown文档: {}", fileDetailEntity.getFilename());
             return fileStorageService.download(fileDetailEntity.getUrl()).bytes();
 
         } catch (Exception e) {
-            log.error("Failed to download Markdown file: {}", ragDocSyncOcrMessage.getFileId(), e);
+            log.error("下载Markdown文件失败: {}", ragDocSyncOcrMessage.getFileId(), e);
             return new byte[0];
         }
     }
@@ -124,7 +123,7 @@ public class MarkdownRagDocSyncOcrStrategyImpl extends AbstractDocumentProcessin
     @Override
     public Map<Integer, String> processFile(byte[] fileBytes, int totalPages, RagDocMessage ragDocSyncOcrMessage) {
 
-        log.info("Processing Markdown document with two-stage approach");
+        log.info("使用两阶段方法处理Markdown文档");
 
         try {
             String markdown = new String(fileBytes, StandardCharsets.UTF_8);
@@ -136,7 +135,7 @@ public class MarkdownRagDocSyncOcrStrategyImpl extends AbstractDocumentProcessin
             structuralMarkdownProcessor.setRawMode(true);
             List<ProcessedSegment> rawSegments = structuralMarkdownProcessor.processToSegments(markdown, context);
 
-            log.info("Stage 1 completed: {} raw segments generated", rawSegments.size());
+            log.info("阶段1完成: 生成 {} 个原始段落", rawSegments.size());
 
             Map<Integer, String> ocrData = new HashMap<>();
 
@@ -150,14 +149,14 @@ public class MarkdownRagDocSyncOcrStrategyImpl extends AbstractDocumentProcessin
             // 更新页面大小（可能与预估的不同）
             if (rawSegments.size() != totalPages) {
                 ragDocSyncOcrMessage.setPageSize(rawSegments.size());
-                log.info("Updated segment count from {} to {}", totalPages, rawSegments.size());
+                log.info("更新段落数量从 {} 到 {}", totalPages, rawSegments.size());
             }
 
-            log.info("Stage 1 processing completed: {} raw segments ready for storage", ocrData.size());
+            log.info("阶段1处理完成: {} 个原始段落准备存储", ocrData.size());
             return ocrData;
 
         } catch (Exception e) {
-            log.error("Failed to process Markdown document", e);
+            log.error("处理Markdown文档失败", e);
 
             // 回退方案：将整个文档作为一个页面
             String fallbackContent = new String(fileBytes, StandardCharsets.UTF_8);
@@ -170,7 +169,7 @@ public class MarkdownRagDocSyncOcrStrategyImpl extends AbstractDocumentProcessin
     @Override
     public void insertData(RagDocMessage ragDocSyncOcrMessage, Map<Integer, String> ocrData) throws Exception {
 
-        log.info("Stage 1: Saving Markdown document content, split into {} segments", ocrData.size());
+        log.info("阶段1: 保存Markdown文档内容，分割为 {} 个段落", ocrData.size());
 
         List<DocumentUnitEntity> savedUnits = new ArrayList<>();
 
@@ -187,20 +186,20 @@ public class MarkdownRagDocSyncOcrStrategyImpl extends AbstractDocumentProcessin
 
             if (content == null || content.trim().isEmpty()) {
                 documentUnitEntity.setIsOcr(false);
-                log.warn("Segment {} is empty", pageIndex + 1);
+                log.warn("段落 {} 为空", pageIndex + 1);
             }
 
             // 保存到数据库
             documentUnitRepository.checkInsert(documentUnitEntity);
             savedUnits.add(documentUnitEntity);
-            log.debug("Saved segment {} raw content", pageIndex + 1);
+            log.debug("保存段落 {} 原始内容", pageIndex + 1);
         }
 
-        log.info("Stage 1 completed: {} raw segments saved to DocumentUnitEntity", savedUnits.size());
+        log.info("阶段1完成: {} 个原始段落已保存到DocumentUnitEntity", savedUnits.size());
 
         // 第二阶段：触发向量处理（翻译 + 二次分割 + 向量化）
         try {
-            log.info("Stage 2: Starting vector segment processing...");
+            log.info("阶段2: 开始向量片段处理...");
 
             // 构建处理上下文
             ProcessingContext context = ProcessingContext.from(ragDocSyncOcrMessage, userModelConfigResolver);
@@ -208,18 +207,17 @@ public class MarkdownRagDocSyncOcrStrategyImpl extends AbstractDocumentProcessin
             // 使用VectorSegmentProcessor处理所有原文段落
             vectorSegmentProcessor.processDocumentUnits(savedUnits, context);
 
-            log.info("Stage 2 completed: Vector segment processing finished");
+            log.info("阶段2完成: 向量段落处理结束");
 
         } catch (Exception e) {
-            log.error("Stage 2 failed: Vector segment processing error for file {}: {}",
-                    ragDocSyncOcrMessage.getFileId(), e.getMessage(), e);
+            log.error("阶段2失败: 文件 {} 的向量段落处理错误: {}", ragDocSyncOcrMessage.getFileId(), e.getMessage(), e);
 
             // 第二阶段失败不影响第一阶段的原文保存
             // 原文已经保存，可以后续重试向量化处理
-            log.warn("Raw content has been saved, vector processing can be retried later");
+            log.warn("原始内容已保存，向量处理可稍后重试");
         }
 
-        log.info("Two-stage Markdown document processing completed for file: {}", ragDocSyncOcrMessage.getFileId());
+        log.info("文件 {} 的两阶段Markdown文档处理完成", ragDocSyncOcrMessage.getFileId());
     }
 
     /** 为内容添加元数据信息，增强可搜索性 针对不同类型的内容提供专门的增强逻辑 */
@@ -270,7 +268,7 @@ public class MarkdownRagDocSyncOcrStrategyImpl extends AbstractDocumentProcessin
                     enriched.append(" ").append(readableTable);
                 }
             } catch (Exception e) {
-                log.debug("Failed to process table structure: {}", e.getMessage());
+                log.debug("处理表格结构失败: {}", e.getMessage());
             }
         }
 
@@ -315,7 +313,7 @@ public class MarkdownRagDocSyncOcrStrategyImpl extends AbstractDocumentProcessin
 
             return readable.toString();
         } catch (Exception e) {
-            log.debug("Failed to make table readable: {}", e.getMessage());
+            log.debug("使表格可读失败: {}", e.getMessage());
             return "";
         }
     }

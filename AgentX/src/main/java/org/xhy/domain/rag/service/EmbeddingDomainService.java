@@ -71,8 +71,7 @@ public class EmbeddingDomainService implements MetadataConstant {
 
     public EmbeddingDomainService(EmbeddingModelFactory embeddingModelFactory,
             EmbeddingStore<TextSegment> embeddingStore, FileDetailRepository fileDetailRepository,
-            ApplicationContext applicationContext, DocumentUnitRepository documentUnitRepository
-          ) {
+            ApplicationContext applicationContext, DocumentUnitRepository documentUnitRepository) {
         this.embeddingModelFactory = embeddingModelFactory;
         this.embeddingStore = embeddingStore;
         this.fileDetailRepository = fileDetailRepository;
@@ -95,17 +94,17 @@ public class EmbeddingDomainService implements MetadataConstant {
             EmbeddingModelFactory.EmbeddingConfig embeddingConfig) {
         // 参数验证
         if (dataSetIds == null || dataSetIds.isEmpty()) {
-            log.warn("Dataset IDs list is empty for vector search");
+            log.warn("数据集ID列表为空，无法进行向量搜索");
             return Collections.emptyList();
         }
 
         if (!StringUtils.hasText(question)) {
-            log.warn("Query question is empty for vector search");
+            log.warn("查询问题为空，无法进行向量搜索");
             return Collections.emptyList();
         }
 
         if (embeddingConfig == null) {
-            log.warn("Embedding model config is null for vector search");
+            log.warn("嵌入模型配置为空，无法进行向量搜索");
             return Collections.emptyList();
         }
 
@@ -126,9 +125,8 @@ public class EmbeddingDomainService implements MetadataConstant {
                     ? Math.max(finalMaxResults * finalCandidateMultiplier, 30)
                     : finalMaxResults;
 
-            log.debug(
-                    "Starting vector search with params: datasets={}, question='{}', maxResults={}, minScore={}, searchLimit={}",
-                    dataSetIds, question, finalMaxResults, finalMinScore, searchLimit);
+            log.debug("开始向量搜索 参数: datasets={}, question='{}', maxResults={}, minScore={}, searchLimit={}", dataSetIds,
+                    question, finalMaxResults, finalMinScore, searchLimit);
 
             // 执行向量查询
             final EmbeddingSearchResult<TextSegment> searchResult = embeddingStore.search(EmbeddingSearchRequest
@@ -139,12 +137,12 @@ public class EmbeddingDomainService implements MetadataConstant {
 
             // 回退搜索（降低阈值）
             if (embeddingMatches.isEmpty() && finalMinScore > 0.3) {
-                log.info("No vector results found with minScore: {}, retrying with lower threshold", finalMinScore);
+                log.info("在最小分数{}下没有找到向量结果，尝试使用较低阈值重试", finalMinScore);
                 final EmbeddingSearchResult<TextSegment> fallbackResult = embeddingStore.search(EmbeddingSearchRequest
                         .builder().filter(new IsIn(DATA_SET_ID, dataSetIds)).maxResults(searchLimit).minScore(0.3)
                         .queryEmbedding(Embedding.from(embeddingModel.embed(question).content().vector())).build());
                 embeddingMatches = fallbackResult.matches();
-                log.debug("Fallback vector search found {} matches", embeddingMatches.size());
+                log.debug("回退向量搜索找到{}个匹配结果", embeddingMatches.size());
             }
 
             // 转换为VectorStoreResult格式
@@ -159,14 +157,13 @@ public class EmbeddingDomainService implements MetadataConstant {
             }).toList();
 
             long totalTime = System.currentTimeMillis() - startTime;
-            log.info("Vector search completed for query: '{}', returned {} documents, took {}ms", question,
-                    results.size(), totalTime);
+            log.info("向量搜索完成，查询：'{}'，返回{}个文档，耗时{}ms", question, results.size(), totalTime);
 
             return results;
 
         } catch (Exception e) {
             long totalTime = System.currentTimeMillis() - startTime;
-            log.error("Error during vector search for question: '{}', time: {}ms", question, totalTime, e);
+            log.error("向量搜索过程中出现错误，问题：'{}'，耗时：{}ms", question, totalTime, e);
             // 向量检索失败时返回空集合，不影响关键词检索结果
             return Collections.emptyList();
         }
@@ -206,7 +203,7 @@ public class EmbeddingDomainService implements MetadataConstant {
         final String content = ragDocSyncStorageMessage.getContent();
 
         if (content == null || content.trim().isEmpty()) {
-            log.warn("Empty content in storage message {}, skipping vectorization", vectorId);
+            log.warn("存储消息{}中内容为空，跳过向量化", vectorId);
             return;
         }
 
@@ -304,8 +301,7 @@ public class EmbeddingDomainService implements MetadataConstant {
                     modelConfig.getApiKey(), modelConfig.getBaseUrl(), modelConfig.getModelId());
             OpenAiEmbeddingModel embeddingModel = embeddingModelFactory.createEmbeddingModel(config);
 
-            log.info("Successfully created embedding model for user {}: {}", ragDocSyncStorageMessage.getUserId(),
-                    modelConfig.getModelId());
+            log.info("成功为用户{}创建嵌入模型: {}", ragDocSyncStorageMessage.getUserId(), modelConfig.getModelId());
             return embeddingModel;
 
         } catch (RuntimeException e) {

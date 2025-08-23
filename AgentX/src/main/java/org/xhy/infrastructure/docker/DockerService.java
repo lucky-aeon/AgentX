@@ -112,16 +112,16 @@ public class DockerService {
             CreateContainerResponse container = createCmd.withHostConfig(hostConfig).exec();
 
             String containerId = container.getId();
-            logger.info("容器创建成功: {} -> {}", containerName, containerId);
+            logger.info("成功创建容器: {} -> {}", containerName, containerId);
 
             // 启动容器
             dockerClient.startContainerCmd(containerId).exec();
-            logger.info("容器启动成功: {}", containerId);
+            logger.info("成功启动容器: {}", containerId);
 
             return containerId;
 
         } catch (DockerException e) {
-            logger.error("创建或启动容器失败: {}", containerName, e);
+            logger.error("容器创建或启动失败: {}", containerName, e);
             throw new BusinessException("容器创建失败: " + e.getMessage());
         }
     }
@@ -133,9 +133,9 @@ public class DockerService {
         try {
             dockerClient.stopContainerCmd(containerId).withTimeout(10) // 10秒超时
                     .exec();
-            logger.info("容器已停止: {}", containerId);
+            logger.info("成功停止容器: {}", containerId);
         } catch (Exception e) {
-            logger.error("停止容器失败: {}", containerId, e);
+            logger.error("容器停止失败: {}", containerId, e);
         }
     }
 
@@ -148,16 +148,16 @@ public class DockerService {
             String currentStatus = getContainerStatus(containerId);
 
             if ("running".equalsIgnoreCase(currentStatus)) {
-                logger.info("容器已经在运行中，无需重复启动: {}", containerId);
+                logger.info("容器已运行，无需启动: {}", containerId);
                 return;
             }
 
             // 只有在容器未运行时才启动
             dockerClient.startContainerCmd(containerId).exec();
-            logger.info("容器已启动: {}", containerId);
+            logger.info("成功启动容器: {}", containerId);
         } catch (DockerException e) {
-            logger.error("启动容器失败: {}", containerId, e);
-            throw new BusinessException("启动容器失败: " + e.getMessage());
+            logger.error("容器启动失败: {}", containerId, e);
+            throw new BusinessException("容器启动失败: " + e.getMessage());
         }
     }
 
@@ -172,12 +172,12 @@ public class DockerService {
                 try {
                     stopContainer(containerId);
                 } catch (Exception e) {
-                    logger.warn("停止容器时出现异常，继续删除: {}", containerId);
+                    logger.warn("容器停止异常，继续删除: {}", containerId);
                 }
             }
 
             dockerClient.removeContainerCmd(containerId).withForce(force).exec();
-            logger.info("容器已删除: {}", containerId);
+            logger.info("成功删除容器: {}", containerId);
         } catch (DockerException e) {
             logger.error("删除容器失败: {}", containerId, e);
         }
@@ -283,18 +283,18 @@ public class DockerService {
             List<Image> images = dockerClient.listImagesCmd().withImageNameFilter(image).exec();
 
             if (images.isEmpty()) {
-                logger.info("镜像不存在，开始拉取: {}", image);
+                logger.info("开始拉取镜像: {}", image);
                 try {
                     dockerClient.pullImageCmd(image).exec(new CustomPullImageResultCallback()).awaitCompletion();
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     throw new BusinessException("镜像拉取被中断");
                 }
-                logger.info("镜像拉取完成: {}", image);
+                logger.info("完成镜像拉取: {}", image);
             }
         } catch (Exception e) {
-            logger.error("拉取镜像失败: {}", image, e);
-            throw new BusinessException("拉取镜像失败: " + e.getMessage());
+            logger.error("镜像拉取失败: {}", image, e);
+            throw new BusinessException("镜像拉取失败: " + e.getMessage());
         }
     }
 

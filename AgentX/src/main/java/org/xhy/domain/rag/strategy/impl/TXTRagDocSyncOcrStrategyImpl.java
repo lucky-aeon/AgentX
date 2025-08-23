@@ -76,7 +76,7 @@ public class TXTRagDocSyncOcrStrategyImpl extends AbstractDocumentProcessingStra
 
             int segmentCount = split.size();
             ragDocSyncOcrMessage.setPageSize(segmentCount);
-            log.info("TXT document split into {} segments", segmentCount);
+            log.info("TXT文档分割为{}个段落", segmentCount);
 
             // 更新数据库中的总页数
             if (currentProcessingFileId != null) {
@@ -85,12 +85,12 @@ public class TXTRagDocSyncOcrStrategyImpl extends AbstractDocumentProcessingStra
                         .set(FileDetailEntity::getFilePageSize, segmentCount);
                 fileDetailRepository.update(wrapper);
 
-                log.info("Updated total pages for TXT file {}: {} segments", currentProcessingFileId, segmentCount);
+                log.info("更新TXT文件{}的总页数: {}个段落", currentProcessingFileId, segmentCount);
             }
 
             inputStream.close();
         } catch (Exception e) {
-            log.error("Failed to calculate page size for TXT document", e);
+            log.error("计算TXT文档页数失败", e);
             ragDocSyncOcrMessage.setPageSize(0);
         }
     }
@@ -104,12 +104,12 @@ public class TXTRagDocSyncOcrStrategyImpl extends AbstractDocumentProcessingStra
         // 从数据库中获取文件详情
         FileDetailEntity fileDetailEntity = fileDetailRepository.selectById(ragDocSyncOcrMessage.getFileId());
         if (fileDetailEntity == null) {
-            log.error("File does not exist: {}", ragDocSyncOcrMessage.getFileId());
+            log.error("文件不存在: {}", ragDocSyncOcrMessage.getFileId());
             return new byte[0];
         }
 
         // 转换为FileInfo并下载文件
-        log.info("Preparing to download TXT document: {}", fileDetailEntity.getFilename());
+        log.info("准备下载TXT文档: {}", fileDetailEntity.getFilename());
         return fileStorageService.download(fileDetailEntity.getUrl()).bytes();
     }
 
@@ -119,8 +119,7 @@ public class TXTRagDocSyncOcrStrategyImpl extends AbstractDocumentProcessingStra
      * @param totalPages */
     @Override
     public Map<Integer, String> processFile(byte[] fileBytes, int totalPages) {
-        log.info(
-                "Current type is non-PDF file, directly extract text ——————> Does not include page numbers, page number concept is index");
+        log.info("当前类型为非PDF文件，直接提取文本 ——————> 不包含页码，页码概念为索引");
 
         DocumentParser parser = new TextDocumentParser();
         // 使用ByteArrayInputStream将字节数组转换为输入流
@@ -146,12 +145,12 @@ public class TXTRagDocSyncOcrStrategyImpl extends AbstractDocumentProcessingStra
             return ocrData;
 
         } catch (Exception e) {
-            log.error("Failed to process document", e);
+            log.error("处理文档失败", e);
         } finally {
             try {
                 inputStream.close();
             } catch (IOException e) {
-                log.error("Failed to close the input stream", e);
+                log.error("关闭输入流失败", e);
             }
         }
 
@@ -165,7 +164,7 @@ public class TXTRagDocSyncOcrStrategyImpl extends AbstractDocumentProcessingStra
     @Override
     public void insertData(RagDocMessage ragDocSyncOcrMessage, Map<Integer, String> ocrData) throws Exception {
 
-        log.info("Start saving document content, split into {} segments in total.", ocrData.size());
+        log.info("开始保存文档内容，总共分割为{}个段落。", ocrData.size());
 
         // 遍历每一页，将内容保存到数据库
         for (int pageIndex = 0; pageIndex < ocrData.size(); pageIndex++) {
@@ -180,15 +179,15 @@ public class TXTRagDocSyncOcrStrategyImpl extends AbstractDocumentProcessingStra
 
             if (content == null) {
                 documentUnitEntity.setIsOcr(false);
-                log.warn("Page {} is empty", pageIndex + 1);
+                log.warn("第{}页为空", pageIndex + 1);
             }
 
             // 保存或更新数据
             documentUnitRepository.checkInsert(documentUnitEntity);
-            log.debug("Saving page {} content completed.", pageIndex + 1);
+            log.debug("保存第{}页内容完成。", pageIndex + 1);
         }
 
-        log.info("TXT document content saved successfully");
+        log.info("TXT文档内容保存成功");
 
     }
 }

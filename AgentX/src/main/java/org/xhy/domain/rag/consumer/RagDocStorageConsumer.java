@@ -62,8 +62,7 @@ public class RagDocStorageConsumer {
         RagDocSyncStorageMessage mqRecordReqDTO = JSON.parseObject(JSON.toJSONString(mqMessageBody.getData()),
                 RagDocSyncStorageMessage.class);
         try {
-            log.info("Current file {} Page {} ———— Starting vectorization", mqRecordReqDTO.getFileName(),
-                    mqRecordReqDTO.getPage());
+            log.info("当前文件 {} 页面 {} ———— 开始向量化", mqRecordReqDTO.getFileName(), mqRecordReqDTO.getPage());
 
             // 执行向量化处理
             embeddingService.syncStorage(mqRecordReqDTO);
@@ -71,10 +70,9 @@ public class RagDocStorageConsumer {
             // 更新向量化进度（假设每个页面向量化完成后更新）
             updateEmbeddingProgress(mqRecordReqDTO);
 
-            log.info("Current file {} Page {} ———— Vectorization finished", mqRecordReqDTO.getFileName(),
-                    mqRecordReqDTO.getPage());
+            log.info("当前文件 {} 第{}页 ———— 向量化完成", mqRecordReqDTO.getFileName(), mqRecordReqDTO.getPage());
         } catch (Exception e) {
-            log.error("Exception occurred during vectorization", e);
+            log.error("向量化过程中发生异常", e);
         } finally {
             channel.basicAck(deliveryTag, false);
         }
@@ -104,8 +102,8 @@ public class RagDocStorageConsumer {
                 double progress = ((double) currentCompletedPages / totalPages) * 100.0;
 
                 fileDetailDomainService.updateFileEmbeddingProgress(fileId, currentCompletedPages, progress);
-                log.debug("Updated embedding progress for file {}: {}/{} ({}%)", fileId, currentCompletedPages,
-                        totalPages, String.format("%.1f", progress));
+                log.debug("更新文件{}的嵌入进度: {}/{} ({}%)", fileId, currentCompletedPages, totalPages,
+                        String.format("%.1f", progress));
 
                 // 检查是否所有页面都已完成向量化
                 if (currentCompletedPages >= totalPages) {
@@ -113,11 +111,11 @@ public class RagDocStorageConsumer {
                     fileDetailDomainService.updateFileEmbeddingProgress(fileId, totalPages, 100.0);
                     // 通过状态机完成向量化处理
                     fileDetailDomainService.completeFileEmbeddingProcessing(fileId, fileEntity.getUserId());
-                    log.info("All pages vectorized for file {}, marking as completed", fileId);
+                    log.info("文件{}的所有页面均已向量化，标记为完成", fileId);
                 }
             }
         } catch (Exception e) {
-            log.warn("Failed to update embedding progress for file {}: {}", message.getFileId(), e.getMessage());
+            log.warn("更新文件{}的嵌入进度失败: {}", message.getFileId(), e.getMessage());
         }
     }
 

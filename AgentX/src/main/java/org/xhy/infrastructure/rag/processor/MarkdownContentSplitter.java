@@ -46,11 +46,11 @@ public class MarkdownContentSplitter {
         String fullContent = buildContentWithContext(content, titleContext);
 
         if (fullContent.length() <= maxVectorLength) {
-            log.debug("Content length {} <= max length {}, no split needed", fullContent.length(), maxVectorLength);
+            log.debug("内容长度 {} <= 最大长度 {}，无需分割", fullContent.length(), maxVectorLength);
             return List.of(fullContent);
         }
 
-        log.debug("Content length {} > max length {}, performing smart split", fullContent.length(), maxVectorLength);
+        log.debug("内容长度 {} > 最大长度 {}，执行智能分割", fullContent.length(), maxVectorLength);
 
         return performSplit(fullContent, titleContext);
     }
@@ -83,7 +83,7 @@ public class MarkdownContentSplitter {
             List<String> paragraphChunks = splitByParagraphs(fullContent, titleContext);
 
             if (isValidSplit(paragraphChunks)) {
-                log.debug("Successfully split by paragraphs into {} chunks", paragraphChunks.size());
+                log.debug("按段落成功分割为 {} 个块", paragraphChunks.size());
                 return paragraphChunks;
             }
 
@@ -91,17 +91,17 @@ public class MarkdownContentSplitter {
             List<String> sentenceChunks = splitBySentences(fullContent, titleContext);
 
             if (isValidSplit(sentenceChunks)) {
-                log.debug("Successfully split by sentences into {} chunks", sentenceChunks.size());
+                log.debug("按句子成功分割为 {} 个块", sentenceChunks.size());
                 return sentenceChunks;
             }
 
             // 策略3：强制分割
             List<String> forceChunks = forceSplit(fullContent, titleContext);
-            log.debug("Applied force split into {} chunks", forceChunks.size());
+            log.debug("应用强制分割为 {} 个块", forceChunks.size());
             return forceChunks;
 
         } catch (Exception e) {
-            log.error("Error during smart split, falling back to force split", e);
+            log.error("智能分割过程中出错，回退到强制分割", e);
             return forceSplit(fullContent, titleContext);
         }
     }
@@ -358,11 +358,11 @@ public class MarkdownContentSplitter {
         // 检查每个块的长度
         for (String chunk : chunks) {
             if (chunk.length() > maxVectorLength) {
-                log.debug("Chunk too long: {} > {}", chunk.length(), maxVectorLength);
+                log.debug("块太长: {} > {}", chunk.length(), maxVectorLength);
                 return false;
             }
             if (chunk.length() < minVectorLength && chunks.size() > 1) {
-                log.debug("Chunk too short: {} < {} (and not the only chunk)", chunk.length(), minVectorLength);
+                log.debug("块太短: {} < {} (且不是唯一块)", chunk.length(), minVectorLength);
                 return false;
             }
         }
@@ -373,7 +373,7 @@ public class MarkdownContentSplitter {
     /** 获取分割统计信息（用于调试） */
     public String getSplitStatistics(String originalContent, List<String> chunks) {
         if (chunks.isEmpty()) {
-            return "No chunks generated";
+            return "未生成任何块";
         }
 
         int totalLength = chunks.stream().mapToInt(String::length).sum();

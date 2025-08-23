@@ -35,17 +35,17 @@ public class KeywordSearchDomainService {
     public List<VectorStoreResult> keywordSearch(List<String> dataSetIds, String userQuery, Integer maxResults) {
         // 参数验证
         if (dataSetIds == null || dataSetIds.isEmpty()) {
-            log.warn("Dataset IDs list is empty for keyword search");
+            log.warn("数据集ID列表为空，无法进行关键词搜索");
             return Collections.emptyList();
         }
 
         if (!StringUtils.hasText(userQuery)) {
-            log.warn("User query is empty for keyword search");
+            log.warn("用户查询为空，无法进行关键词搜索");
             return Collections.emptyList();
         }
 
         if (maxResults == null || maxResults <= 0) {
-            log.warn("Invalid max results: {}, using default value 20", maxResults);
+            log.warn("无效的最大结果数: {}，使用默认值20", maxResults);
             maxResults = 20;
         }
 
@@ -53,8 +53,7 @@ public class KeywordSearchDomainService {
         long startTime = System.currentTimeMillis();
 
         try {
-            log.debug("Starting keyword search with params: datasets={}, query='{}', maxResults={}", dataSetIds,
-                    userQuery, maxResults);
+            log.debug("开始关键词搜索 参数: datasets={}, query='{}', maxResults={}", dataSetIds, userQuery, maxResults);
 
             // 执行关键词检索SQL
             List<VectorStoreResult> results = vectorStoreRepository.keywordSearch(dataSetIds, userQuery, maxResults);
@@ -65,15 +64,13 @@ public class KeywordSearchDomainService {
             }
 
             long totalTime = System.currentTimeMillis() - startTime;
-            log.info("Keyword search completed for query: '{}', returned {} documents, took {}ms", userQuery,
-                    results.size(), totalTime);
+            log.info("关键词搜索完成，查询: '{}'，返回{}个文档，耗时{}ms", userQuery, results.size(), totalTime);
 
             return results;
 
         } catch (Exception e) {
             long totalTime = System.currentTimeMillis() - startTime;
-            log.error("Error during keyword search for query: '{}', datasets: {}, time: {}ms", userQuery, dataSetIds,
-                    totalTime, e);
+            log.error("关键词搜索过程中出现错误，查询: '{}'，数据集: {}，耗时: {}ms", userQuery, dataSetIds, totalTime, e);
 
             // 关键词检索失败时返回空集合，不影响向量检索结果
             return Collections.emptyList();

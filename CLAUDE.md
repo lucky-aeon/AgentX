@@ -2,7 +2,7 @@
 
 必须使用中文回复我
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
+日志使用中文
 ## Project Architecture
 
 AgentX is an intelligent agent platform built with Domain-Driven Design (DDD) architecture, featuring:

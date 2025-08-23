@@ -20,18 +20,18 @@ public abstract class AbstractDocumentProcessingStrategy implements DocumentProc
         final byte[] fileData = getFileData(ragDocSyncOcrMessage, strategy);
         pushPageSize(fileData, ragDocSyncOcrMessage);
         if (fileData == null) {
-            LOG.error("File data is empty");
+            LOG.error("文件数据为空");
             return;
         }
 
         Integer pageSize = ragDocSyncOcrMessage.getPageSize();
         if (pageSize == null) {
-            LOG.warn("Page size is null, using default value 1 for txt/word files");
+            LOG.warn("页面大小为空，使用默认值1用于txt/word文件");
             pageSize = 1;
         }
         final Map<Integer, String> ocrData = processFile(fileData, pageSize, ragDocSyncOcrMessage);
 
-        LOG.info("Successfully retrieved {} pages of data from the current file", ocrData.size());
+        LOG.info("成功从当前文件获取 {} 页数据", ocrData.size());
 
         insertData(ragDocSyncOcrMessage, ocrData);
 

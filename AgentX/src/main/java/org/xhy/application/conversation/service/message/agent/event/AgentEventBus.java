@@ -39,7 +39,7 @@ public class AgentEventBus {
                 handler.handle(event);
             } catch (Exception e) {
                 // 处理事件处理异常
-                log.error("Error handling event: ", e);
+                log.error("事件处理异常: ", e);
             }
         }
     }

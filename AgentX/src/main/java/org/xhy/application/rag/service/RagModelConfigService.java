@@ -50,7 +50,7 @@ public class RagModelConfigService {
             }
 
             String modelId = userSettingsDTO.getSettingConfig().getDefaultOcrModel();
-            log.info("Getting OCR model config for user {}, modelId: {}", userId, modelId);
+            log.info("获取用户 {} 的OCR模型配置，modelId: {}", userId, modelId);
 
             // 根据模型ID从数据库获取真实的模型配置
             return getModelConfigFromDatabase(modelId, userId, "CHAT");
@@ -83,7 +83,7 @@ public class RagModelConfigService {
             }
 
             String modelId = userSettingsDTO.getSettingConfig().getDefaultEmbeddingModel();
-            log.info("Getting embedding model config for user {}, modelId: {}", userId, modelId);
+            log.info("获取用户 {} 的嵌入模型配置，modelId: {}", userId, modelId);
 
             // 根据模型ID从数据库获取真实的模型配置
             return getModelConfigFromDatabase(modelId, userId, "EMBEDDING");
@@ -149,8 +149,8 @@ public class RagModelConfigService {
             ModelConfig modelConfig = new ModelConfig(modelEntity.getModelId(), providerEntity.getConfig().getApiKey(),
                     providerEntity.getConfig().getBaseUrl(), expectedType);
 
-            log.info("Successfully retrieved model config for user {}: modelId={}, baseUrl={}", userId,
-                    modelEntity.getModelId(), providerEntity.getConfig().getBaseUrl());
+            log.info("成功获取用户 {} 的模型配置: modelId={}, baseUrl={}", userId, modelEntity.getModelId(),
+                    providerEntity.getConfig().getBaseUrl());
 
             return modelConfig;
 

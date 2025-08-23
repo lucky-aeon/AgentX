@@ -53,13 +53,13 @@ public class HybridSearchDomainService {
 
         // 参数验证
         if (config == null) {
-            log.warn("Hybrid search config is null");
+            log.warn("混合搜索配置为空");
             return Collections.emptyList();
         }
 
         if (!config.isValid()) {
             String error = config.getValidationError();
-            log.warn("Invalid hybrid search config: {}", error);
+            log.warn("无效的混合搜索配置: {}", error);
             return Collections.emptyList();
         }
 
@@ -70,19 +70,19 @@ public class HybridSearchDomainService {
         long startTime = System.currentTimeMillis();
 
         try {
-            log.info("Starting hybrid search for query: '{}', datasets: {}, maxResults: {}", config.getQuestion(),
-                    config.getDataSetIds().size(), finalMaxResults);
+            log.info("开始混合搜索 查询: '{}', 数据集: {}, 最大结果数: {}", config.getQuestion(), config.getDataSetIds().size(),
+                    finalMaxResults);
 
             // 并行执行向量检索和关键词检索
             CompletableFuture<List<VectorStoreResult>> vectorSearchFuture = CompletableFuture.supplyAsync(() -> {
-                log.debug("Starting vector search in parallel thread");
+                log.debug("在并行线程中开始向量搜索");
                 return embeddingDomainService.vectorSearch(config.getDataSetIds(), config.getQuestion(),
                         finalMaxResults * 2, finalMinScore, false, config.getCandidateMultiplier(),
                         config.getEmbeddingConfig());
             });
 
             CompletableFuture<List<VectorStoreResult>> keywordSearchFuture = CompletableFuture.supplyAsync(() -> {
-                log.debug("Starting keyword search in parallel thread");
+                log.debug("在并行线程中开始关键词搜索");
                 return keywordSearchDomainService.keywordSearch(config.getDataSetIds(), config.getQuestion(),
                         finalMaxResults * 2);
             });
@@ -93,21 +93,21 @@ public class HybridSearchDomainService {
 
             try {
                 vectorResults = vectorSearchFuture.get(SEARCH_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-                log.debug("Vector search completed, found {} results", vectorResults.size());
+                log.debug("向量搜索完成，找到{}个结果", vectorResults.size());
             } catch (Exception e) {
-                log.warn("Vector search failed or timeout: {}", e.getMessage());
+                log.warn("向量搜索失败或超时: {}", e.getMessage());
             }
 
             try {
                 keywordResults = keywordSearchFuture.get(SEARCH_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-                log.debug("Keyword search completed, found {} results", keywordResults.size());
+                log.debug("关键词搜索完成，找到{}个结果", keywordResults.size());
             } catch (Exception e) {
-                log.warn("Keyword search failed or timeout: {}", e.getMessage());
+                log.warn("关键词搜索失败或超时: {}", e.getMessage());
             }
 
             // 如果两个检索都失败，返回空结果
             if (vectorResults.isEmpty() && keywordResults.isEmpty()) {
-                log.warn("Both vector and keyword search returned empty results for query: '{}'", config.getQuestion());
+                log.warn("向量和关键词搜索对于查询'{}'都返回空结果", config.getQuestion());
                 return Collections.emptyList();
             }
 
@@ -125,16 +125,14 @@ public class HybridSearchDomainService {
                     config.getEnableQueryExpansion());
 
             long totalTime = System.currentTimeMillis() - startTime;
-            log.info(
-                    "Hybrid search completed for query: '{}', vector: {}, keyword: {}, fused: {}, final: {}, took: {}ms",
-                    config.getQuestion(), vectorResults.size(), keywordResults.size(), fusedResults.size(),
-                    finalResults.size(), totalTime);
+            log.info("混合搜索完成，查询: '{}', 向量: {}, 关键词: {}, 融合: {}, 最终: {}, 耗时: {}ms", config.getQuestion(),
+                    vectorResults.size(), keywordResults.size(), fusedResults.size(), finalResults.size(), totalTime);
 
             return finalResults;
 
         } catch (Exception e) {
             long totalTime = System.currentTimeMillis() - startTime;
-            log.error("Error during hybrid search for query: '{}', took: {}ms", config.getQuestion(), totalTime, e);
+            log.error("混合搜索过程中出现错误，查询: '{}', 耗时: {}ms", config.getQuestion(), totalTime, e);
             return Collections.emptyList();
         }
     }
@@ -165,8 +163,7 @@ public class HybridSearchDomainService {
     private List<VectorStoreResult> fusionWithRRF(List<VectorStoreResult> vectorResults,
             List<VectorStoreResult> keywordResults, int maxResults) {
 
-        log.debug("Starting RRF fusion with vector: {}, keyword: {} results", vectorResults.size(),
-                keywordResults.size());
+        log.debug("开始RRF融合 向量: {}, 关键词: {} 结果", vectorResults.size(), keywordResults.size());
 
         // 存储每个文档的RRF分数
         Map<String, Double> rrfScores = new HashMap<>();
@@ -226,7 +223,7 @@ public class HybridSearchDomainService {
                     return result;
                 }).collect(Collectors.toList());
 
-        log.info("RRF fusion completed: {} unique documents, top {} selected", documentMap.size(), fusedResults.size());
+        log.info("RRF融合完成: {}个唯一文档，选择前{}个", documentMap.size(), fusedResults.size());
 
         return fusedResults;
     }
@@ -248,7 +245,7 @@ public class HybridSearchDomainService {
                 .filter(id -> id != null && !id.trim().isEmpty()).collect(Collectors.toList());
 
         if (documentIds.isEmpty()) {
-            log.warn("No valid document IDs found in vector store results");
+            log.warn("在向量存储结果中未找到有效的文档ID");
             return Collections.emptyList();
         }
 
@@ -257,7 +254,7 @@ public class HybridSearchDomainService {
                 .selectList(Wrappers.lambdaQuery(DocumentUnitEntity.class).in(DocumentUnitEntity::getId, documentIds));
 
         if (documents.isEmpty()) {
-            log.warn("No DocumentUnitEntity found for document IDs: {}", documentIds);
+            log.warn("未找到文档ID对应的DocumentUnitEntity: {}", documentIds);
             return Collections.emptyList();
         }
 
@@ -290,8 +287,7 @@ public class HybridSearchDomainService {
             return Double.compare(scoreB, scoreA); // 降序排序
         });
 
-        log.debug("Converted {} VectorStoreResults to {} DocumentUnitEntities", vectorStoreResults.size(),
-                documents.size());
+        log.debug("转换{}个VectorStoreResult为{}个DocumentUnitEntity", vectorStoreResults.size(), documents.size());
 
         return documents;
     }
@@ -333,12 +329,11 @@ public class HybridSearchDomainService {
                     }
                 }
             } catch (Exception e) {
-                log.warn("Failed to expand query for document: {}", doc.getId(), e);
+                log.warn("为文档{}扩展查询失败", doc.getId(), e);
             }
         }
 
-        log.info("Query expansion: {} original documents expanded to {} total documents", documents.size(),
-                expandedDocuments.size());
+        log.info("查询扩展: {}个原始文档扩展为{}个总文档", documents.size(), expandedDocuments.size());
 
         return expandedDocuments;
     }
@@ -368,14 +363,13 @@ public class HybridSearchDomainService {
                     .map(fusedResults::get).collect(Collectors.toList());
 
             long rerankTime = System.currentTimeMillis() - rerankStartTime;
-            log.info("Applied rerank to fused results for query: '{}', {} results, took {}ms", question,
-                    rerankedResults.size(), rerankTime);
+            log.info("对查询'{}'的融合结果应用重排序，{}个结果，耗时{}ms", question, rerankedResults.size(), rerankTime);
 
             return rerankedResults;
 
         } catch (Exception e) {
             long rerankTime = System.currentTimeMillis() - rerankStartTime;
-            log.error("Failed to rerank fused results for query: '{}', took {}ms", question, rerankTime, e);
+            log.error("对查询'{}'的融合结果重排序失败，耗时{}ms", question, rerankTime, e);
             // 重排序失败时返回原始融合结果
             return fusedResults;
         }

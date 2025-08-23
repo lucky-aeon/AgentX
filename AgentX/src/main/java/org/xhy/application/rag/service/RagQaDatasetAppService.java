@@ -144,7 +144,7 @@ public class RagQaDatasetAppService {
         try {
             createAndInstallInitialVersion(createdEntity.getId(), userId);
         } catch (Exception e) {
-            log.warn("Failed to create initial version for dataset {}: {}", createdEntity.getId(), e.getMessage());
+            log.warn("失败：创建数据集初始版本 {} 失败: {}", createdEntity.getId(), e.getMessage());
             // 不影响数据集创建，只记录警告
         }
 
@@ -167,8 +167,7 @@ public class RagQaDatasetAppService {
         // 使用新的自动安装方法（直接创建REFERENCE类型安装）
         userRagDomainService.autoInstallRag(userId, ragId, versionDTO.getId());
 
-        log.info("Successfully created and auto-installed initial version 0.0.1 for dataset {} by user {}", ragId,
-                userId);
+        log.info("成功为用户 {} 创建并自动安装了数据集 {} 的初始版本 0.0.1", userId, ragId);
     }
 
     /** 同步版本信息
@@ -185,17 +184,17 @@ public class RagQaDatasetAppService {
         if (version001 != null) {
             // 更新0.0.1版本的基本信息
             ragVersionDomainService.updateVersionBasicInfo(version001.getId(), name, description, icon, userId);
-            log.debug("Successfully synced version 0.0.1 info for dataset {}", datasetId);
+            log.debug("成功同步了数据集 {} 的版本 0.0.1 信息", datasetId);
         } else {
-            log.debug("Version 0.0.1 not found for dataset {}, skip sync", datasetId);
+            log.debug("没有找到数据集 {} 的版本 0.0.1，跳过同步", datasetId);
         }
 
         // 同步更新用户安装记录的基本信息（针对REFERENCE类型）
         try {
             userRagDomainService.updateUserRagBasicInfo(userId, datasetId, name, description, icon);
-            log.debug("Successfully synced user installation info for dataset {}", datasetId);
+            log.debug("成功同步了数据集 {} 的用户安装信息", datasetId);
         } catch (Exception e) {
-            log.warn("Failed to sync user installation info for dataset {}: {}", datasetId, e.getMessage());
+            log.warn("失败：同步数据集用户安装信息 {} 失败: {}", datasetId, e.getMessage());
             // 不抛出异常，避免影响主流程
         }
     }
@@ -214,7 +213,7 @@ public class RagQaDatasetAppService {
         try {
             syncVersionInfo(datasetId, request.getName(), request.getDescription(), request.getIcon(), userId);
         } catch (Exception e) {
-            log.warn("Failed to sync version info for dataset {}: {}", datasetId, e.getMessage());
+            log.warn("失败：同步数据集版本信息 {} 失败: {}", datasetId, e.getMessage());
             // 不影响主流程，只记录警告
         }
 
@@ -234,7 +233,7 @@ public class RagQaDatasetAppService {
         try {
             versions = ragPublishAppService.getRagVersionHistory(datasetId, userId);
         } catch (Exception e) {
-            log.debug("Failed to get version history for dataset {}, may not have versions", datasetId);
+            log.debug("失败：获取数据集版本历史 {}, 可能没有版本", datasetId);
         }
 
         // 删除创建者自己在user_rags表中的安装记录（在删除数据集之前执行）
@@ -243,7 +242,7 @@ public class RagQaDatasetAppService {
             userRagDomainService.forceUninstallRagByOriginalId(userId, datasetId);
         } catch (Exception e) {
             // 如果没有安装记录，忽略异常
-            log.debug("No installation record found for dataset {}", datasetId);
+            log.debug("没有找到数据集 {} 的安装记录", datasetId);
         }
 
         // 删除所有RAG发布版本
@@ -252,7 +251,7 @@ public class RagQaDatasetAppService {
                 ragVersionDomainService.deleteRagVersion(version.getId(), userId);
             } catch (Exception e) {
                 // 如果版本不存在，忽略异常
-                log.debug("Failed to delete RAG version {}, may not exist", version.getId());
+                log.debug("失败：删除RAG版本 {}, 可能不存在", version.getId());
             }
         }
 
@@ -427,7 +426,7 @@ public class RagQaDatasetAppService {
      * @param userId 用户ID */
     private void autoStartPreprocessing(String fileId, String datasetId, String userId) {
         try {
-            log.info("Auto-starting preprocessing for file: {}", fileId);
+            log.info("自动启动文件预处理: {}", fileId);
 
             // 清理已有的语料和向量数据
             cleanupExistingDocumentUnits(fileId);
@@ -454,10 +453,10 @@ public class RagQaDatasetAppService {
             ocrEvent.setDescription("文件自动预处理任务");
             applicationEventPublisher.publishEvent(ocrEvent);
 
-            log.info("Auto-preprocessing started for file: {}", fileId);
+            log.info("文件自动预处理已启动: {}", fileId);
 
         } catch (Exception e) {
-            log.error("Failed to auto-start preprocessing for file: {}", fileId, e);
+            log.error("失败：自动启动文件预处理: {}", fileId, e);
             // 如果自动启动失败，重置状态
             fileDetailDomainService.resetFileProcessing(fileId, userId);
         }
@@ -613,8 +612,7 @@ public class RagQaDatasetAppService {
      * @param userId 用户ID */
     @Transactional
     public void reprocessFile(ProcessFileRequest request, String userId) {
-        log.warn("Force reprocessing file: {}, type: {}, user: {}", request.getFileId(), request.getProcessType(),
-                userId);
+        log.warn("强制重新处理文件: {}，类型: {}，用户: {}", request.getFileId(), request.getProcessType(), userId);
 
         // 检查数据集是否存在
         ragQaDatasetDomainService.checkDatasetExists(request.getDatasetId(), userId);
@@ -624,7 +622,7 @@ public class RagQaDatasetAppService {
 
         if (request.getProcessType() == 1) {
             // 强制重新OCR预处理
-            log.info("Force restarting OCR preprocessing for file: {}", request.getFileId());
+            log.info("强制重新启动OCR预处理文件: {}", request.getFileId());
 
             // 清理已有的语料和向量数据
             cleanupExistingDocumentUnits(request.getFileId());
@@ -647,7 +645,7 @@ public class RagQaDatasetAppService {
 
         } else if (request.getProcessType() == 2) {
             // 强制重新向量化处理
-            log.info("Force restarting vectorization for file: {}", request.getFileId());
+            log.info("强制重新启动文件向量化处理: {}", request.getFileId());
 
             // 检查是否已完成OCR处理
             Integer processingStatus = fileEntity.getProcessingStatus();
@@ -706,7 +704,7 @@ public class RagQaDatasetAppService {
                     .selectList(Wrappers.<DocumentUnitEntity>lambdaQuery().eq(DocumentUnitEntity::getFileId, fileId));
 
             if (!existingUnits.isEmpty()) {
-                log.info("Cleaning up {} existing document units for file: {}", existingUnits.size(), fileId);
+                log.info("清理文件 {} 的 {} 个现有文档单元", fileId, existingUnits.size());
 
                 final List<String> documentUnitEntities = Steam.of(existingUnits).map(DocumentUnitEntity::getId)
                         .toList();
@@ -714,12 +712,12 @@ public class RagQaDatasetAppService {
                 documentUnitRepository.deleteByIds(documentUnitEntities);
 
                 embeddingDomainService.deleteEmbedding(Collections.singletonList(fileId));
-                log.info("Successfully cleaned up document units for file: {}", fileId);
+                log.info("成功清理了文件 {} 的文档单元", fileId);
             } else {
-                log.debug("No existing document units found for file: {}", fileId);
+                log.debug("没有找到文件 {} 的现有文档单元", fileId);
             }
         } catch (Exception e) {
-            log.error("Failed to cleanup existing document units for file: {}", fileId, e);
+            log.error("失败：清理文件现有文档单元: {}", fileId, e);
             throw new BusinessException("清理已有语料数据失败: " + e.getMessage());
         }
     }
@@ -865,15 +863,15 @@ public class RagQaDatasetAppService {
         // 设置连接关闭回调
         emitter.onCompletion(() -> {
             completed.set(true);
-            log.info("RAG stream chat completed for user: {}", userId);
+            log.info("用户 {} 的RAG流式对话完成", userId);
         });
         emitter.onTimeout(() -> {
-            log.warn("RAG stream chat timeout for user: {}", userId);
+            log.warn("用户 {} 的RAG流式对话超时", userId);
             sendSseData(emitter, createErrorResponse("连接超时"), completed);
             safeCompleteEmitter(emitter, completed);
         });
         emitter.onError((ex) -> {
-            log.error("RAG stream chat connection error for user: {}", userId, ex);
+            log.error("用户 {} 的RAG流式对话连接错误", userId, ex);
             safeCompleteEmitter(emitter, completed);
         });
 
@@ -882,7 +880,7 @@ public class RagQaDatasetAppService {
             try {
                 processRagStreamChat(request, userId, emitter, completed);
             } catch (Exception e) {
-                log.error("RAG stream chat error", e);
+                log.error("RAG流式对话错误", e);
                 sendSseData(emitter, createErrorResponse("处理过程中发生错误: " + e.getMessage()), completed);
             } finally {
                 // 确保连接被正确关闭
@@ -898,7 +896,7 @@ public class RagQaDatasetAppService {
             AtomicBoolean completed) {
         try {
             // 第一阶段：检索文档
-            log.info("Starting RAG stream chat for user: {}, question: '{}'", userId, request.getQuestion());
+            log.info("开始RAG流式对话 用户: {}, 问题: '{}'", userId, request.getQuestion());
 
             // 发送检索开始信号
             sendSseData(emitter, AgentChatResponse.build("开始检索相关文档...", MessageType.RAG_RETRIEVAL_START), completed);
@@ -959,7 +957,7 @@ public class RagQaDatasetAppService {
             try {
                 retrievalEndResponse.setPayload(objectMapper.writeValueAsString(retrievedDocs));
             } catch (Exception e) {
-                log.error("Failed to serialize retrieved documents", e);
+                log.error("失败：序列化检索到的文档", e);
             }
             sendSseData(emitter, retrievalEndResponse, completed);
             Thread.sleep(1000);
@@ -979,7 +977,7 @@ public class RagQaDatasetAppService {
             sendSseData(emitter, AgentChatResponse.buildEndMessage("回答生成完成", MessageType.RAG_ANSWER_END), completed);
 
         } catch (Exception e) {
-            log.error("Error in RAG stream chat processing", e);
+            log.error("RAG流式对话处理错误", e);
             sendSseData(emitter, createErrorResponse("处理过程中发生错误: " + e.getMessage()), completed);
         } finally {
             safeCompleteEmitter(emitter, completed);
@@ -1130,7 +1128,7 @@ public class RagQaDatasetAppService {
 
                 streamComplete.complete(null);
             }).onError(throwable -> {
-                log.error("RAG stream answer generation error for user: {}", userId, throwable);
+                log.error("用户 {} 的RAG流式答案生成错误", userId, throwable);
                 sendSseData(emitter, createErrorResponse("回答生成失败: " + throwable.getMessage()), completed);
 
                 long latency = System.currentTimeMillis() - startTime;
@@ -1154,7 +1152,7 @@ public class RagQaDatasetAppService {
             }
 
         } catch (Exception e) {
-            log.error("Error in RAG stream answer generation for user: {}", userId, e);
+            log.error("用户 {} 的RAG流式答案生成错误", userId, e);
             sendSseData(emitter, createErrorResponse("回答生成失败: " + e.getMessage()), completed);
         }
     }
@@ -1178,7 +1176,7 @@ public class RagQaDatasetAppService {
             log.info("完整模拟RAG回答内容:\n{}", fullMockAnswer);
 
         } catch (Exception e) {
-            log.error("Error generating mock stream answer", e);
+            log.error("生成模拟流式答案错误", e);
             sendSseData(emitter, createErrorResponse("回答生成失败: " + e.getMessage()), completed);
         }
     }
@@ -1213,12 +1211,12 @@ public class RagQaDatasetAppService {
         if (completed.compareAndSet(false, true)) {
             try {
                 emitter.complete();
-                log.debug("SSE emitter completed successfully");
+                log.debug("SSE发射器成功完成");
             } catch (Exception e) {
-                log.debug("Error completing SSE emitter (may be already completed): {}", e.getMessage());
+                log.debug("SSE发射器完成错误（可能已经完成）: {}", e.getMessage());
             }
         } else {
-            log.debug("SSE emitter already completed, skipping");
+            log.debug("SSE发射器已经完成，跳过");
         }
     }
 
@@ -1327,15 +1325,15 @@ public class RagQaDatasetAppService {
         // 设置连接关闭回调
         emitter.onCompletion(() -> {
             completed.set(true);
-            log.info("RAG stream chat by userRag completed for user: {}, userRagId: {}", userId, userRagId);
+            log.info("用户 {} 通过userRag {} 的RAG流式对话完成", userId, userRagId);
         });
         emitter.onTimeout(() -> {
-            log.warn("RAG stream chat by userRag timeout for user: {}, userRagId: {}", userId, userRagId);
+            log.warn("用户 {} 通过userRag {} 的RAG流式对话超时", userId, userRagId);
             sendSseData(emitter, createErrorResponse("连接超时"), completed);
             safeCompleteEmitter(emitter, completed);
         });
         emitter.onError((ex) -> {
-            log.error("RAG stream chat by userRag connection error for user: {}, userRagId: {}", userId, userRagId, ex);
+            log.error("用户 {} 通过userRag {} 的RAG流式对话连接错误", userId, userRagId, ex);
             safeCompleteEmitter(emitter, completed);
         });
 
@@ -1344,7 +1342,7 @@ public class RagQaDatasetAppService {
             try {
                 processRagStreamChatByUserRag(request, userRagId, userId, emitter, completed);
             } catch (Exception e) {
-                log.error("RAG stream chat by userRag error", e);
+                log.error("通过userRag的RAG流式对话错误", e);
                 sendSseData(emitter, createErrorResponse("处理过程中发生错误: " + e.getMessage()), completed);
             } finally {
                 // 确保连接被正确关闭
@@ -1367,8 +1365,8 @@ public class RagQaDatasetAppService {
 
             // 获取RAG数据源信息
             var dataSourceInfo = ragDataAccessService.getRagDataSourceInfo(userId, userRagId);
-            log.info("Starting RAG stream chat by userRag: {}, user: {}, question: '{}', install type: {}", userRagId,
-                    userId, request.getQuestion(), dataSourceInfo.getInstallType());
+            log.info("开始RAG流式对话 通过userRag: {}, 用户: {}, 问题: '{}', 安装类型: {}", userRagId, userId, request.getQuestion(),
+                    dataSourceInfo.getInstallType());
 
             // 第一阶段：检索文档
             sendSseData(emitter, AgentChatResponse.build("开始检索相关文档...", MessageType.RAG_RETRIEVAL_START), completed);
@@ -1435,7 +1433,7 @@ public class RagQaDatasetAppService {
             try {
                 retrievalEndResponse.setPayload(objectMapper.writeValueAsString(retrievedDocs));
             } catch (Exception e) {
-                log.error("Failed to serialize retrieved documents", e);
+                log.error("失败：序列化检索到的文档", e);
             }
             sendSseData(emitter, retrievalEndResponse, completed);
 
@@ -1456,7 +1454,7 @@ public class RagQaDatasetAppService {
             sendSseData(emitter, AgentChatResponse.buildEndMessage("回答生成完成", MessageType.RAG_ANSWER_END), completed);
 
         } catch (Exception e) {
-            log.error("Error in processRagStreamChatByUserRag", e);
+            log.error("processRagStreamChatByUserRag处理错误", e);
             sendSseData(emitter, createErrorResponse("处理过程中发生错误: " + e.getMessage()), completed);
         }
     }

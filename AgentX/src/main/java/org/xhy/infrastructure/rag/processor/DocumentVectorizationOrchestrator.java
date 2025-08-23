@@ -53,7 +53,7 @@ public class DocumentVectorizationOrchestrator {
             return;
         }
 
-        log.info("Starting vector segment processing for {} document units", units.size());
+        log.info("开始向量片段处理 {} 个文档单元", units.size());
 
         int successCount = 0;
         int errorCount = 0;
@@ -247,7 +247,7 @@ public class DocumentVectorizationOrchestrator {
             return;
         }
 
-        log.info("Starting async vector segment processing for {} units", units.size());
+        log.info("开始异步向量片段处理 {} 个单元", units.size());
 
         try {
             // 创建默认的处理上下文

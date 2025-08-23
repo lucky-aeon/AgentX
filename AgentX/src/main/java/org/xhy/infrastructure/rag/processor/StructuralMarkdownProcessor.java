@@ -69,7 +69,7 @@ public class StructuralMarkdownProcessor implements MarkdownProcessor {
             }
 
         } catch (Exception e) {
-            log.error("Failed to process markdown with structural processor", e);
+            log.error("结构化处理器处理Markdown失败", e);
             // 回退方案：整个文档作为一个段落
             ProcessedSegment fallback = new ProcessedSegment(markdown, SegmentType.TEXT, null);
             fallback.setOrder(0);
@@ -79,7 +79,7 @@ public class StructuralMarkdownProcessor implements MarkdownProcessor {
 
     /** 纯原文拆分模式 - 保持原始格式，不进行任何特殊处理 */
     private List<ProcessedSegment> processRawSegments(String markdown, ProcessingContext context) {
-        log.debug("Processing markdown in raw mode (preserving original content)");
+        log.debug("以原文模式处理Markdown（保留原始内容）");
 
         // 解析Markdown为AST
         Node document = astParser.parse(markdown);
@@ -95,7 +95,7 @@ public class StructuralMarkdownProcessor implements MarkdownProcessor {
             segments.get(i).setOrder(i);
         }
 
-        log.info("Raw processing completed: {} segments generated", segments.size());
+        log.info("原文处理完成: 生成{}个段落", segments.size());
         return segments;
     }
 
@@ -110,7 +110,7 @@ public class StructuralMarkdownProcessor implements MarkdownProcessor {
         // 使用语义感知遍历进行分段
         order = processSemanticStructure(document, segments, order);
 
-        log.info("Regular processing completed: {} segments generated", segments.size());
+        log.info("常规处理完成: 生成{}个段落", segments.size());
         return segments;
     }
 
@@ -119,7 +119,7 @@ public class StructuralMarkdownProcessor implements MarkdownProcessor {
      * @param rawMode true=纯原文模式，false=常规处理模式 */
     public void setRawMode(boolean rawMode) {
         this.rawMode = rawMode;
-        log.debug("Raw mode set to: {}", rawMode);
+        log.debug("原文模式设置为: {}", rawMode);
     }
 
     /** 获取当前处理模式 */
@@ -131,7 +131,7 @@ public class StructuralMarkdownProcessor implements MarkdownProcessor {
     private int processSemanticStructure(Node document, List<ProcessedSegment> segments, int order) {
         // 构建文档树
         DocumentTree documentTree = treeBuilder.buildDocumentTree(document, markdownProperties.getSegmentSplit());
-        log.debug("Built document tree: {}", documentTree.getTreeStatistics());
+        log.debug("构建文档树: {}", documentTree.getTreeStatistics());
 
         // 执行层次化分割
         List<ProcessedSegment> hierarchicalSegments = documentTree.performHierarchicalSplit();
@@ -143,7 +143,7 @@ public class StructuralMarkdownProcessor implements MarkdownProcessor {
             segments.add(segment);
         }
 
-        log.info("Hierarchical processing completed: {} segments generated", hierarchicalSegments.size());
+        log.info("层次化处理完成: 生成{}个段落", hierarchicalSegments.size());
         return currentOrder;
     }
 }

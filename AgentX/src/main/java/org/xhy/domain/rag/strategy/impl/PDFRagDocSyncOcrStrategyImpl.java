@@ -81,7 +81,7 @@ public class PDFRagDocSyncOcrStrategyImpl extends AbstractDocumentProcessingStra
                         .set(FileDetailEntity::getFilePageSize, pdfPageCount);
                 fileDetailRepository.update(wrapper);
 
-                log.info("Updated total pages for file {}: {} pages", currentProcessingFileId, pdfPageCount);
+                log.info("更新文件{}的总页数: {}页", currentProcessingFileId, pdfPageCount);
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -131,7 +131,7 @@ public class PDFRagDocSyncOcrStrategyImpl extends AbstractDocumentProcessingStra
                 // 实时更新处理进度
                 updateProcessProgress(pageIndex + 1, totalPages);
 
-                log.info("Processing request page {}/{}, current memory usage: {} MB", (pageIndex + 1), totalPages,
+                log.info("处理第{}/{}页，当前内存使用: {} MB", (pageIndex + 1), totalPages,
                         (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / (1024 * 1024));
 
                 if ((pageIndex + 1) % 10 == 0) {
@@ -144,9 +144,9 @@ public class PDFRagDocSyncOcrStrategyImpl extends AbstractDocumentProcessingStra
                     Thread.currentThread().interrupt();
                 }
 
-                log.info("Page {} processing completed", (pageIndex + 1));
+                log.info("第{}页处理完成", (pageIndex + 1));
             } catch (Exception e) {
-                log.error("Error processing PDF page {}: {}", (pageIndex + 1), e.getMessage());
+                log.error("处理PDF第{}页时出错: {}", (pageIndex + 1), e.getMessage());
                 // 继续处理下一页，不中断整个流程
             }
         }
@@ -218,10 +218,10 @@ public class PDFRagDocSyncOcrStrategyImpl extends AbstractDocumentProcessingStra
 
             fileDetailRepository.update(wrapper);
 
-            log.debug("Updated OCR progress for file {}: {}/{} pages ({}%)", currentProcessingFileId, currentPage,
-                    totalPages, String.format("%.1f", progress));
+            log.debug("更新文件{}OCR进度: {}/{}页 ({}%)", currentProcessingFileId, currentPage, totalPages,
+                    String.format("%.1f", progress));
         } catch (Exception e) {
-            log.warn("Failed to update OCR progress for file {}: {}", currentProcessingFileId, e.getMessage());
+            log.warn("更新文件{}OCR进度失败: {}", currentProcessingFileId, e.getMessage());
         }
     }
 
@@ -257,8 +257,7 @@ public class PDFRagDocSyncOcrStrategyImpl extends AbstractDocumentProcessingStra
 
             ChatModel ocrModel = LLMProviderService.getStrand(ProviderProtocol.OPENAI, ocrProviderConfig);
 
-            log.info("Successfully created OCR model for user {}: {}", ragDocSyncOcrMessage.getUserId(),
-                    modelConfig.getModelId());
+            log.info("成功为用户{}创建OCR模型: {}", ragDocSyncOcrMessage.getUserId(), modelConfig.getModelId());
             return ocrModel;
 
         } catch (RuntimeException e) {
