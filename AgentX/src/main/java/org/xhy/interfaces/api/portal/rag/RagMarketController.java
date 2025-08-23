@@ -3,7 +3,7 @@ package org.xhy.interfaces.api.portal.rag;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import org.xhy.application.rag.RagMarketAppService;
+import org.xhy.application.rag.service.manager.RagMarketAppService;
 import org.xhy.application.rag.dto.DocumentUnitDTO;
 import org.xhy.application.rag.dto.FileDetailDTO;
 import org.xhy.application.rag.dto.RagMarketDTO;

@@ -7,14 +7,13 @@ import dev.langchain4j.service.tool.ToolExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
-import org.xhy.application.rag.service.RagQaDatasetAppService;
+import org.xhy.application.rag.service.manager.RagQaDatasetAppService;
 import org.xhy.application.rag.dto.DocumentUnitDTO;
 import org.xhy.application.rag.dto.RagSearchRequest;
-import org.xhy.infrastructure.utils.JsonUtils;
+import org.xhy.application.rag.service.search.RAGSearchAppService;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /** RAG工具执行器 用于执行具体的RAG搜索逻辑，支持通过构造函数传入多个知识库ID避免并发问题 不能交给Spring管理，需要为每个会话创建独立实例 */
 public class RagToolExecutor implements ToolExecutor {
@@ -23,18 +22,18 @@ public class RagToolExecutor implements ToolExecutor {
 
     private final List<String> knowledgeBaseIds;
     private final String userId;
-    private final RagQaDatasetAppService ragQaDatasetAppService;
+    private final RAGSearchAppService ragSearchAppService;
     private final ObjectMapper objectMapper;
 
     /** 构造函数
      * @param knowledgeBaseIds RAG知识库ID列表
      * @param userId 用户ID
-     * @param ragQaDatasetAppService RAG服务 */
+     * @param ragSearchAppService RAG服务 */
     public RagToolExecutor(List<String> knowledgeBaseIds, String userId,
-            RagQaDatasetAppService ragQaDatasetAppService) {
+                           RAGSearchAppService ragSearchAppService) {
         this.knowledgeBaseIds = knowledgeBaseIds != null ? new ArrayList<>(knowledgeBaseIds) : new ArrayList<>();
         this.userId = userId;
-        this.ragQaDatasetAppService = ragQaDatasetAppService;
+        this.ragSearchAppService = ragSearchAppService;
         this.objectMapper = new ObjectMapper();
     }
 
@@ -82,7 +81,7 @@ public class RagToolExecutor implements ToolExecutor {
             searchRequest.setEnableQueryExpansion(enableQueryExpansion);
 
             // 执行RAG搜索
-            List<DocumentUnitDTO> searchResults = ragQaDatasetAppService.ragSearch(searchRequest, userId);
+            List<DocumentUnitDTO> searchResults = ragSearchAppService.ragSearch(searchRequest, userId);
 
             if (searchResults == null || searchResults.isEmpty()) {
                 log.info("RAG搜索未找到相关文档，knowledgeBaseIds: {}, query: {}", knowledgeBaseIds, query);

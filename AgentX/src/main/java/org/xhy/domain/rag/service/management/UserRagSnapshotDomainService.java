@@ -1,4 +1,4 @@
-package org.xhy.domain.rag.service;
+package org.xhy.domain.rag.service.management;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
@@ -7,7 +7,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.xhy.domain.rag.model.RagVersionDocumentEntity;
 import org.xhy.domain.rag.model.RagVersionFileEntity;
 import org.xhy.domain.rag.model.UserRagDocumentEntity;

@@ -12,28 +12,28 @@ public abstract class AbstractDocumentProcessingStrategy implements DocumentProc
     private static final Logger LOG = LoggerFactory.getLogger(AbstractDocumentProcessingStrategy.class);
 
     /** 处理消息
-     * @param ragDocSyncOcrMessage 消息数据
+     * @param ragDocMessage 消息数据
      * @param strategy 当前策略 */
     @Override
-    public void handle(RagDocMessage ragDocSyncOcrMessage, String strategy) throws Exception {
+    public void handle(RagDocMessage ragDocMessage, String strategy) throws Exception {
 
-        final byte[] fileData = getFileData(ragDocSyncOcrMessage, strategy);
-        pushPageSize(fileData, ragDocSyncOcrMessage);
+        final byte[] fileData = getFileData(ragDocMessage, strategy);
+        pushPageSize(fileData, ragDocMessage);
         if (fileData == null) {
             LOG.error("文件数据为空");
             return;
         }
 
-        Integer pageSize = ragDocSyncOcrMessage.getPageSize();
+        Integer pageSize = ragDocMessage.getPageSize();
         if (pageSize == null) {
             LOG.warn("页面大小为空，使用默认值1用于txt/word文件");
             pageSize = 1;
         }
-        final Map<Integer, String> ocrData = processFile(fileData, pageSize, ragDocSyncOcrMessage);
+        final Map<Integer, String> data = processFile(fileData, pageSize, ragDocMessage);
 
-        LOG.info("成功从当前文件获取 {} 页数据", ocrData.size());
+        LOG.info("成功从当前文件获取 {} 页数据", data.size());
 
-        insertData(ragDocSyncOcrMessage, ocrData);
+        insertData(ragDocMessage, data);
 
     };
 

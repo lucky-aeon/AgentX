@@ -1,4 +1,4 @@
-package org.xhy.domain.rag.service;
+package org.xhy.domain.rag.service.management;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
@@ -7,13 +7,14 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.xhy.domain.rag.constant.InstallType;
 import org.xhy.domain.rag.constant.RagPublishStatus;
 import org.xhy.domain.rag.model.RagQaDatasetEntity;
 import org.xhy.domain.rag.model.RagVersionEntity;
 import org.xhy.domain.rag.model.UserRagEntity;
+import org.xhy.domain.rag.model.UserRagFileEntity;
 import org.xhy.domain.rag.repository.UserRagRepository;
+import org.xhy.domain.rag.service.RagQaDatasetDomainService;
 import org.xhy.infrastructure.exception.BusinessException;
 
 import java.time.LocalDateTime;

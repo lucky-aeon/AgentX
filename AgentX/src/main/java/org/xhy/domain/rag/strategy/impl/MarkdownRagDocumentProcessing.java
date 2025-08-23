@@ -24,9 +24,9 @@ import java.util.List;
 import java.util.Map;
 
 @Service(value = "markdown")
-public class MarkdownRagDocSyncOcrStrategyImpl extends AbstractDocumentProcessingStrategy {
+public class MarkdownRagDocumentProcessing extends AbstractDocumentProcessingStrategy {
 
-    private static final Logger log = LoggerFactory.getLogger(MarkdownRagDocSyncOcrStrategyImpl.class);
+    private static final Logger log = LoggerFactory.getLogger(MarkdownRagDocumentProcessing.class);
 
     private final StructuralMarkdownProcessor structuralMarkdownProcessor;
     private final DocumentVectorizationOrchestrator vectorSegmentProcessor;
@@ -38,7 +38,7 @@ public class MarkdownRagDocSyncOcrStrategyImpl extends AbstractDocumentProcessin
     // 用于存储当前处理的文件ID
     private String currentProcessingFileId;
 
-    public MarkdownRagDocSyncOcrStrategyImpl(StructuralMarkdownProcessor structuralMarkdownProcessor,
+    public MarkdownRagDocumentProcessing(StructuralMarkdownProcessor structuralMarkdownProcessor,
             DocumentVectorizationOrchestrator vectorSegmentProcessor, DocumentUnitRepository documentUnitRepository,
             FileDetailRepository fileDetailRepository, FileStorageService fileStorageService,
             UserModelConfigResolver userModelConfigResolver) {
@@ -51,14 +51,14 @@ public class MarkdownRagDocSyncOcrStrategyImpl extends AbstractDocumentProcessin
     }
 
     @Override
-    public void handle(RagDocMessage ragDocSyncOcrMessage, String strategy) throws Exception {
+    public void handle(RagDocMessage ragDocMessage, String strategy) throws Exception {
         // 设置当前处理的文件ID
-        this.currentProcessingFileId = ragDocSyncOcrMessage.getFileId();
+        this.currentProcessingFileId = ragDocMessage.getFileId();
 
         log.info("开始Markdown文档处理 文件: {}", currentProcessingFileId);
 
         // 调用父类处理逻辑
-        super.handle(ragDocSyncOcrMessage, strategy);
+        super.handle(ragDocMessage, strategy);
 
         log.info("完成Markdown文档处理 文件: {}", currentProcessingFileId);
     }

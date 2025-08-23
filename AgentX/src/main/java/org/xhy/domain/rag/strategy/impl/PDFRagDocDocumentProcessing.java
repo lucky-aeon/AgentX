@@ -13,12 +13,12 @@ import org.dromara.x.file.storage.core.FileStorageService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import org.xhy.domain.rag.constant.RAGSystemPrompt;
 import org.xhy.domain.rag.message.RagDocMessage;
 import org.xhy.domain.rag.model.DocumentUnitEntity;
 import org.xhy.domain.rag.model.FileDetailEntity;
 import org.xhy.domain.rag.repository.DocumentUnitRepository;
 import org.xhy.domain.rag.repository.FileDetailRepository;
+import org.xhy.domain.rag.strategy.context.RAGSystemPrompt;
 import org.xhy.infrastructure.exception.BusinessException;
 import org.xhy.infrastructure.llm.LLMProviderService;
 import org.xhy.infrastructure.llm.config.ProviderConfig;
@@ -33,10 +33,12 @@ import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.chat.response.ChatResponse;
 import jakarta.annotation.Resource;
 
-@Service("pdf")
-public class PDFRagDocSyncOcrStrategyImpl extends AbstractDocumentProcessingStrategy implements RAGSystemPrompt {
+import static org.xhy.domain.rag.strategy.context.RAGSystemPrompt.OCR_PROMPT;
 
-    private static final Logger log = LoggerFactory.getLogger(PDFRagDocSyncOcrStrategyImpl.class);
+@Service("pdf")
+public class PDFRagDocDocumentProcessing extends AbstractDocumentProcessingStrategy {
+
+    private static final Logger log = LoggerFactory.getLogger(PDFRagDocDocumentProcessing.class);
 
     private final DocumentUnitRepository documentUnitRepository;
 
@@ -48,22 +50,22 @@ public class PDFRagDocSyncOcrStrategyImpl extends AbstractDocumentProcessingStra
     // 用于存储当前处理的文件ID，以便更新进度
     private String currentProcessingFileId;
 
-    public PDFRagDocSyncOcrStrategyImpl(DocumentUnitRepository documentUnitRepository,
+    public PDFRagDocDocumentProcessing(DocumentUnitRepository documentUnitRepository,
             FileDetailRepository fileDetailRepository) {
         this.documentUnitRepository = documentUnitRepository;
         this.fileDetailRepository = fileDetailRepository;
     }
 
     /** 处理消息，增加进度更新功能
-     * @param ragDocSyncOcrMessage 消息数据
+     * @param ragDocMessage 消息数据
      * @param strategy 当前策略 */
     @Override
-    public void handle(RagDocMessage ragDocSyncOcrMessage, String strategy) throws Exception {
+    public void handle(RagDocMessage ragDocMessage, String strategy) throws Exception {
         // 设置当前处理的文件ID，用于进度更新
-        this.currentProcessingFileId = ragDocSyncOcrMessage.getFileId();
+        this.currentProcessingFileId = ragDocMessage.getFileId();
 
         // 调用父类处理逻辑
-        super.handle(ragDocSyncOcrMessage, strategy);
+        super.handle(ragDocMessage, strategy);
     }
 
     /** 获取文件页数 */

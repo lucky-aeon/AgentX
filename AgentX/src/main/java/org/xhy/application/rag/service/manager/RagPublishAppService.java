@@ -1,4 +1,4 @@
-package org.xhy.application.rag;
+package org.xhy.application.rag.service.manager;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -17,8 +17,8 @@ import org.xhy.interfaces.dto.rag.request.QueryPendingReviewRequest;
 import org.xhy.application.rag.request.QueryRagVersionRequest;
 import org.xhy.domain.rag.constant.RagPublishStatus;
 import org.xhy.domain.rag.model.RagVersionEntity;
-import org.xhy.domain.rag.service.RagVersionDomainService;
-import org.xhy.domain.rag.service.UserRagDomainService;
+import org.xhy.domain.rag.service.management.RagVersionDomainService;
+import org.xhy.domain.rag.service.management.UserRagDomainService;
 import org.xhy.domain.user.service.UserDomainService;
 import org.xhy.infrastructure.exception.BusinessException;
 

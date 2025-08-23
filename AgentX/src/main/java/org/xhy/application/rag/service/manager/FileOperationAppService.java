@@ -1,4 +1,4 @@
-package org.xhy.application.rag.service;
+package org.xhy.application.rag.service.manager;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;

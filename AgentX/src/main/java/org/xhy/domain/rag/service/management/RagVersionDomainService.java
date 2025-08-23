@@ -1,4 +1,4 @@
-package org.xhy.domain.rag.service;
+package org.xhy.domain.rag.service.management;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
@@ -24,6 +24,7 @@ import org.xhy.domain.rag.repository.FileDetailRepository;
 import org.xhy.domain.rag.repository.RagVersionDocumentRepository;
 import org.xhy.domain.rag.repository.RagVersionFileRepository;
 import org.xhy.domain.rag.repository.RagVersionRepository;
+import org.xhy.domain.rag.service.RagQaDatasetDomainService;
 import org.xhy.infrastructure.exception.BusinessException;
 
 import java.time.LocalDateTime;

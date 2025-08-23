@@ -6,7 +6,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import org.xhy.application.rag.dto.DocumentUnitDTO;
 import org.xhy.application.rag.dto.RagSearchRequest;
 import org.xhy.application.rag.dto.RagStreamChatRequest;
-import org.xhy.application.rag.service.RagQaDatasetAppService;
+import org.xhy.application.rag.service.search.RAGSearchAppService;
 import org.xhy.application.conversation.service.ConversationAppService;
 import org.xhy.infrastructure.auth.UserContext;
 import org.xhy.interfaces.api.common.Result;
@@ -20,12 +20,12 @@ import java.util.List;
 @RequestMapping("/rag/search")
 public class RagSearchController {
 
-    private final RagQaDatasetAppService ragQaDatasetAppService;
+    private final RAGSearchAppService ragSearchAppService;
     private final ConversationAppService conversationAppService;
 
-    public RagSearchController(RagQaDatasetAppService ragQaDatasetAppService,
+    public RagSearchController(RAGSearchAppService ragSearchAppService,
             ConversationAppService conversationAppService) {
-        this.ragQaDatasetAppService = ragQaDatasetAppService;
+        this.ragSearchAppService = ragSearchAppService;
         this.conversationAppService = conversationAppService;
     }
 
@@ -36,7 +36,7 @@ public class RagSearchController {
     @PostMapping
     public Result<List<DocumentUnitDTO>> ragSearch(@RequestBody @Validated RagSearchRequest request) {
         String userId = UserContext.getCurrentUserId();
-        List<DocumentUnitDTO> searchResults = ragQaDatasetAppService.ragSearch(request, userId);
+        List<DocumentUnitDTO> searchResults = ragSearchAppService.ragSearch(request, userId);
         return Result.success(searchResults);
     }
 
@@ -47,7 +47,7 @@ public class RagSearchController {
     @PostMapping("/stream-chat")
     public SseEmitter ragStreamChat(@RequestBody @Validated RagStreamChatRequest request) {
         String userId = UserContext.getCurrentUserId();
-        return conversationAppService.ragStreamChat(request, userId);
+        return ragSearchAppService.ragStreamChat(request, userId);
     }
 
     /** 基于已安装知识库的RAG搜索
@@ -59,7 +59,7 @@ public class RagSearchController {
     public Result<List<DocumentUnitDTO>> ragSearchByUserRag(@PathVariable String userRagId,
             @RequestBody @Validated RagSearchRequest request) {
         String userId = UserContext.getCurrentUserId();
-        List<DocumentUnitDTO> searchResults = ragQaDatasetAppService.ragSearchByUserRag(request, userRagId, userId);
+        List<DocumentUnitDTO> searchResults = ragSearchAppService.ragSearchByUserRag(request, userRagId, userId);
         return Result.success(searchResults);
     }
 
@@ -72,7 +72,7 @@ public class RagSearchController {
     public SseEmitter ragStreamChatByUserRag(@PathVariable String userRagId,
             @RequestBody @Validated RagStreamChatRequest request) {
         String userId = UserContext.getCurrentUserId();
-        return conversationAppService.ragStreamChatByUserRag(request, userRagId, userId);
+        return ragSearchAppService.ragStreamChatByUserRag(request, userRagId, userId);
     }
 
 }

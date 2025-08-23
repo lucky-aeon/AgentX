@@ -26,7 +26,7 @@ import org.xhy.domain.rag.model.FileDetailEntity;
 import org.xhy.domain.rag.repository.DocumentUnitRepository;
 import org.xhy.domain.rag.service.FileDetailDomainService;
 import org.xhy.domain.rag.strategy.DocumentProcessingStrategy;
-import org.xhy.domain.rag.strategy.context.DocumentProcessingContext;
+import org.xhy.domain.rag.strategy.context.DocumentProcessingFactory;
 import org.xhy.infrastructure.exception.BusinessException;
 import org.xhy.infrastructure.mq.enums.EventType;
 import org.xhy.infrastructure.mq.events.RagDocSyncOcrEvent;
@@ -49,16 +49,16 @@ public class RagDocConsumer {
 
     private static final Logger log = LoggerFactory.getLogger(RagDocConsumer.class);
 
-    private final DocumentProcessingContext documentProcessingContext;
+    private final DocumentProcessingFactory documentProcessingFactory;
     private final FileDetailDomainService fileDetailDomainService;
     private final DocumentUnitRepository documentUnitRepository;
     private final ApplicationEventPublisher applicationEventPublisher;
     private final UserModelConfigResolver userModelConfigResolver;
 
-    public RagDocConsumer(DocumentProcessingContext ragDocSyncOcrContext,
+    public RagDocConsumer(DocumentProcessingFactory ragDocSyncOcrContext,
             FileDetailDomainService fileDetailDomainService, DocumentUnitRepository documentUnitRepository,
             ApplicationEventPublisher applicationEventPublisher, UserModelConfigResolver userModelConfigResolver) {
-        this.documentProcessingContext = ragDocSyncOcrContext;
+        this.documentProcessingFactory = ragDocSyncOcrContext;
         this.fileDetailDomainService = fileDetailDomainService;
         this.documentUnitRepository = documentUnitRepository;
         this.applicationEventPublisher = applicationEventPublisher;
@@ -93,7 +93,7 @@ public class RagDocConsumer {
                 throw new BusinessException("文件扩展名不能为空");
             }
 
-            DocumentProcessingStrategy strategy = documentProcessingContext
+            DocumentProcessingStrategy strategy = documentProcessingFactory
                     .getDocumentStrategyHandler(fileExt.toUpperCase());
             if (strategy == null) {
                 throw new BusinessException("不支持的文件类型: " + fileExt);

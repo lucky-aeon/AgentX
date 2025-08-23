@@ -1,4 +1,4 @@
-package org.xhy.application.rag.service;
+package org.xhy.application.rag.service.manager;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,8 +10,6 @@ import org.xhy.domain.llm.model.ProviderEntity;
 import org.xhy.domain.llm.service.LLMDomainService;
 import org.xhy.domain.rag.model.ModelConfig;
 import org.xhy.infrastructure.exception.BusinessException;
-
-import java.util.Objects;
 
 /** RAG模型配置应用服务
  * 

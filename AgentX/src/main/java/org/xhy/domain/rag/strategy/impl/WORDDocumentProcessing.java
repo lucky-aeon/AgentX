@@ -22,15 +22,15 @@ import org.xhy.domain.rag.repository.FileDetailRepository;
 
 import dev.langchain4j.data.document.Document;
 import dev.langchain4j.data.document.DocumentParser;
-import dev.langchain4j.data.document.parser.TextDocumentParser;
+import dev.langchain4j.data.document.parser.apache.poi.ApachePoiDocumentParser;
 import dev.langchain4j.data.document.splitter.DocumentBySentenceSplitter;
 import dev.langchain4j.data.segment.TextSegment;
 import jakarta.annotation.Resource;
 
-@Service("txt")
-public class TXTRagDocSyncOcrStrategyImpl extends AbstractDocumentProcessingStrategy {
+@Service("word")
+public class WORDDocumentProcessing extends AbstractDocumentProcessingStrategy {
 
-    private static final Logger log = LoggerFactory.getLogger(TXTRagDocSyncOcrStrategyImpl.class);
+    private static final Logger log = LoggerFactory.getLogger(WORDDocumentProcessing.class);
 
     private final DocumentUnitRepository documentUnitRepository;
 
@@ -42,32 +42,32 @@ public class TXTRagDocSyncOcrStrategyImpl extends AbstractDocumentProcessingStra
     // 用于存储当前处理的文件ID，以便更新页数
     private String currentProcessingFileId;
 
-    public TXTRagDocSyncOcrStrategyImpl(DocumentUnitRepository documentUnitRepository,
+    public WORDDocumentProcessing(DocumentUnitRepository documentUnitRepository,
             FileDetailRepository fileDetailRepository) {
         this.documentUnitRepository = documentUnitRepository;
         this.fileDetailRepository = fileDetailRepository;
     }
 
     /** 处理消息，设置当前处理的文件ID
-     * @param ragDocSyncOcrMessage 消息数据
+     * @param ragDocMessage 消息数据
      * @param strategy 当前策略 */
     @Override
-    public void handle(RagDocMessage ragDocSyncOcrMessage, String strategy) throws Exception {
+    public void handle(RagDocMessage ragDocMessage, String strategy) throws Exception {
         // 设置当前处理的文件ID，用于更新页数
-        this.currentProcessingFileId = ragDocSyncOcrMessage.getFileId();
+        this.currentProcessingFileId = ragDocMessage.getFileId();
 
         // 调用父类处理逻辑
-        super.handle(ragDocSyncOcrMessage, strategy);
+        super.handle(ragDocMessage, strategy);
     }
 
     /** 获取文件页数
      *
-     * @param bytes
-     * @param ragDocSyncOcrMessage */
+     * @param bytes Word文档字节数组
+     * @param ragDocMessage 消息数据 */
     @Override
-    public void pushPageSize(byte[] bytes, RagDocMessage ragDocSyncOcrMessage) {
+    public void pushPageSize(byte[] bytes, RagDocMessage ragDocMessage) {
         try {
-            DocumentParser parser = new TextDocumentParser();
+            DocumentParser parser = new ApachePoiDocumentParser();
             InputStream inputStream = new ByteArrayInputStream(bytes);
             Document document = parser.parse(inputStream);
 
@@ -75,8 +75,8 @@ public class TXTRagDocSyncOcrStrategyImpl extends AbstractDocumentProcessingStra
             final List<TextSegment> split = documentByCharacterSplitter.split(document);
 
             int segmentCount = split.size();
-            ragDocSyncOcrMessage.setPageSize(segmentCount);
-            log.info("TXT文档分割为{}个段落", segmentCount);
+            ragDocMessage.setPageSize(segmentCount);
+            log.info("Word document split into {} segments", segmentCount);
 
             // 更新数据库中的总页数
             if (currentProcessingFileId != null) {
@@ -85,43 +85,45 @@ public class TXTRagDocSyncOcrStrategyImpl extends AbstractDocumentProcessingStra
                         .set(FileDetailEntity::getFilePageSize, segmentCount);
                 fileDetailRepository.update(wrapper);
 
-                log.info("更新TXT文件{}的总页数: {}个段落", currentProcessingFileId, segmentCount);
+                log.info("Updated total pages for Word file {}: {} segments", currentProcessingFileId, segmentCount);
             }
 
             inputStream.close();
         } catch (Exception e) {
-            log.error("计算TXT文档页数失败", e);
-            ragDocSyncOcrMessage.setPageSize(0);
+            log.error("Failed to calculate page size for Word document", e);
+            ragDocMessage.setPageSize(0);
         }
     }
 
-    /** 获取文件
+    /** 获取文件数据
      *
      * @param ragDocSyncOcrMessage 消息数据
-     * @param strategy 当前策略 */
+     * @param strategy 当前策略
+     * @return Word文档字节数组 */
     @Override
     public byte[] getFileData(RagDocMessage ragDocSyncOcrMessage, String strategy) {
         // 从数据库中获取文件详情
         FileDetailEntity fileDetailEntity = fileDetailRepository.selectById(ragDocSyncOcrMessage.getFileId());
         if (fileDetailEntity == null) {
-            log.error("文件不存在: {}", ragDocSyncOcrMessage.getFileId());
+            log.error("File not found: {}", ragDocSyncOcrMessage.getFileId());
             return new byte[0];
         }
 
-        // 转换为FileInfo并下载文件
-        log.info("准备下载TXT文档: {}", fileDetailEntity.getFilename());
+        log.info("Preparing to download Word document: {}", fileDetailEntity.getFilename());
         return fileStorageService.download(fileDetailEntity.getUrl()).bytes();
     }
 
-    /** ocr数据
+    /** 处理Word文件 - 提取文本内容
      *
-     * @param fileBytes
-     * @param totalPages */
+     * @param fileBytes Word文档字节数组
+     * @param totalPages 总页数
+     * @return 按页索引分组的内容Map */
     @Override
     public Map<Integer, String> processFile(byte[] fileBytes, int totalPages) {
-        log.info("当前类型为非PDF文件，直接提取文本 ——————> 不包含页码，页码概念为索引");
+        log.info(
+                "Current file type is non-PDF, text is extracted directly ——————> Does not contain page numbers; the concept of page numbers serves as an index.");
 
-        DocumentParser parser = new TextDocumentParser();
+        DocumentParser parser = new ApachePoiDocumentParser();
         // 使用ByteArrayInputStream将字节数组转换为输入流
         InputStream inputStream = new ByteArrayInputStream(fileBytes);
 
@@ -145,26 +147,25 @@ public class TXTRagDocSyncOcrStrategyImpl extends AbstractDocumentProcessingStra
             return ocrData;
 
         } catch (Exception e) {
-            log.error("处理文档失败", e);
+            log.error("Failed to process document", e);
         } finally {
             try {
                 inputStream.close();
             } catch (IOException e) {
-                log.error("关闭输入流失败", e);
+                log.error("Failed to close the input stream", e);
             }
         }
 
-        return null;
+        return ocrData;
     }
 
     /** 保存数据
      *
-     * @param ragDocSyncOcrMessage
-     * @param ocrData */
+     * @param ragDocSyncOcrMessage 消息数据
+     * @param ocrData 按页索引分组的内容Map */
     @Override
     public void insertData(RagDocMessage ragDocSyncOcrMessage, Map<Integer, String> ocrData) throws Exception {
-
-        log.info("开始保存文档内容，总共分割为{}个段落。", ocrData.size());
+        log.info("开始保存文档内容，共拆分{}段", ocrData.size());
 
         // 遍历每一页，将内容保存到数据库
         for (int pageIndex = 0; pageIndex < ocrData.size(); pageIndex++) {
@@ -179,15 +180,14 @@ public class TXTRagDocSyncOcrStrategyImpl extends AbstractDocumentProcessingStra
 
             if (content == null) {
                 documentUnitEntity.setIsOcr(false);
-                log.warn("第{}页为空", pageIndex + 1);
+                log.warn("第{}页内容为空", pageIndex + 1);
             }
 
             // 保存或更新数据
             documentUnitRepository.checkInsert(documentUnitEntity);
-            log.debug("保存第{}页内容完成。", pageIndex + 1);
+            log.debug("保存第{}页内容完成", pageIndex + 1);
         }
 
-        log.info("TXT文档内容保存成功");
-
+        log.info("Word文档内容保存完成");
     }
 }

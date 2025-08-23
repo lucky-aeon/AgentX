@@ -1,11 +1,8 @@
-package org.xhy.domain.rag.constant;
+package org.xhy.domain.rag.strategy.context;
 
-/** @author shilong.zang
- * @date 11:26 <br/>
- */
-public interface RAGSystemPrompt {
+public class RAGSystemPrompt {
 
-    String OCR_PROMPT = """
+    public static String OCR_PROMPT = """
             请识别图片中的内容，注意以下要求：
 
                                                 对于数学公式和普通文本：

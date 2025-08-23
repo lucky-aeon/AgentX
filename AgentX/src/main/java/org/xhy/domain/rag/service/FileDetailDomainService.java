@@ -440,4 +440,13 @@ public class FileDetailDomainService {
 
         return fileEntity;
     }
+
+    public FileDetailEntity getFileById(String fileId) {
+        FileDetailEntity fileEntity = fileDetailRepository.selectById(fileId);
+        if (fileEntity == null) {
+            throw new BusinessException("文件不存在");
+        }
+        return fileEntity;
+    }
+
 }

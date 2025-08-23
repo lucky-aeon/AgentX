@@ -12,7 +12,7 @@ import jakarta.annotation.Resource;
  * @date 09:39 <br/>
  */
 @Service
-public class DocumentProcessingContext {
+public class DocumentProcessingFactory {
 
     @Resource
     private Map<String, DocumentProcessingStrategy> documentProcessingStrategyMap;

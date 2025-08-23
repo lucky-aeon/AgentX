@@ -1,37 +1,50 @@
-package org.xhy.application.rag.service;
+package org.xhy.application.rag.service.search;
 
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import dev.langchain4j.data.message.SystemMessage;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.langchain4j.data.embedding.Embedding;
+import dev.langchain4j.data.message.SystemMessage;
+import dev.langchain4j.memory.chat.MessageWindowChatMemory;
+import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.model.embedding.EmbeddingModel;
-
-import java.util.Collections;
-import java.util.concurrent.atomic.AtomicBoolean;
-import org.dromara.streamquery.stream.core.stream.Steam;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import dev.langchain4j.service.AiServices;
+import dev.langchain4j.service.TokenStream;
+import dev.langchain4j.store.memory.chat.InMemoryChatMemoryStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.stereotype.Service;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import org.xhy.application.conversation.dto.AgentChatResponse;
+import org.xhy.application.conversation.service.message.Agent;
 import org.xhy.application.rag.assembler.DocumentUnitAssembler;
-import org.xhy.application.rag.assembler.FileDetailAssembler;
-import org.xhy.application.rag.assembler.FileProcessProgressAssembler;
-import org.xhy.application.rag.assembler.RagQaDatasetAssembler;
-import org.xhy.domain.rag.model.UserRagEntity;
-import org.xhy.domain.rag.model.UserRagFileEntity;
 import org.xhy.application.rag.dto.*;
 import org.xhy.application.conversation.dto.RagRetrievalDocumentDTO;
-import org.xhy.application.rag.RagPublishAppService;
-import org.xhy.application.rag.RagMarketAppService;
-import org.xhy.application.rag.request.PublishRagRequest;
-import org.xhy.domain.rag.model.ModelConfig;
+import org.xhy.application.rag.service.manager.RagModelConfigService;
+import org.xhy.application.rag.service.manager.RagPublishAppService;
+import org.xhy.application.rag.service.manager.RagQaDatasetAppService;
+import org.xhy.domain.conversation.constant.MessageType;
+import org.xhy.domain.llm.model.HighAvailabilityResult;
+import org.xhy.domain.llm.model.ModelEntity;
+import org.xhy.domain.llm.model.ProviderEntity;
+import org.xhy.domain.llm.service.HighAvailabilityDomainService;
+import org.xhy.domain.llm.service.LLMDomainService;
+import org.xhy.domain.rag.service.DocumentUnitDomainService;
+import org.xhy.domain.rag.service.EmbeddingDomainService;
+import org.xhy.domain.rag.service.FileDetailDomainService;
+import org.xhy.domain.rag.service.RagQaDatasetDomainService;
+import org.xhy.domain.rag.service.management.RagDataAccessDomainService;
+import org.xhy.domain.rag.service.management.RagVersionDomainService;
+import org.xhy.domain.rag.service.management.UserRagDomainService;
+import org.xhy.domain.rag.service.management.UserRagFileDomainService;
+import org.xhy.domain.user.service.UserSettingsDomainService;
+import org.xhy.infrastructure.exception.BusinessException;
+import org.xhy.infrastructure.llm.LLMServiceFactory;
 import org.xhy.infrastructure.rag.factory.EmbeddingModelFactory;
-import org.xhy.domain.rag.constant.FileProcessingStatusEnum;
-import org.xhy.domain.rag.message.RagDocMessage;
-import org.xhy.domain.rag.message.RagDocSyncStorageMessage;
+
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import org.xhy.domain.rag.model.UserRagFileEntity;
+import org.xhy.domain.rag.model.ModelConfig;
 import org.xhy.domain.rag.model.DocumentUnitEntity;
 import org.xhy.domain.rag.model.FileDetailEntity;
 import org.xhy.domain.rag.model.RagQaDatasetEntity;
@@ -41,45 +54,21 @@ import org.xhy.domain.rag.repository.FileDetailRepository;
 import org.xhy.domain.rag.repository.UserRagFileRepository;
 import org.xhy.domain.rag.dto.HybridSearchConfig;
 import org.xhy.domain.rag.service.*;
+
 import java.util.concurrent.CompletableFuture;
-import org.xhy.infrastructure.exception.BusinessException;
-import org.xhy.infrastructure.mq.enums.EventType;
-import org.xhy.infrastructure.mq.events.RagDocSyncOcrEvent;
-import org.xhy.infrastructure.mq.events.RagDocSyncStorageEvent;
-import org.xhy.infrastructure.llm.LLMServiceFactory;
-import org.xhy.domain.llm.service.LLMDomainService;
-import org.xhy.domain.llm.service.HighAvailabilityDomainService;
-import org.xhy.domain.user.service.UserSettingsDomainService;
-import org.xhy.domain.llm.model.HighAvailabilityResult;
-import org.xhy.domain.llm.model.ModelEntity;
-import org.xhy.domain.llm.model.ProviderEntity;
-import dev.langchain4j.model.chat.StreamingChatModel;
-import dev.langchain4j.service.AiServices;
-import dev.langchain4j.service.TokenStream;
-import dev.langchain4j.memory.chat.MessageWindowChatMemory;
-import dev.langchain4j.store.memory.chat.InMemoryChatMemoryStore;
-import org.xhy.application.conversation.service.message.Agent;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.xhy.application.conversation.dto.AgentChatResponse;
-import org.xhy.domain.conversation.constant.MessageType;
 
 import java.util.List;
 import java.util.ArrayList;
 import java.util.stream.Collectors;
 
-/** RAG数据集应用服务
- * @author shilong.zang
- * @date 2024-12-09 */
 @Service
-public class RagQaDatasetAppService {
+public class RAGSearchAppService {
 
     private static final Logger log = LoggerFactory.getLogger(RagQaDatasetAppService.class);
 
     private final RagQaDatasetDomainService ragQaDatasetDomainService;
     private final FileDetailDomainService fileDetailDomainService;
-    private final DocumentUnitRepository documentUnitRepository;
-    private final FileDetailRepository fileDetailRepository;
-    private final ApplicationEventPublisher applicationEventPublisher;
+    private final DocumentUnitDomainService documentUnitDomainService;
     private final EmbeddingDomainService embeddingDomainService;
     private final ObjectMapper objectMapper;
     private final LLMServiceFactory llmServiceFactory;
@@ -87,10 +76,6 @@ public class RagQaDatasetAppService {
     private final UserSettingsDomainService userSettingsDomainService;
     private final HighAvailabilityDomainService highAvailabilityDomainService;
 
-    // 添加RAG发布和市场服务依赖
-    private final RagPublishAppService ragPublishAppService;
-    private final RagMarketAppService ragMarketAppService;
-    private final RagVersionDomainService ragVersionDomainService;
     private final UserRagDomainService userRagDomainService;
     private final RagDataAccessDomainService ragDataAccessService;
     private final RagModelConfigService ragModelConfigService;
@@ -98,10 +83,10 @@ public class RagQaDatasetAppService {
     private final UserRagFileRepository userRagFileRepository;
     private final HybridSearchDomainService hybridSearchDomainService;
     private final org.xhy.infrastructure.rag.service.UserModelConfigResolver userModelConfigResolver;
+    private final UserRagFileDomainService userRagFileDomainService;
 
-    public RagQaDatasetAppService(RagQaDatasetDomainService ragQaDatasetDomainService,
-            FileDetailDomainService fileDetailDomainService, DocumentUnitRepository documentUnitRepository,
-            FileDetailRepository fileDetailRepository, ApplicationEventPublisher applicationEventPublisher,
+    public RAGSearchAppService(RagQaDatasetDomainService ragQaDatasetDomainService,
+            FileDetailDomainService fileDetailDomainService, DocumentUnitDomainService documentUnitDomainService,
             EmbeddingDomainService embeddingDomainService, ObjectMapper objectMapper,
             LLMServiceFactory llmServiceFactory, LLMDomainService llmDomainService,
             UserSettingsDomainService userSettingsDomainService,
@@ -113,22 +98,18 @@ public class RagQaDatasetAppService {
             org.xhy.infrastructure.rag.service.UserModelConfigResolver userModelConfigResolver) {
         this.ragQaDatasetDomainService = ragQaDatasetDomainService;
         this.fileDetailDomainService = fileDetailDomainService;
-        this.documentUnitRepository = documentUnitRepository;
-        this.fileDetailRepository = fileDetailRepository;
-        this.applicationEventPublisher = applicationEventPublisher;
+        this.documentUnitDomainService = documentUnitDomainService;
         this.embeddingDomainService = embeddingDomainService;
         this.objectMapper = objectMapper;
         this.llmServiceFactory = llmServiceFactory;
         this.llmDomainService = llmDomainService;
         this.userSettingsDomainService = userSettingsDomainService;
         this.highAvailabilityDomainService = highAvailabilityDomainService;
-        this.ragPublishAppService = ragPublishAppService;
-        this.ragMarketAppService = ragMarketAppService;
-        this.ragVersionDomainService = ragVersionDomainService;
         this.userRagDomainService = userRagDomainService;
         this.ragDataAccessService = ragDataAccessService;
         this.ragModelConfigService = ragModelConfigService;
         this.embeddingModelFactory = embeddingModelFactory;
+        this.userRagFileDomainService = userRagFileDomainService;
         this.userRagFileRepository = userRagFileRepository;
         this.hybridSearchDomainService = hybridSearchDomainService;
         this.userModelConfigResolver = userModelConfigResolver;
@@ -284,7 +265,7 @@ public class RagQaDatasetAppService {
     }
 
     /** 获取用户可用的知识库详情（仅限已安装的知识库）
-     * 
+     *
      * @param knowledgeBaseId 知识库ID（可能是originalRagId或userRagId）
      * @param userId 用户ID
      * @return 知识库详情
@@ -358,7 +339,7 @@ public class RagQaDatasetAppService {
     }
 
     /** 根据RAG安装类型获取正确的文件数量
-     * 
+     *
      * @param userId 用户ID
      * @param userRag 用户RAG安装记录
      * @return 文件数量 */
@@ -808,7 +789,7 @@ public class RagQaDatasetAppService {
     }
 
     /** 基于已安装知识库的RAG搜索
-     * 
+     *
      * @param request RAG搜索请求（使用userRagId作为数据源）
      * @param userRagId 用户已安装的RAG ID
      * @param userId 用户ID
@@ -972,7 +953,7 @@ public class RagQaDatasetAppService {
             // 构建检索结果
             List<RetrievedDocument> retrievedDocs = new ArrayList<>();
             for (DocumentUnitEntity doc : retrievedDocuments) {
-                FileDetailEntity fileDetail = fileDetailRepository.selectById(doc.getFileId());
+                FileDetailEntity fileDetail = fileDetailDomainService.getFileById(doc.getFileId());
                 double similarityScore = doc.getSimilarityScore() != null ? doc.getSimilarityScore() : 0.0;
                 retrievedDocs.add(new RetrievedDocument(doc.getFileId(),
                         fileDetail != null ? fileDetail.getOriginalFilename() : "未知文件", doc.getId(), similarityScore));
@@ -1016,19 +997,14 @@ public class RagQaDatasetAppService {
     private List<DocumentUnitEntity> retrieveFromFile(String fileId, String question, Integer maxResults,
             EmbeddingModelFactory.EmbeddingConfig embeddingConfig) {
         // 查询文件下的所有文档单元
-        List<DocumentUnitEntity> fileDocuments = documentUnitRepository
-                .selectList(Wrappers.lambdaQuery(DocumentUnitEntity.class).eq(DocumentUnitEntity::getFileId, fileId)
-                        .eq(DocumentUnitEntity::getIsVector, true));
+        List<DocumentUnitEntity> fileDocuments = documentUnitDomainService.listVectorizedDocumentsByFile(fileId);
 
         if (fileDocuments.isEmpty()) {
             return new ArrayList<>();
         }
 
-        // 获取文档ID列表
-        List<String> documentIds = fileDocuments.stream().map(DocumentUnitEntity::getId).collect(Collectors.toList());
-
         // 使用向量搜索在这些文档中检索
-        FileDetailEntity fileEntity = fileDetailRepository.selectById(fileId);
+        FileDetailEntity fileEntity = fileDetailDomainService.getFileById(fileId);
         List<String> datasetIds = List.of(fileEntity.getDataSetId());
 
         HybridSearchConfig config = HybridSearchConfig.builder(datasetIds, question).maxResults(maxResults)
@@ -1282,7 +1258,7 @@ public class RagQaDatasetAppService {
     }
 
     /** 将ModelConfig转换为EmbeddingModelFactory.EmbeddingConfig
-     * 
+     *
      * @param modelConfig RAG模型配置
      * @return 嵌入模型工厂配置 */
     private EmbeddingModelFactory.EmbeddingConfig toEmbeddingConfig(ModelConfig modelConfig) {
@@ -1341,7 +1317,7 @@ public class RagQaDatasetAppService {
     }
 
     /** 基于已安装知识库的RAG流式问答
-     * 
+     *
      * @param request 流式问答请求
      * @param userRagId 用户RAG安装记录ID
      * @param userId 用户ID
@@ -1437,7 +1413,7 @@ public class RagQaDatasetAppService {
             if (dataSourceInfo.getIsRealTime()) {
                 // REFERENCE类型：使用原始文件信息
                 for (DocumentUnitEntity doc : retrievedDocuments) {
-                    FileDetailEntity fileDetail = fileDetailRepository.selectById(doc.getFileId());
+                    FileDetailEntity fileDetail = fileDetailDomainService.getFileById(doc.getFileId());
                     double similarityScore = doc.getSimilarityScore() != null ? doc.getSimilarityScore() : 0.0;
                     retrievedDocs.add(new RetrievedDocument(doc.getFileId(),
                             fileDetail != null ? fileDetail.getOriginalFilename() : "未知文件", doc.getId(),
@@ -1447,7 +1423,7 @@ public class RagQaDatasetAppService {
                 // SNAPSHOT类型：使用快照文件信息
                 for (DocumentUnitEntity doc : retrievedDocuments) {
                     // doc.getFileId() 在SNAPSHOT模式下是 user_rag_files 的ID
-                    UserRagFileEntity userFile = userRagFileRepository.selectById(doc.getFileId());
+                    UserRagFileEntity userFile = userRagFileDomainService.getById(doc.getFileId());
                     double similarityScore = doc.getSimilarityScore() != null ? doc.getSimilarityScore() : 0.0;
                     retrievedDocs.add(new RetrievedDocument(doc.getFileId(),
                             userFile != null ? userFile.getFileName() : "未知文件", doc.getId(), similarityScore));
@@ -1488,7 +1464,7 @@ public class RagQaDatasetAppService {
     }
 
     /** 对快照文档进行相关性过滤和排序
-     * 
+     *
      * @param documents 快照文档列表
      * @param question 用户问题
      * @param maxResults 最大返回数量
@@ -1577,4 +1553,5 @@ public class RagQaDatasetAppService {
             this.score = score;
         }
     }
+
 }

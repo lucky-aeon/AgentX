@@ -1,7 +1,7 @@
 package org.xhy.interfaces.api.portal.agent;
 
 import org.springframework.web.bind.annotation.*;
-import org.xhy.application.rag.service.RagQaDatasetAppService;
+import org.xhy.application.rag.service.manager.RagQaDatasetAppService;
 import org.xhy.application.rag.dto.RagQaDatasetDTO;
 import org.xhy.infrastructure.auth.UserContext;
 import org.xhy.interfaces.api.common.Result;
