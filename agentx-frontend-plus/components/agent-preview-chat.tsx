@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Loader2, MessageCircle, Send, Bot, User, AlertCircle, Paperclip, X, Wrench } from 'lucide-react'
+import { Loader2, MessageCircle, Send, Bot, User, AlertCircle, Paperclip, X, Wrench, Copy } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import { previewAgentStream, handlePreviewStream, parseStreamData, createStreamDecoder, type AgentPreviewRequest, type MessageHistoryItem, type AgentChatResponse } from '@/lib/agent-preview-service'
 import { uploadMultipleFiles, type UploadResult, type UploadFileInfo } from '@/lib/file-upload-service'
@@ -14,6 +14,8 @@ import { MessageType } from '@/types/conversation'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { Highlight, themes } from 'prism-react-renderer'
+import { useCopy } from '@/hooks/use-copy'
+import { CodeBlock } from '@/components/ui/code-block'
 
 // 文件类型 - 使用URL而不是base64内容
 interface ChatFile {
@@ -82,6 +84,12 @@ export default function AgentPreviewChat({
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null) // 新增：文件输入引用
+  const { copyMarkdown } = useCopy()
+  
+  // 复制消息内容
+  const handleCopyMessage = (content: string) => {
+    copyMarkdown(content)
+  }
   
   // 新增：消息处理状态管理（参考chat-panel.tsx）
   const hasReceivedFirstResponse = useRef(false)
@@ -455,69 +463,23 @@ export default function AgentPreviewChat({
   // 渲染Markdown内容
   const renderMessageContent = (content: string) => {
     return (
-      <div className="react-markdown">
-        <ReactMarkdown
+      <div className="prose prose-sm dark:prose-invert max-w-none prose-pre:bg-white prose-pre:border prose-pre:border-gray-200 prose-pre:text-gray-900">
+        <ReactMarkdown 
           remarkPlugins={[remarkGfm]}
           components={{
-            // 代码块渲染
-            code({ inline, className, children, ...props }: any) {
-              const match = /language-(\w+)/.exec(className || "")
-              return !inline && match ? (
-                <Highlight
-                  theme={themes.vsDark}
-                  code={String(children).replace(/\n$/, "")}
-                  language={match[1]}
-                >
-                  {({ className, style, tokens, getLineProps, getTokenProps }) => (
-                    <div className="code-block-container">
-                      <pre
-                        className={`${className} rounded p-2 my-2 overflow-x-auto max-w-full text-sm`}
-                        style={{...style, wordBreak: 'break-all', overflowWrap: 'break-word'}}
-                      >
-                        {tokens.map((line, i) => {
-                          // 获取line props但不通过展开操作符传递key
-                          const lineProps = getLineProps({ line, key: i })
-                          return (
-                            <div 
-                              key={i} 
-                              className={lineProps.className}
-                              style={{
-                                ...lineProps.style,
-                                whiteSpace: 'pre-wrap', 
-                                wordBreak: 'break-all'
-                              }}
-                            >
-                              <span className="text-gray-500 mr-2 text-right w-6 inline-block select-none">
-                                {i + 1}
-                              </span>
-                              {line.map((token, tokenIndex) => {
-                                // 获取token props但不包含key
-                                const tokenProps = getTokenProps({ token, key: tokenIndex })
-                                // 删除key属性，使用单独的key属性
-                                return <span 
-                                  key={tokenIndex} 
-                                  className={tokenProps.className}
-                                  style={{
-                                    ...tokenProps.style,
-                                    wordBreak: 'break-all',
-                                    overflowWrap: 'break-word'
-                                  }}
-                                  children={tokenProps.children}
-                                />
-                              })}
-                            </div>
-                          )
-                        })}
-                      </pre>
-                    </div>
-                  )}
-                </Highlight>
-              ) : (
-                <code className={`${className} bg-gray-100 px-1 py-0.5 rounded break-all`} {...props}>
-                  {children}
-                </code>
-              )
-            },
+            pre: ({ children, ...props }) => {
+              // 提取代码内容
+              const codeElement = children as React.ReactElement;
+              const code = typeof codeElement?.props?.children === 'string' 
+                ? codeElement.props.children 
+                : '';
+              
+              return (
+                <CodeBlock code={code}>
+                  <pre {...props}>{children}</pre>
+                </CodeBlock>
+              );
+            }
           }}
         >
           {content}
@@ -873,7 +835,17 @@ export default function AgentPreviewChat({
                             </>
                           ) : (
                             // 正常消息使用Markdown渲染
-                            <div className="markdown-content">
+                            <div className="markdown-content relative group">
+                              {/* 复制按钮 */}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleCopyMessage(message.content)}
+                                className="absolute top-2 right-2 h-8 w-8 p-0"
+                                aria-label="复制消息"
+                              >
+                                <Copy className="h-4 w-4" />
+                              </Button>
                               {renderMessageContent(
                                 message.content + (message.isStreaming ? ' ▌' : '')
                               )}

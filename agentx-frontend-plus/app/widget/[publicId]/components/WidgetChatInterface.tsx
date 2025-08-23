@@ -6,13 +6,15 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Send, MessageCircle, User, Loader2, Bot } from "lucide-react";
+import { Send, MessageCircle, User, Loader2, Bot, Copy } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { widgetChatStream, handleWidgetStream, type WidgetChatRequest, type WidgetChatResponse } from '@/lib/widget-chat-service';
 import { MessageType } from '@/types/conversation';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Highlight, themes } from 'prism-react-renderer';
+import { useCopy } from '@/hooks/use-copy';
+import { CodeBlock } from '@/components/ui/code-block';
+import { Button } from "@/components/ui/button";
 
 interface Message {
   id: string;
@@ -75,6 +77,7 @@ export function WidgetChatInterface({
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const isUserScrolling = useRef(false);
   const scrollTimer = useRef<NodeJS.Timeout | null>(null);
+  const { copyMarkdown } = useCopy();
 
   // 检测用户是否正在手动滚动
   useEffect(() => {
@@ -465,72 +468,42 @@ export function WidgetChatInterface({
   };
 
 
+  // 复制消息内容
+  const handleCopyMessage = (content: string) => {
+    copyMarkdown(content);
+  };
+
   // 渲染Markdown内容
-  const renderMessageContent = (content: string) => {
+  const renderMessageContent = (content: string, messageId: string) => {
     return (
-      <div className="react-markdown">
-        <ReactMarkdown
+      <div className="prose prose-sm dark:prose-invert max-w-none prose-pre:bg-white prose-pre:border prose-pre:border-gray-200 prose-pre:text-gray-900 relative group">
+        {/* 复制按钮 */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => handleCopyMessage(content)}
+          className="absolute top-2 right-2 h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+          aria-label="复制消息"
+        >
+          <Copy className="h-4 w-4" />
+        </Button>
+        
+        <ReactMarkdown 
           remarkPlugins={[remarkGfm]}
           components={{
-            // 代码块渲染
-            code({ inline, className, children, ...props }: any) {
-              const match = /language-(\w+)/.exec(className || "");
-              return !inline && match ? (
-                <Highlight
-                  theme={themes.vsDark}
-                  code={String(children).replace(/\n$/, "")}
-                  language={match[1]}
-                >
-                  {({ className, style, tokens, getLineProps, getTokenProps }) => (
-                    <div className="code-block-container">
-                      <pre
-                        className={`${className} rounded p-2 my-2 overflow-x-auto max-w-full text-sm`}
-                        style={{...style, wordBreak: 'break-all', overflowWrap: 'break-word'}}
-                      >
-                        {tokens.map((line, i) => {
-                          // 获取line props但不通过展开操作符传递key
-                          const lineProps = getLineProps({ line, key: i });
-                          return (
-                            <div 
-                              key={i} 
-                              className={lineProps.className}
-                              style={{
-                                ...lineProps.style,
-                                whiteSpace: 'pre-wrap', 
-                                wordBreak: 'break-all'
-                              }}
-                            >
-                              <span className="text-gray-500 mr-2 text-right w-6 inline-block select-none">
-                                {i + 1}
-                              </span>
-                              {line.map((token, tokenIndex) => {
-                                // 获取token props但不包含key
-                                const tokenProps = getTokenProps({ token, key: tokenIndex });
-                                // 删除key属性，使用单独的key属性
-                                return <span 
-                                  key={tokenIndex} 
-                                  className={tokenProps.className}
-                                  style={{
-                                    ...tokenProps.style,
-                                    wordBreak: 'break-all',
-                                    overflowWrap: 'break-word'
-                                  }}
-                                  children={tokenProps.children}
-                                />
-                              })}
-                            </div>
-                          )
-                        })}
-                      </pre>
-                    </div>
-                  )}
-                </Highlight>
-              ) : (
-                <code className={`${className} bg-gray-100 px-1 py-0.5 rounded break-all`} {...props}>
-                  {children}
-                </code>
+            pre: ({ children, ...props }) => {
+              // 提取代码内容
+              const codeElement = children as React.ReactElement;
+              const code = typeof codeElement?.props?.children === 'string' 
+                ? codeElement.props.children 
+                : '';
+              
+              return (
+                <CodeBlock code={code}>
+                  <pre {...props}>{children}</pre>
+                </CodeBlock>
               );
-            },
+            }
           }}
         >
           {content}
@@ -614,7 +587,8 @@ export function WidgetChatInterface({
                           // 所有正常消息统一使用Markdown渲染
                           <div className="markdown-content">
                             {renderMessageContent(
-                              message.content + (message.isStreaming ? ' ▌' : '')
+                              message.content + (message.isStreaming ? ' ▌' : ''),
+                              message.id
                             )}
                           </div>
                         )}

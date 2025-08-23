@@ -1,7 +1,11 @@
 "use client";
 
 import ReactMarkdown from "react-markdown";
-import { Bot, User, Loader2 } from "lucide-react";
+import remarkGfm from "remark-gfm";
+import { Bot, User, Loader2, Copy } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { CodeBlock } from "@/components/ui/code-block";
+import { useCopy } from "@/hooks/use-copy";
 import { Card } from "@/components/ui/card";
 import { RetrievalProcess } from "./RetrievalProcess";
 import { ThinkingProcess } from "./ThinkingProcess";
@@ -33,6 +37,8 @@ export function MessageItem({
   expandedThinking = true,
   onToggleThinking 
 }: MessageItemProps) {
+  const { copyMarkdown } = useCopy();
+  
   console.log('[MessageItem] Rendering message:', {
     id: message.id,
     role: message.role,
@@ -40,6 +46,11 @@ export function MessageItem({
     isStreaming: message.isStreaming,
     isError: isErrorMessage(message.content)
   });
+  
+  const handleCopyMessage = () => {
+    copyMarkdown(message.content);
+  };
+  
   return (
     <div
       className={`flex gap-3 ${
@@ -87,17 +98,45 @@ export function MessageItem({
         
         {/* 助手消息：回答内容 */}
         {message.role === 'assistant' && message.content && (
-          <Card className={`px-4 py-2 ${
+          <Card className={`px-4 py-2 relative group ${
             isErrorMessage(message.content)
               ? 'bg-destructive/10 border-destructive/20' 
               : 'bg-muted'
           }`} key={`${message.id}-content`}>
+            {/* 复制按钮 */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleCopyMessage}
+              className="absolute top-2 right-2 h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+              aria-label="复制消息"
+            >
+              <Copy className="h-4 w-4" />
+            </Button>
+            
             <div className={`prose prose-sm dark:prose-invert max-w-none ${
               isErrorMessage(message.content)
                 ? 'text-destructive' 
                 : ''
             }`}>
-              <ReactMarkdown>
+              <ReactMarkdown 
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  pre: ({ children, ...props }) => {
+                    // 提取代码内容
+                    const codeElement = children as React.ReactElement;
+                    const code = typeof codeElement?.props?.children === 'string' 
+                      ? codeElement.props.children 
+                      : '';
+                    
+                    return (
+                      <CodeBlock code={code}>
+                        <pre {...props}>{children}</pre>
+                      </CodeBlock>
+                    );
+                  }
+                }}
+              >
                 {message.content}
               </ReactMarkdown>
               {message.isStreaming && (
