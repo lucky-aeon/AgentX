@@ -39,6 +39,7 @@ import org.xhy.domain.rag.model.RagVersionEntity;
 import org.xhy.domain.rag.repository.DocumentUnitRepository;
 import org.xhy.domain.rag.repository.FileDetailRepository;
 import org.xhy.domain.rag.repository.UserRagFileRepository;
+import org.xhy.domain.rag.dto.HybridSearchConfig;
 import org.xhy.domain.rag.service.*;
 import java.util.concurrent.CompletableFuture;
 import org.xhy.infrastructure.exception.BusinessException;
@@ -95,6 +96,7 @@ public class RagQaDatasetAppService {
     private final RagModelConfigService ragModelConfigService;
     private final EmbeddingModelFactory embeddingModelFactory;
     private final UserRagFileRepository userRagFileRepository;
+    private final HybridSearchDomainService hybridSearchDomainService;
 
     public RagQaDatasetAppService(RagQaDatasetDomainService ragQaDatasetDomainService,
             FileDetailDomainService fileDetailDomainService, DocumentUnitRepository documentUnitRepository,
@@ -106,7 +108,7 @@ public class RagQaDatasetAppService {
             RagMarketAppService ragMarketAppService, RagVersionDomainService ragVersionDomainService,
             UserRagDomainService userRagDomainService, RagDataAccessDomainService ragDataAccessService,
             RagModelConfigService ragModelConfigService, EmbeddingModelFactory embeddingModelFactory,
-            UserRagFileRepository userRagFileRepository) {
+            UserRagFileRepository userRagFileRepository, HybridSearchDomainService hybridSearchDomainService) {
         this.ragQaDatasetDomainService = ragQaDatasetDomainService;
         this.fileDetailDomainService = fileDetailDomainService;
         this.documentUnitRepository = documentUnitRepository;
@@ -126,6 +128,7 @@ public class RagQaDatasetAppService {
         this.ragModelConfigService = ragModelConfigService;
         this.embeddingModelFactory = embeddingModelFactory;
         this.userRagFileRepository = userRagFileRepository;
+        this.hybridSearchDomainService = hybridSearchDomainService;
     }
 
     /** 创建数据集
@@ -771,7 +774,7 @@ public class RagQaDatasetAppService {
             return new ArrayList<>();
         }
 
-        // 使用智能调整后的参数进行RAG搜索
+        // 使用智能调整后的参数进行混合检索
         Double adjustedMinScore = request.getAdjustedMinScore();
         Integer adjustedCandidateMultiplier = request.getAdjustedCandidateMultiplier();
 
@@ -779,12 +782,14 @@ public class RagQaDatasetAppService {
         ModelConfig embeddingModelConfig = ragModelConfigService.getUserEmbeddingModelConfig(userId);
         EmbeddingModelFactory.EmbeddingConfig embeddingConfig = toEmbeddingConfig(embeddingModelConfig);
 
-        // 调用领域服务进行RAG搜索，使用智能优化的参数
-        List<DocumentUnitEntity> entities = embeddingDomainService.ragDoc(validDatasetIds, request.getQuestion(),
-                request.getMaxResults(), adjustedMinScore, // 使用智能调整的相似度阈值
-                request.getEnableRerank(), adjustedCandidateMultiplier, // 使用智能调整的候选结果倍数
-                embeddingConfig, // 传入嵌入模型配置
-                request.getEnableQueryExpansion()); // 传递查询扩展参数
+        // 使用HybridSearchConfig配置对象调用混合检索服务
+        HybridSearchConfig config = HybridSearchConfig.builder(validDatasetIds, request.getQuestion())
+                .maxResults(request.getMaxResults()).minScore(adjustedMinScore) // 使用智能调整的相似度阈值
+                .enableRerank(request.getEnableRerank()).candidateMultiplier(adjustedCandidateMultiplier) // 使用智能调整的候选结果倍数
+                .embeddingConfig(embeddingConfig) // 传入嵌入模型配置
+                .enableQueryExpansion(request.getEnableQueryExpansion()) // 传递查询扩展参数
+                .build();
+        List<DocumentUnitEntity> entities = hybridSearchDomainService.hybridSearch(config);
 
         // 转换为DTO并返回
         return DocumentUnitAssembler.toDTOs(entities);
@@ -828,17 +833,21 @@ public class RagQaDatasetAppService {
 
         List<DocumentUnitEntity> entities;
         if (sourceInfo.getIsRealTime()) {
-            // REFERENCE类型：搜索实时数据
-            entities = embeddingDomainService.ragDoc(List.of(actualDatasetId), request.getQuestion(),
-                    request.getMaxResults(), adjustedMinScore, request.getEnableRerank(), adjustedCandidateMultiplier,
-                    embeddingConfig, request.getEnableQueryExpansion());
+            // REFERENCE类型：使用混合检索搜索实时数据
+            HybridSearchConfig config = HybridSearchConfig.builder(List.of(actualDatasetId), request.getQuestion())
+                    .maxResults(request.getMaxResults()).minScore(adjustedMinScore)
+                    .enableRerank(request.getEnableRerank()).candidateMultiplier(adjustedCandidateMultiplier)
+                    .embeddingConfig(embeddingConfig).enableQueryExpansion(request.getEnableQueryExpansion()).build();
+            entities = hybridSearchDomainService.hybridSearch(config);
         } else {
-            // SNAPSHOT类型：搜索版本快照数据
+            // SNAPSHOT类型：搜索版本快照数据，使用混合检索
             List<DocumentUnitEntity> snapshotDocuments = ragDataAccessService.getRagDocuments(userId, userRagId);
-            // 对快照数据进行向量搜索（这里可能需要特殊处理，暂时使用相同逻辑）
-            entities = embeddingDomainService.ragDoc(List.of(actualDatasetId), request.getQuestion(),
-                    request.getMaxResults(), adjustedMinScore, request.getEnableRerank(), adjustedCandidateMultiplier,
-                    embeddingConfig, request.getEnableQueryExpansion());
+            // 对快照数据进行混合检索（这里可能需要特殊处理，暂时使用相同逻辑）
+            HybridSearchConfig config = HybridSearchConfig.builder(List.of(actualDatasetId), request.getQuestion())
+                    .maxResults(request.getMaxResults()).minScore(adjustedMinScore)
+                    .enableRerank(request.getEnableRerank()).candidateMultiplier(adjustedCandidateMultiplier)
+                    .embeddingConfig(embeddingConfig).enableQueryExpansion(request.getEnableQueryExpansion()).build();
+            entities = hybridSearchDomainService.hybridSearch(config);
         }
 
         // 转换为DTO并返回
@@ -926,9 +935,12 @@ public class RagQaDatasetAppService {
                 retrievedDocuments = retrieveFromFile(request.getFileId(), request.getQuestion(),
                         request.getMaxResults(), embeddingConfig);
             } else {
-                retrievedDocuments = embeddingDomainService.ragDoc(searchDatasetIds, request.getQuestion(),
-                        request.getMaxResults(), request.getMinScore(), request.getEnableRerank(), 2, embeddingConfig,
-                        false); // 流式问答中暂时不启用查询扩展，保持现有行为
+                HybridSearchConfig config = HybridSearchConfig.builder(searchDatasetIds, request.getQuestion())
+                        .maxResults(request.getMaxResults()).minScore(request.getMinScore())
+                        .enableRerank(request.getEnableRerank()).candidateMultiplier(2).embeddingConfig(embeddingConfig)
+                        .enableQueryExpansion(false) // 流式问答中暂时不启用查询扩展，保持现有行为
+                        .build();
+                retrievedDocuments = hybridSearchDomainService.hybridSearch(config);
             }
 
             // 构建检索结果
@@ -993,7 +1005,11 @@ public class RagQaDatasetAppService {
         FileDetailEntity fileEntity = fileDetailRepository.selectById(fileId);
         List<String> datasetIds = List.of(fileEntity.getDataSetId());
 
-        return embeddingDomainService.ragDoc(datasetIds, question, maxResults, 0.5, true, 2, embeddingConfig, false); // 文件内检索暂时不启用查询扩展，保持现有行为
+        HybridSearchConfig config = HybridSearchConfig.builder(datasetIds, question).maxResults(maxResults)
+                .minScore(0.5).enableRerank(true).candidateMultiplier(2).embeddingConfig(embeddingConfig)
+                .enableQueryExpansion(false) // 文件内检索暂时不启用查询扩展，保持现有行为
+                .build();
+        return hybridSearchDomainService.hybridSearch(config);
     }
 
     /** 构建检索文档的上下文 */
@@ -1368,9 +1384,13 @@ public class RagQaDatasetAppService {
             if (dataSourceInfo.getIsRealTime()) {
                 // REFERENCE类型：使用原始RAG的数据集进行向量搜索
                 List<String> ragDatasetIds = List.of(dataSourceInfo.getOriginalRagId());
-                retrievedDocuments = embeddingDomainService.ragDoc(ragDatasetIds, request.getQuestion(),
-                        request.getMaxResults(), request.getMinScore(), request.getEnableRerank(), 2, embeddingConfig,
-                        false); // UserRag流式问答中暂时不启用查询扩展，保持现有行为
+                // 使用HybridSearchConfig配置对象调用混合检索
+                HybridSearchConfig config = HybridSearchConfig.builder(ragDatasetIds, request.getQuestion())
+                        .maxResults(request.getMaxResults()).minScore(request.getMinScore())
+                        .enableRerank(request.getEnableRerank()).candidateMultiplier(2).embeddingConfig(embeddingConfig)
+                        .enableQueryExpansion(false) // UserRag流式问答中暂时不启用查询扩展，保持现有行为
+                        .build();
+                retrievedDocuments = hybridSearchDomainService.hybridSearch(config);
             } else {
                 // SNAPSHOT类型：使用用户快照数据进行检索
                 retrievedDocuments = ragDataAccessService.getRagDocuments(userId, userRagId);

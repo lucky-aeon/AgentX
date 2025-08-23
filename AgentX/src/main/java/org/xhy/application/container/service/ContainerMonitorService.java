@@ -12,7 +12,7 @@ import org.xhy.infrastructure.docker.DockerService;
 import java.util.List;
 
 /** 容器监控服务 */
-@Service
+//@Service
 public class ContainerMonitorService {
 
     private static final Logger logger = LoggerFactory.getLogger(ContainerMonitorService.class);
