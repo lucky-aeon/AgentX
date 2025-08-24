@@ -6,16 +6,13 @@ import { Input } from '@/components/ui/input'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Loader2, MessageCircle, Send, Bot, User, AlertCircle, Paperclip, X, Wrench, Copy } from 'lucide-react'
+import { Loader2, MessageCircle, Send, Bot, User, AlertCircle, Paperclip, X, Wrench } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import { previewAgentStream, handlePreviewStream, parseStreamData, createStreamDecoder, type AgentPreviewRequest, type MessageHistoryItem, type AgentChatResponse } from '@/lib/agent-preview-service'
 import { uploadMultipleFiles, type UploadResult, type UploadFileInfo } from '@/lib/file-upload-service'
 import { MessageType } from '@/types/conversation'
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
 import { Highlight, themes } from 'prism-react-renderer'
-import { useCopy } from '@/hooks/use-copy'
-import { CodeBlock } from '@/components/ui/code-block'
+import { MessageMarkdown } from '@/components/ui/message-markdown'
 
 // 文件类型 - 使用URL而不是base64内容
 interface ChatFile {
@@ -84,12 +81,6 @@ export default function AgentPreviewChat({
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null) // 新增：文件输入引用
-  const { copyMarkdown } = useCopy()
-  
-  // 复制消息内容
-  const handleCopyMessage = (content: string) => {
-    copyMarkdown(content)
-  }
   
   // 新增：消息处理状态管理（参考chat-panel.tsx）
   const hasReceivedFirstResponse = useRef(false)
@@ -460,33 +451,6 @@ export default function AgentPreviewChat({
     })
   }
 
-  // 渲染Markdown内容
-  const renderMessageContent = (content: string) => {
-    return (
-      <div className="prose prose-sm dark:prose-invert max-w-none prose-pre:bg-white prose-pre:border prose-pre:border-gray-200 prose-pre:text-gray-900">
-        <ReactMarkdown 
-          remarkPlugins={[remarkGfm]}
-          components={{
-            pre: ({ children, ...props }) => {
-              // 提取代码内容
-              const codeElement = children as React.ReactElement;
-              const code = typeof codeElement?.props?.children === 'string' 
-                ? codeElement.props.children 
-                : '';
-              
-              return (
-                <CodeBlock code={code}>
-                  <pre {...props}>{children}</pre>
-                </CodeBlock>
-              );
-            }
-          }}
-        >
-          {content}
-        </ReactMarkdown>
-      </div>
-    )
-  }
 
   // 处理按键事件
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -835,20 +799,11 @@ export default function AgentPreviewChat({
                             </>
                           ) : (
                             // 正常消息使用Markdown渲染
-                            <div className="markdown-content relative group">
-                              {/* 复制按钮 */}
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleCopyMessage(message.content)}
-                                className="absolute top-2 right-2 h-8 w-8 p-0"
-                                aria-label="复制消息"
-                              >
-                                <Copy className="h-4 w-4" />
-                              </Button>
-                              {renderMessageContent(
-                                message.content + (message.isStreaming ? ' ▌' : '')
-                              )}
+                            <div className="markdown-content">
+                              <MessageMarkdown 
+                                content={message.content + (message.isStreaming ? ' ▌' : '')}
+                                showCopyButton={true}
+                              />
                             </div>
                           )}
                         </div>

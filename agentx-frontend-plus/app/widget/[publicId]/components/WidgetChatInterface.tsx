@@ -6,15 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Send, MessageCircle, User, Loader2, Bot, Copy } from "lucide-react";
+import { Send, MessageCircle, User, Loader2, Bot } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { widgetChatStream, handleWidgetStream, type WidgetChatRequest, type WidgetChatResponse } from '@/lib/widget-chat-service';
 import { MessageType } from '@/types/conversation';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import { useCopy } from '@/hooks/use-copy';
-import { CodeBlock } from '@/components/ui/code-block';
-import { Button } from "@/components/ui/button";
+import { MessageMarkdown } from '@/components/ui/message-markdown';
 
 interface Message {
   id: string;
@@ -77,7 +73,6 @@ export function WidgetChatInterface({
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const isUserScrolling = useRef(false);
   const scrollTimer = useRef<NodeJS.Timeout | null>(null);
-  const { copyMarkdown } = useCopy();
 
   // 检测用户是否正在手动滚动
   useEffect(() => {
@@ -468,50 +463,6 @@ export function WidgetChatInterface({
   };
 
 
-  // 复制消息内容
-  const handleCopyMessage = (content: string) => {
-    copyMarkdown(content);
-  };
-
-  // 渲染Markdown内容
-  const renderMessageContent = (content: string, messageId: string) => {
-    return (
-      <div className="prose prose-sm dark:prose-invert max-w-none prose-pre:bg-white prose-pre:border prose-pre:border-gray-200 prose-pre:text-gray-900 relative group">
-        {/* 复制按钮 */}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => handleCopyMessage(content)}
-          className="absolute top-2 right-2 h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity z-10"
-          aria-label="复制消息"
-        >
-          <Copy className="h-4 w-4" />
-        </Button>
-        
-        <ReactMarkdown 
-          remarkPlugins={[remarkGfm]}
-          components={{
-            pre: ({ children, ...props }) => {
-              // 提取代码内容
-              const codeElement = children as React.ReactElement;
-              const code = typeof codeElement?.props?.children === 'string' 
-                ? codeElement.props.children 
-                : '';
-              
-              return (
-                <CodeBlock code={code}>
-                  <pre {...props}>{children}</pre>
-                </CodeBlock>
-              );
-            }
-          }}
-        >
-          {content}
-        </ReactMarkdown>
-      </div>
-    );
-  };
-
   // 处理回车发送
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -586,10 +537,10 @@ export function WidgetChatInterface({
                         ) : (
                           // 所有正常消息统一使用Markdown渲染
                           <div className="markdown-content">
-                            {renderMessageContent(
-                              message.content + (message.isStreaming ? ' ▌' : ''),
-                              message.id
-                            )}
+                            <MessageMarkdown 
+                              content={message.content + (message.isStreaming ? ' ▌' : '')}
+                              showCopyButton={true}
+                            />
                           </div>
                         )}
                       </div>

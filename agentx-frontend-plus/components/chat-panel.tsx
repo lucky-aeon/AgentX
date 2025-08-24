@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect, useCallback } from "react"
-import { Send, Wrench, Clock, Copy } from 'lucide-react'
+import { Send, Wrench, Clock } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,16 +10,13 @@ import { streamChat } from "@/lib/api"
 import { toast } from "@/hooks/use-toast"
 import { getSessionMessages, getSessionMessagesWithToast, type MessageDTO } from "@/lib/session-message-service"
 import { Skeleton } from "@/components/ui/skeleton"
-import ReactMarkdown from "react-markdown"
-import remarkGfm from "remark-gfm"
+import { MessageMarkdown } from "@/components/ui/message-markdown"
 import { MessageType, type Message as MessageInterface } from "@/types/conversation"
 import { formatDistanceToNow } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
 import { nanoid } from 'nanoid'
 import MultiModalUpload, { type ChatFile } from "@/components/multi-modal-upload"
 import MessageFileDisplay from "@/components/message-file-display"
-import { useCopy } from '@/hooks/use-copy'
-import { CodeBlock } from '@/components/ui/code-block'
 
 interface ChatPanelProps {
   conversationId: string
@@ -72,12 +69,6 @@ export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName
   const [isThinking, setIsThinking] = useState(false)
   const [currentAssistantMessage, setCurrentAssistantMessage] = useState<AssistantMessage | null>(null)
   const [uploadedFiles, setUploadedFiles] = useState<ChatFile[]>([]) // 新增：已上传的文件列表
-  const { copyMarkdown } = useCopy()
-  
-  // 复制消息内容
-  const handleCopyMessage = (content: string) => {
-    copyMarkdown(content)
-  }
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const chatContainerRef = useRef<HTMLDivElement>(null)
@@ -535,33 +526,6 @@ export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName
     }
   };
 
-  // 渲染消息内容
-  const renderMessageContent = (message: MessageInterface) => {
-    return (
-      <div className="prose prose-sm dark:prose-invert max-w-none prose-pre:bg-white prose-pre:border prose-pre:border-gray-200 prose-pre:text-gray-900">
-        <ReactMarkdown 
-          remarkPlugins={[remarkGfm]}
-          components={{
-            pre: ({ children, ...props }) => {
-              // 提取代码内容
-              const codeElement = children as React.ReactElement;
-              const code = typeof codeElement?.props?.children === 'string' 
-                ? codeElement.props.children 
-                : '';
-              
-              return (
-                <CodeBlock code={code}>
-                  <pre {...props}>{children}</pre>
-                </CodeBlock>
-              );
-            }
-          }}
-        >
-          {message.content}
-        </ReactMarkdown>
-      </div>
-    );
-  };
 
   // 判断是否为错误消息
   const isErrorMessage = (data: StreamData): boolean => {
@@ -667,18 +631,12 @@ export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName
                           
                           {/* 消息内容 */}
                           {message.content && (
-                            <div className="p-3 rounded-lg relative group">
-                              {/* 复制按钮 */}
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleCopyMessage(message.content)}
-                                className="absolute top-2 right-2 h-8 w-8 p-0"
-                                aria-label="复制消息"
-                              >
-                                <Copy className="h-4 w-4" />
-                              </Button>
-                              {renderMessageContent(message)}
+                            <div className="p-3 rounded-lg">
+                              <MessageMarkdown 
+                                content={message.content}
+                                isStreaming={message.isStreaming}
+                                showCopyButton={true}
+                              />
                             </div>
                           )}
                         </div>
