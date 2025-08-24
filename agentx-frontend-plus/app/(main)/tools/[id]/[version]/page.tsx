@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "@/hooks/use-toast"
-import ReactMarkdown from "react-markdown"
+import { MessageMarkdown } from '@/components/ui/message-markdown'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
@@ -327,7 +327,10 @@ export default function ToolDetailPage({ params }: { params: { id: string, versi
               <div>
                 <h2 className="text-xl font-semibold mb-4">工具介绍</h2>
                 <div className="prose dark:prose-invert max-w-none">
-                  <ReactMarkdown>{tool.description}</ReactMarkdown>
+                  <MessageMarkdown 
+                    content={tool.description}
+                    showCopyButton={true}
+                  />
                 </div>
               </div>
             </div>
@@ -533,7 +536,10 @@ export default function ToolDetailPage({ params }: { params: { id: string, versi
               <div>
                 <h3 className="text-lg font-medium mb-2">详细描述</h3>
                 <div className="prose dark:prose-invert max-w-none">
-                  <ReactMarkdown>{selectedVersionDetail.description || "暂无描述"}</ReactMarkdown>
+                  <MessageMarkdown 
+                    content={selectedVersionDetail.description || "暂无描述"}
+                    showCopyButton={true}
+                  />
                 </div>
               </div>
               

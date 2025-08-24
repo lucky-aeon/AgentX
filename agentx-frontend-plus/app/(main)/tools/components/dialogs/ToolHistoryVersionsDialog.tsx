@@ -16,7 +16,7 @@ import { Calendar, Download, FileText, Command, History, Wrench, Info, List, Che
 import { cn } from "@/lib/utils";
 import { formatDate } from "@/lib/utils";
 import { getMarketToolVersions, updateToolVersionStatusWithToast } from "@/lib/tool-service";
-import ReactMarkdown from "react-markdown";
+import { MessageMarkdown } from '@/components/ui/message-markdown';
 import { Toggle } from "@/components/ui/toggle";
 import { toast } from "@/hooks/use-toast";
 
@@ -404,9 +404,10 @@ export function ToolHistoryVersionsDialog({
                       <CardContent className="px-4 py-2 pb-4">
                         {selectedVersion.changeLog ? (
                           <div className="prose prose-sm max-w-none">
-                            <ReactMarkdown>
-                              {selectedVersion.changeLog}
-                            </ReactMarkdown>
+                            <MessageMarkdown 
+                              content={selectedVersion.changeLog}
+                              showCopyButton={false}
+                            />
                           </div>
                         ) : (
                           <div className="text-center text-muted-foreground py-4">

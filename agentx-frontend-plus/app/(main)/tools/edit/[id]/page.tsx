@@ -24,7 +24,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import Link from "next/link"
 import { updateToolWithToast, getToolDetailWithToast } from "@/lib/tool-service"
-import ReactMarkdown from "react-markdown"
+import { MessageMarkdown } from '@/components/ui/message-markdown'
 import { useParams, useRouter } from "next/navigation"
 import { Tool } from "@/types/tool"
 import FileUpload from "@/components/ui/file-upload"
@@ -672,9 +672,10 @@ export default function EditToolPage() {
                             </div>
                           ) : (
                             <div className="mt-4 border rounded-md p-4 min-h-[400px] prose dark:prose-invert max-w-none">
-                              <ReactMarkdown>
-                                {field.value}
-                              </ReactMarkdown>
+                              <MessageMarkdown 
+                                content={field.value}
+                                showCopyButton={true}
+                              />
                             </div>
                           )}
                         </FormItem>

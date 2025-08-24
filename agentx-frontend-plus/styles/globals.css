@@ -103,9 +103,6 @@ body {
 /* 表格样式 */
 .react-markdown table {
   width: 100%;
-  max-width: 100%;
-  overflow-x: auto;
-  display: block;
   border-collapse: collapse;
   margin: 1rem 0;
 }
@@ -118,7 +115,7 @@ body {
   overflow-wrap: break-word;
   word-wrap: break-word;
   word-break: break-word;
-  max-width: 300px; /* 限制单元格最大宽度 */
+  white-space: nowrap; /* 防止文本换行，让表格能水平滚动 */
 }
 
 .react-markdown table th {

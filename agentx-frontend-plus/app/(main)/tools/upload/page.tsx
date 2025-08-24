@@ -23,7 +23,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import Link from "next/link"
 import { uploadToolWithToast } from "@/lib/tool-service"
-import ReactMarkdown from "react-markdown"
+import { MessageMarkdown } from '@/components/ui/message-markdown'
 import FileUpload from "@/components/ui/file-upload"
 
 const mcpServerCommandTemp = '例如：{"mcpServers": {"file-system": {"args": ["-y", "@modelcontextprotocol/server-filesystem", "/etc/proxy"], "command": "npx"}}}';
@@ -600,9 +600,10 @@ export default function UploadToolPage() {
                         <FormItem>
                           {previewMode ? (
                             <div className="border rounded-md p-4 min-h-[400px] prose dark:prose-invert max-w-none">
-                              <ReactMarkdown>
-                                {field.value || '### 预览\n\n开始编辑以查看预览'}
-                              </ReactMarkdown>
+                              <MessageMarkdown 
+                                content={field.value || '### 预览\n\n开始编辑以查看预览'}
+                                showCopyButton={true}
+                              />
                             </div>
                           ) : (
                             <FormControl>

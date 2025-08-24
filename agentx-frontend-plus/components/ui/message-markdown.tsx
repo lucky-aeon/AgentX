@@ -44,7 +44,7 @@ export function MessageMarkdown({
   };
 
   return (
-    <div className={cn("relative group", className)}>
+    <div className={cn("relative group overflow-x-auto min-w-0", className)}>
       {/* 复制按钮 */}
       {showCopyButton && (
         <Button
@@ -73,7 +73,7 @@ export function MessageMarkdown({
       ) : (
         // 正常消息使用 Markdown 渲染
         <div className={cn(
-          "prose prose-sm dark:prose-invert max-w-none",
+          "prose prose-sm dark:prose-invert w-full min-w-0",
           "prose-pre:bg-white prose-pre:border prose-pre:border-gray-200 prose-pre:text-gray-900",
           shouldShowAsError && "text-destructive"
         )}>
@@ -92,7 +92,43 @@ export function MessageMarkdown({
                     <pre {...props}>{children}</pre>
                   </CodeBlock>
                 );
-              }
+              },
+              table: ({ children, ...props }) => (
+                <div className="w-full overflow-x-auto my-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                  <table 
+                    className="w-full min-w-max divide-y divide-gray-200 dark:divide-gray-700" 
+                    {...props}
+                  >
+                    {children}
+                  </table>
+                </div>
+              ),
+              thead: ({ children, ...props }) => (
+                <thead className="bg-gray-50 dark:bg-gray-800" {...props}>
+                  {children}
+                </thead>
+              ),
+              tbody: ({ children, ...props }) => (
+                <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700" {...props}>
+                  {children}
+                </tbody>
+              ),
+              th: ({ children, ...props }) => (
+                <th 
+                  className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider break-words" 
+                  {...props}
+                >
+                  {children}
+                </th>
+              ),
+              td: ({ children, ...props }) => (
+                <td 
+                  className="px-3 py-2 text-sm text-gray-900 dark:text-gray-100 break-words" 
+                  {...props}
+                >
+                  {children}
+                </td>
+              )
             }}
           >
             {content}

@@ -6,7 +6,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Command, Wrench, Clock, Download, ChevronDown, History, AlertTriangle } from "lucide-react";
-import ReactMarkdown from "react-markdown";
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { getMarketToolVersionDetail, getMarketToolVersions, installToolWithToast, getToolDetail } from "@/lib/tool-service";

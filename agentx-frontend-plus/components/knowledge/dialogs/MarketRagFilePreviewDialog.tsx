@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import ReactMarkdown from 'react-markdown'
+import { MessageMarkdown } from '@/components/ui/message-markdown'
 import { 
   FileText, 
   Loader2,
@@ -165,29 +165,11 @@ export function MarketRagFilePreviewDialog({
 
                     <div className="text-sm">
                       <div className="leading-tight whitespace-pre-wrap">
-                        <ReactMarkdown 
-                          components={{
-                            h1: ({ children }) => <h1 className="text-xl font-bold mb-1 leading-tight">{children}</h1>,
-                            h2: ({ children }) => <h2 className="text-lg font-semibold mb-1 leading-tight">{children}</h2>,
-                            h3: ({ children }) => <h3 className="text-md font-medium mb-0.5 leading-tight">{children}</h3>,
-                            p: ({ children }) => <p className="mb-0.5 leading-tight">{children}</p>,
-                            ul: ({ children }) => <ul className="list-disc list-inside mb-0.5 space-y-0">{children}</ul>,
-                            ol: ({ children }) => <ol className="list-decimal list-inside mb-0.5 space-y-0">{children}</ol>,
-                            li: ({ children }) => <li className="leading-tight">{children}</li>,
-                            strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
-                            em: ({ children }) => <em className="italic">{children}</em>,
-                            code: ({ children }) => <code className="bg-gray-100 px-1 py-0.5 rounded text-sm font-mono">{children}</code>,
-                            pre: ({ children }) => <pre className="bg-gray-100 p-2 rounded text-sm font-mono overflow-x-auto mb-1">{children}</pre>,
-                            blockquote: ({ children }) => <blockquote className="border-l-4 border-gray-300 pl-4 italic mb-0.5 leading-tight">{children}</blockquote>,
-                            a: ({ children, href }) => <a href={href} className="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">{children}</a>,
-                            hr: () => <hr className="my-4 border-gray-200" />,
-                            table: ({ children }) => <table className="border-collapse border border-gray-300 w-full mb-1">{children}</table>,
-                            th: ({ children }) => <th className="border border-gray-300 px-2 py-1 bg-gray-50 font-semibold">{children}</th>,
-                            td: ({ children }) => <td className="border border-gray-300 px-2 py-1">{children}</td>,
-                          }}
-                        >
-                          {unit.content}
-                        </ReactMarkdown>
+                        <MessageMarkdown 
+                          content={unit.content}
+                          showCopyButton={false}
+                          className="text-sm leading-tight"
+                        />
                       </div>
                     </div>
 

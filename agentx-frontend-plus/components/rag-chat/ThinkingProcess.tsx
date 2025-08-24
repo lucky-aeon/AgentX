@@ -1,6 +1,6 @@
 "use client";
 
-import ReactMarkdown from "react-markdown";
+import { MessageMarkdown } from '@/components/ui/message-markdown';
 import { Brain, ChevronDown, ChevronRight, Loader2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -56,9 +56,10 @@ export function ThinkingProcess({
         <CollapsibleContent className="mt-3">
           <div className="prose prose-sm dark:prose-invert max-w-none pl-6 text-sm">
             {thinkingContent ? (
-              <ReactMarkdown>
-                {thinkingContent}
-              </ReactMarkdown>
+              <MessageMarkdown 
+                content={thinkingContent}
+                showCopyButton={false}
+              />
             ) : (
               <span className="text-muted-foreground">思考中...</span>
             )}
