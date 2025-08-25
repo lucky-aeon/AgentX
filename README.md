@@ -26,7 +26,7 @@ AgentX 是一个基于大模型 (LLM) 和多能力平台 (MCP) 的智能 Agent �
 
 ```bash
 # 下载配置文件模板
-curl -O https://raw.githubusercontent.com/lucky-aeon/AgentX/main/.env.example
+curl -O https://raw.githubusercontent.com/lucky-aeon/AgentX/master/.env.example
 # 复制并编辑配置
 cp .env.example .env
 # 根据需要修改 .env 文件中的配置
