@@ -84,7 +84,7 @@ public class MCPGatewayService {
                     logger.info("MCP Gateway部署响应: {}", result);
 
                     // 检查状态是否为success
-                    return result.containsKey("status") && "success".equals(result.get("status"));
+                    return result.containsKey("success");
                 } else {
                     String errorMsg = String.format("MCP Gateway部署失败，状态码: %d，响应: %s", statusCode, responseBody);
                     logger.error(errorMsg);
