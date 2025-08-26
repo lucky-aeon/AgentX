@@ -425,5 +425,5 @@ COMMENT ON COLUMN user_tools.public_state IS '公开状态';
 COMMENT ON COLUMN user_tools.created_at IS '创建时间';
 COMMENT ON COLUMN user_tools.updated_at IS '更新时间';
 COMMENT ON COLUMN user_tools.deleted_at IS '逻辑删除时间';
-    
-    
+
+ALTER TABLE providers ALTER COLUMN config TYPE text;

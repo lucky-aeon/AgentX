@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 import org.xhy.domain.tool.model.UserToolEntity;
 import org.xhy.domain.tool.repository.UserToolRepository;
 import org.xhy.infrastructure.exception.BusinessException;
@@ -54,6 +55,9 @@ public class UserToolDomainService {
 
     // 获取工具的安装次数
     public Map<String, Long> getToolsInstall(List<String> toolIds) {
+        if (CollectionUtils.isEmpty(toolIds)) {
+            return Map.of();
+        }
         LambdaQueryWrapper<UserToolEntity> wrapper = Wrappers.<UserToolEntity>lambdaQuery()
                 .in(UserToolEntity::getToolId, toolIds);
         List<UserToolEntity> userToolEntities = userToolRepository.selectList(wrapper);

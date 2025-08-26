@@ -33,6 +33,7 @@ public class EmailService {
         props.put("mail.smtp.host", host);
         props.put("mail.smtp.port", port);
         props.put("mail.smtp.auth", "true");
+        props.put("mail.smtp.ssl.enable", "true");  // 启用 SSL
 
         Session session = Session.getInstance(props, new Authenticator() {
             @Override
