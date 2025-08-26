@@ -1,13 +1,16 @@
-// API地址配置 - 智能IP获取，自动适配所有环境
+// API地址配置 - 环境适配，开发环境直连，生产环境使用nginx代理
 function getDefaultApiUrl(): string {
-  // 客户端环境：直接获取当前访问的IP/域名
+  // 客户端环境
   if (typeof window !== 'undefined') {
     const { protocol, hostname } = window.location;
     
-    // 自动使用当前访问的地址 + 8088端口
-    // 支持: localhost, 127.0.0.1, 192.168.x.x, 服务器IP, 域名等
-    const apiProtocol = protocol === 'https:' ? 'https:' : 'http:';
-    return `${apiProtocol}//${hostname}:8088/api`;
+    // 开发环境：直连8088端口
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return `${protocol}//${hostname}:8088/api`;
+    }
+    
+    // 生产环境：使用相对路径，让nginx处理API转发
+    return '/api';
   }
   
   // 服务端渲染时的回退值
