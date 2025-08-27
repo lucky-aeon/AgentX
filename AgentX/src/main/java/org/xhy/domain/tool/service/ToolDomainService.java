@@ -135,4 +135,11 @@ public class ToolDomainService {
         toolRepository.checkedUpdate(wrapper);
         return toolRepository.selectById(toolId);
     }
+
+    public List<ToolEntity> findProcessingTools() {
+        LambdaQueryWrapper<ToolEntity> wrapper = Wrappers.<ToolEntity>lambdaQuery()
+                .notIn(ToolEntity::getStatus, ToolStatus.getTerminalStatuses())
+                .ne(ToolEntity::getStatus, ToolStatus.MANUAL_REVIEW);
+        return toolRepository.selectList(wrapper);
+    }
 }
