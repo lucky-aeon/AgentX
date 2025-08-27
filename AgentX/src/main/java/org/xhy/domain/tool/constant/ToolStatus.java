@@ -16,7 +16,6 @@ public enum ToolStatus {
     PUBLISH_FAILED, // 发布失败
     FAILED; // 通用失败状态
 
-
     private static final Set<ToolStatus> TERMINAL_STATUSES = Set.of(ToolStatus.APPROVED, ToolStatus.FAILED,
             ToolStatus.PUBLISH_FAILED);
 
