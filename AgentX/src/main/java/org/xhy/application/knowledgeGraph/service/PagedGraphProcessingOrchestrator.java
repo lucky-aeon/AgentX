@@ -8,9 +8,12 @@ import org.xhy.application.knowledgeGraph.dto.GraphIngestionResponse;
 import org.xhy.domain.knowledgeGraph.entity.PageProcessingState;
 import org.xhy.domain.knowledgeGraph.message.DocIeInferMessage;
 
-/** 分页图谱处理协调器 负责协调分页和非分页图谱提取的处理流程
+/**
+ * 分页图谱处理协调器
+ * 负责协调分页和非分页图谱提取的处理流程
  * 
- * @author shilong.zang */
+ * @author shilong.zang
+ */
 @Service
 public class PagedGraphProcessingOrchestrator {
 
@@ -22,12 +25,16 @@ public class PagedGraphProcessingOrchestrator {
         this.documentGraphMergeService = documentGraphMergeService;
     }
 
-    /** 协调图谱处理流程 根据消息类型决定使用分页处理还是单页处理
+    /**
+     * 协调图谱处理流程
+     * 根据消息类型决定使用分页处理还是单页处理
      * 
      * @param message 文档处理消息
      * @param extractedGraph 提取的图谱数据
-     * @return 处理结果 */
-    public GraphIngestionResponse orchestrateGraphProcessing(DocIeInferMessage message,
+     * @return 处理结果
+     */
+    public GraphIngestionResponse orchestrateGraphProcessing(
+            DocIeInferMessage message, 
             GraphIngestionRequest extractedGraph) {
 
         if (message.isPaged()) {
@@ -39,8 +46,11 @@ public class PagedGraphProcessingOrchestrator {
         }
     }
 
-    /** 处理分页文档 */
-    private GraphIngestionResponse processPagedDocument(DocIeInferMessage message,
+    /**
+     * 处理分页文档
+     */
+    private GraphIngestionResponse processPagedDocument(
+            DocIeInferMessage message, 
             GraphIngestionRequest extractedGraph) {
 
         String documentId = message.getFileId();
@@ -54,8 +64,8 @@ public class PagedGraphProcessingOrchestrator {
             extractedGraph.setDocumentId(documentId);
 
             // 委托给文档图谱合并服务处理
-            GraphIngestionResponse response = documentGraphMergeService.processPagedGraph(extractedGraph, pageNumber,
-                    totalPages);
+            GraphIngestionResponse response = documentGraphMergeService.processPagedGraph(
+                    extractedGraph, pageNumber, totalPages);
 
             // 记录处理结果
             if (response.isSuccess()) {
@@ -72,16 +82,19 @@ public class PagedGraphProcessingOrchestrator {
 
         } catch (Exception e) {
             logger.error("处理分页文档 {} 第 {} 页时发生异常: {}", documentId, pageNumber, e.getMessage(), e);
-
+            
             // 返回失败响应
-            return GraphIngestionResponse.error(documentId, "分页文档处理失败: " + e.getMessage());
+            return GraphIngestionResponse.error(documentId, 
+                    "分页文档处理失败: " + e.getMessage());
         }
     }
 
-    /** 处理单页文档 */
+    /**
+     * 处理单页文档
+     */
     private GraphIngestionResponse processSinglePageDocument(GraphIngestionRequest extractedGraph) {
         String documentId = extractedGraph.getDocumentId();
-
+        
         logger.info("处理单页文档 {}", documentId);
 
         try {
@@ -98,47 +111,59 @@ public class PagedGraphProcessingOrchestrator {
 
         } catch (Exception e) {
             logger.error("处理单页文档 {} 时发生异常: {}", documentId, e.getMessage(), e);
-
+            
             // 返回失败响应
-            return GraphIngestionResponse.error(documentId, "单页文档处理失败: " + e.getMessage());
+            return GraphIngestionResponse.error(documentId, 
+                    "单页文档处理失败: " + e.getMessage());
         }
     }
 
-    /** 获取文档处理状态
+    /**
+     * 获取文档处理状态
      * 
      * @param documentId 文档ID
-     * @return 处理状态 */
+     * @return 处理状态
+     */
     public PageProcessingState getDocumentProcessingState(String documentId) {
         return documentGraphMergeService.getDocumentProcessingState(documentId);
     }
 
-    /** 强制完成文档处理 当某些页面处理失败但需要处理剩余页面时使用
+    /**
+     * 强制完成文档处理
+     * 当某些页面处理失败但需要处理剩余页面时使用
      * 
      * @param documentId 文档ID
-     * @return 处理结果 */
+     * @return 处理结果
+     */
     public GraphIngestionResponse forceCompleteDocument(String documentId) {
         logger.warn("强制完成文档 {} 的处理", documentId);
-
+        
         try {
             return documentGraphMergeService.forceCompleteDocument(documentId);
         } catch (Exception e) {
             logger.error("强制完成文档 {} 处理失败: {}", documentId, e.getMessage(), e);
-            return GraphIngestionResponse.error(documentId, "强制完成文档处理失败: " + e.getMessage());
+            return GraphIngestionResponse.error(documentId, 
+                    "强制完成文档处理失败: " + e.getMessage());
         }
     }
 
-    /** 清理文档处理状态 用于清理任务或错误恢复
+    /**
+     * 清理文档处理状态
+     * 用于清理任务或错误恢复
      * 
-     * @param documentId 文档ID */
+     * @param documentId 文档ID
+     */
     public void clearDocumentProcessingState(String documentId) {
         logger.info("清理文档 {} 的处理状态", documentId);
         documentGraphMergeService.clearDocumentBuffer(documentId);
     }
 
-    /** 验证分页消息的完整性
+    /**
+     * 验证分页消息的完整性
      * 
      * @param message 文档消息
-     * @return 验证结果 */
+     * @return 验证结果
+     */
     public boolean validatePagedMessage(DocIeInferMessage message) {
         if (!message.isPaged()) {
             return true; // 非分页消息无需验证
@@ -165,10 +190,13 @@ public class PagedGraphProcessingOrchestrator {
         return true;
     }
 
-    /** 检查是否应该使用分页处理 可以基于文档大小、页数等因素决定
+    /**
+     * 检查是否应该使用分页处理
+     * 可以基于文档大小、页数等因素决定
      * 
      * @param message 文档消息
-     * @return 是否使用分页处理 */
+     * @return 是否使用分页处理
+     */
     public boolean shouldUsePagedProcessing(DocIeInferMessage message) {
         // 如果消息已经包含分页信息，则使用分页处理
         if (message.isPaged()) {
@@ -185,20 +213,25 @@ public class PagedGraphProcessingOrchestrator {
         return false;
     }
 
-    /** 生成处理摘要
+    /**
+     * 生成处理摘要
      * 
      * @param documentId 文档ID
-     * @return 处理摘要 */
+     * @return 处理摘要
+     */
     public String generateProcessingSummary(String documentId) {
         PageProcessingState state = getDocumentProcessingState(documentId);
-
+        
         if (state == null) {
             return "文档 " + documentId + " 未找到处理状态";
         }
 
-        return String.format("文档 %s 处理状态: %s, 总页数: %d, 已完成: %d页, 失败: %d页, 剩余: %d页", documentId,
-                state.getStatus().getDescription(), state.getTotalPages(),
+        return String.format("文档 %s 处理状态: %s, 总页数: %d, 已完成: %d页, 失败: %d页, 剩余: %d页",
+                documentId,
+                state.getStatus().getDescription(),
+                state.getTotalPages(),
                 state.getCompletedPages() != null ? state.getCompletedPages().size() : 0,
-                state.getFailedPages() != null ? state.getFailedPages().size() : 0, state.getRemainingPages());
+                state.getFailedPages() != null ? state.getFailedPages().size() : 0,
+                state.getRemainingPages());
     }
 }

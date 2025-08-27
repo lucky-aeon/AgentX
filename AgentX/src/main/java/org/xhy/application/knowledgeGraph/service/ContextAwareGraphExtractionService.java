@@ -23,9 +23,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-/** 上下文感知的图谱提取服务 解决分页处理中的上下文丢失问题
+/**
+ * 上下文感知的图谱提取服务
+ * 解决分页处理中的上下文丢失问题
  * 
- * @author AgentX */
+ * @author AgentX
+ */
 @Service
 public class ContextAwareGraphExtractionService {
 
@@ -37,10 +40,12 @@ public class ContextAwareGraphExtractionService {
         this.documentUnitDomainService = documentUnitDomainService;
     }
 
-    /** 上下文感知的图谱提取
+    /**
+     * 上下文感知的图谱提取
      * 
      * @param message 分页消息
-     * @return 提取的图谱数据 */
+     * @return 提取的图谱数据
+     */
     public GraphIngestionRequest extractWithContext(DocIeInferMessage message) {
         String fileId = message.getFileId();
         Integer pageNumber = message.getPageNumber();
@@ -55,8 +60,8 @@ public class ContextAwareGraphExtractionService {
             String nextContext = getNextContext(fileId, pageNumber, totalPages);
 
             // 构建增强的提示词
-            String enhancedPrompt = buildContextAwarePrompt(documentText, pageNumber, totalPages, previousContext,
-                    nextContext);
+            String enhancedPrompt = buildContextAwarePrompt(
+                    documentText, pageNumber, totalPages, previousContext, nextContext);
 
             // 调用AI进行提取
             GraphIngestionRequest extractedGraph = callAIForExtraction(enhancedPrompt);
@@ -64,18 +69,14 @@ public class ContextAwareGraphExtractionService {
             // 设置基本信息
             if (extractedGraph != null) {
                 extractedGraph.setDocumentId(fileId);
-
+                
                 // 为所有实体和关系设置页面信息
                 enrichWithPageInfo(extractedGraph, fileId, pageNumber);
             }
 
             logger.info("上下文感知图谱提取完成，实体数: {}, 关系数: {}",
-                    extractedGraph != null && extractedGraph.getEntities() != null
-                            ? extractedGraph.getEntities().size()
-                            : 0,
-                    extractedGraph != null && extractedGraph.getRelationships() != null
-                            ? extractedGraph.getRelationships().size()
-                            : 0);
+                    extractedGraph != null && extractedGraph.getEntities() != null ? extractedGraph.getEntities().size() : 0,
+                    extractedGraph != null && extractedGraph.getRelationships() != null ? extractedGraph.getRelationships().size() : 0);
 
             return extractedGraph;
 
@@ -85,7 +86,9 @@ public class ContextAwareGraphExtractionService {
         }
     }
 
-    /** 获取前一页的上下文信息 */
+    /**
+     * 获取前一页的上下文信息
+     */
     private String getPreviousContext(String fileId, Integer pageNumber) {
         if (pageNumber == null || pageNumber <= 1) {
             return null;
@@ -93,10 +96,11 @@ public class ContextAwareGraphExtractionService {
 
         try {
             List<DocumentUnitEntity> allDocuments = documentUnitDomainService.listDocumentUnitsByFileId(fileId);
-
+            
             // 找到前一页的内容
             DocumentUnitEntity previousPage = allDocuments.stream()
-                    .filter(doc -> doc.getPage() != null && doc.getPage().equals(pageNumber - 1)).findFirst()
+                    .filter(doc -> doc.getPage() != null && doc.getPage().equals(pageNumber - 1))
+                    .findFirst()
                     .orElse(null);
 
             if (previousPage != null && previousPage.getContent() != null) {
@@ -112,7 +116,9 @@ public class ContextAwareGraphExtractionService {
         return null;
     }
 
-    /** 获取下一页的预览信息 */
+    /**
+     * 获取下一页的预览信息
+     */
     private String getNextContext(String fileId, Integer pageNumber, Integer totalPages) {
         if (pageNumber == null || totalPages == null || pageNumber >= totalPages) {
             return null;
@@ -120,10 +126,11 @@ public class ContextAwareGraphExtractionService {
 
         try {
             List<DocumentUnitEntity> allDocuments = documentUnitDomainService.listDocumentUnitsByFileId(fileId);
-
+            
             // 找到下一页的内容
             DocumentUnitEntity nextPage = allDocuments.stream()
-                    .filter(doc -> doc.getPage() != null && doc.getPage().equals(pageNumber + 1)).findFirst()
+                    .filter(doc -> doc.getPage() != null && doc.getPage().equals(pageNumber + 1))
+                    .findFirst()
                     .orElse(null);
 
             if (nextPage != null && nextPage.getContent() != null) {
@@ -140,7 +147,10 @@ public class ContextAwareGraphExtractionService {
         return null;
     }
 
-    /** 提取关键上下文信息（简化实现） 实际项目中可以使用更复杂的NLP或AI方法 */
+    /**
+     * 提取关键上下文信息（简化实现）
+     * 实际项目中可以使用更复杂的NLP或AI方法
+     */
     private String extractKeyContext(String content, String type) {
         if (content == null || content.trim().isEmpty()) {
             return null;
@@ -150,7 +160,7 @@ public class ContextAwareGraphExtractionService {
         // 可以替换为更复杂的实体提取算法
         String[] sentences = content.split("[。！？.!?]");
         StringBuilder keyContext = new StringBuilder();
-
+        
         for (int i = 0; i < Math.min(3, sentences.length); i++) {
             String sentence = sentences[i].trim();
             if (sentence.length() > 10) { // 过滤太短的句子
@@ -161,12 +171,14 @@ public class ContextAwareGraphExtractionService {
         return keyContext.toString();
     }
 
-    /** 构建上下文感知的提示词 */
+    /**
+     * 构建上下文感知的提示词
+     */
     private String buildContextAwarePrompt(String documentText, Integer pageNumber, Integer totalPages,
-            String previousContext, String nextContext) {
-
+                                           String previousContext, String nextContext) {
+        
         String prompt = EnhancedGraphExtractorPrompt.contextAwareExtractionPrompt;
-
+        
         // 替换模板变量
         prompt = prompt.replace("{{pageNumber}}", String.valueOf(pageNumber));
         prompt = prompt.replace("{{totalPages}}", String.valueOf(totalPages));
@@ -194,12 +206,17 @@ public class ContextAwareGraphExtractionService {
         return prompt;
     }
 
-    /** 调用AI进行图谱提取 */
+    /**
+     * 调用AI进行图谱提取
+     */
     private GraphIngestionRequest callAIForExtraction(String prompt) {
         try {
             // 创建LLM配置（从消息中获取用户配置的模型）
-            ProviderConfig providerConfig = new ProviderConfig("sk-b9aL4HqXa1OHY6TyctHBVnjq9IQndYd5snq4WdX9sQ4DUFma",
-                    "https://new.281182.xyz/v1", "gemini-2.5-pro", ProviderProtocol.OPENAI);
+            ProviderConfig providerConfig = new ProviderConfig(
+                    "sk-b9aL4HqXa1OHY6TyctHBVnjq9IQndYd5snq4WdX9sQ4DUFma", 
+                    "https://new.281182.xyz/v1",
+                    "gemini-2.5-pro", 
+                    ProviderProtocol.OPENAI);
 
             ChatModel chatModel = LLMProviderService.getStrand(ProviderProtocol.OPENAI, providerConfig);
 
@@ -222,7 +239,9 @@ public class ContextAwareGraphExtractionService {
         }
     }
 
-    /** 从AI返回的文本中提取JSON内容 */
+    /**
+     * 从AI返回的文本中提取JSON内容
+     */
     private String extractJsonFromText(String text) {
         if (text == null || text.trim().isEmpty()) {
             return "{}";
@@ -260,7 +279,9 @@ public class ContextAwareGraphExtractionService {
         return text;
     }
 
-    /** 清理JSON字符串 */
+    /**
+     * 清理JSON字符串
+     */
     private String cleanJsonString(String jsonStr) {
         if (jsonStr == null || jsonStr.trim().isEmpty()) {
             return jsonStr;
@@ -272,19 +293,23 @@ public class ContextAwareGraphExtractionService {
         }
 
         // 处理转义问题
-        jsonStr = jsonStr.replace("\\n", "\n").replace("\\t", "\t").replace("\\r", "\r");
+        jsonStr = jsonStr.replace("\\n", "\n")
+                .replace("\\t", "\t")
+                .replace("\\r", "\r");
 
         return jsonStr.trim();
     }
 
-    /** 为提取的图谱数据添加页面信息 */
+    /**
+     * 为提取的图谱数据添加页面信息
+     */
     private void enrichWithPageInfo(GraphIngestionRequest request, String fileId, Integer pageNumber) {
         // 为实体添加页面信息
         if (request.getEntities() != null) {
             request.getEntities().forEach(entity -> {
                 entity.setFileId(fileId);
                 entity.setPageNumber(pageNumber);
-
+                
                 // 确保实体属性中包含页面信息
                 if (entity.getProperties() != null) {
                     entity.getProperties().put("pageNumber", pageNumber);
@@ -298,7 +323,7 @@ public class ContextAwareGraphExtractionService {
             request.getRelationships().forEach(relationship -> {
                 relationship.setFileId(fileId);
                 relationship.setPageNumber(pageNumber);
-
+                
                 // 确保关系属性中包含页面信息
                 if (relationship.getProperties() != null) {
                     relationship.getProperties().put("pageNumber", pageNumber);
