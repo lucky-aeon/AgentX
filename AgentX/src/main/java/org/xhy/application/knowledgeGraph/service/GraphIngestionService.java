@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.xhy.application.knowledgeGraph.dto.GraphIngestionRequest;
 import org.xhy.application.knowledgeGraph.dto.GraphIngestionResponse;
 import org.xhy.infrastructure.exception.BusinessException;
+import org.xhy.infrastructure.neo4j.util.Neo4jValueConverter;
 
 import java.util.List;
 import java.util.Map;
@@ -90,12 +91,12 @@ public class GraphIngestionService {
             return 0;
         }
 
-        // 准备实体参数
+        // 准备实体参数，并转换为Neo4j支持的类型
         List<Map<String, Object>> entityParams = entities.stream()
                 .map(entity -> Map.of(
                         "id", entity.getId(),
                         "labels", entity.getLabels(),
-                        "properties", entity.getProperties()
+                        "properties", Neo4jValueConverter.convertProperties(entity.getProperties())
                 ))
                 .collect(Collectors.toList());
 
@@ -132,13 +133,14 @@ public class GraphIngestionService {
             return 0;
         }
 
-        // 准备关系参数
+        // 准备关系参数，并转换为Neo4j支持的类型
         List<Map<String, Object>> relationshipParams = relationships.stream()
                 .map(rel -> Map.of(
                         "sourceId", rel.getSourceId(),
                         "targetId", rel.getTargetId(),
                         "type", rel.getType(),
-                        "properties", rel.getProperties() != null ? rel.getProperties() : Map.of()
+                        "properties", Neo4jValueConverter.convertProperties(
+                                rel.getProperties() != null ? rel.getProperties() : Map.of())
                 ))
                 .collect(Collectors.toList());
 

@@ -4,6 +4,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.xhy.application.knowledgeGraph.dto.GraphQueryResponse;
+import org.xhy.application.rag.assembler.DocumentUnitAssembler;
+import org.xhy.application.rag.dto.DocumentUnitDTO;
 import org.xhy.application.rag.dto.KgEnhancedRagRequest;
 import org.xhy.application.rag.dto.KgEnhancedRagResponse;
 import org.xhy.domain.rag.model.DocumentUnitEntity;
@@ -91,9 +93,12 @@ public class HybridSearchStrategy {
     private List<KgEnhancedRagResponse.EnhancedResult> createBaseResults(List<DocumentUnitEntity> vectorResults) {
         return vectorResults.stream().map(docUnit -> {
             KgEnhancedRagResponse.EnhancedResult result = new KgEnhancedRagResponse.EnhancedResult();
-            result.setDocumentUnit(docUnit);
+            // 转换Entity为DTO
+            DocumentUnitDTO documentUnitDTO = DocumentUnitAssembler.toDTO(docUnit);
+            result.setDocumentUnit(documentUnitDTO);
             result.setSourceType("VECTOR");
-            result.setVectorScore(docUnit.getScore() != null ? docUnit.getScore() : 0.8);
+            // 使用similarityScore字段
+            result.setVectorScore(docUnit.getSimilarityScore() != null ? docUnit.getSimilarityScore() : 0.8);
             result.setRelevanceScore(result.getVectorScore());
             result.setGraphEntities(new ArrayList<>());
             result.setGraphRelationships(new ArrayList<>());
@@ -428,13 +433,22 @@ public class HybridSearchStrategy {
             double vectorScore = result.getVectorScore() != null ? result.getVectorScore() : 0.0;
             double graphScore = result.getGraphScore() != null ? result.getGraphScore() : 0.0;
             
-            // 语义融合：图谱信息可以增强语义理解
-            double semanticBoost = graphScore * 0.2; // 图谱信息提供语义增强
-            double fusedScore = vectorScore + semanticBoost;
+            double fusedScore;
             
-            // 如果有图谱信息，给予额外的置信度加成
-            if (result.getGraphEntities() != null && !result.getGraphEntities().isEmpty()) {
-                fusedScore = Math.min(fusedScore + 0.1, 1.0);
+            // 对于纯图谱结果，使用更高的基础分数
+            if ("GRAPH".equals(result.getSourceType())) {
+                // 纯图谱结果：以图谱分数为主，给予高置信度
+                fusedScore = Math.max(graphScore, 0.6); // 确保至少0.6的分数
+                fusedScore = Math.min(fusedScore + 0.2, 1.0); // 给予额外加成
+            } else {
+                // 向量结果或混合结果：传统语义融合
+                double semanticBoost = graphScore * 0.2; // 图谱信息提供语义增强
+                fusedScore = vectorScore + semanticBoost;
+                
+                // 如果有图谱信息，给予额外的置信度加成
+                if (result.getGraphEntities() != null && !result.getGraphEntities().isEmpty()) {
+                    fusedScore = Math.min(fusedScore + 0.1, 1.0);
+                }
             }
             
             result.setRelevanceScore(fusedScore);

@@ -41,7 +41,7 @@ public class GraphIngestionRequest {
     }
 
     /**
-     * 实体DTO - 支持动态标签和属性
+     * 实体DTO - 支持动态标签和属性，包含文档分页信息
      */
     public static class EntityDto {
         @JsonProperty("id")
@@ -55,6 +55,12 @@ public class GraphIngestionRequest {
         @JsonProperty("properties")
         @NotNull(message = "实体属性不能为null")
         private Map<String, Object> properties;
+        
+        @JsonProperty("fileId")
+        private String fileId;
+        
+        @JsonProperty("pageNumber")
+        private Integer pageNumber;
 
         public EntityDto() {}
 
@@ -62,6 +68,14 @@ public class GraphIngestionRequest {
             this.id = id;
             this.labels = labels;
             this.properties = properties;
+        }
+        
+        public EntityDto(String id, List<String> labels, Map<String, Object> properties, String fileId, Integer pageNumber) {
+            this.id = id;
+            this.labels = labels;
+            this.properties = properties;
+            this.fileId = fileId;
+            this.pageNumber = pageNumber;
         }
 
         public String getId() {
@@ -87,6 +101,22 @@ public class GraphIngestionRequest {
         public void setProperties(Map<String, Object> properties) {
             this.properties = properties;
         }
+        
+        public String getFileId() {
+            return fileId;
+        }
+        
+        public void setFileId(String fileId) {
+            this.fileId = fileId;
+        }
+        
+        public Integer getPageNumber() {
+            return pageNumber;
+        }
+        
+        public void setPageNumber(Integer pageNumber) {
+            this.pageNumber = pageNumber;
+        }
 
         @Override
         public String toString() {
@@ -94,12 +124,14 @@ public class GraphIngestionRequest {
                     "id='" + id + '\'' +
                     ", labels=" + labels +
                     ", properties=" + properties +
+                    ", fileId='" + fileId + '\'' +
+                    ", pageNumber=" + pageNumber +
                     '}';
         }
     }
 
     /**
-     * 关系DTO - 支持动态关系类型和属性
+     * 关系DTO - 支持动态关系类型和属性，包含文档分页信息
      */
     public static class RelationshipDto {
         @JsonProperty("sourceId")
@@ -116,6 +148,12 @@ public class GraphIngestionRequest {
 
         @JsonProperty("properties")
         private Map<String, Object> properties;
+        
+        @JsonProperty("fileId")
+        private String fileId;
+        
+        @JsonProperty("pageNumber")
+        private Integer pageNumber;
 
         public RelationshipDto() {}
 
@@ -124,6 +162,15 @@ public class GraphIngestionRequest {
             this.targetId = targetId;
             this.type = type;
             this.properties = properties;
+        }
+        
+        public RelationshipDto(String sourceId, String targetId, String type, Map<String, Object> properties, String fileId, Integer pageNumber) {
+            this.sourceId = sourceId;
+            this.targetId = targetId;
+            this.type = type;
+            this.properties = properties;
+            this.fileId = fileId;
+            this.pageNumber = pageNumber;
         }
 
         public String getSourceId() {
@@ -157,6 +204,22 @@ public class GraphIngestionRequest {
         public void setProperties(Map<String, Object> properties) {
             this.properties = properties;
         }
+        
+        public String getFileId() {
+            return fileId;
+        }
+        
+        public void setFileId(String fileId) {
+            this.fileId = fileId;
+        }
+        
+        public Integer getPageNumber() {
+            return pageNumber;
+        }
+        
+        public void setPageNumber(Integer pageNumber) {
+            this.pageNumber = pageNumber;
+        }
 
         @Override
         public String toString() {
@@ -165,6 +228,8 @@ public class GraphIngestionRequest {
                     ", targetId='" + targetId + '\'' +
                     ", type='" + type + '\'' +
                     ", properties=" + properties +
+                    ", fileId='" + fileId + '\'' +
+                    ", pageNumber=" + pageNumber +
                     '}';
         }
     }
