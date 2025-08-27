@@ -98,6 +98,24 @@ public class GraphIngestionResponse {
     }
 
     /**
+     * 创建部分处理响应（用于分页处理中间状态）
+     */
+    public static GraphIngestionResponse partial(String documentId, int entitiesProcessed, int relationshipsProcessed, String message) {
+        GraphIngestionResponse response = new GraphIngestionResponse(true, message, 
+                documentId, entitiesProcessed, relationshipsProcessed);
+        return response;
+    }
+
+    /**
+     * 创建错误响应
+     */
+    public static GraphIngestionResponse error(String documentId, String message) {
+        GraphIngestionResponse response = new GraphIngestionResponse(false, message);
+        response.setDocumentId(documentId);
+        return response;
+    }
+
+    /**
      * 设置处理耗时
      */
     public void setProcessingTime(long startTimeMs) {

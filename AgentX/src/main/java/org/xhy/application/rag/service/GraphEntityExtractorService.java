@@ -17,6 +17,17 @@ import org.springframework.stereotype.Service;
 import org.xhy.application.knowledgeGraph.dto.GraphQueryResponse;
 import org.xhy.application.knowledgeGraph.service.GraphQueryService;
 import org.xhy.application.rag.dto.KgEnhancedRagRequest;
+import org.xhy.application.rag.dto.EntityExtractionResponse;
+import org.xhy.domain.neo4j.constant.EntityExtractionPrompt;
+import org.xhy.infrastructure.json.Neo4jCompatibleJsonParser;
+import org.xhy.infrastructure.llm.LLMProviderService;
+import org.xhy.infrastructure.llm.config.ProviderConfig;
+import org.xhy.infrastructure.llm.protocol.enums.ProviderProtocol;
+
+import com.alibaba.fastjson2.JSON;
+import dev.langchain4j.data.message.UserMessage;
+import dev.langchain4j.model.chat.ChatModel;
+import dev.langchain4j.model.chat.response.ChatResponse;
 
 /**
  * 图谱实体提取服务
@@ -196,13 +207,123 @@ public class GraphEntityExtractorService {
     }
 
     /**
-     * 基于LLM的实体提取（需要集成LLM服务）
+     * 基于LLM的实体提取
+     * 使用大语言模型从文本中智能提取实体信息
+     * 支持多种实体类型识别和置信度评估
      */
     private Set<ExtractedEntity> extractEntitiesByLLM(String text) {
-        // 这里应该调用LLM服务进行实体提取
-        // 目前使用关键词提取作为fallback
-        log.warn("LLM实体提取尚未实现，使用关键词提取");
-        return extractEntitiesByKeyword(text);
+        try {
+            log.debug("开始使用LLM进行实体提取，文本长度: {}", text.length());
+            
+            // 1. 替换prompt模板中的占位符
+            final String formattedPrompt = EntityExtractionPrompt.entityExtractionPrompt.replace("{{text}}", text);
+            final UserMessage userMessage = UserMessage.userMessage(formattedPrompt);
+            
+            log.debug("准备发送给AI的prompt长度: {}", formattedPrompt.length());
+
+            // 2. 创建实体提取的模型配置 - 使用固定配置（后续可改为从用户配置获取）
+            ProviderConfig entityExtractionProviderConfig = new ProviderConfig(
+                    "sk-b9aL4HqXa1OHY6TyctHBVnjq9IQndYd5snq4WdX9sQ4DUFma", 
+                    "https://new.281182.xyz/v1",
+                    "gemini-2.5-pro", 
+                    ProviderProtocol.OPENAI);
+
+            ChatModel entityExtractionModel = LLMProviderService.getStrand(ProviderProtocol.OPENAI, entityExtractionProviderConfig);
+
+            // 3. 调用LLM进行实体提取
+            final ChatResponse chat = entityExtractionModel.chat(userMessage);
+            final String responseText = chat.aiMessage().text();
+            
+            log.debug("LLM返回的原始文本: {}", responseText);
+
+            // 4. 解析LLM返回的JSON结果
+            Set<ExtractedEntity> entities = parseEntityExtractionResponse(responseText);
+            
+            log.info("LLM实体提取完成，提取到 {} 个实体", entities.size());
+            return entities;
+            
+        } catch (Exception e) {
+            log.error("LLM实体提取失败，使用关键词提取作为fallback: {}", e.getMessage(), e);
+            return extractEntitiesByKeyword(text);
+        }
+    }
+    
+    /**
+     * 解析LLM返回的实体提取结果
+     */
+    private Set<ExtractedEntity> parseEntityExtractionResponse(String responseText) {
+        Set<ExtractedEntity> entities = new HashSet<>();
+        
+        try {
+            // 1. 清理响应文本，提取JSON部分
+            String cleanedJson = extractJsonFromText(responseText);
+            
+            // 2. 解析JSON
+            EntityExtractionResponse response = Neo4jCompatibleJsonParser.parseObject(cleanedJson, EntityExtractionResponse.class);
+            
+            if (response != null && response.getEntities() != null) {
+                // 3. 转换为ExtractedEntity对象
+                for (EntityExtractionResponse.EntityItem item : response.getEntities()) {
+                    if (item.getText() != null && !item.getText().trim().isEmpty()) {
+                        ExtractedEntity entity = new ExtractedEntity(
+                            item.getText().trim(), 
+                            item.getType() != null ? item.getType() : "UNKNOWN", 
+                            0, 0
+                        );
+                        entity.setConfidence(item.getConfidence());
+                        entities.add(entity);
+                    }
+                }
+            }
+            
+            log.debug("成功解析LLM返回结果，提取到 {} 个实体", entities.size());
+            
+        } catch (Exception e) {
+            log.error("解析LLM实体提取结果失败: {}", e.getMessage(), e);
+            log.debug("原始响应文本: {}", responseText);
+        }
+        
+        return entities;
+    }
+    
+    /**
+     * 从AI返回的文本中提取JSON内容
+     * 处理可能包含Markdown代码块或其他格式的文本
+     */
+    private String extractJsonFromText(String text) {
+        if (text == null || text.trim().isEmpty()) {
+            return "{}";
+        }
+        
+        // 去除首尾空白
+        text = text.trim();
+        
+        // 如果文本以```json或```开头，提取代码块中的内容
+        if (text.startsWith("```")) {
+            int firstNewline = text.indexOf('\n');
+            if (firstNewline != -1) {
+                int lastTripleBacktick = text.lastIndexOf("```");
+                if (lastTripleBacktick > firstNewline) {
+                    text = text.substring(firstNewline + 1, lastTripleBacktick).trim();
+                }
+            }
+        }
+        
+        // 查找第一个{和最后一个}，提取JSON部分
+        int firstBrace = text.indexOf('{');
+        int lastBrace = text.lastIndexOf('}');
+        
+        if (firstBrace != -1 && lastBrace != -1 && lastBrace > firstBrace) {
+            text = text.substring(firstBrace, lastBrace + 1);
+        }
+        
+        // 如果还是不是有效的JSON格式，返回空对象
+        if (!text.startsWith("{") || !text.endsWith("}")) {
+            log.warn("无法从文本中提取有效的JSON格式，返回空对象");
+            return "{}";
+        }
+        
+        return text;
     }
 
     /**

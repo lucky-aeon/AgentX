@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import org.xhy.application.rag.dto.KgEnhancedRagRequest;
 import org.xhy.application.rag.dto.KgEnhancedRagResponse;
 import org.xhy.application.rag.service.KnowledgeGraphEnhancedRagService;
+import org.xhy.infrastructure.auth.UserContext;
 import org.xhy.interfaces.api.common.Result;
 
 /**
@@ -47,8 +48,8 @@ public class KgEnhancedRagController {
             @RequestBody @Valid KgEnhancedRagRequest request) {
 
         try {
-            // 获取当前用户ID（简化版本，实际应该从认证上下文获取）
-            String userId = "default-user";
+            // 获取当前用户ID
+            String userId = UserContext.getCurrentUserId();
 
             log.info("收到知识图谱增强RAG检索请求，用户: {}, 查询: '{}', 数据集数量: {}",
                 userId, request.getQuestion(),
