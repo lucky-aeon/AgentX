@@ -231,6 +231,29 @@ public class DockerService {
         }
     }
 
+    /** 通过容器名查找容器ID
+     * 
+     * @param containerName 容器名称
+     * @return Docker容器ID，如果不存在返回null */
+    public String findContainerByName(String containerName) {
+        try {
+            // 查找所有容器（包括停止的）
+            var containers = dockerClient.listContainersCmd().withShowAll(true).withNameFilter(List.of(containerName))
+                    .exec();
+
+            if (!containers.isEmpty()) {
+                String containerId = containers.get(0).getId();
+                logger.info("通过名称找到现有容器: name={}, id={}", containerName, containerId);
+                return containerId;
+            }
+
+            return null;
+        } catch (DockerException e) {
+            logger.warn("查找容器失败: name={}", containerName, e);
+            return null;
+        }
+    }
+
     /** 获取容器统计信息
      * 
      * @param containerId Docker容器ID
@@ -454,6 +477,87 @@ public class DockerService {
         }
     }
 
+    /** 验证容器实际状态（区分容器不存在和状态异常）
+     * 
+     * @param containerId Docker容器ID
+     * @return 容器实际状态信息 */
+    public ContainerActualStatus getContainerActualStatus(String containerId) {
+        if (containerId == null) {
+            return new ContainerActualStatus(false, null, "容器ID为空");
+        }
+
+        try {
+            InspectContainerResponse response = dockerClient.inspectContainerCmd(containerId).exec();
+            String status = response.getState().getStatus();
+            boolean isRunning = "running".equalsIgnoreCase(status);
+
+            logger.debug("容器实际状态检查: containerId={}, status={}, running={}", containerId, status, isRunning);
+
+            return new ContainerActualStatus(true, status, isRunning ? "容器运行正常" : "容器状态为: " + status);
+        } catch (DockerException e) {
+            logger.warn("容器不存在或无法访问: containerId={}", containerId, e);
+            return new ContainerActualStatus(false, null, "容器不存在: " + e.getMessage());
+        }
+    }
+
+    /** 检查容器网络连通性
+     * 
+     * @param ipAddress 容器IP地址
+     * @param port 容器端口
+     * @return 是否可连通 */
+    public boolean isContainerNetworkAccessible(String ipAddress, Integer port) {
+        if (ipAddress == null || port == null) {
+            return false;
+        }
+
+        try {
+            // 简单的TCP连接检查
+            java.net.Socket socket = new java.net.Socket();
+            socket.connect(new java.net.InetSocketAddress(ipAddress, port), 3000); // 3秒超时
+            socket.close();
+
+            logger.debug("容器网络连通性检查成功: {}:{}", ipAddress, port);
+            return true;
+        } catch (Exception e) {
+            logger.debug("容器网络连通性检查失败: {}:{}, error={}", ipAddress, port, e.getMessage());
+            return false;
+        }
+    }
+
+    /** 强制检查并启动容器（如果存在但未运行）
+     * 
+     * @param containerId Docker容器ID
+     * @return 操作结果 */
+    public ContainerRecoveryResult forceStartContainerIfExists(String containerId) {
+        ContainerActualStatus actualStatus = getContainerActualStatus(containerId);
+
+        if (!actualStatus.exists()) {
+            return new ContainerRecoveryResult(false, "CONTAINER_NOT_EXISTS", actualStatus.getMessage());
+        }
+
+        String currentStatus = actualStatus.getStatus();
+
+        if ("running".equalsIgnoreCase(currentStatus)) {
+            return new ContainerRecoveryResult(true, "ALREADY_RUNNING", "容器已在运行");
+        }
+
+        // 尝试启动容器
+        try {
+            startContainer(containerId);
+
+            // 再次检查状态确认启动成功
+            ContainerActualStatus newStatus = getContainerActualStatus(containerId);
+            if (newStatus.exists() && "running".equalsIgnoreCase(newStatus.getStatus())) {
+                return new ContainerRecoveryResult(true, "STARTED_SUCCESSFULLY", "容器启动成功");
+            } else {
+                return new ContainerRecoveryResult(false, "START_FAILED", "容器启动后状态异常: " + newStatus.getStatus());
+            }
+        } catch (Exception e) {
+            logger.error("强制启动容器失败: containerId={}", containerId, e);
+            return new ContainerRecoveryResult(false, "START_ERROR", "启动失败: " + e.getMessage());
+        }
+    }
+
     /** 获取Docker客户端（用于WebTerminal）
      * 
      * @return Docker客户端 */
@@ -489,6 +593,60 @@ public class DockerService {
 
         public void setMemoryUsage(Double memoryUsage) {
             this.memoryUsage = memoryUsage;
+        }
+    }
+
+    /** 容器实际状态信息 */
+    public static class ContainerActualStatus {
+        private final boolean exists;
+        private final String status;
+        private final String message;
+
+        public ContainerActualStatus(boolean exists, String status, String message) {
+            this.exists = exists;
+            this.status = status;
+            this.message = message;
+        }
+
+        public boolean exists() {
+            return exists;
+        }
+
+        public String getStatus() {
+            return status;
+        }
+
+        public String getMessage() {
+            return message;
+        }
+
+        public boolean isRunning() {
+            return exists && "running".equalsIgnoreCase(status);
+        }
+    }
+
+    /** 容器恢复操作结果 */
+    public static class ContainerRecoveryResult {
+        private final boolean success;
+        private final String resultCode;
+        private final String message;
+
+        public ContainerRecoveryResult(boolean success, String resultCode, String message) {
+            this.success = success;
+            this.resultCode = resultCode;
+            this.message = message;
+        }
+
+        public boolean isSuccess() {
+            return success;
+        }
+
+        public String getResultCode() {
+            return resultCode;
+        }
+
+        public String getMessage() {
+            return message;
         }
     }
 }

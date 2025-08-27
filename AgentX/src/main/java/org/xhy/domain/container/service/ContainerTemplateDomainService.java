@@ -302,7 +302,7 @@ public class ContainerTemplateDomainService {
         template.setCpuLimit(1.0);
         template.setMemoryLimit(512);
         template.setVolumeMountPath("/app/data");
-        template.setNetworkMode("host");
+        template.setNetworkMode("bridge");
         template.setRestartPolicy("unless-stopped");
         template.setEnabled(true);
         template.setIsDefault(true);
@@ -323,7 +323,7 @@ public class ContainerTemplateDomainService {
         template.setCpuLimit(1.0);
         template.setMemoryLimit(512);
         template.setVolumeMountPath("/app/data");
-        template.setNetworkMode("host");
+        template.setNetworkMode("bridge");
         template.setRestartPolicy("unless-stopped");
         template.setEnabled(true);
         template.setIsDefault(true);

@@ -29,8 +29,7 @@ public class RagToolExecutor implements ToolExecutor {
      * @param knowledgeBaseIds RAG知识库ID列表
      * @param userId 用户ID
      * @param ragSearchAppService RAG服务 */
-    public RagToolExecutor(List<String> knowledgeBaseIds, String userId,
-                           RAGSearchAppService ragSearchAppService) {
+    public RagToolExecutor(List<String> knowledgeBaseIds, String userId, RAGSearchAppService ragSearchAppService) {
         this.knowledgeBaseIds = knowledgeBaseIds != null ? new ArrayList<>(knowledgeBaseIds) : new ArrayList<>();
         this.userId = userId;
         this.ragSearchAppService = ragSearchAppService;

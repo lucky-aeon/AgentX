@@ -67,9 +67,9 @@ public class RagQaDatasetAppService {
     public RagQaDatasetAppService(RagQaDatasetDomainService ragQaDatasetDomainService,
             FileDetailDomainService fileDetailDomainService, DocumentUnitDomainService documentUnitDomainService,
             ApplicationEventPublisher applicationEventPublisher, EmbeddingDomainService embeddingDomainService,
-             RagPublishAppService ragPublishAppService,
-            RagVersionDomainService ragVersionDomainService, UserRagDomainService userRagDomainService,
-            RagDataAccessDomainService ragDataAccessService, RagModelConfigService ragModelConfigService) {
+            RagPublishAppService ragPublishAppService, RagVersionDomainService ragVersionDomainService,
+            UserRagDomainService userRagDomainService, RagDataAccessDomainService ragDataAccessService,
+            RagModelConfigService ragModelConfigService) {
         this.ragQaDatasetDomainService = ragQaDatasetDomainService;
         this.fileDetailDomainService = fileDetailDomainService;
         this.documentUnitDomainService = documentUnitDomainService;

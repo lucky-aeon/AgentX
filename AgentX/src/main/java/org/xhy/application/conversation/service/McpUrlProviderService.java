@@ -143,7 +143,7 @@ public class McpUrlProviderService {
         }
     }
 
-    /** 检查容器是否健康 */
+    /** 检查容器是否健康（使用统一的健康检查机制） 注意：此方法基于DTO进行基础检查，详细的Docker状态检查由ContainerAppService负责 */
     private boolean isContainerHealthy(ContainerDTO container) {
         if (container == null) {
             return false;
@@ -155,7 +155,17 @@ public class McpUrlProviderService {
         // 检查必要的网络信息是否存在
         boolean hasNetworkInfo = container.getIpAddress() != null && container.getExternalPort() != null;
 
-        return isRunning && hasNetworkInfo;
+        // 检查Docker容器ID是否存在（基础验证）
+        boolean hasDockerContainerId = container.getDockerContainerId() != null;
+
+        boolean basicHealthy = isRunning && hasNetworkInfo && hasDockerContainerId;
+
+        if (!basicHealthy) {
+            logger.warn("容器基础健康检查失败: containerId={}, running={}, networkInfo={}, dockerId={}", container.getId(),
+                    isRunning, hasNetworkInfo, hasDockerContainerId);
+        }
+
+        return basicHealthy;
     }
 
     /** 部署工具到用户容器 */

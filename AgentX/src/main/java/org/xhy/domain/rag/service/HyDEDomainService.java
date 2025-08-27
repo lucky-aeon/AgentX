@@ -10,7 +10,6 @@ import org.springframework.util.StringUtils;
 import org.xhy.domain.rag.model.ModelConfig;
 import org.xhy.infrastructure.rag.service.UserModelConfigResolver;
 
-
 /** HyDE（假设文档嵌入）领域服务 使用用户配置的LLM生成假设文档来改善RAG检索效果
  * 
  * @author claude */
@@ -27,7 +26,6 @@ public class HyDEDomainService {
 
             请生成一个包含相关专业术语和概念的回答（150-300字），确保回答准确、专业且包含可能在相关文档中出现的关键词：
             """;
-
 
     private final UserModelConfigResolver userModelConfigResolver;
 
@@ -70,7 +68,6 @@ public class HyDEDomainService {
             return trimmedQuery;
         }
     }
-
 
     /** 检查是否适合使用HyDE 根据查询特征判断是否应该使用HyDE生成
      * 
