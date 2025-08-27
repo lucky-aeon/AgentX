@@ -44,7 +44,7 @@ public class ToolStateService {
      * @param toolRepository 工具仓库，用于数据持久化。
      * @param gitHubService GitHub服务，用于与GitHub API交互。 */
     public ToolStateService(ToolRepository toolRepository, GitHubService gitHubService,
-            MCPGatewayService mcpGatewayService) {
+                            MCPGatewayService mcpGatewayService) {
         this.toolRepository = toolRepository;
         this.gitHubService = gitHubService;
         this.mcpGatewayService = mcpGatewayService;
@@ -146,6 +146,8 @@ public class ToolStateService {
 
         logger.info("开始处理工具ID: {} 的状态: {}", toolEntity.getId(), initialStatus);
 
+        ToolProcessMonitor.recordToolState(toolEntity.getId(), initialStatus);
+
         try {
             processor.process(toolEntity);
 
@@ -183,6 +185,11 @@ public class ToolStateService {
             toolRepository.updateById(toolEntity);
             logger.info("工具ID: {} 状态已更新为 {}，失败步骤: {}，原因: {}", toolEntity.getId(), toolEntity.getStatus(), initialStatus,
                     e.getMessage());
+        } finally {
+            // 人工审核状态也移除，减少内存占用
+            if (ToolStatus.isTerminalStatus(toolEntity.getStatus()) || toolEntity.getStatus() == ToolStatus.MANUAL_REVIEW) {
+                ToolProcessMonitor.recordToolStateTermination(toolEntity);
+            }
         }
     }
 

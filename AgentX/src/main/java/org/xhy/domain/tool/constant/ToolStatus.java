@@ -2,6 +2,8 @@ package org.xhy.domain.tool.constant;
 
 import org.xhy.infrastructure.exception.BusinessException;
 
+import java.util.Set;
+
 /** 工具审核状态枚举 */
 public enum ToolStatus {
     WAITING_REVIEW, // 等待审核
@@ -13,6 +15,10 @@ public enum ToolStatus {
     APPROVED, // 已通过
     PUBLISH_FAILED, // 发布失败
     FAILED; // 通用失败状态
+
+
+    private static final Set<ToolStatus> TERMINAL_STATUSES = Set.of(ToolStatus.APPROVED, ToolStatus.FAILED,
+            ToolStatus.PUBLISH_FAILED);
 
     /** 根据名称获取工具状态枚举。
      *
@@ -26,5 +32,13 @@ public enum ToolStatus {
             }
         }
         return null;
+    }
+
+    public static boolean isTerminalStatus(ToolStatus status) {
+        return TERMINAL_STATUSES.contains(status);
+    }
+
+    public static Set<ToolStatus> getTerminalStatuses() {
+        return TERMINAL_STATUSES;
     }
 }
