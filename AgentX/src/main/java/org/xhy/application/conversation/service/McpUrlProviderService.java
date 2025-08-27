@@ -125,12 +125,6 @@ public class McpUrlProviderService {
             // ContainerAppService.getUserContainer() 已经包含自动创建和启动逻辑
             ContainerDTO userContainer = containerAppService.getUserContainer(userId);
 
-            // 如果容器正在创建中，等待其完成
-            if (ContainerStatus.CREATING.equals(userContainer.getStatus())) {
-                logger.info("容器正在创建中，等待完成: userId={}", userId);
-                userContainer = waitForUserContainerReady(userContainer.getId(), userId);
-            }
-
             // 最终验证容器状态
             if (!isContainerHealthy(userContainer)) {
                 throw new BusinessException("用户容器准备失败，状态异常: " + userContainer.getStatus());
@@ -188,74 +182,11 @@ public class McpUrlProviderService {
         }
     }
 
-    /** 等待用户容器准备就绪
-     * 
-     * @param containerId 容器ID
-     * @param userId 用户ID
-     * @return 包含完整网络信息的容器DTO
-     * @throws BusinessException 如果等待超时或容器创建失败 */
-    private ContainerDTO waitForUserContainerReady(String containerId, String userId) {
-        int maxRetries = 30; // 最多等待30秒
-        int retryCount = 0;
-
-        while (retryCount < maxRetries) {
-            try {
-                Thread.sleep(1000); // 等待1秒
-
-                ContainerDTO container = containerAppService.getUserContainer(userId);
-
-                // 检查容器是否处于错误状态
-                if (ContainerStatus.ERROR.equals(container.getStatus())) {
-                    logger.error("容器创建失败: containerId={}, status={}", containerId, container.getStatus());
-                    throw new BusinessException("容器创建失败，请检查Docker环境");
-                }
-
-                // 检查容器是否已经健康运行
-                if (isContainerHealthy(container)) {
-                    logger.info("用户容器准备就绪: userId={}, containerId={}, ip={}, port={}", userId, containerId,
-                            container.getIpAddress(), container.getExternalPort());
-                    return container;
-                }
-
-                retryCount++;
-                logger.debug("等待用户容器准备就绪: userId={}, containerId={}, retry={}/{}, status={}, ip={}", userId,
-                        containerId, retryCount, maxRetries, container.getStatus(), container.getIpAddress());
-
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new BusinessException("等待用户容器准备被中断");
-            } catch (BusinessException e) {
-                // 如果是业务异常，直接抛出
-                throw e;
-            } catch (Exception e) {
-                logger.warn("检查用户容器状态时出错: userId={}, retry={}", userId, retryCount, e);
-                retryCount++;
-            }
-        }
-
-        // 超时后尝试获取最新状态
-        try {
-            ContainerDTO container = containerAppService.getUserContainer(userId);
-            logger.warn("用户容器等待超时，当前状态: userId={}, containerId={}, status={}, ip={}, port={}", userId, containerId,
-                    container.getStatus(), container.getIpAddress(), container.getExternalPort());
-        } catch (Exception e) {
-            logger.error("获取用户容器最终状态失败: userId={}", userId, e);
-        }
-
-        throw new BusinessException("用户容器创建超时，请稍后重试或检查Docker环境");
-    }
-
     /** 确保审核容器就绪（自动创建和启动） */
     private ContainerDTO ensureReviewContainerReady() {
         try {
             // ContainerAppService.getReviewContainer() 已经包含自动创建和启动逻辑
             ContainerDTO reviewContainer = containerAppService.getOrCreateReviewContainer();
-
-            // 如果容器正在创建中，等待其完成
-            if (ContainerStatus.CREATING.equals(reviewContainer.getStatus())) {
-                logger.info("审核容器正在创建中，等待完成");
-                reviewContainer = waitForReviewContainerReady(reviewContainer.getId());
-            }
 
             // 最终验证容器状态
             if (!isContainerHealthy(reviewContainer)) {
@@ -267,49 +198,6 @@ public class McpUrlProviderService {
             logger.error("准备审核容器失败", e);
             throw new BusinessException("审核容器准备失败: " + e.getMessage());
         }
-    }
-
-    /** 等待审核容器准备就绪 */
-    private ContainerDTO waitForReviewContainerReady(String containerId) {
-        int maxRetries = 30; // 最多等待30秒
-        int retryCount = 0;
-
-        while (retryCount < maxRetries) {
-            try {
-                Thread.sleep(1000); // 等待1秒
-
-                ContainerDTO container = containerAppService.getOrCreateReviewContainer();
-
-                // 检查容器是否处于错误状态
-                if (ContainerStatus.ERROR.equals(container.getStatus())) {
-                    logger.error("审核容器创建失败: containerId={}, status={}", containerId, container.getStatus());
-                    throw new BusinessException("审核容器创建失败，请检查Docker环境");
-                }
-
-                // 检查容器是否已经健康运行
-                if (isContainerHealthy(container)) {
-                    logger.info("审核容器准备就绪: containerId={}, ip={}, port={}", containerId,
-                            container.getIpAddress(), container.getExternalPort());
-                    return container;
-                }
-
-                retryCount++;
-                logger.debug("等待审核容器准备就绪: containerId={}, retry={}/{}, status={}, ip={}", containerId,
-                        retryCount, maxRetries, container.getStatus(), container.getIpAddress());
-
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new BusinessException("等待审核容器准备被中断");
-            } catch (BusinessException e) {
-                // 如果是业务异常，直接抛出
-                throw e;
-            } catch (Exception e) {
-                logger.warn("检查审核容器状态时出错: retry={}", retryCount, e);
-                retryCount++;
-            }
-        }
-
-        throw new BusinessException("审核容器创建超时，请稍后重试或检查Docker环境");
     }
 
     /** 部署全局工具到审核容器 */

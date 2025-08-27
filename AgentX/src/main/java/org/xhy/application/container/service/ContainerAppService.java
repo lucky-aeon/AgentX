@@ -45,10 +45,9 @@ public class ContainerAppService {
     }
 
     /** 为用户创建容器
-     * 
+     *
      * @param userId 用户ID
      * @return 容器信息 */
-    @Transactional
     public ContainerDTO createUserContainer(String userId) {
 
         // 获取MCP网关模板（即用户容器模板）
@@ -75,10 +74,9 @@ public class ContainerAppService {
     }
 
     /** 获取用户容器（自动创建和启动）
-     * 
+     *
      * @param userId 用户ID
      * @return 容器信息，保证返回可用容器 */
-    @Transactional
     public ContainerDTO getUserContainer(String userId) {
         ContainerEntity container = containerDomainService.findUserContainer(userId);
 
@@ -103,7 +101,8 @@ public class ContainerAppService {
         }
 
         // 3. 更新最后访问时间
-        updateContainerLastAccessed(container);
+        containerDomainService.updateContainerLastAccessed(container.getId());
+        logger.debug("更新容器最后访问时间: {}", container.getName());
 
         return ContainerAssembler.toDTO(container);
     }
@@ -162,7 +161,6 @@ public class ContainerAppService {
     /** 启动容器
      * 
      * @param containerId 容器ID */
-    @Transactional
     public void startContainer(String containerId) {
         ContainerEntity container = getContainerById(containerId);
 
@@ -381,6 +379,8 @@ public class ContainerAppService {
             // 对于host网络模式，外部端口就是内部端口
             // TODO: 需要在ContainerDomainService中添加updateContainerExternalPort方法
             if ("host".equals(template.getNetworkMode())) {
+                containerDomainService.updateContainerExternalPort(container.getId(), template.getInternalPort(),
+                        Operator.ADMIN);
                 logger.info("host网络模式，容器外部端口应为内部端口: {}", template.getInternalPort());
             }
 
@@ -388,7 +388,8 @@ public class ContainerAppService {
             containerDomainService.updateContainerStatus(container.getId(), ContainerStatus.RUNNING, Operator.ADMIN,
                     dockerContainerId);
             containerDomainService.updateContainerIpAddress(container.getId(), ipAddress, Operator.ADMIN);
-
+            container.updateStatus(ContainerStatus.RUNNING);
+            container.setIpAddress(ipAddress);
             logger.info("容器创建成功: {} -> {}", container.getName(), dockerContainerId);
 
         } catch (Exception e) {
@@ -516,7 +517,6 @@ public class ContainerAppService {
             if (container.isSuspended()) {
                 resumeSuspendedContainer(container);
             }
-
             // 更新最后访问时间
             containerDomainService.updateContainerLastAccessed(container.getId());
             logger.debug("更新容器最后访问时间: {}", container.getName());
@@ -554,7 +554,6 @@ public class ContainerAppService {
     /** 获取或创建审核容器
      * 
      * @return 审核容器信息，保证返回可用的审核容器 */
-    @Transactional
     public ContainerDTO getOrCreateReviewContainer() {
         // 查找现有的审核容器
         ContainerEntity reviewContainer = containerDomainService.findReviewContainer();
@@ -562,10 +561,7 @@ public class ContainerAppService {
         if (reviewContainer == null) {
             // 审核容器不存在，创建新的
             logger.info("审核容器不存在，自动创建");
-            ContainerDTO createdContainer = createReviewContainer();
-
-            // 等待容器创建完成并获取网络信息
-            return waitForContainerReady(createdContainer.getId());
+            return createReviewContainer();
         }
 
         // 检查审核容器健康状态
@@ -588,7 +584,6 @@ public class ContainerAppService {
     /** 创建审核容器
      * 
      * @return 审核容器信息 */
-    @Transactional
     public ContainerDTO createReviewContainer() {
         // 获取审核容器模板
         ContainerTemplateEntity templateEntity = templateDomainService.getReviewContainerTemplate();
@@ -673,53 +668,6 @@ public class ContainerAppService {
         createDockerContainer(container, template);
 
         return ContainerAssembler.toDTO(container);
-    }
-
-    /** 等待容器准备就绪（包含网络信息）
-     * 
-     * @param containerId 容器ID
-     * @return 包含完整网络信息的容器DTO
-     * @throws BusinessException 如果等待超时或容器创建失败 */
-    private ContainerDTO waitForContainerReady(String containerId) {
-        int maxRetries = 30; // 最多等待30秒
-        int retryCount = 0;
-
-        while (retryCount < maxRetries) {
-            try {
-                Thread.sleep(1000); // 等待1秒
-
-                ContainerEntity container = containerDomainService.getContainerById(containerId);
-
-                // 检查容器是否处于错误状态
-                if (ContainerStatus.ERROR.equals(container.getStatus())) {
-                    logger.error("容器创建失败: containerId={}, status={}", containerId, container.getStatus());
-                    throw new BusinessException("容器创建失败，请检查Docker环境");
-                }
-
-                // 检查容器是否已经有完整的网络信息
-                if (ContainerStatus.RUNNING.equals(container.getStatus()) && container.getIpAddress() != null
-                        && container.getExternalPort() != null) {
-                    logger.info("容器准备就绪: containerId={}, ip={}, port={}", containerId, container.getIpAddress(),
-                            container.getExternalPort());
-                    return ContainerAssembler.toDTO(container);
-                }
-
-                retryCount++;
-                logger.debug("等待容器准备就绪: containerId={}, retry={}/{}, status={}, ip={}", containerId, retryCount,
-                        maxRetries, container.getStatus(), container.getIpAddress());
-
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new BusinessException("等待容器准备被中断");
-            }
-        }
-
-        // 超时后尝试获取最新状态
-        ContainerEntity container = containerDomainService.getContainerById(containerId);
-        logger.warn("容器等待超时，当前状态: containerId={}, status={}, ip={}, port={}", containerId, container.getStatus(),
-                container.getIpAddress(), container.getExternalPort());
-
-        throw new BusinessException("容器创建超时，请稍后重试或检查Docker环境");
     }
 
     /** 容器健康状态检查结果 */
