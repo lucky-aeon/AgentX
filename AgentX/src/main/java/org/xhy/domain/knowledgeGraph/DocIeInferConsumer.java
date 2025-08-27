@@ -26,6 +26,8 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 import org.xhy.application.knowledgeGraph.dto.GraphIngestionRequest;
 import org.xhy.application.knowledgeGraph.service.GraphIngestionService;
+import org.xhy.application.knowledgeGraph.service.PagedGraphProcessingOrchestrator;
+import org.xhy.application.knowledgeGraph.service.ContextAwareGraphExtractionService;
 import org.xhy.domain.knowledgeGraph.message.DocIeInferMessage;
 import org.xhy.domain.neo4j.constant.GraphExtractorPrompt;
 import org.xhy.domain.rag.message.RagDocSyncOcrMessage;
@@ -50,77 +52,19 @@ public class DocIeInferConsumer {
 
     // AI服务和图数据存储服务
     private final GraphIngestionService graphIngestionService;
+    private final PagedGraphProcessingOrchestrator processingOrchestrator;
+    private final ContextAwareGraphExtractionService contextAwareExtractionService;
 
-    public DocIeInferConsumer( GraphIngestionService graphIngestionService) {
+    public DocIeInferConsumer(
+            GraphIngestionService graphIngestionService,
+            PagedGraphProcessingOrchestrator processingOrchestrator,
+            ContextAwareGraphExtractionService contextAwareExtractionService) {
         this.graphIngestionService = graphIngestionService;
+        this.processingOrchestrator = processingOrchestrator;
+        this.contextAwareExtractionService = contextAwareExtractionService;
     }
     
-    /**
-     * 从AI返回的文本中提取JSON内容
-     * 处理可能包含Markdown代码块或其他格式的文本
-     */
-    private String extractJsonFromText(String text) {
-        if (StrUtil.isBlank(text)) {
-            return "{}";
-        }
-        
-        // 去除首尾空白
-        text = text.trim();
-        
-        // 如果文本以```json或```开头，提取代码块中的内容
-        if (text.startsWith("```")) {
-            int firstNewline = text.indexOf('\n');
-            if (firstNewline != -1) {
-                int lastTripleBacktick = text.lastIndexOf("```");
-                if (lastTripleBacktick > firstNewline) {
-                    text = text.substring(firstNewline + 1, lastTripleBacktick).trim();
-                }
-            }
-        }
-        
-        // 查找第一个{和最后一个}，提取JSON部分
-        int firstBrace = text.indexOf('{');
-        int lastBrace = text.lastIndexOf('}');
-        
-        if (firstBrace != -1 && lastBrace != -1 && lastBrace > firstBrace) {
-            text = text.substring(firstBrace, lastBrace + 1);
-        }
-        
-        // 清理可能的转义字符和格式问题
-        text = cleanJsonString(text);
-        
-        // 如果还是不是有效的JSON格式，返回空对象
-        if (!text.startsWith("{") || !text.endsWith("}")) {
-            log.warn("无法从文本中提取有效的JSON格式，返回空对象");
-            return "{}";
-        }
-        
-        return text;
-    }
-    
-    /**
-     * 清理JSON字符串中的格式问题
-     */
-    private String cleanJsonString(String jsonStr) {
-        if (StrUtil.isBlank(jsonStr)) {
-            return jsonStr;
-        }
-        
-        // 移除可能的BOM字符
-        if (jsonStr.startsWith("\uFEFF")) {
-            jsonStr = jsonStr.substring(1);
-        }
-        
-        // 处理可能的转义问题
-        jsonStr = jsonStr.replace("\\n", "\n")
-                        .replace("\\t", "\t")
-                        .replace("\\r", "\r");
-        
-        // 移除多余的空白字符，但保留JSON结构
-        jsonStr = jsonStr.trim();
-        
-        return jsonStr;
-    }
+
 
     /**
      * 处理文档信息抽取推理事件
@@ -143,66 +87,65 @@ public class DocIeInferConsumer {
         DocIeInferMessage ocrMessage = JSON.parseObject(JSON.toJSONString(mqMessageBody.getData()),
                 DocIeInferMessage.class);
         
-        log.info("开始处理文档 {} 的知识图谱提取任务", ocrMessage.getFileId());
-
-        boolean messageProcessed = false; // 标记消息是否已经被处理（确认或拒绝）
-
+        // 检查重试次数，避免无限重试
+        Integer retryCount = (Integer) messageProperties.getHeaders().get("x-delivery-count");
+        if (retryCount == null) {
+            retryCount = 0;
+        }
+        final int MAX_RETRY_COUNT = 3;
+        
+        if (retryCount >= MAX_RETRY_COUNT) {
+            log.error("文档 {} 处理失败次数已达到最大重试次数 {}，消息将被丢弃", 
+                     ocrMessage.getFileId(), MAX_RETRY_COUNT);
+            channel.basicAck(deliveryTag, false);
+            MDC.remove(HEADER_NAME_TRACE_ID);
+            return;
+        }
+        
+        if (ocrMessage.isPaged()) {
+            log.info("开始处理文档 {} 的知识图谱提取任务，页码: {}/{}, 重试次数: {}", 
+                    ocrMessage.getFileId(), ocrMessage.getPageNumber(), ocrMessage.getTotalPages(), retryCount);
+        } else {
+            log.info("开始处理文档 {} 的知识图谱提取任务（非分页模式），重试次数: {}", ocrMessage.getFileId(), retryCount);
+        }
+        
+        // 标记消息是否已经被处理（确认或拒绝）
+        boolean messageProcessed = false;
+        
         try {
-            // 使用AI服务从文本中提取知识图谱
-            String documentText = ocrMessage.getDocumentText();
-            log.info("文档内容长度: {}", documentText != null ? documentText.length() : "null");
-            
-            // 替换prompt模板中的占位符
-            final String formattedPrompt = GraphExtractorPrompt.graphExtractorPrompt.replace("{{text}}", documentText);
-            final UserMessage userMessage = UserMessage.userMessage(
-                    TextContent.from(formattedPrompt));
-            
-            log.info("准备发送给AI的prompt长度: {}", formattedPrompt.length());
-
-            /** 创建OCR处理的模型配置 - 从消息中获取用户配置的OCR模型 */
-            ProviderConfig ocrProviderConfig = new ProviderConfig(
-                    "sk-cxdmubeuwhayavsalqgmkrljfplhharyrociewxaikfmqkwm", "https://api.siliconflow.cn/v1",
-                    "Qwen/Qwen2.5-VL-72B-Instruct", ProviderProtocol.OPENAI);
-
-            ChatModel ocrModel = LLMProviderService.getStrand(ProviderProtocol.OPENAI, ocrProviderConfig);
-
-            final ChatResponse chat = ocrModel.chat(userMessage);
-            final String text = chat.aiMessage().text();
-            
-            log.info("AI返回的原始文本: {}", text);
-            
-            // 清理和提取JSON内容
-            String cleanedJson = extractJsonFromText(text);
-            log.info("清理后的JSON: {}", cleanedJson);
-
-            GraphIngestionRequest extractedGraph = null;
-            try {
-                extractedGraph = JSON.parseObject(cleanedJson, GraphIngestionRequest.class);
-            } catch (Exception jsonException) {
-                log.error("JSON解析失败，原始文本: {}", text);
-                log.error("清理后的JSON: {}", cleanedJson);
-                log.error("JSON解析异常: {}", jsonException.getMessage(), jsonException);
-                
-                // 尝试使用fastjson2的其他解析方式
-                try {
-                    extractedGraph = JSONObject.parseObject(cleanedJson, GraphIngestionRequest.class);
-                    log.info("使用JSONObject.parseObject解析成功");
-                } catch (Exception secondException) {
-                    log.error("第二次JSON解析也失败: {}", secondException.getMessage(), secondException);
-                    // 返回空的GraphIngestionRequest，让后续逻辑处理
-                    extractedGraph = null;
-                }
+            // 验证分页消息的完整性
+            if (!processingOrchestrator.validatePagedMessage(ocrMessage)) {
+                log.error("分页消息验证失败，跳过处理");
+                channel.basicAck(deliveryTag, false);
+                messageProcessed = true;
+                return;
             }
 
+            // 使用上下文感知的图谱提取服务
+            GraphIngestionRequest extractedGraph = contextAwareExtractionService.extractWithContext(ocrMessage);
+
             if (extractedGraph != null && extractedGraph.getEntities() != null && !extractedGraph.getEntities().isEmpty()) {
-                // 设置文档ID
-                extractedGraph.setDocumentId(ocrMessage.getFileId());
-                // 保存提取的图数据到Neo4j
-                graphIngestionService.ingestGraphData(extractedGraph);
-                log.info("成功提取并保存文档 {} 的知识图谱，实体数: {}, 关系数: {}",
-                        extractedGraph.getDocumentId(), 
-                        extractedGraph.getEntities().size(),
-                        extractedGraph.getRelationships() != null ? extractedGraph.getRelationships().size() : 0);
+                
+                // 使用协调器处理图谱数据（支持分页和非分页模式）
+                var response = processingOrchestrator.orchestrateGraphProcessing(ocrMessage, extractedGraph);
+                
+                if (response.isSuccess()) {
+                    if (ocrMessage.isPaged()) {
+                        log.info("文档 {} 第 {} 页知识图谱处理成功，实体数: {}, 关系数: {}",
+                                ocrMessage.getFileId(), ocrMessage.getPageNumber(),
+                                extractedGraph.getEntities().size(),
+                                extractedGraph.getRelationships() != null ? extractedGraph.getRelationships().size() : 0);
+                    } else {
+                        log.info("文档 {} 知识图谱处理成功，实体数: {}, 关系数: {}",
+                                ocrMessage.getFileId(),
+                                extractedGraph.getEntities().size(),
+                                extractedGraph.getRelationships() != null ? extractedGraph.getRelationships().size() : 0);
+                    }
+                } else {
+                    log.error("文档 {} 知识图谱处理失败: {}", ocrMessage.getFileId(), response.getMessage());
+                    // 处理失败时抛出异常，触发重试逻辑
+                    throw new RuntimeException("知识图谱处理失败: " + response.getMessage());
+                }
             } else {
                 log.warn("未能从文档 {} 中提取到有效的知识图谱数据", ocrMessage.getFileId());
             }
@@ -210,40 +153,54 @@ public class DocIeInferConsumer {
             // 成功处理完成，确认消息
             channel.basicAck(deliveryTag, false);
             messageProcessed = true;
-            log.info("文档 {} 处理完成，消息已确认", ocrMessage.getFileId());
+             
+            if (ocrMessage.isPaged()) {
+                log.info("文档 {} 第 {} 页处理完成，消息已确认", ocrMessage.getFileId(), ocrMessage.getPageNumber());
+            } else {
+                log.info("文档 {} 处理完成，消息已确认", ocrMessage.getFileId());
+            }
 
         } catch (Exception e) {
             log.error("处理文档 {} 的知识图谱提取任务失败: {}", ocrMessage.getFileId(), e.getMessage(), e);
-            try {
-                // 拒绝消息并重新入队，可以实现重试机制
-                channel.basicNack(deliveryTag, false, true);
-                messageProcessed = true;
-                log.info("文档 {} 处理失败，消息已拒绝并重新入队", ocrMessage.getFileId());
-            } catch (IOException ioException) {
-                log.error("消息拒绝失败: {}", ioException.getMessage(), ioException);
-                // 如果拒绝失败，尝试确认消息以避免重复消费
+            
+            if (!messageProcessed) {
                 try {
-                    channel.basicAck(deliveryTag, false);
-                    messageProcessed = true;
-                    log.warn("消息拒绝失败，已强制确认消息以避免重复消费");
-                } catch (IOException ackException) {
-                    log.error("强制确认消息也失败: {}", ackException.getMessage(), ackException);
+                    // 如果还没有达到最大重试次数，拒绝消息并重新入队
+                    if (retryCount < MAX_RETRY_COUNT - 1) {
+                        channel.basicNack(deliveryTag, false, true);
+                        messageProcessed = true;
+                        
+                        if (ocrMessage.isPaged()) {
+                            log.info("文档 {} 第 {} 页处理失败，消息已拒绝并重新入队，重试次数: {}/{}",
+                                    ocrMessage.getFileId(), ocrMessage.getPageNumber(), retryCount + 1, MAX_RETRY_COUNT);
+                        } else {
+                            log.info("文档 {} 处理失败，消息已拒绝并重新入队，重试次数: {}/{}",
+                                    ocrMessage.getFileId(), retryCount + 1, MAX_RETRY_COUNT);
+                        }
+                    } else {
+                        // 达到最大重试次数，确认消息避免重复处理
+                        channel.basicAck(deliveryTag, false);
+                        messageProcessed = true;
+                        
+                        log.error("文档 {} 处理失败且已达到最大重试次数，消息将被丢弃", ocrMessage.getFileId());
+                    }
+                } catch (IOException ioException) {
+                    log.error("消息处理失败: {}", ioException.getMessage(), ioException);
+                    // 如果操作失败，尝试确认消息以避免重复消费
+                    if (!messageProcessed) {
+                        try {
+                            channel.basicAck(deliveryTag, false);
+                            messageProcessed = true;
+                            log.warn("消息操作失败，已强制确认消息以避免重复消费");
+                        } catch (IOException ackException) {
+                            log.error("强制确认消息也失败: {}", ackException.getMessage(), ackException);
+                        }
+                    }
                 }
             }
         } finally {
             // 清理MDC上下文
             MDC.remove(HEADER_NAME_TRACE_ID);
-            log.info("DocIeInferConsumer 处理完成，清理MDC上下文，消息处理状态: {}", messageProcessed ? "已处理" : "未处理");
-            
-            // 如果消息还没有被处理（确认或拒绝），则进行兜底确认
-            if (!messageProcessed) {
-                try {
-                    channel.basicAck(deliveryTag, false);
-                    log.warn("执行兜底消息确认，避免消息重复消费");
-                } catch (IOException e) {
-                    log.error("兜底消息确认失败: {}", e.getMessage(), e);
-                }
-            }
         }
     }
 }

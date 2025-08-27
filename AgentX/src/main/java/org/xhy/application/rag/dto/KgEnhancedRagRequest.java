@@ -51,8 +51,8 @@ public class KgEnhancedRagRequest {
     /** 是否启用知识图谱增强，默认true */
     private Boolean enableGraphEnhancement = true;
 
-    /** 是否包含纯图谱结果，默认false */
-    private Boolean includeGraphOnlyResults = false;
+    /** 是否包含纯图谱结果，默认true */
+    private Boolean includeGraphOnlyResults = true;
 
     /** 图谱查询权重，默认0.3 */
     @DecimalMin(value = "0.0", message = "图谱查询权重不能小于0")

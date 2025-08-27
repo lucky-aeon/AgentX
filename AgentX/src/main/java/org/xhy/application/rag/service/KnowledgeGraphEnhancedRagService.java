@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.xhy.application.knowledgeGraph.dto.GraphQueryResponse;
 import org.xhy.application.knowledgeGraph.service.GraphQueryService;
 import org.xhy.application.rag.assembler.DocumentUnitAssembler;
 import org.xhy.application.rag.dto.DocumentUnitDTO;
@@ -19,7 +20,7 @@ import org.xhy.domain.rag.model.DocumentUnitEntity;
 import org.xhy.infrastructure.exception.BusinessException;
 
 /**
- * 知识图谱增强RAG检索服务
+ * 知识图谱增强RAG检索应用服务
  * 结合向量搜索和知识图谱查询，提供更准确的检索结果
  * 
  * @author AgentX
@@ -53,74 +54,42 @@ public class KnowledgeGraphEnhancedRagService {
      */
     public KgEnhancedRagResponse enhancedRagSearch(KgEnhancedRagRequest request, String userId) {
         long startTime = System.currentTimeMillis();
-        long vectorSearchTime = 0;
-        long graphQueryTime = 0;
-        long fusionTime = 0;
-        long rerankTime = 0;
         
         try {
             log.info("开始执行知识图谱增强RAG检索，用户: {}, 查询: '{}'", userId, request.getQuestion());
 
-            // 1. 执行传统向量RAG搜索
-            long vectorStart = System.currentTimeMillis();
-            List<DocumentUnitEntity> vectorResults = performVectorSearch(request, userId);
-            vectorSearchTime = System.currentTimeMillis() - vectorStart;
-            log.debug("向量搜索返回 {} 个结果，耗时: {}ms", vectorResults.size(), vectorSearchTime);
+            // 1. 参数验证
+            validateRequest(request, userId);
 
-            // 2. 提取查询中的实体并执行图谱查询
-            GraphEntityExtractorService.EntityExtractionResult extractionResult = null;
-            if (request.getEnableGraphEnhancement()) {
-                long graphStart = System.currentTimeMillis();
-                extractionResult = entityExtractorService.extractEntitiesAndQuery(
-                    request.getQuestion(), 
-                    request.getEntityExtractionStrategy(),
-                    request.getMaxGraphDepth(),
-                    request.getMaxRelationsPerEntity()
-                );
-                graphQueryTime = System.currentTimeMillis() - graphStart;
+            // 2. 执行向量搜索
+            VectorSearchResult vectorSearchResult = executeVectorSearch(request, userId);
+            log.debug("向量搜索返回 {} 个结果，耗时: {}ms", 
+                vectorSearchResult.getResults().size(), vectorSearchResult.getSearchTime());
+
+            // 3. 执行图谱查询（如果启用）
+            GraphQueryResult graphQueryResult = executeGraphQuery(request);
+            if (graphQueryResult != null) {
                 log.debug("图谱查询返回 {} 个实体, {} 个关系，耗时: {}ms", 
-                    extractionResult.getGraphNodes().size(), 
-                    extractionResult.getGraphRelationships().size(),
-                    graphQueryTime);
+                    graphQueryResult.getNodes().size(), 
+                    graphQueryResult.getRelationships().size(),
+                    graphQueryResult.getQueryTime());
             }
 
-            // 3. 融合向量搜索和图谱查询结果
-            long fusionStart = System.currentTimeMillis();
-            List<KgEnhancedRagResponse.EnhancedResult> enhancedResults = hybridSearchStrategy.fuseResults(
-                vectorResults, 
-                extractionResult != null ? extractionResult.getGraphNodes() : new ArrayList<>(),
-                extractionResult != null ? extractionResult.getGraphRelationships() : new ArrayList<>(), 
-                request);
-            fusionTime = System.currentTimeMillis() - fusionStart;
+            // 4. 融合搜索结果
+            FusionResult fusionResult = fuseSearchResults(vectorSearchResult, graphQueryResult, request);
+            log.debug("结果融合完成，生成 {} 个增强结果，耗时: {}ms",
+                fusionResult.getEnhancedResults().size(), fusionResult.getFusionTime());
 
-            // 4. 重排序和过滤
-            long rerankStart = System.currentTimeMillis();
+            // 5. 重排序和过滤
             List<KgEnhancedRagResponse.EnhancedResult> finalResults = rerankAndFilter(
-                enhancedResults, request);
-            rerankTime = System.currentTimeMillis() - rerankStart;
+                fusionResult.getEnhancedResults(), request);
 
-            // 5. 构建响应和统计信息
-            KgEnhancedRagResponse response = new KgEnhancedRagResponse();
-            response.setResults(finalResults);
-            response.setVectorResultCount(vectorResults.size());
-            response.setGraphEntityCount(extractionResult != null ? extractionResult.getGraphNodes().size() : 0);
-            response.setGraphRelationshipCount(extractionResult != null ? extractionResult.getGraphRelationships().size() : 0);
-            response.setProcessingTimeMs(System.currentTimeMillis() - startTime);
-            response.setSuccess(true);
+            // 6. 构建响应
+            KgEnhancedRagResponse response = buildResponse(
+                finalResults, vectorSearchResult, graphQueryResult, fusionResult, startTime);
 
-            // 设置详细统计信息
-            KgEnhancedRagResponse.SearchStatistics stats = new KgEnhancedRagResponse.SearchStatistics();
-            stats.setTotalQueryTime(response.getProcessingTimeMs());
-            stats.setVectorSearchTime(vectorSearchTime);
-            stats.setGraphQueryTime(graphQueryTime);
-            stats.setFusionTime(fusionTime);
-            stats.setRerankTime(rerankTime);
-            stats.setExtractedEntitiesCount(extractionResult != null ? extractionResult.getExtractedEntities().size() : 0);
-            stats.setGraphQueryCount(extractionResult != null ? extractionResult.getQueryCount() : 0);
-            response.setStatistics(stats);
-
-            log.info("知识图谱增强RAG检索完成，最终返回 {} 个结果，处理时间: {}ms (向量:{}ms, 图谱:{}ms, 融合:{}ms, 重排:{}ms)", 
-                finalResults.size(), response.getProcessingTimeMs(), vectorSearchTime, graphQueryTime, fusionTime, rerankTime);
+            log.info("知识图谱增强RAG检索完成，最终返回 {} 个结果，处理时间: {}ms", 
+                finalResults.size(), response.getProcessingTimeMs());
 
             return response;
 
@@ -128,6 +97,135 @@ public class KnowledgeGraphEnhancedRagService {
             log.error("知识图谱增强RAG检索失败", e);
             throw new BusinessException("增强RAG检索失败: " + e.getMessage(), e);
         }
+    }
+
+    /**
+     * 参数验证
+     */
+    private void validateRequest(KgEnhancedRagRequest request, String userId) {
+        if (request == null) {
+            throw new BusinessException("请求参数不能为空");
+        }
+        if (userId == null || userId.trim().isEmpty()) {
+            throw new BusinessException("用户ID不能为空");
+        }
+        if (request.getDatasetIds() == null || request.getDatasetIds().isEmpty()) {
+            throw new BusinessException("数据集ID列表不能为空");
+        }
+        if (request.getQuestion() == null || request.getQuestion().trim().isEmpty()) {
+            throw new BusinessException("查询问题不能为空");
+        }
+    }
+
+    /**
+     * 执行向量搜索
+     */
+    private VectorSearchResult executeVectorSearch(KgEnhancedRagRequest request, String userId) {
+        long startTime = System.currentTimeMillis();
+        
+        try {
+            List<DocumentUnitEntity> vectorResults = performVectorSearch(request, userId);
+            long searchTime = System.currentTimeMillis() - startTime;
+            
+            return new VectorSearchResult(vectorResults, searchTime);
+        } catch (Exception e) {
+            log.error("向量搜索执行失败", e);
+            throw new BusinessException("向量搜索失败: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 执行图谱查询
+     */
+    private GraphQueryResult executeGraphQuery(KgEnhancedRagRequest request) {
+        if (!Boolean.TRUE.equals(request.getEnableGraphEnhancement())) {
+            return null;
+        }
+
+        long startTime = System.currentTimeMillis();
+        
+        try {
+            GraphEntityExtractorService.EntityExtractionResult extractionResult = 
+                entityExtractorService.extractEntitiesAndQuery(
+                    request.getQuestion(), 
+                    request.getEntityExtractionStrategy(),
+                    request.getMaxGraphDepth(),
+                    request.getMaxRelationsPerEntity()
+                );
+            
+            long queryTime = System.currentTimeMillis() - startTime;
+            
+            // 将ExtractedEntity转换为String列表
+            List<String> extractedEntityTexts = extractionResult.getExtractedEntities().stream()
+                .map(GraphEntityExtractorService.ExtractedEntity::getText)
+                .collect(Collectors.toList());
+            
+            return new GraphQueryResult(
+                extractionResult.getGraphNodes(),
+                extractionResult.getGraphRelationships(),
+                extractedEntityTexts,
+                extractionResult.getQueryCount(),
+                queryTime
+            );
+        } catch (Exception e) {
+            log.warn("图谱查询执行失败，将跳过图谱增强: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * 融合搜索结果
+     */
+    private FusionResult fuseSearchResults(VectorSearchResult vectorResult, 
+                                         GraphQueryResult graphResult, 
+                                         KgEnhancedRagRequest request) {
+        long startTime = System.currentTimeMillis();
+        
+        try {
+            List<KgEnhancedRagResponse.EnhancedResult> enhancedResults = hybridSearchStrategy.fuseResults(
+                vectorResult.getResults(),
+                graphResult != null ? graphResult.getNodes() : new ArrayList<>(),
+                graphResult != null ? graphResult.getRelationships() : new ArrayList<>(),
+                request
+            );
+            
+            long fusionTime = System.currentTimeMillis() - startTime;
+            
+            return new FusionResult(enhancedResults, fusionTime);
+        } catch (Exception e) {
+            log.error("结果融合失败", e);
+            throw new BusinessException("结果融合失败: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 构建响应对象
+     */
+    private KgEnhancedRagResponse buildResponse(List<KgEnhancedRagResponse.EnhancedResult> finalResults,
+                                              VectorSearchResult vectorResult,
+                                              GraphQueryResult graphResult,
+                                              FusionResult fusionResult,
+                                              long startTime) {
+        KgEnhancedRagResponse response = new KgEnhancedRagResponse();
+        response.setResults(finalResults);
+        response.setVectorResultCount(vectorResult.getResults().size());
+        response.setGraphEntityCount(graphResult != null ? graphResult.getNodes().size() : 0);
+        response.setGraphRelationshipCount(graphResult != null ? graphResult.getRelationships().size() : 0);
+        response.setProcessingTimeMs(System.currentTimeMillis() - startTime);
+        response.setSuccess(true);
+
+        // 设置详细统计信息
+        KgEnhancedRagResponse.SearchStatistics stats = new KgEnhancedRagResponse.SearchStatistics();
+        stats.setTotalQueryTime(response.getProcessingTimeMs());
+        stats.setVectorSearchTime(vectorResult.getSearchTime());
+        stats.setGraphQueryTime(graphResult != null ? graphResult.getQueryTime() : 0);
+        stats.setFusionTime(fusionResult.getFusionTime());
+        stats.setRerankTime(0); // 重排时间在rerankAndFilter方法中计算
+        stats.setExtractedEntitiesCount(graphResult != null ? graphResult.getExtractedEntities().size() : 0);
+        stats.setGraphQueryCount(graphResult != null ? graphResult.getQueryCount() : 0);
+        response.setStatistics(stats);
+
+        return response;
     }
 
     /**
@@ -169,6 +267,9 @@ public class KnowledgeGraphEnhancedRagService {
         try {
             log.debug("开始重排序和过滤，原始结果数: {}", results.size());
             
+            // 保存原始结果副本，用于宽松过滤
+            List<KgEnhancedRagResponse.EnhancedResult> originalResults = new ArrayList<>(results);
+            
             // 1. 多维度排序
             results.sort((a, b) -> {
                 // 首先按相关性评分排序
@@ -197,10 +298,65 @@ public class KnowledgeGraphEnhancedRagService {
             }
             
             // 3. 过滤低分结果
-            double minThreshold = request.getMinScore() != null ? request.getMinScore() : 0.5;
-            results = results.stream()
-                .filter(result -> result.getRelevanceScore() >= minThreshold)
+            double minThreshold = request.getMinScore() != null ? request.getMinScore() : 0.3;
+            log.debug("应用最小分数阈值: {}，过滤前结果数: {}", minThreshold, results.size());
+            
+            List<KgEnhancedRagResponse.EnhancedResult> filteredResults = results.stream()
+                .filter(result -> {
+                    // 对于图谱增强的结果，使用更宽松的阈值
+                    boolean hasGraphEnhancement = result.getGraphEntities() != null && !result.getGraphEntities().isEmpty();
+                    boolean isGraphOnlyResult = "GRAPH".equals(result.getSourceType());
+                    
+                    double effectiveThreshold;
+                    if (isGraphOnlyResult || hasGraphEnhancement) {
+                        // 对于纯图谱结果或图谱增强结果，使用更宽松的阈值
+                        effectiveThreshold = Math.min(minThreshold, 0.2);
+                    } else {
+                        effectiveThreshold = minThreshold;
+                    }
+                    
+                    boolean passThreshold = result.getRelevanceScore() >= effectiveThreshold;
+                    
+                    log.debug("评估结果：sourceType={}, relevanceScore={}, effectiveThreshold={}, hasGraphEnhancement={}, isGraphOnlyResult={}, 通过={}", 
+                        result.getSourceType(), result.getRelevanceScore(), effectiveThreshold, hasGraphEnhancement, isGraphOnlyResult, passThreshold);
+                    
+                    if (!passThreshold) {
+                        log.debug("结果被过滤：相关性分数 {} 低于阈值 {} (图谱增强: {}, 纯图谱: {})", 
+                            result.getRelevanceScore(), effectiveThreshold, hasGraphEnhancement, isGraphOnlyResult);
+                    }
+                    return passThreshold;
+                })
                 .collect(Collectors.toList());
+            
+            log.debug("过滤后结果数: {}", filteredResults.size());
+            results = filteredResults;
+            
+            // 如果过滤后没有结果，使用更宽松的策略
+            if (results.isEmpty() && !originalResults.isEmpty()) {
+                log.warn("严格过滤后无结果，使用更宽松的阈值重试，原始阈值: {}", minThreshold);
+                double relaxedThreshold = Math.min(minThreshold * 0.5, 0.1);
+                
+                // 对原始结果应用排序
+                originalResults.sort((a, b) -> {
+                    int scoreCompare = Double.compare(b.getRelevanceScore(), a.getRelevanceScore());
+                    if (scoreCompare != 0) return scoreCompare;
+                    
+                    int graphEntityCountA = a.getGraphEntities() != null ? a.getGraphEntities().size() : 0;
+                    int graphEntityCountB = b.getGraphEntities() != null ? b.getGraphEntities().size() : 0;
+                    int graphCompare = Integer.compare(graphEntityCountB, graphEntityCountA);
+                    if (graphCompare != 0) return graphCompare;
+                    
+                    double vectorScoreA = a.getVectorScore() != null ? a.getVectorScore() : 0.0;
+                    double vectorScoreB = b.getVectorScore() != null ? b.getVectorScore() : 0.0;
+                    return Double.compare(vectorScoreB, vectorScoreA);
+                });
+                
+                // 应用宽松过滤
+                results = originalResults.stream()
+                    .filter(result -> result.getRelevanceScore() >= relaxedThreshold)
+                    .collect(Collectors.toList());
+                log.debug("宽松过滤后结果数: {}", results.size());
+            }
             
             // 4. 限制结果数量
             int maxResults = request.getMaxResults() != null ? request.getMaxResults() : 15;
@@ -279,5 +435,90 @@ public class KnowledgeGraphEnhancedRagService {
             content.substring(Math.max(0, content.length() - 50)) : "";
         
         return prefix + "|" + suffix;
+    }
+
+    /**
+     * 向量搜索结果内部类
+     */
+    private static class VectorSearchResult {
+        private final List<DocumentUnitEntity> results;
+        private final long searchTime;
+
+        public VectorSearchResult(List<DocumentUnitEntity> results, long searchTime) {
+            this.results = results != null ? results : new ArrayList<>();
+            this.searchTime = searchTime;
+        }
+
+        public List<DocumentUnitEntity> getResults() {
+            return results;
+        }
+
+        public long getSearchTime() {
+            return searchTime;
+        }
+    }
+
+    /**
+     * 图谱查询结果内部类
+     */
+    private static class GraphQueryResult {
+        private final List<GraphQueryResponse.NodeResult> nodes;
+        private final List<GraphQueryResponse.RelationshipResult> relationships;
+        private final List<String> extractedEntities;
+        private final int queryCount;
+        private final long queryTime;
+
+        public GraphQueryResult(List<GraphQueryResponse.NodeResult> nodes,
+                              List<GraphQueryResponse.RelationshipResult> relationships,
+                              List<String> extractedEntities,
+                              int queryCount,
+                              long queryTime) {
+            this.nodes = nodes != null ? nodes : new ArrayList<>();
+            this.relationships = relationships != null ? relationships : new ArrayList<>();
+            this.extractedEntities = extractedEntities != null ? extractedEntities : new ArrayList<>();
+            this.queryCount = queryCount;
+            this.queryTime = queryTime;
+        }
+
+        public List<GraphQueryResponse.NodeResult> getNodes() {
+            return nodes;
+        }
+
+        public List<GraphQueryResponse.RelationshipResult> getRelationships() {
+            return relationships;
+        }
+
+        public List<String> getExtractedEntities() {
+            return extractedEntities;
+        }
+
+        public int getQueryCount() {
+            return queryCount;
+        }
+
+        public long getQueryTime() {
+            return queryTime;
+        }
+    }
+
+    /**
+     * 融合结果内部类
+     */
+    private static class FusionResult {
+        private final List<KgEnhancedRagResponse.EnhancedResult> enhancedResults;
+        private final long fusionTime;
+
+        public FusionResult(List<KgEnhancedRagResponse.EnhancedResult> enhancedResults, long fusionTime) {
+            this.enhancedResults = enhancedResults != null ? enhancedResults : new ArrayList<>();
+            this.fusionTime = fusionTime;
+        }
+
+        public List<KgEnhancedRagResponse.EnhancedResult> getEnhancedResults() {
+            return enhancedResults;
+        }
+
+        public long getFusionTime() {
+            return fusionTime;
+        }
     }
 }
