@@ -14,6 +14,7 @@ import org.xhy.domain.tool.repository.ToolVersionRepository;
 import org.xhy.infrastructure.exception.BusinessException;
 
 import java.util.List;
+import java.util.Set;
 
 /** 工具领域服务 */
 @Service
@@ -137,9 +138,10 @@ public class ToolDomainService {
     }
 
     public List<ToolEntity> findProcessingTools() {
+        Set<ToolStatus> terminalStatuses = new java.util.HashSet<>(ToolStatus.getTerminalStatuses());
+        terminalStatuses.add(ToolStatus.MANUAL_REVIEW);
         LambdaQueryWrapper<ToolEntity> wrapper = Wrappers.<ToolEntity>lambdaQuery()
-                .notIn(ToolEntity::getStatus, ToolStatus.getTerminalStatuses())
-                .ne(ToolEntity::getStatus, ToolStatus.MANUAL_REVIEW);
+                .notIn(ToolEntity::getStatus, terminalStatuses);
         return toolRepository.selectList(wrapper);
     }
 }
