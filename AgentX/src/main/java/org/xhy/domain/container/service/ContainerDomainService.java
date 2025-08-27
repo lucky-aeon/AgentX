@@ -160,7 +160,7 @@ public class ContainerDomainService {
     }
 
     /** 更新容器IP地址
-     * 
+     *
      * @param containerId 容器ID
      * @param ipAddress IP地址
      * @param operator 操作者 */
@@ -171,6 +171,21 @@ public class ContainerDomainService {
         }
 
         container.setIpAddress(ipAddress);
+        containerRepository.updateById(container);
+    }
+
+    /** 更新容器外部端口
+     *
+     * @param containerId 容器ID
+     * @param externalPort 外部端口
+     * @param operator 操作者 */
+    public void updateContainerExternalPort(String containerId, Integer externalPort, Operator operator) {
+        ContainerEntity container = containerRepository.selectById(containerId);
+        if (container == null) {
+            throw new BusinessException("容器不存在");
+        }
+
+        container.setExternalPort(externalPort);
         containerRepository.updateById(container);
     }
 

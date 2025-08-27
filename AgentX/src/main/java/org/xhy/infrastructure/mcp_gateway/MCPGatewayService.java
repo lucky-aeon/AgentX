@@ -115,7 +115,7 @@ public class MCPGatewayService {
                 if (statusCode >= 200 && statusCode < 300 && responseBody != null) {
                     Map result = JsonUtils.parseObject(responseBody, Map.class);
                     logger.info("部署响应: {}", result);
-                    return result.containsKey("status") && "success".equals(result.get("status"));
+                    return result.containsKey("success") && Boolean.TRUE.equals(result.get("success"));
                 } else {
                     String errorMsg = String.format("工具部署失败，状态码: %d，响应: %s", statusCode, responseBody);
                     logger.error(errorMsg);
