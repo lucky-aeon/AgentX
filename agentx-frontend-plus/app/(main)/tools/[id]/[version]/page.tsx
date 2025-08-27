@@ -327,9 +327,9 @@ export default function ToolDetailPage({ params }: { params: { id: string, versi
               <div>
                 <h2 className="text-xl font-semibold mb-4">工具介绍</h2>
                 <div className="prose dark:prose-invert max-w-none">
-                  <MessageMarkdown 
+                  <MessageMarkdown showCopyButton={true}
                     content={tool.description}
-                    showCopyButton={true}
+                    
                   />
                 </div>
               </div>
@@ -536,9 +536,9 @@ export default function ToolDetailPage({ params }: { params: { id: string, versi
               <div>
                 <h3 className="text-lg font-medium mb-2">详细描述</h3>
                 <div className="prose dark:prose-invert max-w-none">
-                  <MessageMarkdown 
+                  <MessageMarkdown showCopyButton={true}
                     content={selectedVersionDetail.description || "暂无描述"}
-                    showCopyButton={true}
+                    
                   />
                 </div>
               </div>

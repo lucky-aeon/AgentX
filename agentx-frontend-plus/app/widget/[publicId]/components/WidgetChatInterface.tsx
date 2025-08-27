@@ -537,9 +537,8 @@ export function WidgetChatInterface({
                         ) : (
                           // 所有正常消息统一使用Markdown渲染
                           <div className="markdown-content">
-                            <MessageMarkdown 
+                            <MessageMarkdown showCopyButton={true}
                               content={message.content + (message.isStreaming ? ' ▌' : '')}
-                              showCopyButton={true}
                             />
                           </div>
                         )}

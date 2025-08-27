@@ -29,7 +29,7 @@ const isErrorMessage = (content: string): boolean => {
 
 export function MessageMarkdown({ 
   content, 
-  showCopyButton = true, 
+  showCopyButton = true,
   isStreaming = false, 
   isError = false,
   className 
@@ -45,19 +45,6 @@ export function MessageMarkdown({
 
   return (
     <div className={cn("relative group overflow-x-auto min-w-0", className)}>
-      {/* 复制按钮 */}
-      {showCopyButton && (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleCopyMessage}
-          className="absolute top-2 right-2 h-8 w-8 p-0 z-10"
-          aria-label="复制消息"
-        >
-          <Copy className="h-4 w-4" />
-        </Button>
-      )}
-      
       {/* Markdown 内容 */}
       {shouldShowAsError ? (
         // 错误消息使用简单文本显示
@@ -136,6 +123,21 @@ export function MessageMarkdown({
           {isStreaming && (
             <span className="inline-block w-1 h-4 ml-1 bg-current animate-pulse" />
           )}
+        </div>
+      )}
+      
+      {/* 底部复制按钮 */}
+      {showCopyButton && (
+        <div className="flex items-center gap-1 mt-1 opacity-60 hover:opacity-100 transition-opacity">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleCopyMessage}
+            className="h-6 w-6 p-0 hover:bg-gray-100 rounded"
+            aria-label="复制消息"
+          >
+            <Copy className="h-3 w-3" />
+          </Button>
         </div>
       )}
     </div>

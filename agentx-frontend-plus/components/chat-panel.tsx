@@ -632,10 +632,9 @@ export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName
                           {/* 消息内容 */}
                           {message.content && (
                             <div className="p-3 rounded-lg">
-                              <MessageMarkdown 
+                              <MessageMarkdown showCopyButton={true}
                                 content={message.content}
                                 isStreaming={message.isStreaming}
-                                showCopyButton={true}
                               />
                             </div>
                           )}

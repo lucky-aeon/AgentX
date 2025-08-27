@@ -165,9 +165,9 @@ export function MarketRagFilePreviewDialog({
 
                     <div className="text-sm">
                       <div className="leading-tight whitespace-pre-wrap">
-                        <MessageMarkdown 
+                        <MessageMarkdown showCopyButton={false}
                           content={unit.content}
-                          showCopyButton={false}
+                          
                           className="text-sm leading-tight"
                         />
                       </div>

@@ -600,9 +600,9 @@ export default function UploadToolPage() {
                         <FormItem>
                           {previewMode ? (
                             <div className="border rounded-md p-4 min-h-[400px] prose dark:prose-invert max-w-none">
-                              <MessageMarkdown 
+                              <MessageMarkdown showCopyButton={true}
                                 content={field.value || '### 预览\n\n开始编辑以查看预览'}
-                                showCopyButton={true}
+                                
                               />
                             </div>
                           ) : (

@@ -672,9 +672,9 @@ export default function EditToolPage() {
                             </div>
                           ) : (
                             <div className="mt-4 border rounded-md p-4 min-h-[400px] prose dark:prose-invert max-w-none">
-                              <MessageMarkdown 
+                              <MessageMarkdown showCopyButton={true}
                                 content={field.value}
-                                showCopyButton={true}
+                                
                               />
                             </div>
                           )}
