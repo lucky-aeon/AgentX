@@ -64,7 +64,6 @@ public class HybridSearchDomainService {
             return Collections.emptyList();
         }
 
-
         // 设置默认值
         int finalMaxResults = config.getMaxResults() != null ? Math.min(config.getMaxResults(), 100) : 15;
         Double finalMinScore = config.getMinScore() != null ? Math.max(0.0, Math.min(config.getMinScore(), 1.0)) : 0.7;
@@ -80,12 +79,14 @@ public class HybridSearchDomainService {
                     config.getChatModelConfig());
             config.setQuestion(hypotheticalDocument);
 
-            CompletableFuture<List<VectorStoreResult>> vectorSearchFuture = CompletableFuture.supplyAsync(() -> embeddingDomainService.vectorSearch(config.getDataSetIds(), config.getQuestion(),
-                    finalMaxResults * 2, finalMinScore, false, config.getCandidateMultiplier(),
-                    config.getEmbeddingConfig()));
+            CompletableFuture<List<VectorStoreResult>> vectorSearchFuture = CompletableFuture
+                    .supplyAsync(() -> embeddingDomainService.vectorSearch(config.getDataSetIds(), config.getQuestion(),
+                            finalMaxResults * 2, finalMinScore, false, config.getCandidateMultiplier(),
+                            config.getEmbeddingConfig()));
 
-            CompletableFuture<List<VectorStoreResult>> keywordSearchFuture = CompletableFuture.supplyAsync(() -> keywordSearchDomainService.keywordSearch(config.getDataSetIds(), config.getQuestion(),
-                    finalMaxResults * 2));
+            CompletableFuture<List<VectorStoreResult>> keywordSearchFuture = CompletableFuture
+                    .supplyAsync(() -> keywordSearchDomainService.keywordSearch(config.getDataSetIds(),
+                            config.getQuestion(), finalMaxResults * 2));
 
             // 等待两个检索任务完成
             List<VectorStoreResult> vectorResults = Collections.emptyList();
@@ -120,8 +121,7 @@ public class HybridSearchDomainService {
                 rerankedResults = applyRerankToFusedResults(fusedResults, config.getQuestion());
             }
 
-            return convertToDocumentUnits(rerankedResults,
-                    config.getEnableQueryExpansion());
+            return convertToDocumentUnits(rerankedResults, config.getEnableQueryExpansion());
 
         } catch (Exception e) {
             long totalTime = System.currentTimeMillis() - startTime;

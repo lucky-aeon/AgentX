@@ -23,8 +23,7 @@ public class RagSearchController {
     private final RAGSearchAppService ragSearchAppService;
     private final ConversationAppService conversationAppService;
 
-    public RagSearchController(RAGSearchAppService ragSearchAppService,
-            ConversationAppService conversationAppService) {
+    public RagSearchController(RAGSearchAppService ragSearchAppService, ConversationAppService conversationAppService) {
         this.ragSearchAppService = ragSearchAppService;
         this.conversationAppService = conversationAppService;
     }

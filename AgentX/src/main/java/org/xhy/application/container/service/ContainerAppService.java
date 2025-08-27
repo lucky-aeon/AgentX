@@ -28,7 +28,7 @@ import java.util.List;
 public class ContainerAppService {
 
     private static final Logger logger = LoggerFactory.getLogger(ContainerAppService.class);
-    private static final String USER_VOLUME_BASE_PATH = System.getProperty("user.dir") + "/docker-volumes/users";
+    private static final String USER_VOLUME_BASE_PATH = System.getProperty("user.dir") + "/data/users";
 
     private final ContainerDomainService containerDomainService;
     private final ContainerTemplateDomainService templateDomainService;
@@ -88,17 +88,22 @@ public class ContainerAppService {
             return createUserContainer(userId);
         }
 
-        // 2. 检查容器健康状态
-        if (!isContainerHealthy(container)) {
-            logger.info("用户容器不健康，尝试启动: userId={}, status={}", userId, container.getStatus());
+        // 2. 检查容器健康状态并智能恢复
+        ContainerHealthCheckResult healthResult = checkContainerHealth(container);
+        if (!healthResult.isHealthy()) {
+            logger.info("用户容器不健康，尝试智能恢复: userId={}, issue={}", userId, healthResult.getMessage());
             try {
-                // 启动容器
-                startContainer(container.getId());
+                ContainerRecoveryResult recoveryResult = recoverUserContainer(container, userId);
+                if (!recoveryResult.isSuccess()) {
+                    throw new BusinessException("用户容器恢复失败: " + recoveryResult.getMessage());
+                }
+
                 // 重新获取最新状态
                 container = containerDomainService.findUserContainer(userId);
+                logger.info("用户容器恢复成功: userId={}, result={}", userId, recoveryResult.getMessage());
             } catch (Exception e) {
-                logger.error("启动用户容器失败: userId={}, containerId={}", userId, container.getId(), e);
-                throw new BusinessException("用户容器启动失败: " + e.getMessage());
+                logger.error("用户容器智能恢复失败: userId={}, containerId={}", userId, container.getId(), e);
+                throw new BusinessException("用户容器恢复失败: " + e.getMessage());
             }
         }
 
@@ -108,55 +113,103 @@ public class ContainerAppService {
         return ContainerAssembler.toDTO(container);
     }
 
-    /** 检查容器是否健康 */
-    private boolean isContainerHealthy(ContainerEntity container) {
+    /** 检查容器是否健康（增强版：包含实际Docker状态检查）
+     * 
+     * @param container 容器实体
+     * @return 健康检查结果详情 */
+    private ContainerHealthCheckResult checkContainerHealth(ContainerEntity container) {
         if (container == null) {
-            return false;
+            return new ContainerHealthCheckResult(false, "容器实体为空", null);
         }
 
-        // 检查容器状态是否为运行中
-        boolean isRunning = ContainerStatus.RUNNING.equals(container.getStatus());
+        // 1. 检查数据库状态是否为运行中
+        boolean dbStatusRunning = ContainerStatus.RUNNING.equals(container.getStatus());
+        if (!dbStatusRunning) {
+            return new ContainerHealthCheckResult(false, "容器数据库状态异常: " + container.getStatus().getDescription(),
+                    container.getStatus().name());
+        }
 
-        // 检查必要的网络信息是否存在
+        // 2. 检查必要的网络信息是否存在
         boolean hasNetworkInfo = container.getIpAddress() != null && container.getExternalPort() != null;
+        if (!hasNetworkInfo) {
+            return new ContainerHealthCheckResult(false,
+                    "容器缺少网络信息: ip=" + container.getIpAddress() + ", port=" + container.getExternalPort(),
+                    "MISSING_NETWORK_INFO");
+        }
 
-        return isRunning && hasNetworkInfo;
+        // 3. 检查Docker容器ID是否存在
+        if (container.getDockerContainerId() == null) {
+            return new ContainerHealthCheckResult(false, "容器缺少Docker容器ID", "MISSING_DOCKER_ID");
+        }
+
+        // 4. 检查实际Docker容器状态
+        DockerService.ContainerActualStatus actualStatus = dockerService
+                .getContainerActualStatus(container.getDockerContainerId());
+
+        if (!actualStatus.exists()) {
+            return new ContainerHealthCheckResult(false, "Docker容器不存在: " + actualStatus.getMessage(),
+                    "DOCKER_CONTAINER_NOT_EXISTS");
+        }
+
+        if (!actualStatus.isRunning()) {
+            return new ContainerHealthCheckResult(false, "Docker容器未运行: " + actualStatus.getStatus(),
+                    "DOCKER_CONTAINER_NOT_RUNNING");
+        }
+
+        // 5. 检查网络连通性（可选，避免过于频繁的网络检查）
+        boolean networkAccessible = dockerService.isContainerNetworkAccessible(container.getIpAddress(),
+                container.getExternalPort());
+        if (!networkAccessible) {
+            logger.warn("容器网络连通性检查失败，但Docker容器运行正常: containerId={}, ip={}, port={}", container.getId(),
+                    container.getIpAddress(), container.getExternalPort());
+            // 网络连通性问题不一定意味着容器不健康，可能是暂时的网络问题
+        }
+
+        return new ContainerHealthCheckResult(true, "容器健康", "HEALTHY");
     }
 
-    /** 检查用户容器状态
+    /** 检查容器是否健康（简化版，兼容现有代码） */
+    private boolean isContainerHealthy(ContainerEntity container) {
+        ContainerHealthCheckResult result = checkContainerHealth(container);
+        return result.isHealthy();
+    }
+
+    /** 检查用户容器状态（增强版健康检查）
      * 
      * @param userId 用户ID
      * @return 容器状态检查结果 */
     public ContainerHealthStatus checkUserContainerHealth(String userId) {
-        ContainerEntity container = containerDomainService.findUserContainer(userId);
+        try {
+            ContainerEntity container = containerDomainService.findUserContainer(userId);
 
-        if (container == null) {
-            return new ContainerHealthStatus(false, "用户容器不存在", null);
-        }
-
-        // 更新最后访问时间
-        updateContainerLastAccessed(container);
-
-        if (!container.isOperatable()) {
-            return new ContainerHealthStatus(false, "容器状态异常: " + container.getStatus().getDescription(),
-                    ContainerAssembler.toDTO(container));
-        }
-
-        // 检查Docker容器状态
-        if (container.getDockerContainerId() != null) {
-            try {
-                String dockerStatus = dockerService.getContainerStatus(container.getDockerContainerId());
-                if (!"running".equals(dockerStatus)) {
-                    return new ContainerHealthStatus(false, "Docker容器未运行: " + dockerStatus,
-                            ContainerAssembler.toDTO(container));
-                }
-            } catch (Exception e) {
-                logger.error("检查Docker容器状态失败: {}", container.getDockerContainerId(), e);
-                return new ContainerHealthStatus(false, "Docker容器检查失败", ContainerAssembler.toDTO(container));
+            if (container == null) {
+                logger.warn("用户容器不存在: userId={}", userId);
+                return new ContainerHealthStatus(false, "用户容器不存在", null);
             }
-        }
 
-        return new ContainerHealthStatus(true, "容器健康", ContainerAssembler.toDTO(container));
+            // 更新最后访问时间
+            updateContainerLastAccessed(container);
+
+            if (!container.isOperatable()) {
+                logger.warn("容器状态不可操作: userId={}, status={}", userId, container.getStatus());
+                return new ContainerHealthStatus(false, "容器状态异常: " + container.getStatus().getDescription(),
+                        ContainerAssembler.toDTO(container));
+            }
+
+            // 使用增强的健康检查机制
+            ContainerHealthCheckResult healthResult = checkContainerHealth(container);
+            if (!healthResult.isHealthy()) {
+                logger.warn("容器健康检查失败: userId={}, issue={}", userId, healthResult.getMessage());
+                return new ContainerHealthStatus(false, healthResult.getMessage(), ContainerAssembler.toDTO(container));
+            }
+
+            logger.debug("用户容器健康检查通过: userId={}", userId);
+            return new ContainerHealthStatus(true, "容器健康", ContainerAssembler.toDTO(container));
+
+        } catch (Exception e) {
+            logger.error("用户容器健康检查异常: userId={}", userId, e);
+            return new ContainerHealthStatus(false, "健康检查失败: " + e.getMessage(), null);
+        }
     }
 
     /** 启动容器
@@ -407,7 +460,7 @@ public class ContainerAppService {
             if (!created) {
                 logger.warn("无法创建用户数据目录: {}，尝试使用临时目录", volumePath);
                 // 如果无法创建指定目录，使用临时目录
-                String tempVolumePath = System.getProperty("java.io.tmpdir") + "/agentx-docker-volumes/users/" + userId;
+                String tempVolumePath = System.getProperty("java.io.tmpdir") + "/data/users/" + userId;
                 File tempDirectory = new File(tempVolumePath);
                 if (!tempDirectory.exists()) {
                     boolean tempCreated = tempDirectory.mkdirs();
@@ -568,17 +621,22 @@ public class ContainerAppService {
             return waitForContainerReady(createdContainer.getId());
         }
 
-        // 检查审核容器健康状态
-        if (!isContainerHealthy(reviewContainer)) {
-            logger.info("审核容器不健康，尝试启动: status={}", reviewContainer.getStatus());
+        // 检查审核容器健康状态并智能恢复
+        ContainerHealthCheckResult healthResult = checkContainerHealth(reviewContainer);
+        if (!healthResult.isHealthy()) {
+            logger.info("审核容器不健康，尝试智能恢复: issue={}", healthResult.getMessage());
             try {
-                // 启动容器
-                startContainer(reviewContainer.getId());
+                ContainerRecoveryResult recoveryResult = recoverReviewContainer(reviewContainer);
+                if (!recoveryResult.isSuccess()) {
+                    throw new BusinessException("审核容器恢复失败: " + recoveryResult.getMessage());
+                }
+
                 // 重新获取最新状态
                 reviewContainer = containerDomainService.getContainerById(reviewContainer.getId());
+                logger.info("审核容器恢复成功: result={}", recoveryResult.getMessage());
             } catch (Exception e) {
-                logger.error("启动审核容器失败: containerId={}", reviewContainer.getId(), e);
-                throw new BusinessException("审核容器启动失败: " + e.getMessage());
+                logger.error("审核容器智能恢复失败: containerId={}", reviewContainer.getId(), e);
+                throw new BusinessException("审核容器恢复失败: " + e.getMessage());
             }
         }
 
@@ -620,7 +678,7 @@ public class ContainerAppService {
             if (!created) {
                 logger.warn("无法创建审核容器数据目录: {}，尝试使用临时目录", volumePath);
                 // 如果无法创建指定目录，使用临时目录
-                String tempVolumePath = System.getProperty("java.io.tmpdir") + "/agentx-docker-volumes/review-system";
+                String tempVolumePath = System.getProperty("java.io.tmpdir") + "/data/review-system";
                 File tempDirectory = new File(tempVolumePath);
                 if (!tempDirectory.exists()) {
                     boolean tempCreated = tempDirectory.mkdirs();
@@ -722,6 +780,229 @@ public class ContainerAppService {
         throw new BusinessException("容器创建超时，请稍后重试或检查Docker环境");
     }
 
+    /** 智能容器恢复方法
+     * 
+     * @param container 需要恢复的容器
+     * @param userId 用户ID（用于用户容器）
+     * @return 恢复结果 */
+    private ContainerRecoveryResult recoverUserContainer(ContainerEntity container, String userId) {
+        logger.info("开始智能恢复用户容器: userId={}, containerId={}", userId, container.getId());
+
+        // 1. 如果dockerContainerId为null，尝试查找同名容器
+        if (container.getDockerContainerId() == null) {
+            return recoverContainerWithoutDockerID(container, userId);
+        }
+
+        // 2. dockerContainerId存在，检查容器实际状态
+        DockerService.ContainerRecoveryResult recoveryResult = dockerService
+                .forceStartContainerIfExists(container.getDockerContainerId());
+
+        if (recoveryResult.isSuccess()) {
+            // Docker容器启动成功，更新数据库状态
+            containerDomainService.updateContainerStatus(container.getId(), ContainerStatus.RUNNING, Operator.ADMIN,
+                    null);
+            return new ContainerRecoveryResult(true, "DOCKER_CONTAINER_STARTED", "Docker容器启动成功");
+        }
+
+        // 3. 如果Docker容器不存在，尝试重新创建
+        if ("CONTAINER_NOT_EXISTS".equals(recoveryResult.getResultCode())) {
+            logger.info("Docker容器不存在，重新创建: userId={}, containerId={}", userId, container.getId());
+            return recreateUserContainer(container, userId);
+        }
+
+        // 4. 其他错误
+        return new ContainerRecoveryResult(false, recoveryResult.getResultCode(), recoveryResult.getMessage());
+    }
+
+    /** 恢复没有Docker容器ID的容器记录 */
+    private ContainerRecoveryResult recoverContainerWithoutDockerID(ContainerEntity container, String userId) {
+        logger.info("容器记录存在但Docker容器ID为空，检查是否存在同名容器: userId={}", userId);
+
+        // 1. 先检查Docker中是否存在同名容器
+        String existingContainerId = dockerService.findContainerByName(container.getName());
+
+        if (existingContainerId != null) {
+            logger.info("发现现有Docker容器，复用: userId={}, dockerId={}", userId, existingContainerId);
+            return reuseExistingDockerContainer(container, existingContainerId);
+        } else {
+            logger.info("未找到现有容器，创建新的Docker容器: userId={}", userId);
+            return recreateUserContainer(container, userId);
+        }
+    }
+
+    /** 复用现有Docker容器 */
+    private ContainerRecoveryResult reuseExistingDockerContainer(ContainerEntity container,
+            String existingContainerId) {
+        try {
+            // 1. 容器存在，检查状态并启动
+            DockerService.ContainerRecoveryResult startResult = dockerService
+                    .forceStartContainerIfExists(existingContainerId);
+            if (!startResult.isSuccess()) {
+                return new ContainerRecoveryResult(false, startResult.getResultCode(),
+                        "启动现有容器失败: " + startResult.getMessage());
+            }
+
+            // 2. 获取容器模板以提取IP地址
+            ContainerTemplateEntity templateEntity = templateDomainService.getMcpGatewayTemplate();
+            ContainerTemplate template = templateEntity.toContainerTemplate();
+
+            // 3. 更新数据库中的容器ID和状态
+            containerDomainService.updateContainerStatus(container.getId(), ContainerStatus.RUNNING, Operator.ADMIN,
+                    existingContainerId);
+
+            // 4. 更新IP地址
+            DockerService.ContainerInfo containerInfo = dockerService.getContainerInfo(existingContainerId);
+            String ipAddress = extractIpAddress(containerInfo, template.getNetworkMode());
+            containerDomainService.updateContainerIpAddress(container.getId(), ipAddress, Operator.ADMIN);
+
+            logger.info("成功复用现有Docker容器: dockerId={}, ip={}", existingContainerId, ipAddress);
+            return new ContainerRecoveryResult(true, "REUSED_EXISTING_CONTAINER", "复用现有容器成功");
+
+        } catch (Exception e) {
+            logger.error("复用现有容器失败: dockerId={}", existingContainerId, e);
+            return new ContainerRecoveryResult(false, "REUSE_FAILED", "复用现有容器失败: " + e.getMessage());
+        }
+    }
+
+    /** 重新创建用户容器 */
+    private ContainerRecoveryResult recreateUserContainer(ContainerEntity container, String userId) {
+        try {
+            // 1. 获取容器模板
+            ContainerTemplateEntity templateEntity = templateDomainService.getMcpGatewayTemplate();
+            ContainerTemplate template = templateEntity.toContainerTemplate();
+
+            // 2. 创建新Docker容器
+            String dockerContainerId = dockerService.createAndStartContainer(container.getName(), template,
+                    container.getExternalPort(), container.getVolumePath(), userId);
+
+            // 3. 获取容器IP
+            DockerService.ContainerInfo containerInfo = dockerService.getContainerInfo(dockerContainerId);
+            String ipAddress = extractIpAddress(containerInfo, template.getNetworkMode());
+
+            // 4. 更新数据库状态
+            containerDomainService.updateContainerStatus(container.getId(), ContainerStatus.RUNNING, Operator.ADMIN,
+                    dockerContainerId);
+            containerDomainService.updateContainerIpAddress(container.getId(), ipAddress, Operator.ADMIN);
+
+            logger.info("Docker容器重新创建成功: dockerId={}", dockerContainerId);
+            return new ContainerRecoveryResult(true, "CONTAINER_RECREATED", "容器重新创建成功");
+
+        } catch (Exception e) {
+            logger.error("重新创建容器失败", e);
+            return new ContainerRecoveryResult(false, "RECREATION_FAILED", "重新创建容器失败: " + e.getMessage());
+        }
+    }
+
+    /** 智能恢复审核容器 */
+    private ContainerRecoveryResult recoverReviewContainer(ContainerEntity container) {
+        logger.info("开始智能恢复审核容器: containerId={}", container.getId());
+
+        // 1. 如果dockerContainerId为null，尝试查找同名容器
+        if (container.getDockerContainerId() == null) {
+            return recoverReviewContainerWithoutDockerID(container);
+        }
+
+        // 2. dockerContainerId存在，检查容器实际状态
+        DockerService.ContainerRecoveryResult recoveryResult = dockerService
+                .forceStartContainerIfExists(container.getDockerContainerId());
+
+        if (recoveryResult.isSuccess()) {
+            // Docker容器启动成功，更新数据库状态
+            containerDomainService.updateContainerStatus(container.getId(), ContainerStatus.RUNNING, Operator.ADMIN,
+                    null);
+            return new ContainerRecoveryResult(true, "DOCKER_CONTAINER_STARTED", "Docker容器启动成功");
+        }
+
+        // 3. 如果Docker容器不存在，尝试重新创建
+        if ("CONTAINER_NOT_EXISTS".equals(recoveryResult.getResultCode())) {
+            logger.info("Docker容器不存在，重新创建审核容器: containerId={}", container.getId());
+            return recreateReviewContainer(container);
+        }
+
+        // 4. 其他错误
+        return new ContainerRecoveryResult(false, recoveryResult.getResultCode(), recoveryResult.getMessage());
+    }
+
+    /** 恢复没有Docker容器ID的审核容器记录 */
+    private ContainerRecoveryResult recoverReviewContainerWithoutDockerID(ContainerEntity container) {
+        logger.info("审核容器记录存在但Docker容器ID为空，检查是否存在同名容器");
+
+        // 1. 先检查Docker中是否存在同名容器
+        String existingContainerId = dockerService.findContainerByName(container.getName());
+
+        if (existingContainerId != null) {
+            logger.info("发现现有Docker容器，复用: dockerId={}", existingContainerId);
+            return reuseExistingReviewDockerContainer(container, existingContainerId);
+        } else {
+            logger.info("未找到现有审核容器，创建新的Docker容器");
+            return recreateReviewContainer(container);
+        }
+    }
+
+    /** 复用现有审核Docker容器 */
+    private ContainerRecoveryResult reuseExistingReviewDockerContainer(ContainerEntity container,
+            String existingContainerId) {
+        try {
+            // 1. 容器存在，检查状态并启动
+            DockerService.ContainerRecoveryResult startResult = dockerService
+                    .forceStartContainerIfExists(existingContainerId);
+            if (!startResult.isSuccess()) {
+                return new ContainerRecoveryResult(false, startResult.getResultCode(),
+                        "启动现有审核容器失败: " + startResult.getMessage());
+            }
+
+            // 2. 获取容器模板以提取IP地址
+            ContainerTemplateEntity templateEntity = templateDomainService.getReviewContainerTemplate();
+            ContainerTemplate template = templateEntity.toContainerTemplate();
+
+            // 3. 更新数据库中的容器ID和状态
+            containerDomainService.updateContainerStatus(container.getId(), ContainerStatus.RUNNING, Operator.ADMIN,
+                    existingContainerId);
+
+            // 4. 更新IP地址
+            DockerService.ContainerInfo containerInfo = dockerService.getContainerInfo(existingContainerId);
+            String ipAddress = extractIpAddress(containerInfo, template.getNetworkMode());
+            containerDomainService.updateContainerIpAddress(container.getId(), ipAddress, Operator.ADMIN);
+
+            logger.info("成功复用现有审核Docker容器: dockerId={}, ip={}", existingContainerId, ipAddress);
+            return new ContainerRecoveryResult(true, "REUSED_EXISTING_REVIEW_CONTAINER", "复用现有审核容器成功");
+
+        } catch (Exception e) {
+            logger.error("复用现有审核容器失败: dockerId={}", existingContainerId, e);
+            return new ContainerRecoveryResult(false, "REUSE_REVIEW_FAILED", "复用现有审核容器失败: " + e.getMessage());
+        }
+    }
+
+    /** 重新创建审核容器 */
+    private ContainerRecoveryResult recreateReviewContainer(ContainerEntity container) {
+        try {
+            // 1. 获取容器模板
+            ContainerTemplateEntity templateEntity = templateDomainService.getReviewContainerTemplate();
+            ContainerTemplate template = templateEntity.toContainerTemplate();
+
+            // 2. 创建新Docker容器（审核容器不需要userId）
+            String dockerContainerId = dockerService.createAndStartContainer(container.getName(), template,
+                    container.getExternalPort(), container.getVolumePath(), null // 审核容器没有特定用户
+            );
+
+            // 3. 获取容器IP
+            DockerService.ContainerInfo containerInfo = dockerService.getContainerInfo(dockerContainerId);
+            String ipAddress = extractIpAddress(containerInfo, template.getNetworkMode());
+
+            // 4. 更新数据库状态
+            containerDomainService.updateContainerStatus(container.getId(), ContainerStatus.RUNNING, Operator.ADMIN,
+                    dockerContainerId);
+            containerDomainService.updateContainerIpAddress(container.getId(), ipAddress, Operator.ADMIN);
+
+            logger.info("审核容器重新创建成功: dockerId={}", dockerContainerId);
+            return new ContainerRecoveryResult(true, "REVIEW_CONTAINER_RECREATED", "审核容器重新创建成功");
+
+        } catch (Exception e) {
+            logger.error("重新创建审核容器失败", e);
+            return new ContainerRecoveryResult(false, "REVIEW_RECREATION_FAILED", "重新创建审核容器失败: " + e.getMessage());
+        }
+    }
+
     /** 容器健康状态检查结果 */
     public static class ContainerHealthStatus {
         private final boolean healthy;
@@ -744,6 +1025,56 @@ public class ContainerAppService {
 
         public ContainerDTO getContainer() {
             return container;
+        }
+    }
+
+    /** 容器健康检查详细结果 */
+    private static class ContainerHealthCheckResult {
+        private final boolean healthy;
+        private final String message;
+        private final String issueCode;
+
+        public ContainerHealthCheckResult(boolean healthy, String message, String issueCode) {
+            this.healthy = healthy;
+            this.message = message;
+            this.issueCode = issueCode;
+        }
+
+        public boolean isHealthy() {
+            return healthy;
+        }
+
+        public String getMessage() {
+            return message;
+        }
+
+        public String getIssueCode() {
+            return issueCode;
+        }
+    }
+
+    /** 容器恢复结果 */
+    private static class ContainerRecoveryResult {
+        private final boolean success;
+        private final String resultCode;
+        private final String message;
+
+        public ContainerRecoveryResult(boolean success, String resultCode, String message) {
+            this.success = success;
+            this.resultCode = resultCode;
+            this.message = message;
+        }
+
+        public boolean isSuccess() {
+            return success;
+        }
+
+        public String getResultCode() {
+            return resultCode;
+        }
+
+        public String getMessage() {
+            return message;
         }
     }
 }

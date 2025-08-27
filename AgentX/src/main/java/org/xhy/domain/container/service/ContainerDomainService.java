@@ -268,6 +268,55 @@ public class ContainerDomainService {
         return containerRepository.findByStatus(ContainerStatus.RUNNING);
     }
 
+    /** 查找运行中的容器（用于启动时状态同步）
+     * 
+     * @return 运行中容器列表 */
+    public List<ContainerEntity> findRunningContainers() {
+        return containerRepository.findByStatus(ContainerStatus.RUNNING);
+    }
+
+    /** 查找所有活跃容器（运行中、创建中、已暂停）
+     * 
+     * @return 活跃容器列表 */
+    public List<ContainerEntity> findActiveContainers() {
+        LambdaQueryWrapper<ContainerEntity> wrapper = Wrappers.<ContainerEntity>lambdaQuery()
+                .in(ContainerEntity::getStatus, ContainerStatus.RUNNING, ContainerStatus.CREATING,
+                        ContainerStatus.SUSPENDED)
+                .orderByDesc(ContainerEntity::getUpdatedAt);
+
+        return containerRepository.selectList(wrapper);
+    }
+
+    /** 查找所有容器
+     * 
+     * @return 所有容器列表 */
+    public List<ContainerEntity> findAllContainers() {
+        LambdaQueryWrapper<ContainerEntity> wrapper = Wrappers.<ContainerEntity>lambdaQuery()
+                .ne(ContainerEntity::getStatus, ContainerStatus.DELETED).orderByDesc(ContainerEntity::getUpdatedAt);
+
+        return containerRepository.selectList(wrapper);
+    }
+
+    /** 查找错误状态的容器
+     * 
+     * @return 错误容器列表 */
+    public List<ContainerEntity> findErrorContainers() {
+        LambdaQueryWrapper<ContainerEntity> wrapper = Wrappers.<ContainerEntity>lambdaQuery()
+                .eq(ContainerEntity::getStatus, ContainerStatus.ERROR).orderByDesc(ContainerEntity::getUpdatedAt);
+
+        return containerRepository.selectList(wrapper);
+    }
+
+    /** 查找已停止的容器
+     * 
+     * @return 已停止容器列表 */
+    public List<ContainerEntity> findStoppedContainers() {
+        LambdaQueryWrapper<ContainerEntity> wrapper = Wrappers.<ContainerEntity>lambdaQuery()
+                .eq(ContainerEntity::getStatus, ContainerStatus.STOPPED).orderByDesc(ContainerEntity::getUpdatedAt);
+
+        return containerRepository.selectList(wrapper);
+    }
+
     /** 根据状态获取容器列表
      * 
      * @param status 容器状态

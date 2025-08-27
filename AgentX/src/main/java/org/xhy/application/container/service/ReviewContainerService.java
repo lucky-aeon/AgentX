@@ -92,7 +92,7 @@ public class ReviewContainerService {
         }
     }
 
-    /** 检查容器是否健康 */
+    /** 检查容器是否健康（使用统一的健康检查标准） */
     private boolean isContainerHealthy(ContainerDTO container) {
         if (container == null) {
             return false;
@@ -104,7 +104,17 @@ public class ReviewContainerService {
         // 检查必要的网络信息是否存在
         boolean hasNetworkInfo = container.getIpAddress() != null && container.getExternalPort() != null;
 
-        return isRunning && hasNetworkInfo;
+        // 检查Docker容器ID是否存在
+        boolean hasDockerContainerId = container.getDockerContainerId() != null;
+
+        boolean basicHealthy = isRunning && hasNetworkInfo && hasDockerContainerId;
+
+        if (!basicHealthy) {
+            logger.debug("审核容器基础健康检查: containerId={}, running={}, networkInfo={}, dockerId={}", container.getId(),
+                    isRunning, hasNetworkInfo, hasDockerContainerId);
+        }
+
+        return basicHealthy;
     }
 
     /** 审核容器连接信息 */
