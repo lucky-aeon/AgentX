@@ -21,7 +21,7 @@ public class ToolProcessMonitor {
     private static final Map<String, ToolExecutionInfo> runningTools = new ConcurrentHashMap<>();
     private final ToolDomainService toolDomainService;
     private final ToolStateService toolStateService;
-    
+
     public ToolProcessMonitor(ToolDomainService toolDomainService, ToolStateService toolStateService) {
         this.toolDomainService = toolDomainService;
         this.toolStateService = toolStateService;

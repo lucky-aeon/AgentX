@@ -44,7 +44,7 @@ public class ToolStateService {
      * @param toolRepository 工具仓库，用于数据持久化。
      * @param gitHubService GitHub服务，用于与GitHub API交互。 */
     public ToolStateService(ToolRepository toolRepository, GitHubService gitHubService,
-                            MCPGatewayService mcpGatewayService) {
+            MCPGatewayService mcpGatewayService) {
         this.toolRepository = toolRepository;
         this.gitHubService = gitHubService;
         this.mcpGatewayService = mcpGatewayService;
@@ -187,7 +187,8 @@ public class ToolStateService {
                     e.getMessage());
         } finally {
             // 人工审核状态也移除，减少内存占用
-            if (ToolStatus.isTerminalStatus(toolEntity.getStatus()) || toolEntity.getStatus() == ToolStatus.MANUAL_REVIEW) {
+            if (ToolStatus.isTerminalStatus(toolEntity.getStatus())
+                    || toolEntity.getStatus() == ToolStatus.MANUAL_REVIEW) {
                 ToolProcessMonitor.recordToolStateTermination(toolEntity);
             }
         }
