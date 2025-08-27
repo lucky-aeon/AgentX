@@ -57,8 +57,8 @@ export function ThinkingProcess({
           <div className="prose prose-sm dark:prose-invert max-w-none pl-6 text-sm">
             {thinkingContent ? (
               <MessageMarkdown 
-                content={thinkingContent}
                 showCopyButton={false}
+                content={thinkingContent}
               />
             ) : (
               <span className="text-muted-foreground">思考中...</span>

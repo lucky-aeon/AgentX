@@ -397,9 +397,9 @@ export function DocumentUnitsDialog({ open, onOpenChange, file }: DocumentUnitsD
                           />
                         ) : (
                           <div className="leading-tight whitespace-pre-wrap">
-                            <MessageMarkdown 
+                            <MessageMarkdown showCopyButton={false}
                               content={unit.content}
-                              showCopyButton={false}
+                              
                               className="text-sm leading-tight"
                             />
                           </div>

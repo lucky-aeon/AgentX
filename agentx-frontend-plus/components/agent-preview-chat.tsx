@@ -800,9 +800,9 @@ export default function AgentPreviewChat({
                           ) : (
                             // 正常消息使用Markdown渲染
                             <div className="markdown-content">
-                              <MessageMarkdown 
+                              <MessageMarkdown showCopyButton={true}
                                 content={message.content + (message.isStreaming ? ' ▌' : '')}
-                                showCopyButton={true}
+                                
                               />
                             </div>
                           )}

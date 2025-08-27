@@ -102,7 +102,6 @@ export function MessageItem({
             <MessageMarkdown 
               content={message.content}
               isStreaming={message.isStreaming}
-              showCopyButton={true}
             />
           </Card>
         )}

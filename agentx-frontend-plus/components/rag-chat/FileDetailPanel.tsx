@@ -501,8 +501,8 @@ export function FileDetailPanel({ selectedFile, selectedSegment, onDataLoad }: F
 
                   <div className="text-sm">
                     <MessageMarkdown 
-                      content={unit.content}
                       showCopyButton={false}
+                      content={unit.content}
                     />
                   </div>
 

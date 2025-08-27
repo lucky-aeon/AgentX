@@ -404,9 +404,9 @@ export function ToolHistoryVersionsDialog({
                       <CardContent className="px-4 py-2 pb-4">
                         {selectedVersion.changeLog ? (
                           <div className="prose prose-sm max-w-none">
-                            <MessageMarkdown 
+                            <MessageMarkdown showCopyButton={false}
                               content={selectedVersion.changeLog}
-                              showCopyButton={false}
+                              
                             />
                           </div>
                         ) : (
