@@ -67,11 +67,11 @@ public class RagQaDatasetAppService {
     private final UserModelConfigResolver userModelConfigResolver;
 
     public RagQaDatasetAppService(RagQaDatasetDomainService ragQaDatasetDomainService,
-                                  FileDetailDomainService fileDetailDomainService, DocumentUnitDomainService documentUnitDomainService,
-                                  ApplicationEventPublisher applicationEventPublisher, EmbeddingDomainService embeddingDomainService,
-                                  RagPublishAppService ragPublishAppService, RagVersionDomainService ragVersionDomainService,
-                                  UserRagDomainService userRagDomainService, RagDataAccessDomainService ragDataAccessService, UserModelConfigResolver userModelConfigResolver
-                                  ) {
+            FileDetailDomainService fileDetailDomainService, DocumentUnitDomainService documentUnitDomainService,
+            ApplicationEventPublisher applicationEventPublisher, EmbeddingDomainService embeddingDomainService,
+            RagPublishAppService ragPublishAppService, RagVersionDomainService ragVersionDomainService,
+            UserRagDomainService userRagDomainService, RagDataAccessDomainService ragDataAccessService,
+            UserModelConfigResolver userModelConfigResolver) {
         this.ragQaDatasetDomainService = ragQaDatasetDomainService;
         this.fileDetailDomainService = fileDetailDomainService;
         this.documentUnitDomainService = documentUnitDomainService;

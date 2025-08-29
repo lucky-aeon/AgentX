@@ -47,9 +47,9 @@ public class RagMessageHandler extends AbstractMessageHandler {
             3.  ** 不确定性处理 **：如果<context>中的信息不足以完全回答问题，或者信息与问题部分相关但不完全匹配，请在回答中明确指出信息的局限性。
             4.  ** 拒绝机制 **：如果<context>中完全没有任何与问题相关的信息，或者问题超出了提供的文档范围，你必须明确且礼貌地告知用户“根据提供的资料，我无法找到相关信息来回答这个问题。” 严禁编造答案（即防止幻觉）。
             5.  ** 格式与结构 **：在可能的情况下，使用清晰、有条理的方式组织答案（如分点、列表或简短的段落）。如果答案涉及多个方面，请合理地进行分点说明。
-            
+
             context为：${context}
-            
+
             请现在开始处理用户的问题。
                 """;
 
@@ -86,9 +86,8 @@ public class RagMessageHandler extends AbstractMessageHandler {
             // 第一阶段：RAG检索
             RagRetrievalResult retrievalResult = performRagRetrieval(ragContext, transport, connection);
 
-            if (!retrievalResult.hasDocuments()){
-                transport.sendEndMessage(connection,AgentChatResponse.build("没有搜索到相关文档，可以换一个方式提问",
-                        MessageType.TEXT));
+            if (!retrievalResult.hasDocuments()) {
+                transport.sendEndMessage(connection, AgentChatResponse.build("没有搜索到相关文档，可以换一个方式提问", MessageType.TEXT));
             }
 
             // 第二阶段：基于检索结果生成回答
@@ -171,7 +170,6 @@ public class RagMessageHandler extends AbstractMessageHandler {
         // 发送回答生成开始信号
         transport.sendMessage(connection, AgentChatResponse.build("开始生成回答...", MessageType.RAG_ANSWER_START));
 
-
         // 保存用户消息
         messageDomainService.saveMessageAndUpdateContext(Collections.singletonList(userEntity),
                 ragContext.getContextEntity());
@@ -181,10 +179,11 @@ public class RagMessageHandler extends AbstractMessageHandler {
                 ragContext.getModel());
 
         // 创建RAG专用的流式Agent
-        Agent agent = buildRagStreamingAgent(streamingClient, memory, toolProvider, ragContext.getAgent(),retrievalResult.getRetrievedDocuments());
+        Agent agent = buildRagStreamingAgent(streamingClient, memory, toolProvider, ragContext.getAgent(),
+                retrievalResult.getRetrievedDocuments());
 
         // 启动流式处理
-        processRagChat(agent, connection, transport, ragContext, userEntity, llmEntity,ragContext.getUserMessage());
+        processRagChat(agent, connection, transport, ragContext, userEntity, llmEntity, ragContext.getUserMessage());
     }
 
     /** RAG专用的聊天处理逻辑 */
@@ -327,14 +326,14 @@ public class RagMessageHandler extends AbstractMessageHandler {
 
     /** 构建RAG专用的流式Agent */
     private Agent buildRagStreamingAgent(StreamingChatModel model, MessageWindowChatMemory memory,
-            ToolProvider toolProvider, AgentEntity agent,List<DocumentUnitDTO> documentUnitDTOS) {
+            ToolProvider toolProvider, AgentEntity agent, List<DocumentUnitDTO> documentUnitDTOS) {
 
         // 为RAG对话添加专用的系统提示词
         MessageWindowChatMemory ragMemory = MessageWindowChatMemory.builder().maxMessages(1000)
                 .chatMemoryStore(new InMemoryChatMemoryStore()).build();
 
         // 添加RAG专用系统提示词
-        ragMemory.add(new SystemMessage(ragSystemPrompt.replace("${context}",documentUnitDTOS.toString())));
+        ragMemory.add(new SystemMessage(ragSystemPrompt.replace("${context}", documentUnitDTOS.toString())));
 
         return buildStreamingAgent(model, ragMemory, toolProvider, agent);
     }
