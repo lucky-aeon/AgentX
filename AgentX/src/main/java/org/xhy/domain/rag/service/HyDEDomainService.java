@@ -1,5 +1,6 @@
 package org.xhy.domain.rag.service;
 
+import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.response.ChatResponse;
 import dev.langchain4j.data.message.UserMessage;
@@ -8,7 +9,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.xhy.domain.rag.model.ModelConfig;
-import org.xhy.infrastructure.rag.service.UserModelConfigResolver;
+import org.xhy.infrastructure.llm.LLMProviderService;
+import org.xhy.infrastructure.llm.config.ProviderConfig;
+
+import java.util.Arrays;
 
 /** HyDE（假设文档嵌入）领域服务 使用用户配置的LLM生成假设文档来改善RAG检索效果
  * 
@@ -20,18 +24,9 @@ public class HyDEDomainService {
 
     /** HyDE提示词模板 */
     private static final String HYDE_PROMPT_TEMPLATE = """
-            根据以下问题，生成一个详细的专业回答，用于文档检索：
-
-            问题：{{query}}
-
-            请生成一个包含相关专业术语和概念的回答（150-300字），确保回答准确、专业且包含可能在相关文档中出现的关键词：
+            你是一个专门用户 RAG 问题拓展助手，用于处理 RAG 中的 HyDE 部分，你的责任是将用户的问题进行拓展，字数不可超过 100字
             """;
 
-    private final UserModelConfigResolver userModelConfigResolver;
-
-    public HyDEDomainService(UserModelConfigResolver userModelConfigResolver) {
-        this.userModelConfigResolver = userModelConfigResolver;
-    }
 
     /** 生成假设文档 使用用户配置的LLM根据查询问题生成假设文档，用于改善向量检索效果
      * 
@@ -48,15 +43,15 @@ public class HyDEDomainService {
         try {
             log.debug("开始HyDE生成，查询: '{}', 模型: {}", trimmedQuery, chatModelConfig.getModelId());
 
-            // 通过基础设施层创建ChatModel实例
-            ChatModel chatModel = userModelConfigResolver.createChatModel(chatModelConfig);
+            ProviderConfig providerConfig = new ProviderConfig(chatModelConfig.getApiKey(), chatModelConfig.getBaseUrl(),
+                    chatModelConfig.getModelId(), chatModelConfig.getProtocol());
+            ChatModel chatModel = LLMProviderService.getStrand(chatModelConfig.getProtocol(), providerConfig);
 
             // 构建提示词
-            String promptText = HYDE_PROMPT_TEMPLATE.replace("{{query}}", trimmedQuery);
-            UserMessage userMessage = new UserMessage(promptText);
-
+            SystemMessage systemMessage = new SystemMessage(HYDE_PROMPT_TEMPLATE);
+            UserMessage userMessage = new UserMessage(trimmedQuery);
             // 直接生成假设文档
-            ChatResponse response = chatModel.chat(userMessage);
+            ChatResponse response = chatModel.chat(Arrays.asList(systemMessage,userMessage));
             String hypotheticalDocument = response.aiMessage().text().trim();
 
             log.info("HyDE生成成功，查询: '{}', 生成文档长度: {}", trimmedQuery, hypotheticalDocument.length());

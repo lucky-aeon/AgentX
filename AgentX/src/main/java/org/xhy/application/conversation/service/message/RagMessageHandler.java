@@ -40,6 +40,19 @@ import java.util.concurrent.atomic.AtomicReference;
 @Component("ragMessageHandler")
 public class RagMessageHandler extends AbstractMessageHandler {
 
+    private final static String ragSystemPrompt = """
+            你是一个专业、精准的AI助手。请严格且仅根据提供的<context>来回答用户的问题。请遵循以下规则：
+            1.  ** grounding（信息 grounding）**：你的答案必须完全基于提供的<context>生成。不允许引入外部知识或内部记忆。
+            2.  ** 准确性 **：如果<context>中包含的具体信息能直接回答问题，请直接、准确地引用这些信息。
+            3.  ** 不确定性处理 **：如果<context>中的信息不足以完全回答问题，或者信息与问题部分相关但不完全匹配，请在回答中明确指出信息的局限性。
+            4.  ** 拒绝机制 **：如果<context>中完全没有任何与问题相关的信息，或者问题超出了提供的文档范围，你必须明确且礼貌地告知用户“根据提供的资料，我无法找到相关信息来回答这个问题。” 严禁编造答案（即防止幻觉）。
+            5.  ** 格式与结构 **：在可能的情况下，使用清晰、有条理的方式组织答案（如分点、列表或简短的段落）。如果答案涉及多个方面，请合理地进行分点说明。
+            
+            context为：${context}
+            
+            请现在开始处理用户的问题。
+                """;
+
     private static final Logger logger = LoggerFactory.getLogger(RagMessageHandler.class);
 
     private final RAGSearchAppService ragSearchAppService;
@@ -72,6 +85,11 @@ public class RagMessageHandler extends AbstractMessageHandler {
         try {
             // 第一阶段：RAG检索
             RagRetrievalResult retrievalResult = performRagRetrieval(ragContext, transport, connection);
+
+            if (!retrievalResult.hasDocuments()){
+                transport.sendEndMessage(connection,AgentChatResponse.build("没有搜索到相关文档，可以换一个方式提问",
+                        MessageType.TEXT));
+            }
 
             // 第二阶段：基于检索结果生成回答
             generateRagAnswer(ragContext, retrievalResult, connection, transport, userEntity, llmEntity, memory,
@@ -153,8 +171,6 @@ public class RagMessageHandler extends AbstractMessageHandler {
         // 发送回答生成开始信号
         transport.sendMessage(connection, AgentChatResponse.build("开始生成回答...", MessageType.RAG_ANSWER_START));
 
-        // 构建RAG提示词
-        String ragPrompt = buildRagPrompt(ragContext.getUserMessage(), retrievalResult.getRetrievedDocuments());
 
         // 保存用户消息
         messageDomainService.saveMessageAndUpdateContext(Collections.singletonList(userEntity),
@@ -165,10 +181,10 @@ public class RagMessageHandler extends AbstractMessageHandler {
                 ragContext.getModel());
 
         // 创建RAG专用的流式Agent
-        Agent agent = buildRagStreamingAgent(streamingClient, memory, toolProvider, ragContext.getAgent());
+        Agent agent = buildRagStreamingAgent(streamingClient, memory, toolProvider, ragContext.getAgent(),retrievalResult.getRetrievedDocuments());
 
         // 启动流式处理
-        processRagChat(agent, connection, transport, ragContext, userEntity, llmEntity, ragPrompt);
+        processRagChat(agent, connection, transport, ragContext, userEntity, llmEntity,ragContext.getUserMessage());
     }
 
     /** RAG专用的聊天处理逻辑 */
@@ -294,10 +310,6 @@ public class RagMessageHandler extends AbstractMessageHandler {
      * @param documents 检索到的文档
      * @return RAG提示词 */
     private String buildRagPrompt(String question, List<DocumentUnitDTO> documents) {
-        if (documents.isEmpty()) {
-            return String.format("用户问题：%s\n\n暂无相关文档信息，请基于你的知识回答。", question);
-        }
-
         StringBuilder context = new StringBuilder();
         context.append("以下是相关的文档片段：\n\n");
 
@@ -315,33 +327,14 @@ public class RagMessageHandler extends AbstractMessageHandler {
 
     /** 构建RAG专用的流式Agent */
     private Agent buildRagStreamingAgent(StreamingChatModel model, MessageWindowChatMemory memory,
-            ToolProvider toolProvider, AgentEntity agent) {
+            ToolProvider toolProvider, AgentEntity agent,List<DocumentUnitDTO> documentUnitDTOS) {
 
         // 为RAG对话添加专用的系统提示词
         MessageWindowChatMemory ragMemory = MessageWindowChatMemory.builder().maxMessages(1000)
                 .chatMemoryStore(new InMemoryChatMemoryStore()).build();
 
-        // 复制原有内存内容
-        memory.messages().forEach(ragMemory::add);
-
         // 添加RAG专用系统提示词
-        ragMemory.add(new SystemMessage("""
-                你是一位专业的文档问答助手，你的任务是基于提供的文档回答用户问题。
-                你需要遵循以下Markdown格式要求：
-                1. 使用标准Markdown语法
-                2. 列表项使用 ' - ' 而不是 '*'，确保破折号后有一个空格
-                3. 引用页码使用方括号，例如：[页码: 1]
-                4. 在每个主要段落之间添加一个空行
-                5. 加粗使用 **文本** 格式
-                6. 保持一致的缩进，列表项不要过度缩进
-                7. 确保列表项之间没有多余的空行
-                8. 该加## 这种标题的时候要加上
-
-                回答结构应该是：
-                1. 首先是简短的介绍语
-                2. 然后是主要内容（使用列表形式）
-                3. 最后是"信息来源"部分，总结使用的页面及其贡献
-                """));
+        ragMemory.add(new SystemMessage(ragSystemPrompt.replace("${context}",documentUnitDTOS.toString())));
 
         return buildStreamingAgent(model, ragMemory, toolProvider, agent);
     }

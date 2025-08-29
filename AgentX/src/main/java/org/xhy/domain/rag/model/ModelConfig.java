@@ -1,5 +1,8 @@
 package org.xhy.domain.rag.model;
 
+import org.xhy.domain.llm.model.enums.ModelType;
+import org.xhy.infrastructure.llm.protocol.enums.ProviderProtocol;
+
 import java.io.Serial;
 import java.io.Serializable;
 
@@ -20,17 +23,19 @@ public class ModelConfig implements Serializable {
     /** API基础URL */
     private String baseUrl;
 
-    /** 模型类型（OCR/EMBEDDING） */
-    private String modelType;
+    private ModelType modelType;
+
+    private ProviderProtocol protocol;
 
     public ModelConfig() {
     }
 
-    public ModelConfig(String modelId, String apiKey, String baseUrl, String modelType) {
+    public ModelConfig(String modelId, String apiKey, String baseUrl, ModelType modelType,ProviderProtocol protocol) {
         this.modelId = modelId;
         this.apiKey = apiKey;
         this.baseUrl = baseUrl;
         this.modelType = modelType;
+        this.protocol = protocol;
     }
 
     public String getModelId() {
@@ -57,11 +62,23 @@ public class ModelConfig implements Serializable {
         this.baseUrl = baseUrl;
     }
 
-    public String getModelType() {
+    public ModelType getModelType() {
         return modelType;
     }
 
-    public void setModelType(String modelType) {
+    public void setModelType(ModelType modelType) {
         this.modelType = modelType;
+    }
+
+    public ProviderProtocol getProtocol() {
+        return protocol;
+    }
+
+    public void setProtocol(ProviderProtocol protocol) {
+        this.protocol = protocol;
+    }
+
+    public boolean isChatType(){
+        return this.modelType == ModelType.CHAT;
     }
 }

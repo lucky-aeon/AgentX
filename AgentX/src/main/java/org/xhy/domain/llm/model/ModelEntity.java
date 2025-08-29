@@ -115,4 +115,8 @@ public class ModelEntity extends BaseEntity {
             throw new BusinessException("模型未激活");
         }
     }
+
+    public boolean isChatType(){
+        return this.type == ModelType.CHAT;
+    }
 }
