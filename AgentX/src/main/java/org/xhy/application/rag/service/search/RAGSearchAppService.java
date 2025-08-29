@@ -20,10 +20,6 @@ import org.xhy.application.conversation.service.message.Agent;
 import org.xhy.application.rag.assembler.DocumentUnitAssembler;
 import org.xhy.application.rag.assembler.RagQaDatasetAssembler;
 import org.xhy.application.rag.dto.*;
-import org.xhy.application.rag.service.manager.RagMarketAppService;
-import org.xhy.application.conversation.dto.RagRetrievalDocumentDTO;
-import org.xhy.application.rag.service.manager.RagModelConfigService;
-import org.xhy.application.rag.service.manager.RagPublishAppService;
 import org.xhy.application.rag.service.manager.RagQaDatasetAppService;
 import org.xhy.domain.conversation.constant.MessageType;
 import org.xhy.domain.llm.model.HighAvailabilityResult;
@@ -82,7 +78,6 @@ public class RAGSearchAppService {
 
     private final UserRagDomainService userRagDomainService;
     private final RagDataAccessDomainService ragDataAccessService;
-    private final RagModelConfigService ragModelConfigService;
     private final EmbeddingModelFactory embeddingModelFactory;
     private final HybridSearchDomainService hybridSearchDomainService;
     private final UserModelConfigResolver userModelConfigResolver;
@@ -94,7 +89,7 @@ public class RAGSearchAppService {
             LLMServiceFactory llmServiceFactory, LLMDomainService llmDomainService,
             UserSettingsDomainService userSettingsDomainService,
             HighAvailabilityDomainService highAvailabilityDomainService, UserRagDomainService userRagDomainService,
-            RagDataAccessDomainService ragDataAccessService, RagModelConfigService ragModelConfigService,
+            RagDataAccessDomainService ragDataAccessService,
             EmbeddingModelFactory embeddingModelFactory, HybridSearchDomainService hybridSearchDomainService,
             org.xhy.infrastructure.rag.service.UserModelConfigResolver userModelConfigResolver,
             UserRagFileDomainService userRagFileDomainService) {
@@ -109,7 +104,6 @@ public class RAGSearchAppService {
         this.highAvailabilityDomainService = highAvailabilityDomainService;
         this.userRagDomainService = userRagDomainService;
         this.ragDataAccessService = ragDataAccessService;
-        this.ragModelConfigService = ragModelConfigService;
         this.embeddingModelFactory = embeddingModelFactory;
         this.hybridSearchDomainService = hybridSearchDomainService;
         this.userModelConfigResolver = userModelConfigResolver;
@@ -150,7 +144,7 @@ public class RAGSearchAppService {
         Integer adjustedCandidateMultiplier = request.getAdjustedCandidateMultiplier();
 
         // 获取用户的嵌入模型配置
-        ModelConfig embeddingModelConfig = ragModelConfigService.getUserEmbeddingModelConfig(userId);
+        ModelConfig embeddingModelConfig = userModelConfigResolver.getUserEmbeddingModelConfig(userId);
         EmbeddingModelFactory.EmbeddingConfig embeddingConfig = toEmbeddingConfig(embeddingModelConfig);
 
         // 获取用户的聊天模型配置用于HyDE
@@ -210,7 +204,7 @@ public class RAGSearchAppService {
         Integer adjustedCandidateMultiplier = request.getAdjustedCandidateMultiplier();
 
         // 获取用户的嵌入模型配置
-        ModelConfig embeddingModelConfig = ragModelConfigService.getUserEmbeddingModelConfig(userId);
+        ModelConfig embeddingModelConfig = userModelConfigResolver.getUserEmbeddingModelConfig(userId);
         EmbeddingModelFactory.EmbeddingConfig embeddingConfig = toEmbeddingConfig(embeddingModelConfig);
 
         // 获取用户的聊天模型配置用于HyDE
@@ -322,7 +316,7 @@ public class RAGSearchAppService {
             }
 
             // 获取用户的嵌入模型配置
-            ModelConfig embeddingModelConfig = ragModelConfigService.getUserEmbeddingModelConfig(userId);
+            ModelConfig embeddingModelConfig = userModelConfigResolver.getUserEmbeddingModelConfig(userId);
             EmbeddingModelFactory.EmbeddingConfig embeddingConfig = toEmbeddingConfig(embeddingModelConfig);
 
             // 执行RAG检索
@@ -766,7 +760,7 @@ public class RAGSearchAppService {
             Thread.sleep(500);
 
             // 获取用户的嵌入模型配置
-            ModelConfig embeddingModelConfig = ragModelConfigService.getUserEmbeddingModelConfig(userId);
+            ModelConfig embeddingModelConfig = userModelConfigResolver.getUserEmbeddingModelConfig(userId);
             EmbeddingModelFactory.EmbeddingConfig embeddingConfig = toEmbeddingConfig(embeddingModelConfig);
 
             List<DocumentUnitEntity> retrievedDocuments;

@@ -32,13 +32,13 @@ import org.xhy.infrastructure.mq.enums.EventType;
 import org.xhy.infrastructure.mq.events.RagDocSyncOcrEvent;
 import org.xhy.infrastructure.mq.events.RagDocSyncStorageEvent;
 import org.xhy.infrastructure.mq.model.MqMessage;
-import org.xhy.infrastructure.rag.service.UserModelConfigResolver;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.rabbitmq.client.Channel;
+import org.xhy.infrastructure.rag.service.UserModelConfigResolver;
 
 /** document预处理消费者
  * @author zang
@@ -55,9 +55,10 @@ public class RagDocConsumer {
     private final ApplicationEventPublisher applicationEventPublisher;
     private final UserModelConfigResolver userModelConfigResolver;
 
+
     public RagDocConsumer(DocumentProcessingFactory ragDocSyncOcrContext,
-            FileDetailDomainService fileDetailDomainService, DocumentUnitRepository documentUnitRepository,
-            ApplicationEventPublisher applicationEventPublisher, UserModelConfigResolver userModelConfigResolver) {
+                          FileDetailDomainService fileDetailDomainService, DocumentUnitRepository documentUnitRepository,
+                          ApplicationEventPublisher applicationEventPublisher, UserModelConfigResolver userModelConfigResolver) {
         this.documentProcessingFactory = ragDocSyncOcrContext;
         this.fileDetailDomainService = fileDetailDomainService;
         this.documentUnitRepository = documentUnitRepository;
@@ -172,8 +173,8 @@ public class RagDocConsumer {
                 storageMessage.setDatasetId(fileEntity.getDataSetId());
                 storageMessage.setUserId(fileEntity.getUserId());
                 // 获取用户的嵌入模型配置
-                storageMessage.setEmbeddingModelConfig(
-                        userModelConfigResolver.getUserEmbeddingModelConfig(fileEntity.getUserId()));
+                storageMessage.setEmbeddingModelConfig(userModelConfigResolver
+                        .getUserEmbeddingModelConfig(fileEntity.getUserId()));
 
                 RagDocSyncStorageEvent<RagDocSyncStorageMessage> storageEvent = new RagDocSyncStorageEvent<>(
                         storageMessage, EventType.DOC_SYNC_RAG);

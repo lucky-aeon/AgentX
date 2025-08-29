@@ -17,9 +17,9 @@ import dev.langchain4j.model.chat.ChatModel;
 import java.util.Objects;
 
 /** 用户模型配置解析器 - Infrastructure层服务
- * 
+ *
  * 解决Domain层需要获取用户模型配置的问题
- * 
+ *
  * @author shilong.zang */
 @Service
 public class UserModelConfigResolver {
@@ -36,7 +36,7 @@ public class UserModelConfigResolver {
     }
 
     /** 获取用户的嵌入模型配置
-     * 
+     *
      * @param userId 用户ID
      * @return 嵌入模型配置
      * @throws BusinessException 如果用户未配置嵌入模型或配置无效 */
@@ -56,7 +56,7 @@ public class UserModelConfigResolver {
             log.info("获取用户{}的嵌入模型配置，模型ID: {}", userId, modelId);
 
             // 根据模型ID从数据库获取真实的模型配置
-            return getModelConfigFromDatabase(modelId, userId, "EMBEDDING");
+            return getModelConfigFromDatabase(modelId, userId);
 
         } catch (BusinessException e) {
             // 重新抛出业务异常
@@ -69,7 +69,7 @@ public class UserModelConfigResolver {
     }
 
     /** 获取用户的聊天模型配置
-     * 
+     *
      * @param userId 用户ID
      * @return 聊天模型配置
      * @throws BusinessException 如果用户未配置聊天模型或配置无效 */
@@ -89,7 +89,7 @@ public class UserModelConfigResolver {
             log.info("获取用户{}的聊天模型配置，模型ID: {}", userId, modelId);
 
             // 根据模型ID从数据库获取真实的模型配置
-            return getModelConfigFromDatabase(modelId, userId, "CHAT");
+            return getModelConfigFromDatabase(modelId, userId);
 
         } catch (BusinessException e) {
             // 重新抛出业务异常
@@ -102,7 +102,7 @@ public class UserModelConfigResolver {
     }
 
     /** 获取用户的OCR模型配置（可用作视觉模型）
-     * 
+     *
      * @param userId 用户ID
      * @return OCR/视觉模型配置
      * @throws BusinessException 如果用户未配置OCR模型或配置无效 */
@@ -122,7 +122,7 @@ public class UserModelConfigResolver {
             log.info("获取用户{}OCR模型配置，模型ID: {}", userId, modelId);
 
             // 根据模型ID从数据库获取真实的模型配置
-            return getModelConfigFromDatabase(modelId, userId, "OCR");
+            return getModelConfigFromDatabase(modelId, userId);
 
         } catch (BusinessException e) {
             // 重新抛出业务异常
@@ -135,13 +135,12 @@ public class UserModelConfigResolver {
     }
 
     /** 从数据库获取模型配置
-     * 
+     *
      * @param modelId 模型ID
      * @param userId 用户ID
-     * @param expectedType 期望的模型类型
      * @return 模型配置
      * @throws BusinessException 如果模型不存在或配置无效 */
-    private ModelConfig getModelConfigFromDatabase(String modelId, String userId, String expectedType) {
+    private ModelConfig getModelConfigFromDatabase(String modelId, String userId) {
         try {
             // 获取模型实体
             ModelEntity modelEntity = llmDomainService.findModelById(modelId);
@@ -171,8 +170,8 @@ public class UserModelConfigResolver {
             providerEntity.isAvailable(providerEntity.getUserId());
 
             // 构建模型配置
-            ModelConfig modelConfig = new ModelConfig(modelEntity.getModelId(), providerEntity.getConfig().getApiKey(),
-                    providerEntity.getConfig().getBaseUrl(), expectedType);
+            ModelConfig modelConfig = new ModelConfig(modelEntity.isChatType() ? modelEntity.getId() : modelEntity.getModelEndpoint(), providerEntity.getConfig().getApiKey(),
+                    providerEntity.getConfig().getBaseUrl(), modelEntity.getType(),providerEntity.getProtocol());
 
             log.info("成功获取用户{}的模型配置: modelId={}, baseUrl={}", userId, modelEntity.getModelId(),
                     providerEntity.getConfig().getBaseUrl());
@@ -190,7 +189,7 @@ public class UserModelConfigResolver {
     }
 
     /** 根据ModelConfig创建ChatModel实例 用于在RAG领域中创建LLM客户端，避免跨领域依赖
-     * 
+     *
      * @param modelConfig 模型配置
      * @return ChatModel实例
      * @throws BusinessException 如果创建失败 */
@@ -200,28 +199,16 @@ public class UserModelConfigResolver {
         }
 
         try {
-            log.debug("使用ModelConfig创建ChatModel，modelId: {}", modelConfig.getModelId());
 
-            // 需要获取原始的ModelEntity和ProviderEntity来获取协议信息
-            // 这里仍需要访问LLM领域，但这是基础设施层的职责
-            ModelEntity modelEntity = llmDomainService.findModelById(modelConfig.getModelId());
-            if (modelEntity == null) {
-                throw new BusinessException("模型不存在: " + modelConfig.getModelId());
-            }
-
-            ProviderEntity providerEntity = llmDomainService.getProvider(modelEntity.getProviderId());
-            if (providerEntity == null) {
-                throw new BusinessException("服务提供商不存在: " + modelEntity.getProviderId());
-            }
 
             // 创建ProviderConfig
             ProviderConfig providerConfig = new ProviderConfig(modelConfig.getApiKey(), modelConfig.getBaseUrl(),
-                    modelEntity.getModelEndpoint(), providerEntity.getProtocol());
+                    modelConfig.getModelId(), modelConfig.getProtocol());
 
             // 使用LLMProviderService创建ChatModel
-            ChatModel chatModel = LLMProviderService.getStrand(providerEntity.getProtocol(), providerConfig);
+            ChatModel chatModel = LLMProviderService.getStrand(modelConfig.getProtocol(), providerConfig);
 
-            log.info("成功创建ChatModel，modelId: {}, protocol: {}", modelConfig.getModelId(), providerEntity.getProtocol());
+            log.info("成功创建ChatModel，modelId: {}, protocol: {}", modelConfig.getModelId(), modelConfig.getProtocol());
             return chatModel;
 
         } catch (BusinessException e) {

@@ -39,6 +39,7 @@ import org.xhy.domain.llm.service.LLMDomainService;
 import org.xhy.domain.llm.service.HighAvailabilityDomainService;
 import org.xhy.domain.user.service.UserSettingsDomainService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.xhy.infrastructure.rag.service.UserModelConfigResolver;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -62,14 +63,15 @@ public class RagQaDatasetAppService {
     private final RagVersionDomainService ragVersionDomainService;
     private final UserRagDomainService userRagDomainService;
     private final RagDataAccessDomainService ragDataAccessService;
-    private final RagModelConfigService ragModelConfigService;
+
+    private final UserModelConfigResolver userModelConfigResolver;
 
     public RagQaDatasetAppService(RagQaDatasetDomainService ragQaDatasetDomainService,
-            FileDetailDomainService fileDetailDomainService, DocumentUnitDomainService documentUnitDomainService,
-            ApplicationEventPublisher applicationEventPublisher, EmbeddingDomainService embeddingDomainService,
-            RagPublishAppService ragPublishAppService, RagVersionDomainService ragVersionDomainService,
-            UserRagDomainService userRagDomainService, RagDataAccessDomainService ragDataAccessService,
-            RagModelConfigService ragModelConfigService) {
+                                  FileDetailDomainService fileDetailDomainService, DocumentUnitDomainService documentUnitDomainService,
+                                  ApplicationEventPublisher applicationEventPublisher, EmbeddingDomainService embeddingDomainService,
+                                  RagPublishAppService ragPublishAppService, RagVersionDomainService ragVersionDomainService,
+                                  UserRagDomainService userRagDomainService, RagDataAccessDomainService ragDataAccessService, UserModelConfigResolver userModelConfigResolver
+                                  ) {
         this.ragQaDatasetDomainService = ragQaDatasetDomainService;
         this.fileDetailDomainService = fileDetailDomainService;
         this.documentUnitDomainService = documentUnitDomainService;
@@ -79,7 +81,7 @@ public class RagQaDatasetAppService {
         this.ragVersionDomainService = ragVersionDomainService;
         this.userRagDomainService = userRagDomainService;
         this.ragDataAccessService = ragDataAccessService;
-        this.ragModelConfigService = ragModelConfigService;
+        this.userModelConfigResolver = userModelConfigResolver;
     }
 
     /** 创建数据集
@@ -398,7 +400,7 @@ public class RagQaDatasetAppService {
             ocrMessage.setPageSize(fileEntity.getFilePageSize());
             ocrMessage.setUserId(userId);
             // 获取用户的OCR模型配置并设置到消息中
-            ocrMessage.setOcrModelConfig(ragModelConfigService.getUserOcrModelConfig(userId));
+            ocrMessage.setOcrModelConfig(userModelConfigResolver.getUserOcrModelConfig(userId));
 
             RagDocSyncOcrEvent<RagDocMessage> ocrEvent = new RagDocSyncOcrEvent<>(ocrMessage,
                     EventType.DOC_REFRESH_ORG);
