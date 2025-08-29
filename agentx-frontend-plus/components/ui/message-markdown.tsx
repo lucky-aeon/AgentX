@@ -81,9 +81,9 @@ export function MessageMarkdown({
                 );
               },
               table: ({ children, ...props }) => (
-                <div className="w-full overflow-x-auto my-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                <div className="w-full my-4 rounded-lg border border-gray-200 dark:border-gray-700">
                   <table 
-                    className="w-full min-w-max divide-y divide-gray-200 dark:divide-gray-700" 
+                    className="w-full table-auto divide-y divide-gray-200 dark:divide-gray-700" 
                     {...props}
                   >
                     {children}
