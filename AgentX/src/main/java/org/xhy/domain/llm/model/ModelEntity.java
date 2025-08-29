@@ -116,7 +116,7 @@ public class ModelEntity extends BaseEntity {
         }
     }
 
-    public boolean isChatType(){
+    public boolean isChatType() {
         return this.type == ModelType.CHAT;
     }
 }

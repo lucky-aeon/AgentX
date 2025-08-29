@@ -30,7 +30,7 @@ public class ModelConfig implements Serializable {
     public ModelConfig() {
     }
 
-    public ModelConfig(String modelId, String apiKey, String baseUrl, ModelType modelType,ProviderProtocol protocol) {
+    public ModelConfig(String modelId, String apiKey, String baseUrl, ModelType modelType, ProviderProtocol protocol) {
         this.modelId = modelId;
         this.apiKey = apiKey;
         this.baseUrl = baseUrl;
@@ -78,7 +78,7 @@ public class ModelConfig implements Serializable {
         this.protocol = protocol;
     }
 
-    public boolean isChatType(){
+    public boolean isChatType() {
         return this.modelType == ModelType.CHAT;
     }
 }

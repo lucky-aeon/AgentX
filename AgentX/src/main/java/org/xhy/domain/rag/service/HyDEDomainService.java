@@ -27,7 +27,6 @@ public class HyDEDomainService {
             你是一个专门用户 RAG 问题拓展助手，用于处理 RAG 中的 HyDE 部分，你的责任是将用户的问题进行拓展，字数不可超过 100字
             """;
 
-
     /** 生成假设文档 使用用户配置的LLM根据查询问题生成假设文档，用于改善向量检索效果
      * 
      * @param query 用户查询问题
@@ -43,15 +42,15 @@ public class HyDEDomainService {
         try {
             log.debug("开始HyDE生成，查询: '{}', 模型: {}", trimmedQuery, chatModelConfig.getModelId());
 
-            ProviderConfig providerConfig = new ProviderConfig(chatModelConfig.getApiKey(), chatModelConfig.getBaseUrl(),
-                    chatModelConfig.getModelId(), chatModelConfig.getProtocol());
+            ProviderConfig providerConfig = new ProviderConfig(chatModelConfig.getApiKey(),
+                    chatModelConfig.getBaseUrl(), chatModelConfig.getModelId(), chatModelConfig.getProtocol());
             ChatModel chatModel = LLMProviderService.getStrand(chatModelConfig.getProtocol(), providerConfig);
 
             // 构建提示词
             SystemMessage systemMessage = new SystemMessage(HYDE_PROMPT_TEMPLATE);
             UserMessage userMessage = new UserMessage(trimmedQuery);
             // 直接生成假设文档
-            ChatResponse response = chatModel.chat(Arrays.asList(systemMessage,userMessage));
+            ChatResponse response = chatModel.chat(Arrays.asList(systemMessage, userMessage));
             String hypotheticalDocument = response.aiMessage().text().trim();
 
             log.info("HyDE生成成功，查询: '{}', 生成文档长度: {}", trimmedQuery, hypotheticalDocument.length());

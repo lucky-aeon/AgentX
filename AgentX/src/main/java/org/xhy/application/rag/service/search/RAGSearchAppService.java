@@ -89,8 +89,8 @@ public class RAGSearchAppService {
             LLMServiceFactory llmServiceFactory, LLMDomainService llmDomainService,
             UserSettingsDomainService userSettingsDomainService,
             HighAvailabilityDomainService highAvailabilityDomainService, UserRagDomainService userRagDomainService,
-            RagDataAccessDomainService ragDataAccessService,
-            EmbeddingModelFactory embeddingModelFactory, HybridSearchDomainService hybridSearchDomainService,
+            RagDataAccessDomainService ragDataAccessService, EmbeddingModelFactory embeddingModelFactory,
+            HybridSearchDomainService hybridSearchDomainService,
             org.xhy.infrastructure.rag.service.UserModelConfigResolver userModelConfigResolver,
             UserRagFileDomainService userRagFileDomainService) {
         this.ragQaDatasetDomainService = ragQaDatasetDomainService;

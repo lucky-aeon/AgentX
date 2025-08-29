@@ -55,10 +55,9 @@ public class RagDocConsumer {
     private final ApplicationEventPublisher applicationEventPublisher;
     private final UserModelConfigResolver userModelConfigResolver;
 
-
     public RagDocConsumer(DocumentProcessingFactory ragDocSyncOcrContext,
-                          FileDetailDomainService fileDetailDomainService, DocumentUnitRepository documentUnitRepository,
-                          ApplicationEventPublisher applicationEventPublisher, UserModelConfigResolver userModelConfigResolver) {
+            FileDetailDomainService fileDetailDomainService, DocumentUnitRepository documentUnitRepository,
+            ApplicationEventPublisher applicationEventPublisher, UserModelConfigResolver userModelConfigResolver) {
         this.documentProcessingFactory = ragDocSyncOcrContext;
         this.fileDetailDomainService = fileDetailDomainService;
         this.documentUnitRepository = documentUnitRepository;
@@ -173,8 +172,8 @@ public class RagDocConsumer {
                 storageMessage.setDatasetId(fileEntity.getDataSetId());
                 storageMessage.setUserId(fileEntity.getUserId());
                 // 获取用户的嵌入模型配置
-                storageMessage.setEmbeddingModelConfig(userModelConfigResolver
-                        .getUserEmbeddingModelConfig(fileEntity.getUserId()));
+                storageMessage.setEmbeddingModelConfig(
+                        userModelConfigResolver.getUserEmbeddingModelConfig(fileEntity.getUserId()));
 
                 RagDocSyncStorageEvent<RagDocSyncStorageMessage> storageEvent = new RagDocSyncStorageEvent<>(
                         storageMessage, EventType.DOC_SYNC_RAG);

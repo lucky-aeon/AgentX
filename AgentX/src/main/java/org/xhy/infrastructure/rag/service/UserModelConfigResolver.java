@@ -170,8 +170,10 @@ public class UserModelConfigResolver {
             providerEntity.isAvailable(providerEntity.getUserId());
 
             // 构建模型配置
-            ModelConfig modelConfig = new ModelConfig(modelEntity.isChatType() ? modelEntity.getId() : modelEntity.getModelEndpoint(), providerEntity.getConfig().getApiKey(),
-                    providerEntity.getConfig().getBaseUrl(), modelEntity.getType(),providerEntity.getProtocol());
+            ModelConfig modelConfig = new ModelConfig(
+                    modelEntity.isChatType() ? modelEntity.getId() : modelEntity.getModelEndpoint(),
+                    providerEntity.getConfig().getApiKey(), providerEntity.getConfig().getBaseUrl(),
+                    modelEntity.getType(), providerEntity.getProtocol());
 
             log.info("成功获取用户{}的模型配置: modelId={}, baseUrl={}", userId, modelEntity.getModelId(),
                     providerEntity.getConfig().getBaseUrl());
@@ -199,7 +201,6 @@ public class UserModelConfigResolver {
         }
 
         try {
-
 
             // 创建ProviderConfig
             ProviderConfig providerConfig = new ProviderConfig(modelConfig.getApiKey(), modelConfig.getBaseUrl(),
