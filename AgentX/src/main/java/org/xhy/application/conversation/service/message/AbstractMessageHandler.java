@@ -610,7 +610,7 @@ public abstract class AbstractMessageHandler {
     protected <T> void checkBalanceBeforeChat(String userId, MessageTransport<T> transport, T connection) {
         try {
             AccountEntity account = accountDomainService.getOrCreateAccount(userId);
-            if (account.getBalance().compareTo(BigDecimal.ZERO) <= 0) {
+            if (account.getBalance().compareTo(BigDecimal.ZERO) < 0) {
                 // 余额不足：发送错误消息
                 String errorMessage = "⚠️ 账户余额不足，当前余额：" + account.getBalance() + "元，请充值后继续使用";
                 AgentChatResponse errorResponse = AgentChatResponse.buildEndMessage(errorMessage, MessageType.TEXT);
