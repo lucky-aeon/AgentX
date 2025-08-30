@@ -83,7 +83,7 @@ export function CreateApiKeyDialog({
         })
       }
     } catch (error) {
-      console.error("创建API密钥失败:", error)
+ 
     } finally {
       setIsLoading(false)
     }

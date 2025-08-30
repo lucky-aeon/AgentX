@@ -45,16 +45,16 @@ const KnowledgeBaseDetailSidebar: React.FC<KnowledgeBaseDetailSidebarProps> = ({
 
     setIsLoadingVersions(true);
     try {
-      console.log('[KnowledgeBaseDetailSidebar] 获取版本列表，userRagId:', knowledgeBaseToUse.userRagId);
+ 
       const response = await getInstalledRagVersionsWithToast(knowledgeBaseToUse.userRagId);
       if (response.code === 200) {
         setVersions(response.data || []);
       } else {
-        console.error('获取版本列表失败:', response.message);
+ 
         setVersions([]);
       }
     } catch (error) {
-      console.error('获取版本列表错误:', error);
+ 
       setVersions([]);
     } finally {
       setIsLoadingVersions(false);
@@ -68,7 +68,7 @@ const KnowledgeBaseDetailSidebar: React.FC<KnowledgeBaseDetailSidebarProps> = ({
 
     setIsSwitchingVersion(true);
     try {
-      console.log('[KnowledgeBaseDetailSidebar] 切换版本，userRagId:', knowledgeBaseToUse.userRagId, '目标版本:', targetVersionId);
+ 
       const response = await switchRagVersionWithToast(knowledgeBaseToUse.userRagId, targetVersionId);
       if (response.code === 200) {
         // 更新详细信息
@@ -97,7 +97,7 @@ const KnowledgeBaseDetailSidebar: React.FC<KnowledgeBaseDetailSidebarProps> = ({
         }
       }
     } catch (error) {
-      console.error('版本切换错误:', error);
+ 
     } finally {
       setIsSwitchingVersion(false);
     }
@@ -113,27 +113,27 @@ const KnowledgeBaseDetailSidebar: React.FC<KnowledgeBaseDetailSidebarProps> = ({
       const knowledgeBaseToUse = detailedKnowledgeBase || initialKnowledgeBase;
       
       if (knowledgeBaseToUse.userRagId) {
-        console.log('[KnowledgeBaseDetailSidebar] 使用已安装RAG接口，userRagId:', knowledgeBaseToUse.userRagId);
+ 
         const response = await getInstalledRagFilesWithToast(knowledgeBaseToUse.userRagId);
         if (response.code === 200) {
           setFiles(response.data || []);
         } else {
-          console.error('获取已安装RAG文件列表失败:', response.message);
+ 
           setFiles([]);
         }
       } else {
-        console.log('[KnowledgeBaseDetailSidebar] 回退到原始接口，knowledgeBaseId:', knowledgeBaseToUse.id);
+ 
         // 向后兼容：如果没有userRagId，使用原始方法
         const response = await getAllKnowledgeBaseFilesWithToast(knowledgeBaseToUse.id);
         if (response.code === 200) {
           setFiles(response.data);
         } else {
-          console.error('获取文件列表失败:', response.message);
+ 
           setFiles([]);
         }
       }
     } catch (error) {
-      console.error('获取文件列表错误:', error);
+ 
       setFiles([]);
     } finally {
       setIsLoadingFiles(false);
@@ -174,10 +174,10 @@ const KnowledgeBaseDetailSidebar: React.FC<KnowledgeBaseDetailSidebarProps> = ({
                 ]);
               }, 100); // 小延迟确保状态更新完成
             } else {
-              console.error('获取知识库详情失败:', response.message);
+ 
             }
           } catch (error) {
-            console.error('获取知识库详情错误:', error);
+ 
           } finally {
             setIsLoading(false);
           }

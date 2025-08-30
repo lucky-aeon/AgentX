@@ -148,7 +148,7 @@ export default function UploadToolPage() {
         window.location.href = "/tools";
       }
     } catch (error) {
-      console.error("提交工具失败", error);
+ 
       toast({
         title: "提交失败",
         description: "提交工具时出现错误，请稍后重试",

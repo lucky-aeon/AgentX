@@ -47,7 +47,7 @@ export default function WidgetChatPage() {
           setError(response.message || '获取小组件信息失败');
         }
       } catch (error) {
-        console.error('获取小组件信息失败:', error);
+ 
         setError(error instanceof Error ? error.message : '获取小组件信息失败');
       } finally {
         setLoading(false);

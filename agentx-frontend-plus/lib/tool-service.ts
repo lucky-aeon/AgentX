@@ -9,7 +9,7 @@ export async function getMarketTools(params?: GetMarketToolsParams): Promise<Api
   try {
     return await httpClient.get(API_ENDPOINTS.MARKET_TOOLS, { params })
   } catch (error) {
-    console.error("获取工具市场列表失败", error)
+ 
     return {
       code: 500,
       message: "获取工具市场列表失败",
@@ -27,7 +27,7 @@ export async function getMarketToolDetail(id: string): Promise<ApiResponse<Tool>
   try {
     return await httpClient.get(API_ENDPOINTS.MARKET_TOOL_DETAIL(id))
   } catch (error) {
-    console.error("获取工具详情失败", error)
+ 
     return {
       code: 500,
       message: "获取工具详情失败",
@@ -45,7 +45,7 @@ export async function getMarketToolVersionDetail(id: string, version: string): P
   try {
     return await httpClient.get(API_ENDPOINTS.MARKET_TOOL_VERSION_DETAIL(id, version))
   } catch (error) {
-    console.error("获取工具版本详情失败", error)
+ 
     return {
       code: 500,
       message: "获取工具版本详情失败",
@@ -63,7 +63,7 @@ export async function getMarketToolVersions(id: string): Promise<ApiResponse<Too
   try {
     return await httpClient.get(API_ENDPOINTS.MARKET_TOOL_VERSIONS(id))
   } catch (error) {
-    console.error("获取工具版本列表失败", error)
+ 
     return {
       code: 500,
       message: "获取工具版本列表失败",
@@ -83,7 +83,7 @@ export async function getMarketToolLabels(): Promise<ApiResponse<string[]>> {
   try {
     return await httpClient.get(API_ENDPOINTS.MARKET_TOOL_LABELS)
   } catch (error) {
-    console.error("获取工具标签列表失败", error)
+ 
     return {
       code: 500,
       message: "获取工具标签列表失败",
@@ -96,10 +96,10 @@ export async function getMarketToolLabels(): Promise<ApiResponse<string[]>> {
 // 安装工具
 export async function installTool(toolId: string, version: string): Promise<ApiResponse<any>> {
   try {
-    console.log(`安装工具：toolId=${toolId}, version=${version}`);
+ 
     return await httpClient.post(API_ENDPOINTS.INSTALL_TOOL(toolId, version))
   } catch (error) {
-    console.error("安装工具失败", error)
+ 
     return {
       code: 500,
       message: "安装工具失败",
@@ -125,7 +125,7 @@ export async function getUserTools(params?: any): Promise<ApiResponse<Tool[]>> {
   try {
     return await httpClient.get(API_ENDPOINTS.USER_TOOLS, { params });
   } catch (error) {
-    console.error("获取用户工具失败", error);
+ 
     return {
       code: 500,
       message: "获取用户工具数据失败",
@@ -152,7 +152,7 @@ export async function deleteUserTool(id: string): Promise<ApiResponse<any>> {
   try {
     return await httpClient.delete(API_ENDPOINTS.DELETE_USER_TOOL(id))
   } catch (error) {
-    console.error("删除工具失败", error)
+ 
     return {
       code: 500,
       message: "删除工具失败",
@@ -176,7 +176,7 @@ export async function uploadTool(data: any): Promise<ApiResponse<Tool>> {
   try {
     return await httpClient.post(API_ENDPOINTS.UPLOAD_TOOL, data)
   } catch (error) {
-    console.error("上传工具失败", error)
+ 
     return {
       code: 500,
       message: "上传工具失败",
@@ -200,7 +200,7 @@ export async function deleteTool(id: string): Promise<ApiResponse<any>> {
   try {
     return await httpClient.delete(API_ENDPOINTS.DELETE_TOOL(id))
   } catch (error) {
-    console.error("删除工具失败", error)
+ 
     return {
       code: 500,
       message: "删除工具失败",
@@ -224,7 +224,7 @@ export async function getToolDetail(id: string): Promise<ApiResponse<Tool>> {
   try {
     return await httpClient.get(API_ENDPOINTS.TOOL_DETAIL(id))
   } catch (error) {
-    console.error("获取工具详情失败", error)
+ 
     return {
       code: 500,
       message: "获取工具详情失败",
@@ -242,7 +242,7 @@ export async function updateTool(id: string, data: any): Promise<ApiResponse<Too
   try {
     return await httpClient.put(API_ENDPOINTS.UPDATE_TOOL(id), data)
   } catch (error) {
-    console.error("更新工具失败", error)
+ 
     return {
       code: 500,
       message: "更新工具失败",
@@ -272,7 +272,7 @@ export async function getInstalledTools(params?: {
   try {
     return await httpClient.get(API_ENDPOINTS.INSTALLED_TOOLS, { params });
   } catch (error) {
-    console.error("获取已安装工具失败", error);
+ 
     return {
       code: 500,
       message: "获取已安装工具失败",
@@ -299,10 +299,10 @@ export const getInstalledToolsWithToast = withToast(
  */
 export async function uninstallTool(toolId: string): Promise<ApiResponse<any>> {
   try {
-    console.log(`卸载工具：toolId=${toolId}`);
+ 
     return await httpClient.post(API_ENDPOINTS.UNINSTALL_TOOL(toolId))
   } catch (error) {
-    console.error("卸载工具失败", error);
+ 
     return {
       code: 500,
       message: "卸载工具失败",
@@ -331,7 +331,7 @@ export async function getRecommendTools(): Promise<ApiResponse<any>> {
   try {
     return await httpClient.get(API_ENDPOINTS.RECOMMEND_TOOLS);
   } catch (error) {
-    console.error("获取推荐工具失败", error);
+ 
     return {
       code: 500,
       message: "获取推荐工具失败",
@@ -375,7 +375,7 @@ export async function updateToolVersionStatus(
       }
     );
   } catch (error) {
-    console.error("修改工具版本状态失败", error);
+ 
     return {
       code: 500,
       message: "修改工具版本状态失败",
@@ -402,7 +402,7 @@ export async function getToolLatestVersion(toolId: string): Promise<ApiResponse<
   try {
     return await httpClient.get(API_ENDPOINTS.GET_TOOL_LATEST_VERSION(toolId));
   } catch (error) {
-    console.error("获取工具最新版本失败", error);
+ 
     return {
       code: 500,
       message: "获取工具最新版本失败",
@@ -420,7 +420,7 @@ export async function publishToolToMarket(
     // 与其他接口保持一致，直接返回 httpClient 的响应
     return await httpClient.post(API_ENDPOINTS.PUBLISH_TOOL_TO_MARKET, params);
   } catch (error) {
-    console.error("上架工具失败", error);
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "上架工具失败",

@@ -15,7 +15,7 @@ import type {
 // 获取文件详细信息（包含文件路径）
 export async function getFileInfo(fileId: string): Promise<ApiResponse<FileDetailInfoDTO>> {
   try {
-    console.log(`Fetching file info: ${fileId}`)
+ 
     
     const response = await httpClient.get<ApiResponse<FileDetailInfoDTO>>(
       API_ENDPOINTS.RAG_FILE_INFO(fileId)
@@ -23,7 +23,7 @@ export async function getFileInfo(fileId: string): Promise<ApiResponse<FileDetai
     
     return response
   } catch (error) {
-    console.error("获取文件信息错误:", error)
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "未知错误",
@@ -38,7 +38,7 @@ export async function getDocumentUnits(
   request: QueryDocumentUnitsRequest
 ): Promise<ApiResponse<PageResponse<DocumentUnitDTO>>> {
   try {
-    console.log("Fetching document units:", request)
+ 
     
     const response = await httpClient.post<ApiResponse<PageResponse<DocumentUnitDTO>>>(
       API_ENDPOINTS.RAG_DOCUMENT_UNITS,
@@ -47,7 +47,7 @@ export async function getDocumentUnits(
     
     return response
   } catch (error) {
-    console.error("获取文档单元列表错误:", error)
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "未知错误",
@@ -68,7 +68,7 @@ export async function updateDocumentUnit(
   request: UpdateDocumentUnitRequest
 ): Promise<ApiResponse<DocumentUnitDTO>> {
   try {
-    console.log("Updating document unit:", request)
+ 
     
     const response = await httpClient.put<ApiResponse<DocumentUnitDTO>>(
       API_ENDPOINTS.RAG_UPDATE_DOCUMENT_UNIT,
@@ -77,7 +77,7 @@ export async function updateDocumentUnit(
     
     return response
   } catch (error) {
-    console.error("更新文档单元错误:", error)
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "未知错误",
@@ -90,7 +90,7 @@ export async function updateDocumentUnit(
 // 获取单个语料详情
 export async function getDocumentUnit(documentUnitId: string): Promise<ApiResponse<DocumentUnitDTO>> {
   try {
-    console.log(`Fetching document unit: ${documentUnitId}`)
+ 
     
     const response = await httpClient.get<ApiResponse<DocumentUnitDTO>>(
       API_ENDPOINTS.RAG_GET_DOCUMENT_UNIT(documentUnitId)
@@ -98,7 +98,7 @@ export async function getDocumentUnit(documentUnitId: string): Promise<ApiRespon
     
     return response
   } catch (error) {
-    console.error("获取文档单元错误:", error)
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "未知错误",
@@ -111,7 +111,7 @@ export async function getDocumentUnit(documentUnitId: string): Promise<ApiRespon
 // 删除语料
 export async function deleteDocumentUnit(documentUnitId: string): Promise<ApiResponse<void>> {
   try {
-    console.log(`Deleting document unit: ${documentUnitId}`)
+ 
     
     const response = await httpClient.delete<ApiResponse<void>>(
       API_ENDPOINTS.RAG_DELETE_DOCUMENT_UNIT(documentUnitId)
@@ -119,7 +119,7 @@ export async function deleteDocumentUnit(documentUnitId: string): Promise<ApiRes
     
     return response
   } catch (error) {
-    console.error("删除文档单元错误:", error)
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "未知错误",

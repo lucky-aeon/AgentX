@@ -61,10 +61,10 @@ export function NavigationBar() {
         if (response.code === 200) {
           setUserInfo(response.data)
         } else {
-          console.error("获取用户信息失败:", response.message)
+ 
         }
       } catch (error) {
-        console.error("获取用户信息错误:", error)
+ 
       } finally {
         setLoading(false)
       }

@@ -24,7 +24,7 @@ export async function getAgentSessions(agentId: string): Promise<ApiResponse<Ses
     )
     return data
   } catch (error) {
-    console.error("获取助理会话列表错误:", error)
+ 
     // 返回格式化的错误响应
     return {
       code: 500,
@@ -47,7 +47,7 @@ export async function createAgentSession(agentId: string): Promise<ApiResponse<S
     });
     return data
   } catch (error) {
-    console.error("创建助理会话错误:", error)
+ 
     // 返回格式化的错误响应
     return {
       code: 500,
@@ -69,7 +69,7 @@ export async function updateAgentSession(sessionId: string, title: string): Prom
     )
     return data
   } catch (error) {
-    console.error("更新助理会话错误:", error)
+ 
     // 返回格式化的错误响应
     return {
       code: 500,
@@ -88,7 +88,7 @@ export async function deleteAgentSession(sessionId: string): Promise<ApiResponse
     )
     return data
   } catch (error) {
-    console.error("删除助理会话错误:", error)
+ 
     // 返回格式化的错误响应
     return {
       code: 500,
@@ -107,7 +107,7 @@ export async function interruptSession(sessionId: string): Promise<ApiResponse<s
     )
     return data
   } catch (error) {
-    console.error("中断助理会话错误:", error)
+ 
     // 返回格式化的错误响应
     return {
       code: 500,

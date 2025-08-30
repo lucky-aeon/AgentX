@@ -53,7 +53,7 @@ export function ConversationList({ workspaceId }: ConversationListProps) {
         }
       }
     } catch (error) {
-      console.error("获取会话列表错误:", error)
+ 
     } finally {
       setLoading(false)
     }
@@ -88,19 +88,19 @@ export function ConversationList({ workspaceId }: ConversationListProps) {
         }
       }
     } catch (error) {
-      console.error("创建会话错误:", error)
+ 
     }
   }
 
   // 选择会话
   const selectConversation = (sessionId: string) => {
-    console.log('选择会话:', sessionId)
+ 
     setSelectedConversationId(sessionId)
   }
 
   // 删除会话
   const handleDeleteSession = async (sessionId: string) => {
-    console.log('准备删除会话:', sessionId)
+ 
     setSessionToDelete(sessionId)
   }
 
@@ -128,7 +128,7 @@ export function ConversationList({ workspaceId }: ConversationListProps) {
         })
       }
     } catch (error) {
-      console.error("删除会话错误:", error)
+ 
     } finally {
       setIsDeletingSession(false)
       setSessionToDelete(null)
@@ -137,7 +137,7 @@ export function ConversationList({ workspaceId }: ConversationListProps) {
 
   // 打开重命名对话框
   const openRenameDialog = (session: SessionDTO) => {
-    console.log('打开重命名对话框:', session)
+ 
     setSessionToRename(session)
     setRenameTitle(session.title)
     setIsRenameDialogOpen(true)
@@ -166,7 +166,7 @@ export function ConversationList({ workspaceId }: ConversationListProps) {
         setSessionToRename(null)
       }
     } catch (error) {
-      console.error("重命名会话错误:", error)
+ 
     }
   }
 
@@ -195,7 +195,7 @@ export function ConversationList({ workspaceId }: ConversationListProps) {
         }
       }
     } catch (error) {
-      console.error("创建会话错误:", error)
+ 
     }
   }
 
@@ -305,7 +305,7 @@ export function ConversationList({ workspaceId }: ConversationListProps) {
                               onClick={(e) => {
                                 e.stopPropagation();
                                 e.preventDefault();
-                                console.log('点击菜单按钮:', session.id);
+ 
                               }}
                             >
                               <MoreHorizontal style={{ height: '16px', width: '16px' }} />
@@ -316,7 +316,7 @@ export function ConversationList({ workspaceId }: ConversationListProps) {
                               onClick={(e) => {
                                 e.stopPropagation();
                                 e.preventDefault();
-                                console.log('点击重命名选项:', session.id);
+ 
                                 openRenameDialog(session);
                               }}
                             >
@@ -329,7 +329,7 @@ export function ConversationList({ workspaceId }: ConversationListProps) {
                               onClick={(e) => {
                                 e.stopPropagation();
                                 e.preventDefault();
-                                console.log('点击删除选项:', session.id);
+ 
                                 handleDeleteSession(session.id);
                               }}
                             >

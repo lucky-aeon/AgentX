@@ -64,7 +64,7 @@ const ToolDetailSidebar: React.FC<ToolDetailSidebarProps> = ({
               // 保存到缓存
               toolDetailsCache.set(cacheKey, detailResponse.data);
             } else {
-              console.error("获取工具版本详情失败:", detailResponse.message);
+ 
               setDetailedTool(initialTool);
               // 即使是失败的情况，也缓存初始工具数据，避免重复请求
               toolDetailsCache.set(cacheKey, initialTool);
@@ -83,7 +83,7 @@ const ToolDetailSidebar: React.FC<ToolDetailSidebarProps> = ({
             }
           }
         } catch (error) {
-          console.error("获取工具详细信息时出错:", error);
+ 
           setDetailedTool(initialTool);
           // 即使是失败的情况，也缓存初始工具数据，避免重复请求
           toolDetailsCache.set(cacheKey, initialTool);

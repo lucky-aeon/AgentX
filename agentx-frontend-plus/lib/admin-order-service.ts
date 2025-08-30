@@ -55,7 +55,7 @@ export async function getAllOrdersWithToast(params?: GetAllOrdersParams): Promis
     const response = await AdminOrderService.getAllOrders(params);
     return response;
   } catch (error) {
-    console.error('获取订单列表失败:', error);
+ 
     return {
       code: 500,
       message: "获取订单列表失败",
@@ -71,7 +71,7 @@ export async function getAdminOrderDetailWithToast(orderId: string): Promise<Api
     const response = await AdminOrderService.getOrderDetail(orderId);
     return response;
   } catch (error) {
-    console.error('获取订单详情失败:', error);
+ 
     return {
       code: 500,
       message: "获取订单详情失败",

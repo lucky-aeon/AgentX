@@ -88,7 +88,7 @@ function WorkspaceItem({ id, name, icon, avatar, onClick }: WorkspaceItemProps) 
         throw new Error(response.message || "删除失败")
       }
     } catch (error) {
-      console.error("删除工作区助理错误:", error)
+ 
       alert("删除失败: " + (error instanceof Error ? error.message : "未知错误"))
     } finally {
       setIsDeleting(false)
@@ -112,7 +112,7 @@ function WorkspaceItem({ id, name, icon, avatar, onClick }: WorkspaceItemProps) 
       } as Agent)
       setShowModelDialog(true)
     } catch (error) {
-      console.error("获取助理详情失败:", error)
+ 
     }
   }
   
@@ -297,7 +297,7 @@ export function Sidebar() {
         setAgents(response.data)
       }
     } catch (error) {
-      console.error("加载工作区Agent失败:", error)
+ 
     } finally {
       setLoading(false)
     }
@@ -316,7 +316,7 @@ export function Sidebar() {
         await loadWorkspaceAgents()
       }
     } catch (error) {
-      console.error("移除Agent失败:", error)
+ 
     }
   }
 

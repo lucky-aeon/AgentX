@@ -121,7 +121,7 @@ export function ProviderDialog({ open, onOpenChange, provider, onSuccess }: Prov
           setProtocols(response.data);
         }
       } catch (error) {
-        console.error("获取协议列表失败:", error);
+ 
       } finally {
         setProtocolsLoading(false);
       }
@@ -254,7 +254,7 @@ export function ProviderDialog({ open, onOpenChange, provider, onSuccess }: Prov
         if (onSuccess) onSuccess();
       }
     } catch (error) {
-      console.error("提交服务商失败:", error);
+ 
     } finally {
       setLoading(false);
     }

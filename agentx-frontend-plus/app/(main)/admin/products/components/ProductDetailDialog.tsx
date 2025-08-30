@@ -44,7 +44,7 @@ export function ProductDetailDialog({ open, onOpenChange, product }: ProductDeta
         setRule(response.data);
       }
     } catch (error) {
-      console.error('加载规则信息失败:', error);
+ 
     } finally {
       setLoadingRule(false);
     }

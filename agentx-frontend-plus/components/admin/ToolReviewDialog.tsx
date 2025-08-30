@@ -61,7 +61,7 @@ export function ToolReviewDialog({ open, onOpenChange, tool, onReviewComplete }:
         });
       }
     } catch (error) {
-      console.error('审核工具失败:', error);
+ 
       toast({
         variant: "destructive",
         title: "操作失败",

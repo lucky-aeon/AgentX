@@ -167,7 +167,7 @@ export function ScheduledTaskDialog({
           setSessions(response.data)
         }
       } catch (error) {
-        console.error("获取会话列表失败:", error)
+ 
         toast({
           title: "获取会话列表失败",
           description: "请稍后重试",
@@ -337,7 +337,7 @@ export function ScheduledTaskDialog({
       }
       
     } catch (error) {
-      console.error(editingTask ? "更新定时任务失败:" : "创建定时任务失败:", error)
+ 
     } finally {
       setIsSubmitting(false)
     }

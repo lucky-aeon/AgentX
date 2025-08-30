@@ -68,16 +68,16 @@ const API_ENDPOINTS = {
  */
 export async function getAvailableKnowledgeBases(): Promise<ApiResponse<KnowledgeBase[]>> {
   try {
-    console.log("获取可用知识库列表")
+ 
     
     const response = await httpClient.get<ApiResponse<KnowledgeBase[]>>(
       API_ENDPOINTS.AVAILABLE_KNOWLEDGE_BASES
     )
     
-    console.log("获取可用知识库列表成功:", response.data?.length || 0)
+ 
     return response
   } catch (error) {
-    console.error("获取可用知识库列表错误:", error)
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "未知错误",
@@ -92,16 +92,16 @@ export async function getAvailableKnowledgeBases(): Promise<ApiResponse<Knowledg
  */
 export async function getKnowledgeBaseDetail(knowledgeBaseId: string): Promise<ApiResponse<KnowledgeBase>> {
   try {
-    console.log("获取知识库详情:", knowledgeBaseId)
+ 
     
     const response = await httpClient.get<ApiResponse<KnowledgeBase>>(
       API_ENDPOINTS.KNOWLEDGE_BASE_DETAIL(knowledgeBaseId)
     )
     
-    console.log("获取知识库详情成功:", response.data?.name)
+ 
     return response
   } catch (error) {
-    console.error("获取知识库详情错误:", error)
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "未知错误",
@@ -125,7 +125,7 @@ export async function getKnowledgeBasesBatch(knowledgeBaseIds: string[]): Promis
       }
     }
     
-    console.log("批量获取知识库详情:", knowledgeBaseIds)
+ 
     
     const response = await httpClient.get<ApiResponse<KnowledgeBase[]>>(
       API_ENDPOINTS.KNOWLEDGE_BASES_BATCH,
@@ -136,10 +136,10 @@ export async function getKnowledgeBasesBatch(knowledgeBaseIds: string[]): Promis
       }
     )
     
-    console.log("批量获取知识库详情成功:", response.data?.length || 0)
+ 
     return response
   } catch (error) {
-    console.error("批量获取知识库详情错误:", error)
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "未知错误",
@@ -157,17 +157,17 @@ export async function getKnowledgeBaseFiles(
   params?: QueryFilesParams
 ): Promise<ApiResponse<PageResponse<FileDetail>>> {
   try {
-    console.log("获取知识库文件列表:", knowledgeBaseId, params)
+ 
     
     const response = await httpClient.get<ApiResponse<PageResponse<FileDetail>>>(
       API_ENDPOINTS.DATASET_FILES(knowledgeBaseId),
       { params }
     )
     
-    console.log("获取知识库文件列表成功:", response.data?.total || 0)
+ 
     return response
   } catch (error) {
-    console.error("获取知识库文件列表错误:", error)
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "未知错误",
@@ -184,16 +184,16 @@ export async function getAllKnowledgeBaseFiles(
   knowledgeBaseId: string
 ): Promise<ApiResponse<FileDetail[]>> {
   try {
-    console.log("获取知识库所有文件:", knowledgeBaseId)
+ 
     
     const response = await httpClient.get<ApiResponse<FileDetail[]>>(
       API_ENDPOINTS.DATASET_ALL_FILES(knowledgeBaseId)
     )
     
-    console.log("获取知识库所有文件成功:", response.data?.length || 0)
+ 
     return response
   } catch (error) {
-    console.error("获取知识库所有文件错误:", error)
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "未知错误",

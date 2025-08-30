@@ -29,7 +29,7 @@ export async function getSessionTasks(sessionId: string): Promise<ApiResponse<Ta
     );
     return data;
   } catch (error) {
-    console.error("获取会话任务错误:", error);
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "获取会话任务失败",
@@ -47,7 +47,7 @@ export async function getTaskDetail(taskId: string): Promise<ApiResponse<TaskDTO
     );
     return data;
   } catch (error) {
-    console.error("获取任务详情错误:", error);
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "获取任务详情失败",

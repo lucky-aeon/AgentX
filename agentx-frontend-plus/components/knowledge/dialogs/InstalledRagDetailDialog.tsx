@@ -84,7 +84,7 @@ export function InstalledRagDetailDialog({
           setRealTimeFileCount(userRag.fileCount || 0)
         }
       } catch (error) {
-        console.error("获取文件数量失败:", error)
+ 
         // 失败时使用后端返回的统计数据
         setRealTimeFileCount(userRag.fileCount || 0)
       }
@@ -108,7 +108,7 @@ export function InstalledRagDetailDialog({
           setSelectedVersionId(userRag.ragVersionId || "")
         }
       } catch (error) {
-        console.error("获取版本历史失败:", error)
+ 
       } finally {
         setVersionsLoading(false)
       }
@@ -136,7 +136,7 @@ export function InstalledRagDetailDialog({
         // 版本切换成功后不关闭对话框，让用户继续查看切换后的信息
       }
     } catch (error) {
-      console.error("版本切换失败:", error)
+ 
     } finally {
       setIsSwitchingVersion(false)
     }

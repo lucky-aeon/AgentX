@@ -57,7 +57,7 @@ export default function ApiKeysPage() {
           setAgents(response.data)
         }
       } catch (error) {
-        console.error("获取Agent列表失败:", error)
+ 
       }
     }
     fetchAgents()
@@ -104,7 +104,7 @@ export default function ApiKeysPage() {
       }
       return null
     } catch (error) {
-      console.error("创建API密钥失败:", error)
+ 
       return null
     }
   }
@@ -122,7 +122,7 @@ export default function ApiKeysPage() {
         setKeyToDelete(null)
       }
     } catch (error) {
-      console.error("删除API密钥失败:", error)
+ 
     } finally {
       setIsDeleting(false)
     }
@@ -143,7 +143,7 @@ export default function ApiKeysPage() {
         ))
       }
     } catch (error) {
-      console.error("切换API密钥状态失败:", error)
+ 
     } finally {
       setOperatingKeyId(null)
     }
@@ -161,7 +161,7 @@ export default function ApiKeysPage() {
         ))
       }
     } catch (error) {
-      console.error("重置API密钥失败:", error)
+ 
     } finally {
       setOperatingKeyId(null)
     }

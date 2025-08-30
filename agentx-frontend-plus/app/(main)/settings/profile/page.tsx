@@ -102,7 +102,7 @@ export default function ProfilePage() {
       }
     } catch (error) {
       // 错误由withToast处理
-      console.error("更新用户信息失败:", error)
+ 
     } finally {
       setSubmitting(false)
     }
@@ -167,7 +167,7 @@ export default function ProfilePage() {
         })
       }
     } catch (error) {
-      console.error("修改密码失败:", error)
+ 
     } finally {
       setPasswordSubmitting(false)
     }

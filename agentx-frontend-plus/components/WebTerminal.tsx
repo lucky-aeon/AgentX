@@ -77,7 +77,7 @@ export default function WebTerminal({ containerId, containerName, onClose }: Web
           try {
             fitAddon.current.fit();
           } catch (error) {
-            console.warn('Failed to fit terminal:', error);
+ 
           }
         }
       }, 200);
@@ -95,7 +95,7 @@ export default function WebTerminal({ containerId, containerName, onClose }: Web
         try {
           fitAddon.current.fit();
         } catch (error) {
-          console.warn('Failed to resize terminal:', error);
+ 
         }
       }
     };
@@ -128,7 +128,7 @@ export default function WebTerminal({ containerId, containerName, onClose }: Web
     };
     
     const wsUrl = getWebSocketUrl();
-    console.log('Connecting to WebSocket:', wsUrl);
+ 
     
     websocket.current = new WebSocket(wsUrl);
 

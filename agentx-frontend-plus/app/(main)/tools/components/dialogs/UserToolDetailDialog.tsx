@@ -89,12 +89,12 @@ export function UserToolDetailDialog({
       if (response.code === 200) {
         setToolDetailData(response.data);
       } else {
-        console.error("获取工具详情失败", response.message);
+ 
         // 失败时使用传入的tool对象
         setToolDetailData(null);
       }
     } catch (error) {
-      console.error("获取工具详情失败", error);
+ 
       setToolDetailData(null);
     } finally {
       setToolDetailLoading(false);
@@ -121,11 +121,11 @@ export function UserToolDetailDialog({
         });
         setVersions(sortedVersions);
       } else {
-        console.error("获取工具版本列表失败", response.message);
+ 
         setVersions([]);
       }
     } catch (error) {
-      console.error("获取工具版本列表失败", error);
+ 
       setVersions([]);
     } finally {
       setVersionsLoading(false);
@@ -167,7 +167,7 @@ export function UserToolDetailDialog({
       
       return typeof success === 'boolean' ? success : false;
     } catch (error) {
-      console.error("删除工具失败", error);
+ 
       setIsDeleteDialogOpen(false);
       return false;
     }
@@ -240,7 +240,7 @@ export function UserToolDetailDialog({
         }
       }
     } catch (error) {
-      console.error("版本切换失败", error);
+ 
       toast({
         title: "版本切换失败",
         description: error instanceof Error ? error.message : "切换版本时出错",

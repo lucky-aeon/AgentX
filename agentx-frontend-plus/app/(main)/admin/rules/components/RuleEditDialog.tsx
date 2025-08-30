@@ -73,7 +73,7 @@ export function RuleEditDialog({ open, onOpenChange, rule, onSuccess }: RuleEdit
         onSuccess();
       }
     } catch (error) {
-      console.error('更新规则失败:', error);
+ 
     } finally {
       setLoading(false);
     }

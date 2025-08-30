@@ -49,7 +49,7 @@ export function AgentSidebar() {
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "未知错误"
-      console.error("获取代理列表错误:", error)
+ 
       setError(`获取代理列表失败: ${errorMessage}`)
     } finally {
       setLoading(false)

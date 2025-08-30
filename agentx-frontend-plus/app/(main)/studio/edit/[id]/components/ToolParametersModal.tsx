@@ -59,7 +59,7 @@ const ToolParametersModal: React.FC<ToolParametersModalProps> = ({
       }
 
       // 添加调试日志
-      console.log('Modal接收到的工具参数:', presetParameters);
+ 
     }
   }, [isOpen, tool, toolFunctions, presetParameters]);
 
@@ -71,7 +71,7 @@ const ToolParametersModal: React.FC<ToolParametersModalProps> = ({
       }
       return localPresetParams[functionName]?.[paramName] || '';
     } catch (e) {
-      console.error(`获取参数值出错: ${functionName}.${paramName}`, e);
+ 
       return '';
     }
   };

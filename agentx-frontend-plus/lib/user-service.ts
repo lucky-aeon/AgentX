@@ -40,7 +40,7 @@ function parseJwt(token: string): any {
     }).join(''));
     return JSON.parse(jsonPayload);
   } catch (e) {
-    console.error('Failed to parse JWT token:', e);
+ 
     return null;
   }
 }
@@ -80,7 +80,7 @@ export async function getCurrentUserIdAsync(): Promise<string | null> {
     }
     return null;
   } catch (error) {
-    console.error('Failed to get user ID from API:', error);
+ 
     return null;
   }
 }
@@ -93,7 +93,7 @@ export async function getUserInfo(): Promise<ApiResponse<UserInfo>> {
     
     return response
   } catch (error) {
-    console.error("获取用户信息错误:", error)
+ 
     // 返回格式化的错误响应
     return {
       code: 500,
@@ -107,13 +107,13 @@ export async function getUserInfo(): Promise<ApiResponse<UserInfo>> {
 // 更新用户信息
 export async function updateUserInfo(userData: UserUpdateRequest): Promise<ApiResponse<null>> {
   try {
-    console.log(`Updating user info:`, userData)
+ 
     
     const response = await httpClient.post<ApiResponse<null>>('/users', userData)
     
     return response
   } catch (error) {
-    console.error("更新用户信息错误:", error)
+ 
     // 返回格式化的错误响应
     return {
       code: 500,
@@ -127,13 +127,13 @@ export async function updateUserInfo(userData: UserUpdateRequest): Promise<ApiRe
 // 修改密码
 export async function changePassword(passwordData: ChangePasswordRequest): Promise<ApiResponse<null>> {
   try {
-    console.log('Changing password...')
+ 
     
     const response = await httpClient.put<ApiResponse<null>>('/users/password', passwordData)
     
     return response
   } catch (error) {
-    console.error("修改密码错误:", error)
+ 
     // 返回格式化的错误响应
     return {
       code: 500,

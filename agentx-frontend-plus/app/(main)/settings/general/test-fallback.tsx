@@ -56,7 +56,7 @@ export function TestFallbackConfig() {
 
   const handleConfigChange = (config: FallbackConfig) => {
     setFallbackConfig(config)
-    console.log("降级配置更新:", config)
+ 
   }
 
   return (

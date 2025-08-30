@@ -45,7 +45,7 @@ export default function TraceDetailPage() {
         }
 
       } catch (error) {
-        console.error("加载执行详情失败:", error)
+ 
         setError("加载执行详情失败")
       } finally {
         setLoading(false)

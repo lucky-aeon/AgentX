@@ -102,7 +102,7 @@ export function useToolDialogs(
       
       return true;
     } catch (error) {
-      console.error("安装工具失败", error);
+ 
       return false;
     } finally {
       setInstallingToolId(null);

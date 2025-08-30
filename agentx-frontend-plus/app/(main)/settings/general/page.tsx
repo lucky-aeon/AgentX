@@ -66,7 +66,7 @@ export default function GeneralSettingsPage() {
           })
         }
       } catch (error) {
-        console.error("获取用户设置失败:", error)
+ 
       } finally {
         setLoading(false)
       }
@@ -103,7 +103,7 @@ export default function GeneralSettingsPage() {
           setEmbeddingModels(activeEmbeddingModels)
         }
       } catch (error) {
-        console.error("获取模型列表失败:", error)
+ 
       } finally {
         setModelsLoading(false)
       }
@@ -176,7 +176,7 @@ export default function GeneralSettingsPage() {
         }
       }
     } catch (error) {
-      console.error("更新用户设置失败:", error)
+ 
     } finally {
       setSubmitting(false)
     }

@@ -52,7 +52,7 @@ export default function CreateAgentPage() {
       }
       // 错误也已由createAgentWithToast处理
     } catch (error) {
-      console.error("创建失败:", error);
+ 
       // createAgentWithToast 通常也会处理 catch 块的 toast，但以防万一
       if (!(error instanceof Error && error.message.includes("toast already shown"))) {
         toast({

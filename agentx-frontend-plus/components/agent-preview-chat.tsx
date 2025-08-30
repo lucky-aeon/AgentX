@@ -100,7 +100,7 @@ export default function AgentPreviewChat({
       setCurrentSessionId(null)
     },
     onInterruptError: (error) => {
-      console.error('中断失败:', error)
+ 
     }
   })
   
@@ -199,7 +199,7 @@ export default function AgentPreviewChat({
 
     // 输出文件URL到控制台
     if (fileUrls.length > 0) {
-      console.log('发送消息包含的文件URL:', fileUrls)
+ 
     }
 
     // 添加用户消息
@@ -249,7 +249,7 @@ export default function AgentPreviewChat({
         knowledgeBaseIds: knowledgeBaseIds && knowledgeBaseIds.length > 0 ? knowledgeBaseIds : undefined // RAG知识库配置
       }
 
-      console.log('预览请求数据:', previewRequest)
+ 
 
       // 使用新的流式处理方式，传入AbortController
       const stream = await previewAgentStream(previewRequest, abortControllerRef.current?.signal)
@@ -270,15 +270,15 @@ export default function AgentPreviewChat({
       await handlePreviewStream(
         stream,
         (response: AgentChatResponse) => {
-          console.log('收到流式响应:', response)
+ 
           // 处理消息 - 传递baseMessageId作为前缀
           handleStreamDataMessage(response, baseMessageId)
         },
         (error: Error) => {
-          console.error('Preview stream error:', error)
+ 
           // 检查是否是用户主动中断
           if (error.name === 'AbortError') {
-            console.log('用户主动中断对话')
+ 
             setIsLoading(false)
             setIsThinking(false)
             return
@@ -286,7 +286,7 @@ export default function AgentPreviewChat({
           handleStreamError(error)
         },
         () => {
-          console.log('Preview stream completed')
+ 
           setIsLoading(false)
           setIsThinking(false)
           setCurrentSessionId(null)
@@ -294,10 +294,10 @@ export default function AgentPreviewChat({
         }
       )
     } catch (error) {
-      console.error('Preview request failed:', error)
+ 
       // 检查是否是用户主动中断
       if (error instanceof Error && error.name === 'AbortError') {
-        console.log('请求被中断')
+ 
         setIsLoading(false)
         setIsThinking(false)
         setCurrentSessionId(null)
@@ -327,7 +327,7 @@ export default function AgentPreviewChat({
     // 生成当前消息序列的唯一ID
     const currentMessageId = `assistant-${messageType}-${baseMessageId}-seq${messageSequenceNumber.current}`
     
-    console.log(`处理消息: 类型=${messageType}, 序列=${messageSequenceNumber.current}, ID=${currentMessageId}, done=${data.done}`)
+ 
     
     // 处理消息内容（用于UI显示）
     const displayableTypes = [undefined, "TEXT", "TOOL_CALL"]
@@ -344,7 +344,7 @@ export default function AgentPreviewChat({
     
     // 消息结束信号处理
     if (data.done) {
-      console.log(`消息完成 (done=true), 类型: ${messageType}, 序列: ${messageSequenceNumber.current}`)
+ 
       
       // 如果是可显示类型且有内容，完成该消息
       if (isDisplayableType && messageContentAccumulator.current.content) {
@@ -357,7 +357,7 @@ export default function AgentPreviewChat({
       // 增加消息序列计数
       messageSequenceNumber.current += 1
       
-      console.log(`消息序列增加到: ${messageSequenceNumber.current}`)
+ 
     }
   }
   
@@ -373,7 +373,7 @@ export default function AgentPreviewChat({
       
       if (messageIndex >= 0) {
         // 消息已存在，只需更新内容
-        console.log(`更新现有消息: ${messageId}, 内容长度: ${messageData.content.length}`)
+ 
         const newMessages = [...prev]
         newMessages[messageIndex] = {
           ...newMessages[messageIndex],
@@ -382,7 +382,7 @@ export default function AgentPreviewChat({
         return newMessages
       } else {
         // 消息不存在，创建新消息
-        console.log(`创建新消息: ${messageId}, 类型: ${messageData.type}`)
+ 
         return [
           ...prev,
           {
@@ -407,11 +407,11 @@ export default function AgentPreviewChat({
     content: string
     type: MessageType
   }) => {
-    console.log(`完成消息: ${messageId}, 类型: ${messageData.type}, 内容长度: ${messageData.content.length}`)
+ 
     
     // 如果消息内容为空，不处理
     if (!messageData.content || messageData.content.trim() === "") {
-      console.log("消息内容为空，不处理")
+ 
       return
     }
     
@@ -422,7 +422,7 @@ export default function AgentPreviewChat({
       
       if (messageIndex >= 0) {
         // 消息已存在，更新内容
-        console.log(`完成现有消息: ${messageId}`)
+ 
         const newMessages = [...prev]
         newMessages[messageIndex] = {
           ...newMessages[messageIndex],
@@ -432,7 +432,7 @@ export default function AgentPreviewChat({
         return newMessages
       } else {
         // 消息不存在，创建新消息
-        console.log(`创建并完成新消息: ${messageId}`)
+ 
         return [
           ...prev,
           {
@@ -459,7 +459,7 @@ export default function AgentPreviewChat({
 
   // 重置消息累积器
   const resetMessageAccumulator = () => {
-    console.log("重置消息累积器")
+ 
     messageContentAccumulator.current = {
       content: "",
       type: MessageType.TEXT
@@ -477,7 +477,7 @@ export default function AgentPreviewChat({
 
   // 处理错误消息
   const handleErrorMessage = (data: AgentChatResponse) => {
-    console.error("检测到后端错误:", data.content)
+ 
     toast({
       title: "任务执行错误",
       description: "服务器处理任务时遇到问题，请稍后再试",
@@ -648,12 +648,12 @@ export default function AgentPreviewChat({
                 : file
             )
           )
-          console.log(`文件上传完成:`, result)
+ 
         },
         // 错误回调
         (fileIndex, error) => {
           const tempFileId = tempFiles[fileIndex].id
-          console.error(`文件 ${uploadFiles[fileIndex].fileName} 上传失败:`, error)
+ 
           
           // 移除失败的文件
           setUploadedFiles(prev => prev.filter(file => file.id !== tempFileId))
@@ -673,7 +673,7 @@ export default function AgentPreviewChat({
         })
       }
     } catch (error) {
-      console.error('批量文件上传失败:', error)
+ 
       
       // 清理所有临时文件
       setUploadedFiles(prev => 

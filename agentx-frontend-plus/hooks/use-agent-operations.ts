@@ -70,7 +70,7 @@ export function useAgentOperations() {
               })
             }
           } catch (error) {
-            console.error("获取已安装工具错误:", error)
+ 
           }
         }
 
@@ -99,7 +99,7 @@ export function useAgentOperations() {
         router.push("/studio")
       }
     } catch (error) {
-      console.error("获取助理详情错误:", error)
+ 
       toast({
         title: "获取助理详情失败",
         description: "请稍后再试",
@@ -196,7 +196,7 @@ export function useAgentOperations() {
       // 调用API更新助理
       await updateAgentWithToast(agentId, agentData)
     } catch (error) {
-      console.error("更新失败:", error)
+ 
     } finally {
       setIsSubmitting(false)
     }
@@ -217,7 +217,7 @@ export function useAgentOperations() {
         router.push("/studio")
       }
     } catch (error) {
-      console.error("删除失败:", error)
+ 
     } finally {
       setIsDeleting(false)
       setShowDeleteDialog(false)
@@ -282,7 +282,7 @@ export function useAgentOperations() {
         fetchLatestVersion()
       }
     } catch (error) {
-      console.error("发布失败:", error)
+ 
     } finally {
       setIsPublishing(false)
     }
@@ -331,7 +331,7 @@ export function useAgentOperations() {
       setSelectedVersion(null)
       setShowVersionsDialog(false)
     } catch (error) {
-      console.error("回滚失败:", error)
+ 
       toast({
         title: "回滚失败",
         description: "请稍后再试",

@@ -15,7 +15,7 @@ import { withToast } from "./toast-utils"
 // 获取用户的助理列表
 export async function getUserAgents(params?: Partial<GetAgentsParams>): Promise<ApiResponse<Agent[]>> {
   try {
-    console.log(`Fetching user agents`)
+ 
     
     const response = await httpClient.get<ApiResponse<Agent[]>>("/agents/user", {
       params: params
@@ -23,7 +23,7 @@ export async function getUserAgents(params?: Partial<GetAgentsParams>): Promise<
     
     return response;
   } catch (error) {
-    console.error("获取助理列表错误:", error)
+ 
     // 返回格式化的错误响应
     return {
       code: 500,
@@ -37,13 +37,13 @@ export async function getUserAgents(params?: Partial<GetAgentsParams>): Promise<
 // 获取工作区下的助理列表
 export async function getWorkspaceAgents(): Promise<ApiResponse<Agent[]>> {
   try {
-    console.log(`Fetching workspace agents`)
+ 
     
     const response = await httpClient.get<ApiResponse<Agent[]>>("/agents/workspaces/agents");
     
     return response;
   } catch (error) {
-    console.error("获取工作区助理列表错误:", error)
+ 
     // 返回格式化的错误响应
     return {
       code: 500,
@@ -57,7 +57,7 @@ export async function getWorkspaceAgents(): Promise<ApiResponse<Agent[]>> {
 // 获取已发布的助理列表
 export async function getPublishedAgents(name?: string): Promise<ApiResponse<AgentVersion[]>> {
   try {
-    console.log(`Fetching published agents`)
+ 
     
     const response = await httpClient.get<ApiResponse<AgentVersion[]>>(API_ENDPOINTS.PUBLISHED_AGENTS, {
       params: name ? { name } : undefined
@@ -65,7 +65,7 @@ export async function getPublishedAgents(name?: string): Promise<ApiResponse<Age
     
     return response;
   } catch (error) {
-    console.error("获取已发布助理列表错误:", error)
+ 
     // 返回格式化的错误响应
     return {
       code: 500,
@@ -79,13 +79,13 @@ export async function getPublishedAgents(name?: string): Promise<ApiResponse<Age
 // 获取助理详情
 export async function getAgentDetail(agentId: string): Promise<ApiResponse<Agent>> {
   try {
-    console.log(`Fetching agent detail for: ${agentId}`)
+ 
     
     const response = await httpClient.get<ApiResponse<Agent>>(API_ENDPOINTS.AGENT_DETAIL(agentId));
     
     return response;
   } catch (error) {
-    console.error("获取助理详情错误:", error)
+ 
     // 返回格式化的错误响应
     return {
       code: 500,
@@ -99,13 +99,13 @@ export async function getAgentDetail(agentId: string): Promise<ApiResponse<Agent
 // 创建助理
 export async function createAgent(params: CreateAgentRequest): Promise<ApiResponse<Agent>> {
   try {
-    console.log(`Creating agent`)
+ 
     
     const response = await httpClient.post<ApiResponse<Agent>>(API_ENDPOINTS.CREATE_AGENT, params);
     
     return response;
   } catch (error) {
-    console.error("创建助理错误:", error)
+ 
     // 返回格式化的错误响应
     return {
       code: 500,
@@ -119,7 +119,7 @@ export async function createAgent(params: CreateAgentRequest): Promise<ApiRespon
 // 更新助理
 export async function updateAgent(agentId: string, agentData: Partial<UpdateAgentRequest>): Promise<ApiResponse<Agent>> {
   try {
-    console.log(`Updating agent with ID: ${agentId}`);
+ 
     
     // 确保请求数据中包含必要字段
     const requestData = {
@@ -130,7 +130,7 @@ export async function updateAgent(agentId: string, agentData: Partial<UpdateAgen
     
     return response;
   } catch (error) {
-    console.error("更新助理错误:", error);
+ 
     // 返回格式化的错误响应
     return {
       code: 500,
@@ -144,13 +144,13 @@ export async function updateAgent(agentId: string, agentData: Partial<UpdateAgen
 // 切换助理启用/禁用状态
 export async function toggleAgentStatus(agentId: string): Promise<ApiResponse<Agent>> {
   try {
-    console.log(`Toggling agent status: ${agentId}`)
+ 
     
     const response = await httpClient.put<ApiResponse<Agent>>(API_ENDPOINTS.TOGGLE_AGENT_STATUS(agentId));
     
     return response;
   } catch (error) {
-    console.error("切换助理状态错误:", error)
+ 
     // 返回格式化的错误响应
     return {
       code: 500,
@@ -164,13 +164,13 @@ export async function toggleAgentStatus(agentId: string): Promise<ApiResponse<Ag
 // 删除助理
 export async function deleteAgent(agentId: string): Promise<ApiResponse<null>> {
   try {
-    console.log(`Deleting agent: ${agentId}`)
+ 
     
     const response = await httpClient.delete<ApiResponse<null>>(API_ENDPOINTS.DELETE_AGENT(agentId));
     
     return response;
   } catch (error) {
-    console.error("删除助理错误:", error)
+ 
     // 返回格式化的错误响应
     return {
       code: 500,
@@ -187,7 +187,7 @@ export async function publishAgentVersion(
   params: PublishAgentVersionRequest,
 ): Promise<ApiResponse<AgentVersion>> {
   try {
-    console.log(`Publishing agent version: ${agentId}`)
+ 
     
     const response = await httpClient.post<ApiResponse<AgentVersion>>(
       API_ENDPOINTS.PUBLISH_AGENT_VERSION(agentId), 
@@ -196,7 +196,7 @@ export async function publishAgentVersion(
     
     return response;
   } catch (error) {
-    console.error("发布助理版本错误:", error)
+ 
     // 返回格式化的错误响应
     return {
       code: 500,
@@ -210,13 +210,13 @@ export async function publishAgentVersion(
 // 获取助理版本列表
 export async function getAgentVersions(agentId: string): Promise<ApiResponse<AgentVersion[]>> {
   try {
-    console.log(`Fetching agent versions: ${agentId}`)
+ 
     
     const response = await httpClient.get<ApiResponse<AgentVersion[]>>(API_ENDPOINTS.AGENT_VERSIONS(agentId));
     
     return response;
   } catch (error) {
-    console.error("获取助理版本列表错误:", error)
+ 
     // 返回格式化的错误响应
     return {
       code: 500,
@@ -230,7 +230,7 @@ export async function getAgentVersions(agentId: string): Promise<ApiResponse<Age
 // 获取助理特定版本
 export async function getAgentVersion(agentId: string, versionNumber: string): Promise<ApiResponse<AgentVersion>> {
   try {
-    console.log(`Fetching agent version: ${agentId}, ${versionNumber}`)
+ 
     
     const response = await httpClient.get<ApiResponse<AgentVersion>>(
       API_ENDPOINTS.AGENT_VERSION_DETAIL(agentId, versionNumber)
@@ -238,7 +238,7 @@ export async function getAgentVersion(agentId: string, versionNumber: string): P
     
     return response;
   } catch (error) {
-    console.error("获取助理版本详情错误:", error)
+ 
     // 返回格式化的错误响应
     return {
       code: 500,
@@ -252,7 +252,7 @@ export async function getAgentVersion(agentId: string, versionNumber: string): P
 // 获取助理最新版本
 export async function getAgentLatestVersion(agentId: string): Promise<ApiResponse<AgentVersion>> {
   try {
-    console.log(`Fetching agent latest version: ${agentId}`)
+ 
     
     const response = await httpClient.get<ApiResponse<AgentVersion>>(
       API_ENDPOINTS.AGENT_LATEST_VERSION(agentId)
@@ -260,7 +260,7 @@ export async function getAgentLatestVersion(agentId: string): Promise<ApiRespons
     
     return response;
   } catch (error) {
-    console.error("获取助理最新版本错误:", error)
+ 
     // 返回格式化的错误响应
     return {
       code: 500,
@@ -275,7 +275,7 @@ export async function getAgentLatestVersion(agentId: string): Promise<ApiRespons
 export async function searchAgents(params: SearchAgentsRequest): Promise<ApiResponse<Agent[]>> {
   try {
     const userId = API_CONFIG.CURRENT_USER_ID
-    console.log(`Searching agents for user: ${userId}`)
+ 
     
     const response = await httpClient.get<ApiResponse<Agent[]>>(API_ENDPOINTS.USER_AGENTS(userId), {
       params
@@ -283,7 +283,7 @@ export async function searchAgents(params: SearchAgentsRequest): Promise<ApiResp
     
     return response;
   } catch (error) {
-    console.error("搜索助理错误:", error)
+ 
     // 返回格式化的错误响应
     return {
       code: 500,
@@ -297,13 +297,13 @@ export async function searchAgents(params: SearchAgentsRequest): Promise<ApiResp
 // Add this function to get agent details by session ID
 export async function getAgentBySessionId(sessionId: string): Promise<ApiResponse<Agent>> {
   try {
-    console.log(`Fetching agent by session ID: ${sessionId}`)
+ 
     
     const response = await httpClient.get<ApiResponse<Agent>>(`/agents/session-agent/${sessionId}`);
     
     return response;
   } catch (error) {
-    console.error("获取会话关联的助理错误:", error)
+ 
     // 返回格式化的错误响应
     return {
       code: 500,
@@ -317,13 +317,13 @@ export async function getAgentBySessionId(sessionId: string): Promise<ApiRespons
 // Add this function to delete an agent from the workspace
 export async function deleteWorkspaceAgent(agentId: string): Promise<ApiResponse<null>> {
   try {
-    console.log(`Deleting workspace agent: ${agentId}`)
+ 
     
     const response = await httpClient.delete<ApiResponse<null>>(`/agents/workspaces/agents/${agentId}`);
     
     return response;
   } catch (error) {
-    console.error("删除工作区助理错误:", error)
+ 
     // 返回格式化的错误响应
     return {
       code: 500,
@@ -337,7 +337,7 @@ export async function deleteWorkspaceAgent(agentId: string): Promise<ApiResponse
 // 添加助理到工作区
 export async function addAgentToWorkspace(agentId: string): Promise<ApiResponse<Agent>> {
   try {
-    console.log(`Adding agent to workspace: ${agentId}`)
+ 
     
     const response = await httpClient.post<ApiResponse<Agent>>(
       API_ENDPOINTS.ADD_AGENT_TO_WORKSPACE(agentId)
@@ -345,7 +345,7 @@ export async function addAgentToWorkspace(agentId: string): Promise<ApiResponse<
     
     return response;
   } catch (error) {
-    console.error("添加助理到工作区错误:", error)
+ 
     // 返回格式化的错误响应
     return {
       code: 500,

@@ -54,7 +54,7 @@ export default function ModelSelector({
           setDefaultModel(response.data)
         }
       } catch (error) {
-        console.error('获取默认模型失败:', error)
+ 
       } finally {
         setIsLoadingDefaultModel(false)
       }
@@ -73,7 +73,7 @@ export default function ModelSelector({
           setModels(response.data)
         }
       } catch (error) {
-        console.error('获取模型列表失败:', error)
+ 
       } finally {
         setIsLoadingModels(false)
       }
@@ -108,7 +108,7 @@ export default function ModelSelector({
           description: `默认模型已成功更新为 ${selectedModel?.name || "未设置"}`,
         })
       } else {
-        console.error('更新默认模型失败:', response.message)
+ 
         toast({
           title: "默认模型更新失败",
           description: response.message,
@@ -116,7 +116,7 @@ export default function ModelSelector({
         })
       }
     } catch (error) {
-      console.error('更新默认模型失败:', error)
+ 
       toast({
         title: "默认模型更新失败",
         description: "更新默认模型时发生错误",
