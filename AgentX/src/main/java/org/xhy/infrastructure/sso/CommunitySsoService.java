@@ -17,17 +17,6 @@ import java.util.Map;
 @Service
 public class CommunitySsoService implements SsoService {
 
-    @Value("${sso.community.base-url:}")
-    private String baseUrl;
-
-    @Value("${sso.community.app-key:}")
-    private String appKey;
-
-    @Value("${sso.community.app-secret:}")
-    private String appSecret;
-
-    @Value("${sso.community.callback-url:}")
-    private String callbackUrl;
 
     private final RestTemplate restTemplate;
     private final SsoConfigProvider ssoConfigProvider;
@@ -94,24 +83,17 @@ public class CommunitySsoService implements SsoService {
         return SsoProvider.COMMUNITY;
     }
 
-    /** 获取有效的配置（数据库优先，配置文件回退）
+    /** 获取有效的配置（仅从数据库读取）
      * 
      * @return 有效的Community配置 */
     private SsoConfigProvider.CommunitySsoConfig getEffectiveConfig() {
-        SsoConfigProvider.CommunitySsoConfig dbConfig = ssoConfigProvider.getCommunityConfig();
+        SsoConfigProvider.CommunitySsoConfig config = ssoConfigProvider.getCommunityConfig();
 
-        // 如果数据库配置完整，使用数据库配置
-        if (dbConfig.getBaseUrl() != null && dbConfig.getAppKey() != null && dbConfig.getAppSecret() != null) {
-            return dbConfig;
+        // 检查配置是否完整
+        if (config.getBaseUrl() == null || config.getAppKey() == null || config.getAppSecret() == null) {
+            throw new BusinessException("Community SSO配置不完整，请在管理后台配置Community OAuth应用信息");
         }
 
-        // 否则回退到配置文件配置
-        SsoConfigProvider.CommunitySsoConfig fileConfig = new SsoConfigProvider.CommunitySsoConfig();
-        fileConfig.setBaseUrl(baseUrl);
-        fileConfig.setAppKey(appKey);
-        fileConfig.setAppSecret(appSecret);
-        fileConfig.setCallbackUrl(callbackUrl);
-
-        return fileConfig;
+        return config;
     }
 }

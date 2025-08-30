@@ -24,7 +24,7 @@ const AccountContext = createContext<AccountContextType | undefined>(undefined);
 
 export function AccountProvider({ children }: { children: ReactNode }) {
   const [account, setAccount] = useState<Account | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // 刷新账户数据
@@ -74,38 +74,6 @@ export function AccountProvider({ children }: { children: ReactNode }) {
   const formatAmount = useCallback((amount: number) => {
     return `¥${amount.toFixed(2)}`;
   }, []);
-
-  // 组件挂载时自动获取账户数据
-  useEffect(() => {
-    refreshAccount();
-  }, [refreshAccount]);
-
-  // 监听页面焦点变化，自动刷新账户数据
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (!document.hidden && account) {
- 
-        refreshAccount();
-      }
-    };
-
-    const handleFocus = () => {
-      if (account) {
- 
-        refreshAccount();
-      }
-    };
-
-    // 添加事件监听器
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('focus', handleFocus);
-
-    // 清理函数
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('focus', handleFocus);
-    };
-  }, [account, refreshAccount]);
 
   const value: AccountContextType = {
     account,
