@@ -1,5 +1,7 @@
 package org.xhy.infrastructure.transport;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import org.xhy.application.conversation.dto.AgentChatResponse;
@@ -9,6 +11,8 @@ import java.io.IOException;
 /** SSE消息传输实现 */
 @Component
 public class SseMessageTransport implements MessageTransport<SseEmitter> {
+
+    private static final Logger logger = LoggerFactory.getLogger(SseMessageTransport.class);
 
     /** 系统超时消息 */
     private static final String TIMEOUT_MESSAGE = "\n\n[系统提示：响应超时，请重试]";
@@ -26,10 +30,9 @@ public class SseMessageTransport implements MessageTransport<SseEmitter> {
                 AgentChatResponse response = new AgentChatResponse();
                 response.setContent(TIMEOUT_MESSAGE);
                 response.setDone(true);
-                emitter.send(response);
-                emitter.complete();
-            } catch (IOException e) {
-                e.printStackTrace();
+                safeSendMessage(emitter, response);
+            } finally {
+                safeCompleteEmitter(emitter);
             }
         });
 
@@ -39,10 +42,9 @@ public class SseMessageTransport implements MessageTransport<SseEmitter> {
                 AgentChatResponse response = new AgentChatResponse();
                 response.setContent(ERROR_MESSAGE_PREFIX + ex.getMessage() + "]");
                 response.setDone(true);
-                emitter.send(response);
-                emitter.complete();
-            } catch (IOException e) {
-                e.printStackTrace();
+                safeSendMessage(emitter, response);
+            } finally {
+                safeCompleteEmitter(emitter);
             }
         });
 
@@ -51,29 +53,21 @@ public class SseMessageTransport implements MessageTransport<SseEmitter> {
 
     @Override
     public void sendMessage(SseEmitter connection, AgentChatResponse streamChatResponse) {
-        try {
-
-            connection.send(streamChatResponse);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        safeSendMessage(connection, streamChatResponse);
     }
 
     @Override
     public void sendEndMessage(SseEmitter connection, AgentChatResponse streamChatResponse) {
         try {
-
-            connection.send(streamChatResponse);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+            safeSendMessage(connection, streamChatResponse);
         } finally {
-            connection.complete();
+            safeCompleteEmitter(connection);
         }
     }
 
     @Override
     public void completeConnection(SseEmitter connection) {
-        connection.complete();
+        safeCompleteEmitter(connection);
     }
 
     @Override
@@ -82,11 +76,26 @@ public class SseMessageTransport implements MessageTransport<SseEmitter> {
             AgentChatResponse response = new AgentChatResponse();
             response.setContent(error.getMessage());
             response.setDone(true);
-            connection.send(response);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+            safeSendMessage(connection, response);
         } finally {
-            connection.complete();
+            safeCompleteEmitter(connection);
+        }
+    }
+
+    /** 安全发送消息，避免向已完成的连接发送
+     * @param emitter SSE发送器
+     * @param response 响应消息 */
+    private void safeSendMessage(SseEmitter emitter, AgentChatResponse response) {
+        if (!SseEmitterUtils.safeSend(emitter, response)) {
+            logger.debug("消息发送失败或连接已关闭");
+        }
+    }
+
+    /** 安全完成SSE连接，避免重复完成
+     * @param emitter SSE发送器 */
+    private void safeCompleteEmitter(SseEmitter emitter) {
+        if (!SseEmitterUtils.safeComplete(emitter)) {
+            logger.debug("连接完成失败或已完成");
         }
     }
 }

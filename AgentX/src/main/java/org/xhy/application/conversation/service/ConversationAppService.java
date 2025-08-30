@@ -86,6 +86,7 @@ public class ConversationAppService {
     private final PreviewMessageHandler previewMessageHandler;
     private final HighAvailabilityDomainService highAvailabilityDomainService;
     private final RagSessionManager ragSessionManager;
+    private final ChatSessionManager chatSessionManager;
 
     public ConversationAppService(ConversationDomainService conversationDomainService,
             SessionDomainService sessionDomainService, AgentDomainService agentDomainService,
@@ -94,7 +95,8 @@ public class ConversationAppService {
             MessageDomainService messageDomainService, MessageHandlerFactory messageHandlerFactory,
             MessageTransportFactory transportFactory, UserToolDomainService toolDomainService,
             UserSettingsDomainService userSettingsDomainService, PreviewMessageHandler previewMessageHandler,
-            HighAvailabilityDomainService highAvailabilityDomainService, RagSessionManager ragSessionManager) {
+            HighAvailabilityDomainService highAvailabilityDomainService, RagSessionManager ragSessionManager,
+            ChatSessionManager chatSessionManager) {
         this.conversationDomainService = conversationDomainService;
         this.sessionDomainService = sessionDomainService;
         this.agentDomainService = agentDomainService;
@@ -110,6 +112,7 @@ public class ConversationAppService {
         this.previewMessageHandler = previewMessageHandler;
         this.highAvailabilityDomainService = highAvailabilityDomainService;
         this.ragSessionManager = ragSessionManager;
+        this.chatSessionManager = chatSessionManager;
     }
 
     /** 获取会话中的消息列表
@@ -146,7 +149,12 @@ public class ConversationAppService {
         AbstractMessageHandler handler = messageHandlerFactory.getHandler(chatRequest);
 
         // 4. 处理对话
-        return handler.chat(environment, transport);
+        SseEmitter emitter = handler.chat(environment, transport);
+
+        // 5. 注册会话到会话管理器（支持中断功能）
+        chatSessionManager.registerSession(chatRequest.getSessionId(), emitter);
+
+        return emitter;
     }
 
     /** 对话处理（支持指定模型）- 用于外部API
@@ -167,7 +175,12 @@ public class ConversationAppService {
         AbstractMessageHandler handler = messageHandlerFactory.getHandler(environment.getAgent());
 
         // 4. 处理对话
-        return handler.chat(environment, transport);
+        SseEmitter emitter = handler.chat(environment, transport);
+
+        // 5. 注册会话到会话管理器（支持中断功能）
+        chatSessionManager.registerSession(chatRequest.getSessionId(), emitter);
+
+        return emitter;
     }
 
     /** 同步对话处理（支持指定模型）- 用于外部API

@@ -6,11 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Send, MessageCircle, User, Loader2, Bot } from "lucide-react";
+import { Send, MessageCircle, User, Loader2, Bot, Square } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { widgetChatStream, handleWidgetStream, type WidgetChatRequest, type WidgetChatResponse } from '@/lib/widget-chat-service';
 import { MessageType } from '@/types/conversation';
 import { MessageMarkdown } from '@/components/ui/message-markdown';
+import { useInterruptableChat } from '@/hooks/use-interruptable-chat';
 
 interface Message {
   id: string;
@@ -58,6 +59,25 @@ export function WidgetChatInterface({
   const [sessionId] = useState<string>(generateUUID()); // 生成并保持会话ID
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  
+  // 新增：使用中断Hook
+  const {
+    canInterrupt,
+    isInterrupting,
+    abortControllerRef,
+    startChat,
+    handleInterrupt,
+    reset: resetInterrupt
+  } = useInterruptableChat({
+    onInterruptSuccess: () => {
+      setIsLoading(false)
+      setIsThinking(false)
+      setStreamingMessageId(null)
+    },
+    onInterruptError: (error) => {
+      console.error('Widget中断失败:', error)
+    }
+  });
   
   // 消息处理状态管理（复用预览聊天逻辑）
   const hasReceivedFirstResponse = useRef(false);
@@ -176,6 +196,10 @@ export function WidgetChatInterface({
     setIsLoading(true);
     setIsThinking(true); // 设置思考状态
     setCurrentAssistantMessage(null); // 重置助手消息状态
+    
+    // 开始可中断的对话
+    startChat();
+    
     scrollToBottom(); // 用户发送新消息时强制滚动到底部
     
     // 重置所有状态
@@ -194,8 +218,8 @@ export function WidgetChatInterface({
 
       console.log('Widget聊天请求数据:', chatRequest);
 
-      // 使用Widget聊天流式处理
-      const stream = await widgetChatStream(publicId, chatRequest);
+      // 使用Widget聊天流式处理，传入AbortController
+      const stream = await widgetChatStream(publicId, chatRequest, abortControllerRef.current?.signal);
       if (!stream) {
         throw new Error('Failed to get widget stream');
       }
@@ -220,16 +244,31 @@ export function WidgetChatInterface({
         },
         (error: Error) => {
           console.error('Widget stream error:', error);
+          // 检查是否是用户主动中断
+          if (error.name === 'AbortError') {
+            console.log('用户主动中断Widget对话');
+            setIsLoading(false);
+            setIsThinking(false);
+            return;
+          }
           handleStreamError(error);
         },
         () => {
           console.log('Widget stream completed');
           setIsLoading(false);
           setIsThinking(false);
+          resetInterrupt(); // 重置中断状态
         }
       );
     } catch (error) {
       console.error('Widget聊天请求失败:', error);
+      // 检查是否是用户主动中断
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.log('Widget请求被中断');
+        setIsLoading(false);
+        setIsThinking(false);
+        return;
+      }
       handleStreamError(error instanceof Error ? error : new Error('未知错误'));
     }
   };
@@ -424,6 +463,7 @@ export function WidgetChatInterface({
     setIsThinking(false);
     setIsLoading(false);
     setStreamingMessageId(null);
+    resetInterrupt(); // 重置中断状态
     
     // 添加错误消息到聊天
     const errorMessage: Message = {
@@ -462,6 +502,11 @@ export function WidgetChatInterface({
     }
   };
 
+  // 处理中断
+  const onInterruptChat = async () => {
+    if (!sessionId || !canInterrupt) return;
+    await handleInterrupt(sessionId);
+  };
 
   // 处理回车发送
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -607,20 +652,40 @@ export function WidgetChatInterface({
             disabled={isLoading}
             className="flex-1"
           />
-          <Button 
-            onClick={handleSendMessage}
-            disabled={!inputValue.trim() || isLoading}
-            size="icon"
-          >
-            {isLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Send className="h-4 w-4" />
-            )}
-          </Button>
+          
+          {/* 发送/中断按钮 */}
+          {canInterrupt ? (
+            <Button
+              onClick={onInterruptChat}
+              disabled={isInterrupting}
+              size="icon"
+              variant="destructive"
+            >
+              {isInterrupting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Square className="h-4 w-4" />
+              )}
+            </Button>
+          ) : (
+            <Button 
+              onClick={handleSendMessage}
+              disabled={!inputValue.trim() || isLoading}
+              size="icon"
+            >
+              {isLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+            </Button>
+          )}
         </div>
         <div className="mt-2 text-xs text-muted-foreground">
           按 Enter 发送消息，Shift + Enter 换行
+          {canInterrupt && (
+            <span className="text-orange-600 ml-2">• 点击停止按钮可中断对话</span>
+          )}
         </div>
       </div>
     </div>

@@ -27,6 +27,29 @@ const isErrorMessage = (content: string): boolean => {
   return errorKeywords.some(keyword => content.includes(keyword));
 };
 
+// 预处理文本内容，标准化反引号字符
+const preprocessContent = (content: string): string => {
+  if (!content) return content;
+  
+  // 替换各种可能的引号字符为标准反引号
+  let processedContent = content
+    // 全角反引号 ｀ -> 标准反引号 `
+    .replace(/｀/g, '`')
+    // 左右单引号 ' ' -> 标准反引号 `（如果它们是成对出现的，可能是代码标记）
+    .replace(/['']([^'']*?)[''] /g, '`$1` ')
+    // 其他可能的引号字符
+    .replace(/‛/g, '`')
+    .replace(/′/g, '`');
+  
+  console.log("Debug - preprocessed content:", {
+    original: content,
+    processed: processedContent,
+    changed: content !== processedContent
+  });
+  
+  return processedContent;
+};
+
 export function MessageMarkdown({ 
   content, 
   showCopyButton = true,
@@ -35,6 +58,32 @@ export function MessageMarkdown({
   className 
 }: MessageMarkdownProps) {
   const { copyMarkdown } = useCopy();
+  
+  // 预处理内容
+  const processedContent = preprocessContent(content);
+  
+  // 调试：检查内容中的反引号字符
+  React.useEffect(() => {
+    if (content.includes('character varying')) {
+      console.log("Debug - original content:", content);
+      console.log("Debug - processed content:", processedContent);
+      console.log("Debug - content bytes:", Array.from(content).map(char => ({ 
+        char, 
+        code: char.charCodeAt(0), 
+        hex: char.charCodeAt(0).toString(16) 
+      })));
+      
+      // 查找反引号字符
+      const backticks = Array.from(content).filter(char => 
+        char.charCodeAt(0) === 96 || // 标准反引号
+        char.charCodeAt(0) === 65344 || // 全角反引号 ｀
+        char.charCodeAt(0) === 8216 || // 左单引号 '
+        char.charCodeAt(0) === 8217 || // 右单引号 '
+        char.includes('`')
+      );
+      console.log("Debug - found backtick-like chars:", backticks);
+    }
+  }, [content, processedContent]);
   
   // 自动检测错误消息或使用传入的 isError
   const shouldShowAsError = isError || isErrorMessage(content);
@@ -67,6 +116,26 @@ export function MessageMarkdown({
           <ReactMarkdown 
             remarkPlugins={[remarkGfm]}
             components={{
+              code: ({ inline, children, className, ...props }: any) => {
+                console.log("ReactMarkdown code component called:", { inline, children, className, props });
+                
+                // 多重检测内联代码：inline 属性或者没有 language- 前缀
+                const isInline = inline || !className?.includes('language-');
+                
+                if (isInline) {
+                  // 内联代码样式 - 使用 ! 前缀强制优先级
+                  return (
+                    <code 
+                      className="!bg-gray-100 dark:!bg-gray-800 !text-red-600 dark:!text-red-400 !px-1 !py-0.5 !rounded !text-sm !font-mono !border-0" 
+                      {...props}
+                    >
+                      {children}
+                    </code>
+                  );
+                }
+                // 代码块中的代码保持原样
+                return <code className={className} {...props}>{children}</code>;
+              },
               pre: ({ children, ...props }) => {
                 // 提取代码内容
                 const codeElement = children as React.ReactElement;
