@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import org.xhy.application.conversation.dto.AgentChatResponse;
 import org.xhy.application.conversation.service.handler.context.ChatContext;
 import org.xhy.application.conversation.service.message.agent.tool.RagToolManager;
+import org.xhy.application.conversation.service.ChatSessionManager;
 import org.xhy.application.conversation.service.message.rag.RagChatContext;
 import org.xhy.application.conversation.service.message.rag.RagRetrievalResult;
 import org.xhy.application.conversation.dto.RagRetrievalDocumentDTO;
@@ -62,9 +63,10 @@ public class RagMessageHandler extends AbstractMessageHandler {
             HighAvailabilityDomainService highAvailabilityDomainService, SessionDomainService sessionDomainService,
             UserSettingsDomainService userSettingsDomainService, LLMDomainService llmDomainService,
             RagToolManager ragToolManager, BillingService billingService, AccountDomainService accountDomainService,
-            RAGSearchAppService ragSearchAppService, ObjectMapper objectMapper) {
+            ChatSessionManager chatSessionManager, RAGSearchAppService ragSearchAppService, ObjectMapper objectMapper) {
         super(llmServiceFactory, messageDomainService, highAvailabilityDomainService, sessionDomainService,
-                userSettingsDomainService, llmDomainService, ragToolManager, billingService, accountDomainService);
+                userSettingsDomainService, llmDomainService, ragToolManager, billingService, accountDomainService,
+                chatSessionManager);
         this.ragSearchAppService = ragSearchAppService;
         this.objectMapper = objectMapper;
     }

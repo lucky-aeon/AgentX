@@ -6,13 +6,14 @@ import { Input } from '@/components/ui/input'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Loader2, MessageCircle, Send, Bot, User, AlertCircle, Paperclip, X, Wrench } from 'lucide-react'
+import { Loader2, MessageCircle, Send, Bot, User, AlertCircle, Paperclip, X, Wrench, Square } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import { previewAgentStream, handlePreviewStream, parseStreamData, createStreamDecoder, type AgentPreviewRequest, type MessageHistoryItem, type AgentChatResponse } from '@/lib/agent-preview-service'
 import { uploadMultipleFiles, type UploadResult, type UploadFileInfo } from '@/lib/file-upload-service'
 import { MessageType } from '@/types/conversation'
 import { Highlight, themes } from 'prism-react-renderer'
 import { MessageMarkdown } from '@/components/ui/message-markdown'
+import { useInterruptableChat } from '@/hooks/use-interruptable-chat'
 
 // 文件类型 - 使用URL而不是base64内容
 interface ChatFile {
@@ -78,9 +79,30 @@ export default function AgentPreviewChat({
   const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null)
   const [uploadedFiles, setUploadedFiles] = useState<ChatFile[]>([]) // 新增：待发送的文件列表
   const [isUploadingFiles, setIsUploadingFiles] = useState(false) // 新增：文件上传状态
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null) // 新增：当前会话ID
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null) // 新增：文件输入引用
+  
+  // 新增：使用中断Hook
+  const {
+    canInterrupt,
+    isInterrupting,
+    abortControllerRef,
+    startChat,
+    handleInterrupt,
+    reset: resetInterrupt
+  } = useInterruptableChat({
+    onInterruptSuccess: () => {
+      setIsLoading(false)
+      setIsThinking(false)
+      setStreamingMessageId(null)
+      setCurrentSessionId(null)
+    },
+    onInterruptError: (error) => {
+      console.error('中断失败:', error)
+    }
+  })
   
   // 新增：消息处理状态管理（参考chat-panel.tsx）
   const hasReceivedFirstResponse = useRef(false)
@@ -187,6 +209,14 @@ export default function AgentPreviewChat({
     setIsLoading(true)
     setIsThinking(true) // 设置思考状态
     setCurrentAssistantMessage(null) // 重置助手消息状态
+    
+    // 生成新的会话ID
+    const sessionId = Date.now().toString()
+    setCurrentSessionId(sessionId)
+    
+    // 开始可中断的对话
+    startChat()
+    
     scrollToBottom() // 用户发送新消息时强制滚动到底部
     
     // 重置所有状态
@@ -221,8 +251,8 @@ export default function AgentPreviewChat({
 
       console.log('预览请求数据:', previewRequest)
 
-      // 使用新的流式处理方式
-      const stream = await previewAgentStream(previewRequest)
+      // 使用新的流式处理方式，传入AbortController
+      const stream = await previewAgentStream(previewRequest, abortControllerRef.current?.signal)
       if (!stream) {
         throw new Error('Failed to get preview stream')
       }
@@ -246,16 +276,33 @@ export default function AgentPreviewChat({
         },
         (error: Error) => {
           console.error('Preview stream error:', error)
+          // 检查是否是用户主动中断
+          if (error.name === 'AbortError') {
+            console.log('用户主动中断对话')
+            setIsLoading(false)
+            setIsThinking(false)
+            return
+          }
           handleStreamError(error)
         },
         () => {
           console.log('Preview stream completed')
           setIsLoading(false)
           setIsThinking(false)
+          setCurrentSessionId(null)
+          resetInterrupt() // 重置中断状态
         }
       )
     } catch (error) {
       console.error('Preview request failed:', error)
+      // 检查是否是用户主动中断
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.log('请求被中断')
+        setIsLoading(false)
+        setIsThinking(false)
+        setCurrentSessionId(null)
+        return
+      }
       handleStreamError(error instanceof Error ? error : new Error('未知错误'))
     }
   }
@@ -443,6 +490,8 @@ export default function AgentPreviewChat({
     setIsThinking(false)
     setIsLoading(false)
     setStreamingMessageId(null)
+    setCurrentSessionId(null)
+    resetInterrupt() // 重置中断状态
     
     toast({
       title: "预览失败",
@@ -495,6 +544,11 @@ export default function AgentPreviewChat({
 
   // 清空对话
   const clearChat = () => {
+    // 如果正在对话中，先中断
+    if (isLoading && currentSessionId) {
+      handleInterrupt(currentSessionId)
+    }
+    
     setMessages(welcomeMessage ? [{
       id: 'welcome',
       role: 'ASSISTANT',
@@ -506,6 +560,8 @@ export default function AgentPreviewChat({
     setIsLoading(false)
     setStreamingMessageId(null)
     setCurrentAssistantMessage(null)
+    setCurrentSessionId(null)
+    resetInterrupt() // 重置中断状态
     
     // 重置消息处理状态
     hasReceivedFirstResponse.current = false
@@ -515,6 +571,12 @@ export default function AgentPreviewChat({
     }
     setCompletedTextMessages(new Set())
     messageSequenceNumber.current = 0
+  }
+
+  // 处理中断
+  const onInterruptChat = async () => {
+    if (!currentSessionId || !canInterrupt) return
+    await handleInterrupt(currentSessionId)
   }
 
   // 处理文件上传
@@ -937,17 +999,34 @@ export default function AgentPreviewChat({
             disabled={disabled || isLoading}
             className="flex-1"
           />
-          <Button
-            onClick={sendMessage}
-            disabled={disabled || isLoading || (!inputValue.trim() && uploadedFiles.length === 0)}
-            size="icon"
-          >
-            {isLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Send className="h-4 w-4" />
-            )}
-          </Button>
+          
+          {/* 发送/中断按钮 */}
+          {canInterrupt ? (
+            <Button
+              onClick={onInterruptChat}
+              disabled={disabled || isInterrupting}
+              size="icon"
+              variant="destructive"
+            >
+              {isInterrupting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Square className="h-4 w-4" />
+              )}
+            </Button>
+          ) : (
+            <Button
+              onClick={sendMessage}
+              disabled={disabled || isLoading || (!inputValue.trim() && uploadedFiles.length === 0)}
+              size="icon"
+            >
+              {isLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+            </Button>
+          )}
         </div>
 
         {/* 隐藏的文件输入 */}
@@ -963,6 +1042,14 @@ export default function AgentPreviewChat({
         {disabled && (
           <p className="text-xs text-muted-foreground mt-2">
             请填写必要的Agent信息后进行预览
+          </p>
+        )}
+        
+        {/* 中断状态提示 */}
+        {canInterrupt && (
+          <p className="text-xs text-orange-600 mt-2 flex items-center gap-1">
+            <Square className="h-3 w-3" />
+            点击停止按钮可中断对话
           </p>
         )}
       </div>

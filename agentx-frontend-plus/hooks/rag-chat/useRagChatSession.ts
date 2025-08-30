@@ -46,21 +46,27 @@ export function useRagChatSession(options: UseRagChatSessionOptions = {}) {
 
   // 停止生成
   const stopGeneration = useCallback(() => {
-    if (chatSessionRef.current) {
-      chatSessionRef.current.abort();
-    }
-    setIsLoading(false);
-    setMessages(prev => {
-      const newMessages = [...prev];
-      const lastMessage = newMessages[newMessages.length - 1];
-      if (lastMessage && lastMessage.role === 'assistant' && lastMessage.isStreaming) {
-        lastMessage.isStreaming = false;
-        if (!lastMessage.content) {
-          lastMessage.content = '生成已停止。';
-        }
+    try {
+      if (chatSessionRef.current) {
+        chatSessionRef.current.abort();
       }
-      return newMessages;
-    });
+      setIsLoading(false);
+      setMessages(prev => {
+        const newMessages = [...prev];
+        const lastMessage = newMessages[newMessages.length - 1];
+        if (lastMessage && lastMessage.role === 'assistant' && lastMessage.isStreaming) {
+          lastMessage.isStreaming = false;
+          if (!lastMessage.content) {
+            lastMessage.content = '生成已停止。';
+          }
+        }
+        return newMessages;
+      });
+    } catch (error) {
+      // 静默处理停止过程中的错误，确保 UI 状态正确更新
+      console.log('[RAG Chat] Stop generation completed');
+      setIsLoading(false);
+    }
   }, []);
 
   // 发送消息

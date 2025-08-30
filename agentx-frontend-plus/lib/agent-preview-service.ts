@@ -40,7 +40,7 @@ export interface AgentChatResponse {
  * 使用 fetch 方式发送预览请求（返回 ReadableStream）
  * 这是推荐的方式，支持流式响应
  */
-export async function previewAgentStream(request: AgentPreviewRequest): Promise<ReadableStream<Uint8Array> | null> {
+export async function previewAgentStream(request: AgentPreviewRequest, signal?: AbortSignal): Promise<ReadableStream<Uint8Array> | null> {
   try {
     const url = `${API_CONFIG.BASE_URL}/agents/sessions/preview`
     
@@ -56,6 +56,7 @@ export async function previewAgentStream(request: AgentPreviewRequest): Promise<
       },
       body: JSON.stringify(request),
       credentials: 'include',
+      signal // 添加AbortSignal支持
     })
 
     if (!response.ok) {

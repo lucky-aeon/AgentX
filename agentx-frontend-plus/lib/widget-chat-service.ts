@@ -26,7 +26,7 @@ export interface WidgetChatResponse {
 /**
  * Widget聊天流式请求 - 使用公开HTTP客户端，无需认证
  */
-export async function widgetChatStream(publicId: string, request: WidgetChatRequest): Promise<ReadableStream<Uint8Array> | null> {
+export async function widgetChatStream(publicId: string, request: WidgetChatRequest, signal?: AbortSignal): Promise<ReadableStream<Uint8Array> | null> {
   try {
     const url = `${API_CONFIG.BASE_URL}/widget/${publicId}/chat`;
     
@@ -37,6 +37,7 @@ export async function widgetChatStream(publicId: string, request: WidgetChatRequ
         'Referer': typeof window !== 'undefined' ? window.location.origin : '',
       },
       body: JSON.stringify(request),
+      signal // 添加AbortSignal支持
     });
 
     if (!response.ok) {

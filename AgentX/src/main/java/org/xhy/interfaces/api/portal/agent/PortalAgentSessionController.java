@@ -6,6 +6,7 @@ import org.xhy.application.agent.service.AgentSessionAppService;
 import org.xhy.application.conversation.dto.AgentPreviewRequest;
 import org.xhy.application.conversation.dto.ChatRequest;
 import org.xhy.application.conversation.service.ConversationAppService;
+import org.xhy.application.conversation.service.ChatSessionManager;
 import org.xhy.application.conversation.dto.MessageDTO;
 import org.xhy.application.conversation.dto.SessionDTO;
 import org.xhy.infrastructure.auth.UserContext;
@@ -27,11 +28,13 @@ public class PortalAgentSessionController {
     private final ExecutorService executorService = Executors.newCachedThreadPool();
     private final AgentSessionAppService agentSessionAppService;
     private final ConversationAppService conversationAppService;
+    private final ChatSessionManager chatSessionManager;
 
     public PortalAgentSessionController(AgentSessionAppService agentSessionAppService,
-            ConversationAppService conversationAppService) {
+            ConversationAppService conversationAppService, ChatSessionManager chatSessionManager) {
         this.agentSessionAppService = agentSessionAppService;
         this.conversationAppService = conversationAppService;
+        this.chatSessionManager = chatSessionManager;
     }
 
     /** 获取会话中的消息列表 */
@@ -86,5 +89,25 @@ public class PortalAgentSessionController {
     public SseEmitter preview(@RequestBody AgentPreviewRequest previewRequest) {
         String userId = UserContext.getCurrentUserId();
         return conversationAppService.previewAgent(previewRequest, userId);
+    }
+
+    /** 中断对话会话
+     * @param sessionId 会话ID
+     * @return 中断结果 */
+    @PostMapping("/{sessionId}/interrupt")
+    public Result<String> interruptSession(@PathVariable String sessionId) {
+        String userId = UserContext.getCurrentUserId();
+
+        logger.info("用户 {} 请求中断会话: {}", userId, sessionId);
+
+        boolean success = chatSessionManager.interruptSession(sessionId);
+
+        if (success) {
+            logger.info("成功中断会话: sessionId={}, userId={}", sessionId, userId);
+            return Result.success("对话已中断");
+        } else {
+            logger.warn("中断会话失败，会话不存在: sessionId={}, userId={}", sessionId, userId);
+            return Result.success("会话已结束或不存在");
+        }
     }
 }
