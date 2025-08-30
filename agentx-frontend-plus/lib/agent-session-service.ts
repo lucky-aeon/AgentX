@@ -99,6 +99,25 @@ export async function deleteAgentSession(sessionId: string): Promise<ApiResponse
   }
 }
 
+// 中断助理会话
+export async function interruptSession(sessionId: string): Promise<ApiResponse<string>> {
+  try {
+    const data = await httpClient.post<ApiResponse<string>>(
+      `/agents/sessions/${sessionId}/interrupt`
+    )
+    return data
+  } catch (error) {
+    console.error("中断助理会话错误:", error)
+    // 返回格式化的错误响应
+    return {
+      code: 500,
+      message: error instanceof Error ? error.message : "中断会话失败",
+      data: "",
+      timestamp: Date.now(),
+    }
+  }
+}
+
 // 使用toast包装的API函数
 export const getAgentSessionsWithToast = withToast(getAgentSessions, {
   showSuccessToast: false,
@@ -119,4 +138,24 @@ export const deleteAgentSessionWithToast = withToast(deleteAgentSession, {
   successTitle: "删除助理会话成功",
   errorTitle: "删除助理会话失败"
 })
+
+export const interruptSessionWithToast = withToast(interruptSession, {
+  successTitle: "对话中断成功",
+  errorTitle: "对话中断失败",
+  showSuccessToast: false // 由useInterruptableChat Hook自己处理toast
+})
+
+// 统一的AgentSessionService对象，方便其他模块调用
+export const AgentSessionService = {
+  getAgentSessions,
+  createAgentSession,
+  updateAgentSession,
+  deleteAgentSession,
+  interruptSession,
+  getAgentSessionsWithToast,
+  createAgentSessionWithToast,
+  updateAgentSessionWithToast,
+  deleteAgentSessionWithToast,
+  interruptSessionWithToast
+}
 

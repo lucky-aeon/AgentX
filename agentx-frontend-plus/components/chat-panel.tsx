@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect, useCallback } from "react"
-import { Send, Wrench, Clock } from 'lucide-react'
+import { Send, Wrench, Clock, Square } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -9,6 +9,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { streamChat } from "@/lib/api"
 import { toast } from "@/hooks/use-toast"
 import { getSessionMessages, getSessionMessagesWithToast, type MessageDTO } from "@/lib/session-message-service"
+import { AgentSessionService } from "@/lib/agent-session-service"
+import { API_CONFIG, API_ENDPOINTS } from "@/lib/api-config"
 import { Skeleton } from "@/components/ui/skeleton"
 import { MessageMarkdown } from "@/components/ui/message-markdown"
 import { MessageType, type Message as MessageInterface } from "@/types/conversation"
@@ -69,9 +71,12 @@ export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName
   const [isThinking, setIsThinking] = useState(false)
   const [currentAssistantMessage, setCurrentAssistantMessage] = useState<AssistantMessage | null>(null)
   const [uploadedFiles, setUploadedFiles] = useState<ChatFile[]>([]) // 新增：已上传的文件列表
+  const [isInterrupting, setIsInterrupting] = useState(false) // 新增：中断状态
+  const [canInterrupt, setCanInterrupt] = useState(false) // 新增：是否可以中断
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const chatContainerRef = useRef<HTMLDivElement>(null)
+  const abortControllerRef = useRef<AbortController | null>(null) // 新增：中断控制器
   
   // 新增：使用useRef保存不需要触发重新渲染的状态
   const hasReceivedFirstResponse = useRef(false);
@@ -94,6 +99,13 @@ export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName
     };
     setCompletedTextMessages(new Set());
     messageSequenceNumber.current = 0;
+    
+    // 重置中断相关状态
+    setCanInterrupt(false);
+    setIsInterrupting(false);
+    if (abortControllerRef.current) {
+      abortControllerRef.current = null;
+    }
   }, [conversationId]);
 
   // 添加消息到列表的辅助函数
@@ -185,6 +197,48 @@ export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName
     }
   }, [messages, isTyping, autoScroll])
 
+  // 处理对话中断
+  const handleInterrupt = async () => {
+    if (!conversationId || !canInterrupt || isInterrupting) {
+      return
+    }
+
+    setIsInterrupting(true)
+    
+    try {
+      // 1. 取消当前的网络请求
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+        abortControllerRef.current = null
+      }
+
+      // 2. 调用AgentSessionService中断接口
+      const response = await AgentSessionService.interruptSession(conversationId)
+      
+      if (response.code === 200) {
+        toast({
+          title: "对话已中断",
+          variant: "default"
+        })
+      } else {
+        throw new Error(response.message || "中断失败")
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "中断对话失败"
+      console.error('中断对话失败:', error)
+      toast({
+        title: "中断失败",
+        description: errorMessage,
+        variant: "destructive"
+      })
+    } finally {
+      setIsInterrupting(false)
+      setCanInterrupt(false)
+      setIsTyping(false)
+      setIsThinking(false)
+    }
+  }
+
   // 监听滚动事件
   useEffect(() => {
     const chatContainer = chatContainerRef.current
@@ -227,7 +281,12 @@ export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName
     setIsTyping(true)
     setIsThinking(true) // 设置思考状态
     setCurrentAssistantMessage(null) // 重置助手消息状态
+    setCanInterrupt(true) // 启用中断功能
+    setIsInterrupting(false) // 重置中断状态
     scrollToBottom() // 用户发送新消息时强制滚动到底部
+    
+    // 创建新的AbortController
+    abortControllerRef.current = new AbortController()
     
     // 重置所有状态
     setCompletedTextMessages(new Set())
@@ -285,6 +344,12 @@ export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName
       let buffer = ""
 
       while (true) {
+        // 检查是否被中断
+        if (abortControllerRef.current?.signal.aborted) {
+          console.log('检测到中断信号，停止读取数据流')
+          break
+        }
+        
         const { done, value } = await reader.read()
         if (done) break
 
@@ -320,14 +385,25 @@ export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName
       }
     } catch (error) {
       console.error("Error in stream chat:", error)
-      setIsThinking(false) // 错误发生时关闭思考状态
-      toast({
-        title: "发送消息失败",
-        description: error instanceof Error ? error.message : "未知错误",
-        variant: "destructive",
-      })
+      
+      // 如果是中断导致的错误，不显示错误提示
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.log('对话已被用户中断')
+      } else {
+        setIsThinking(false) // 错误发生时关闭思考状态
+        toast({
+          title: "发送消息失败",
+          description: error instanceof Error ? error.message : "未知错误",
+          variant: "destructive",
+        })
+      }
     } finally {
       setIsTyping(false)
+      setCanInterrupt(false) // 重置中断状态
+      setIsInterrupting(false)
+      if (abortControllerRef.current) {
+        abortControllerRef.current = null
+      }
     }
   }
 
@@ -765,13 +841,27 @@ export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName
             className="min-h-[56px] flex-1 resize-none overflow-hidden rounded-xl bg-white px-3 py-2 font-normal border-gray-200 shadow-sm focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-opacity-50"
             rows={Math.min(5, Math.max(2, input.split('\n').length))}
           />
-          <Button 
-            onClick={handleSendMessage} 
-            disabled={(!input.trim() && uploadedFiles.length === 0) || isTyping} 
-            className="h-10 w-10 rounded-xl bg-blue-500 hover:bg-blue-600 shadow-sm flex-shrink-0"
-          >
-            <Send className="h-5 w-5" />
-          </Button>
+          
+          {/* 中断/发送按钮 - 根据状态条件渲染 */}
+          {canInterrupt ? (
+            <Button 
+              onClick={handleInterrupt}
+              disabled={isInterrupting}
+              className="h-10 w-10 rounded-xl bg-red-500 hover:bg-red-600 shadow-sm flex-shrink-0"
+              title="中断对话"
+            >
+              <Square className="h-5 w-5" />
+            </Button>
+          ) : (
+            <Button 
+              onClick={handleSendMessage} 
+              disabled={(!input.trim() && uploadedFiles.length === 0) || isTyping} 
+              className="h-10 w-10 rounded-xl bg-blue-500 hover:bg-blue-600 shadow-sm flex-shrink-0"
+              title="发送消息"
+            >
+              <Send className="h-5 w-5" />
+            </Button>
+          )}
         </div>
       </div>
     </div>

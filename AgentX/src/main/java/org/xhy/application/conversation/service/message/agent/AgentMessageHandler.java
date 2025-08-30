@@ -8,6 +8,7 @@ import org.xhy.application.conversation.service.handler.context.ChatContext;
 import org.xhy.application.conversation.service.message.AbstractMessageHandler;
 import org.xhy.application.conversation.service.message.TracingMessageHandler;
 import org.xhy.application.conversation.service.message.agent.tool.RagToolManager;
+import org.xhy.application.conversation.service.ChatSessionManager;
 import org.xhy.application.trace.collector.TraceCollector;
 import org.xhy.domain.conversation.service.MessageDomainService;
 import org.xhy.domain.conversation.service.SessionDomainService;
@@ -29,10 +30,10 @@ public class AgentMessageHandler extends TracingMessageHandler {
             HighAvailabilityDomainService highAvailabilityDomainService, SessionDomainService sessionDomainService,
             UserSettingsDomainService userSettingsDomainService, LLMDomainService llmDomainService,
             RagToolManager ragToolManager, BillingService billingService, AccountDomainService accountDomainService,
-            TraceCollector traceCollector, AgentToolManager agentToolManager) {
+            ChatSessionManager chatSessionManager, TraceCollector traceCollector, AgentToolManager agentToolManager) {
         super(llmServiceFactory, messageDomainService, highAvailabilityDomainService, sessionDomainService,
                 userSettingsDomainService, llmDomainService, ragToolManager, billingService, accountDomainService,
-                traceCollector);
+                chatSessionManager, traceCollector);
         this.agentToolManager = agentToolManager;
     }
 

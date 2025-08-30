@@ -9,6 +9,7 @@ import org.xhy.application.conversation.service.message.AbstractMessageHandler;
 import org.xhy.application.conversation.service.message.Agent;
 import org.xhy.application.conversation.service.message.agent.AgentToolManager;
 import org.xhy.application.conversation.service.message.agent.tool.RagToolManager;
+import org.xhy.application.conversation.service.ChatSessionManager;
 import org.xhy.domain.conversation.constant.MessageType;
 import org.xhy.domain.conversation.model.MessageEntity;
 import org.xhy.domain.conversation.service.MessageDomainService;
@@ -34,9 +35,10 @@ public class PreviewMessageHandler extends AbstractMessageHandler {
             HighAvailabilityDomainService highAvailabilityDomainService, SessionDomainService sessionDomainService,
             UserSettingsDomainService userSettingsDomainService, LLMDomainService llmDomainService,
             RagToolManager ragToolManager, BillingService billingService, AccountDomainService accountDomainService,
-            AgentToolManager agentToolManager) {
+            ChatSessionManager chatSessionManager, AgentToolManager agentToolManager) {
         super(llmServiceFactory, messageDomainService, highAvailabilityDomainService, sessionDomainService,
-                userSettingsDomainService, llmDomainService, ragToolManager, billingService, accountDomainService);
+                userSettingsDomainService, llmDomainService, ragToolManager, billingService, accountDomainService,
+                chatSessionManager);
         this.agentToolManager = agentToolManager;
     }
 

@@ -183,6 +183,8 @@ export async function ragStreamChatByUserRag(
   } catch (error) {
     if (error instanceof Error && error.name === 'AbortError') {
       console.log('[RAG Stream] RAG stream chat by userRag aborted');
+      // AbortError 是正常的中止操作，不需要调用 onError
+      return;
     } else {
       console.error('[RAG Stream] RAG stream chat by userRag error:', error);
       onError?.(error instanceof Error ? error.message : 'Unknown error');
@@ -313,9 +315,13 @@ export async function ragStreamChat(
       }
     }
   } catch (error) {
-    console.error("RAG stream chat error:", error);
-    if (error instanceof Error && error.name !== 'AbortError') {
-      onError?.(error.message);
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.log('[RAG Stream] RAG stream chat aborted');
+      // AbortError 是正常的中止操作，不需要调用 onError
+      return;
+    } else {
+      console.error("RAG stream chat error:", error);
+      onError?.(error instanceof Error ? error.message : 'Unknown error');
     }
   }
 }
@@ -347,8 +353,14 @@ export class UserRagChatSession {
 
   abort(): void {
     if (this.abortController) {
-      this.abortController.abort();
-      this.abortController = null;
+      try {
+        this.abortController.abort();
+      } catch (error) {
+        // 静默处理 abort 过程中的错误
+        console.log('[UserRag Session] Abort completed');
+      } finally {
+        this.abortController = null;
+      }
     }
   }
 
@@ -382,8 +394,14 @@ export class RagChatSession {
 
   abort(): void {
     if (this.abortController) {
-      this.abortController.abort();
-      this.abortController = null;
+      try {
+        this.abortController.abort();
+      } catch (error) {
+        // 静默处理 abort 过程中的错误
+        console.log('[RAG Session] Abort completed');
+      } finally {
+        this.abortController = null;
+      }
     }
   }
 
