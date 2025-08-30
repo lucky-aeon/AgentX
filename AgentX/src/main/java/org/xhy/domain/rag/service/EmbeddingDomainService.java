@@ -286,22 +286,12 @@ public class EmbeddingDomainService implements MetadataConstant {
         try {
             var modelConfig = ragDocSyncStorageMessage.getEmbeddingModelConfig();
 
-            // 验证模型配置的完整性
-            if (modelConfig.getModelId() == null || modelConfig.getApiKey() == null
-                    || modelConfig.getBaseUrl() == null) {
-                String errorMsg = String.format("用户 %s 的嵌入模型配置不完整: modelId=%s, apiKey=%s, baseUrl=%s",
-                        ragDocSyncStorageMessage.getUserId(), modelConfig.getModelId(),
-                        modelConfig.getApiKey() != null ? "已配置" : "未配置", modelConfig.getBaseUrl());
-                log.error(errorMsg);
-                throw new BusinessException(errorMsg);
-            }
-
             // 使用工厂类创建嵌入模型
             EmbeddingModelFactory.EmbeddingConfig config = new EmbeddingModelFactory.EmbeddingConfig(
-                    modelConfig.getApiKey(), modelConfig.getBaseUrl(), modelConfig.getModelId());
+                    modelConfig.getApiKey(), modelConfig.getBaseUrl(), modelConfig.getModelEndpoint());
             OpenAiEmbeddingModel embeddingModel = embeddingModelFactory.createEmbeddingModel(config);
 
-            log.info("成功为用户{}创建嵌入模型: {}", ragDocSyncStorageMessage.getUserId(), modelConfig.getModelId());
+            log.info("成功为用户{}创建嵌入模型: {}", ragDocSyncStorageMessage.getUserId(), modelConfig.getModelEndpoint());
             return embeddingModel;
 
         } catch (RuntimeException e) {

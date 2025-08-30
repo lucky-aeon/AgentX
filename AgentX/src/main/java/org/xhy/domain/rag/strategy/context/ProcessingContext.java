@@ -52,7 +52,7 @@ public class ProcessingContext {
             try {
                 ModelConfig embeddingModelConfig = userModelConfigResolver.getUserEmbeddingModelConfig(userId);
                 embeddingConfig = new EmbeddingModelFactory.EmbeddingConfig(embeddingModelConfig.getApiKey(),
-                        embeddingModelConfig.getBaseUrl(), embeddingModelConfig.getModelId());
+                        embeddingModelConfig.getBaseUrl(), embeddingModelConfig.getModelEndpoint());
             } catch (Exception e) {
                 log.warn("获取用户 {} 嵌入模型配置失败: {}", userId, e.getMessage());
             }
@@ -62,7 +62,7 @@ public class ProcessingContext {
             try {
                 ModelConfig chatModelConfig = userModelConfigResolver.getUserChatModelConfig(userId);
                 llmConfig = new ProviderConfig(chatModelConfig.getApiKey(), chatModelConfig.getBaseUrl(),
-                        chatModelConfig.getModelId(), ProviderProtocol.OPENAI);
+                        chatModelConfig.getModelEndpoint(), ProviderProtocol.OPENAI);
             } catch (Exception e) {
                 log.warn("获取用户 {} 聊天模型配置失败: {}", userId, e.getMessage());
             }
@@ -72,7 +72,7 @@ public class ProcessingContext {
             try {
                 ModelConfig ocrModelConfig = userModelConfigResolver.getUserOcrModelConfig(userId);
                 visionModelConfig = new ProviderConfig(ocrModelConfig.getApiKey(), ocrModelConfig.getBaseUrl(),
-                        ocrModelConfig.getModelId(), ProviderProtocol.OPENAI);
+                        ocrModelConfig.getModelEndpoint(), ProviderProtocol.OPENAI);
             } catch (Exception e) {
                 log.warn("获取用户 {} OCR模型配置失败: {}", userId, e.getMessage());
             }

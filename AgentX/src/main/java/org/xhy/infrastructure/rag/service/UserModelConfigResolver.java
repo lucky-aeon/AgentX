@@ -170,10 +170,9 @@ public class UserModelConfigResolver {
             providerEntity.isAvailable(providerEntity.getUserId());
 
             // 构建模型配置
-            ModelConfig modelConfig = new ModelConfig(
-                    modelEntity.isChatType() ? modelEntity.getId() : modelEntity.getModelEndpoint(),
-                    providerEntity.getConfig().getApiKey(), providerEntity.getConfig().getBaseUrl(),
-                    modelEntity.getType(), providerEntity.getProtocol());
+            ModelConfig modelConfig = new ModelConfig(providerEntity.getConfig().getApiKey(),
+                    providerEntity.getConfig().getBaseUrl(), modelEntity.getType(), providerEntity.getProtocol(),
+                    modelEntity.getModelEndpoint());
 
             log.info("成功获取用户{}的模型配置: modelId={}, baseUrl={}", userId, modelEntity.getModelId(),
                     providerEntity.getConfig().getBaseUrl());
@@ -185,38 +184,6 @@ public class UserModelConfigResolver {
             throw e;
         } catch (Exception e) {
             String errorMsg = String.format("用户 %s 获取模型 %s 配置时发生错误: %s", userId, modelId, e.getMessage());
-            log.error(errorMsg, e);
-            throw new BusinessException(errorMsg, e);
-        }
-    }
-
-    /** 根据ModelConfig创建ChatModel实例 用于在RAG领域中创建LLM客户端，避免跨领域依赖
-     *
-     * @param modelConfig 模型配置
-     * @return ChatModel实例
-     * @throws BusinessException 如果创建失败 */
-    public ChatModel createChatModel(ModelConfig modelConfig) {
-        if (modelConfig == null) {
-            throw new BusinessException("模型配置不能为空");
-        }
-
-        try {
-
-            // 创建ProviderConfig
-            ProviderConfig providerConfig = new ProviderConfig(modelConfig.getApiKey(), modelConfig.getBaseUrl(),
-                    modelConfig.getModelId(), modelConfig.getProtocol());
-
-            // 使用LLMProviderService创建ChatModel
-            ChatModel chatModel = LLMProviderService.getStrand(modelConfig.getProtocol(), providerConfig);
-
-            log.info("成功创建ChatModel，modelId: {}, protocol: {}", modelConfig.getModelId(), modelConfig.getProtocol());
-            return chatModel;
-
-        } catch (BusinessException e) {
-            throw e;
-        } catch (Exception e) {
-            String errorMsg = String.format("创建ChatModel失败，modelId: %s, error: %s", modelConfig.getModelId(),
-                    e.getMessage());
             log.error(errorMsg, e);
             throw new BusinessException(errorMsg, e);
         }

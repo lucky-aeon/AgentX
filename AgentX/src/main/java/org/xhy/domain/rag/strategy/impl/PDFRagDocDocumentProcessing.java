@@ -244,22 +244,12 @@ public class PDFRagDocDocumentProcessing extends AbstractDocumentProcessingStrat
         try {
             var modelConfig = ragDocSyncOcrMessage.getOcrModelConfig();
 
-            // 验证模型配置的完整性
-            if (modelConfig.getModelId() == null || modelConfig.getApiKey() == null
-                    || modelConfig.getBaseUrl() == null) {
-                String errorMsg = String.format("用户 %s 的OCR模型配置不完整: modelId=%s, apiKey=%s, baseUrl=%s",
-                        ragDocSyncOcrMessage.getUserId(), modelConfig.getModelId(),
-                        modelConfig.getApiKey() != null ? "已配置" : "未配置", modelConfig.getBaseUrl());
-                log.error(errorMsg);
-                throw new BusinessException(errorMsg);
-            }
-
             ProviderConfig ocrProviderConfig = new ProviderConfig(modelConfig.getApiKey(), modelConfig.getBaseUrl(),
-                    modelConfig.getModelId(), ProviderProtocol.OPENAI);
+                    modelConfig.getModelEndpoint(), ProviderProtocol.OPENAI);
 
             ChatModel ocrModel = LLMProviderService.getStrand(ProviderProtocol.OPENAI, ocrProviderConfig);
 
-            log.info("成功为用户{}创建OCR模型: {}", ragDocSyncOcrMessage.getUserId(), modelConfig.getModelId());
+            log.info("成功为用户{}创建OCR模型: {}", ragDocSyncOcrMessage.getUserId(), modelConfig.getModelEndpoint());
             return ocrModel;
 
         } catch (RuntimeException e) {

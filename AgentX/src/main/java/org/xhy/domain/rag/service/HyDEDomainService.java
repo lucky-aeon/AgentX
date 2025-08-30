@@ -40,10 +40,10 @@ public class HyDEDomainService {
         String trimmedQuery = query.trim();
 
         try {
-            log.debug("开始HyDE生成，查询: '{}', 模型: {}", trimmedQuery, chatModelConfig.getModelId());
+            log.debug("开始HyDE生成，查询: '{}', 模型: {}", trimmedQuery, chatModelConfig.getModelEndpoint());
 
             ProviderConfig providerConfig = new ProviderConfig(chatModelConfig.getApiKey(),
-                    chatModelConfig.getBaseUrl(), chatModelConfig.getModelId(), chatModelConfig.getProtocol());
+                    chatModelConfig.getBaseUrl(), chatModelConfig.getModelEndpoint(), chatModelConfig.getProtocol());
             ChatModel chatModel = LLMProviderService.getStrand(chatModelConfig.getProtocol(), providerConfig);
 
             // 构建提示词

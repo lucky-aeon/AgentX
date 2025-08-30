@@ -14,9 +14,6 @@ public class ModelConfig implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
-    /** 模型ID */
-    private String modelId;
-
     /** API密钥 */
     private String apiKey;
 
@@ -27,23 +24,18 @@ public class ModelConfig implements Serializable {
 
     private ProviderProtocol protocol;
 
+    private String modelEndpoint;
+
     public ModelConfig() {
     }
 
-    public ModelConfig(String modelId, String apiKey, String baseUrl, ModelType modelType, ProviderProtocol protocol) {
-        this.modelId = modelId;
+    public ModelConfig(String apiKey, String baseUrl, ModelType modelType, ProviderProtocol protocol,
+            String modelEndpoint) {
         this.apiKey = apiKey;
         this.baseUrl = baseUrl;
         this.modelType = modelType;
         this.protocol = protocol;
-    }
-
-    public String getModelId() {
-        return modelId;
-    }
-
-    public void setModelId(String modelId) {
-        this.modelId = modelId;
+        this.modelEndpoint = modelEndpoint;
     }
 
     public String getApiKey() {
@@ -80,5 +72,13 @@ public class ModelConfig implements Serializable {
 
     public boolean isChatType() {
         return this.modelType == ModelType.CHAT;
+    }
+
+    public String getModelEndpoint() {
+        return modelEndpoint;
+    }
+
+    public void setModelEndpoint(String modelEndpoint) {
+        this.modelEndpoint = modelEndpoint;
     }
 }
