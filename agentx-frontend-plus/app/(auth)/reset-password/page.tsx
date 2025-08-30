@@ -82,7 +82,7 @@ export default function ResetPasswordPage() {
         setFormData(prev => ({ ...prev, captchaCode: "" }))
       }
     } catch (error) {
-      console.error("获取图形验证码失败:", error)
+ 
     } finally {
       setLoadingCaptcha(false)
     }
@@ -135,7 +135,7 @@ export default function ResetPasswordPage() {
         })
       }
     } catch (error) {
-      console.error("发送验证码失败:", error)
+ 
       fetchCaptcha() // 刷新验证码
     } finally {
       setSendingCode(false)
@@ -198,7 +198,7 @@ export default function ResetPasswordPage() {
         })
       }
     } catch (error) {
-      console.error("重置密码失败:", error)
+ 
     } finally {
       setLoading(false)
     }
@@ -225,7 +225,7 @@ export default function ResetPasswordPage() {
         })
       }
     } catch (error) {
-      console.error("重新发送验证码失败:", error)
+ 
     } finally {
       setSendingCode(false)
     }

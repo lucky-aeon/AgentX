@@ -51,7 +51,7 @@ export function AgentDetailsDialog({ open, onOpenChange, agent }: AgentDetailsDi
         throw new Error(response.message);
       }
     } catch (error) {
-      console.error('获取工具详情失败:', error);
+ 
       toast({
         variant: "destructive",
         title: "获取工具信息失败",

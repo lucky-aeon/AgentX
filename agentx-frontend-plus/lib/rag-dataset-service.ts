@@ -22,7 +22,7 @@ import type {
 // 分页查询数据集
 export async function getDatasets(params?: QueryDatasetRequest): Promise<ApiResponse<PageResponse<RagDataset>>> {
   try {
-    console.log("Fetching datasets with params:", params)
+ 
     
     const response = await httpClient.get<ApiResponse<PageResponse<RagDataset>>>(
       API_ENDPOINTS.RAG_DATASETS,
@@ -31,7 +31,7 @@ export async function getDatasets(params?: QueryDatasetRequest): Promise<ApiResp
     
     return response
   } catch (error) {
-    console.error("获取数据集列表错误:", error)
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "未知错误",
@@ -50,7 +50,7 @@ export async function getDatasets(params?: QueryDatasetRequest): Promise<ApiResp
 // 获取所有数据集
 export async function getAllDatasets(): Promise<ApiResponse<RagDataset[]>> {
   try {
-    console.log("Fetching all datasets")
+ 
     
     const response = await httpClient.get<ApiResponse<RagDataset[]>>(
       API_ENDPOINTS.RAG_ALL_DATASETS
@@ -58,7 +58,7 @@ export async function getAllDatasets(): Promise<ApiResponse<RagDataset[]>> {
     
     return response
   } catch (error) {
-    console.error("获取所有数据集错误:", error)
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "未知错误",
@@ -71,7 +71,7 @@ export async function getAllDatasets(): Promise<ApiResponse<RagDataset[]>> {
 // 获取数据集详情
 export async function getDatasetDetail(datasetId: string): Promise<ApiResponse<RagDataset>> {
   try {
-    console.log(`Fetching dataset detail: ${datasetId}`)
+ 
     
     const response = await httpClient.get<ApiResponse<RagDataset>>(
       API_ENDPOINTS.RAG_DATASET_DETAIL(datasetId)
@@ -79,7 +79,7 @@ export async function getDatasetDetail(datasetId: string): Promise<ApiResponse<R
     
     return response
   } catch (error) {
-    console.error("获取数据集详情错误:", error)
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "未知错误",
@@ -92,7 +92,7 @@ export async function getDatasetDetail(datasetId: string): Promise<ApiResponse<R
 // 创建数据集
 export async function createDataset(request: CreateDatasetRequest): Promise<ApiResponse<RagDataset>> {
   try {
-    console.log("Creating dataset:", request)
+ 
     
     const response = await httpClient.post<ApiResponse<RagDataset>>(
       API_ENDPOINTS.RAG_DATASETS,
@@ -101,7 +101,7 @@ export async function createDataset(request: CreateDatasetRequest): Promise<ApiR
     
     return response
   } catch (error) {
-    console.error("创建数据集错误:", error)
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "未知错误",
@@ -117,7 +117,7 @@ export async function updateDataset(
   request: UpdateDatasetRequest
 ): Promise<ApiResponse<RagDataset>> {
   try {
-    console.log(`Updating dataset: ${datasetId}`, request)
+ 
     
     const response = await httpClient.put<ApiResponse<RagDataset>>(
       API_ENDPOINTS.RAG_DATASET_DETAIL(datasetId),
@@ -126,7 +126,7 @@ export async function updateDataset(
     
     return response
   } catch (error) {
-    console.error("更新数据集错误:", error)
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "未知错误",
@@ -139,7 +139,7 @@ export async function updateDataset(
 // 删除数据集
 export async function deleteDataset(datasetId: string): Promise<ApiResponse<null>> {
   try {
-    console.log(`Deleting dataset: ${datasetId}`)
+ 
     
     const response = await httpClient.delete<ApiResponse<null>>(
       API_ENDPOINTS.RAG_DATASET_DETAIL(datasetId)
@@ -147,7 +147,7 @@ export async function deleteDataset(datasetId: string): Promise<ApiResponse<null
     
     return response
   } catch (error) {
-    console.error("删除数据集错误:", error)
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "未知错误",
@@ -162,7 +162,7 @@ export async function deleteDataset(datasetId: string): Promise<ApiResponse<null
 // 上传文件到数据集
 export async function uploadFile(datasetId: string, file: File): Promise<ApiResponse<FileDetail>> {
   try {
-    console.log(`Uploading file to dataset: ${datasetId}`, file.name)
+ 
     
     const formData = new FormData()
     formData.append('datasetId', datasetId)
@@ -175,7 +175,7 @@ export async function uploadFile(datasetId: string, file: File): Promise<ApiResp
     
     return response
   } catch (error) {
-    console.error("上传文件错误:", error)
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "未知错误",
@@ -191,7 +191,7 @@ export async function getDatasetFiles(
   params?: QueryDatasetFileRequest
 ): Promise<ApiResponse<PageResponse<FileDetail>>> {
   try {
-    console.log(`Fetching files for dataset: ${datasetId}`, params)
+ 
     
     const response = await httpClient.get<ApiResponse<PageResponse<FileDetail>>>(
       API_ENDPOINTS.RAG_DATASET_FILES(datasetId),
@@ -200,7 +200,7 @@ export async function getDatasetFiles(
     
     return response
   } catch (error) {
-    console.error("获取数据集文件错误:", error)
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "未知错误",
@@ -219,7 +219,7 @@ export async function getDatasetFiles(
 // 获取数据集所有文件
 export async function getAllDatasetFiles(datasetId: string): Promise<ApiResponse<FileDetail[]>> {
   try {
-    console.log(`Fetching all files for dataset: ${datasetId}`)
+ 
     
     const response = await httpClient.get<ApiResponse<FileDetail[]>>(
       API_ENDPOINTS.RAG_ALL_DATASET_FILES(datasetId)
@@ -227,7 +227,7 @@ export async function getAllDatasetFiles(datasetId: string): Promise<ApiResponse
     
     return response
   } catch (error) {
-    console.error("获取数据集所有文件错误:", error)
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "未知错误",
@@ -240,7 +240,7 @@ export async function getAllDatasetFiles(datasetId: string): Promise<ApiResponse
 // 删除数据集文件
 export async function deleteFile(datasetId: string, fileId: string): Promise<ApiResponse<null>> {
   try {
-    console.log(`Deleting file: ${fileId} from dataset: ${datasetId}`)
+ 
     
     const response = await httpClient.delete<ApiResponse<null>>(
       API_ENDPOINTS.RAG_DATASET_FILE_DELETE(datasetId, fileId)
@@ -248,7 +248,7 @@ export async function deleteFile(datasetId: string, fileId: string): Promise<Api
     
     return response
   } catch (error) {
-    console.error("删除文件错误:", error)
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "未知错误",
@@ -263,7 +263,7 @@ export async function deleteFile(datasetId: string, fileId: string): Promise<Api
 // 启动文件预处理
 export async function processFile(request: ProcessFileRequest): Promise<ApiResponse<void>> {
   try {
-    console.log("Processing file:", request)
+ 
     
     const response = await httpClient.post<ApiResponse<void>>(
       API_ENDPOINTS.RAG_PROCESS_FILE,
@@ -272,7 +272,7 @@ export async function processFile(request: ProcessFileRequest): Promise<ApiRespo
     
     return response
   } catch (error) {
-    console.error("启动文件预处理错误:", error)
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "未知错误",
@@ -285,7 +285,7 @@ export async function processFile(request: ProcessFileRequest): Promise<ApiRespo
 // 获取文件处理进度
 export async function getFileProgress(fileId: string): Promise<ApiResponse<FileProcessProgressDTO>> {
   try {
-    console.log(`Getting file progress: ${fileId}`)
+ 
     
     const response = await httpClient.get<ApiResponse<FileProcessProgressDTO>>(
       API_ENDPOINTS.RAG_FILE_PROGRESS(fileId)
@@ -293,7 +293,7 @@ export async function getFileProgress(fileId: string): Promise<ApiResponse<FileP
     
     return response
   } catch (error) {
-    console.error("获取文件处理进度错误:", error)
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "未知错误",
@@ -306,7 +306,7 @@ export async function getFileProgress(fileId: string): Promise<ApiResponse<FileP
 // 获取数据集文件处理进度列表
 export async function getDatasetFilesProgress(datasetId: string): Promise<ApiResponse<FileProcessProgressDTO[]>> {
   try {
-    console.log(`Getting dataset files progress: ${datasetId}`)
+ 
     
     const response = await httpClient.get<ApiResponse<FileProcessProgressDTO[]>>(
       API_ENDPOINTS.RAG_DATASET_FILES_PROGRESS(datasetId)
@@ -314,7 +314,7 @@ export async function getDatasetFilesProgress(datasetId: string): Promise<ApiRes
     
     return response
   } catch (error) {
-    console.error("获取数据集文件处理进度错误:", error)
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "未知错误",
@@ -327,7 +327,7 @@ export async function getDatasetFilesProgress(datasetId: string): Promise<ApiRes
 // RAG搜索文档
 export async function ragSearch(request: RagSearchRequest): Promise<ApiResponse<DocumentUnitDTO[]>> {
   try {
-    console.log("RAG searching documents:", request)
+ 
     
     const response = await httpClient.post<ApiResponse<DocumentUnitDTO[]>>(
       API_ENDPOINTS.RAG_SEARCH,
@@ -336,7 +336,7 @@ export async function ragSearch(request: RagSearchRequest): Promise<ApiResponse<
     
     return response
   } catch (error) {
-    console.error("RAG搜索文档错误:", error)
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "未知错误",
@@ -349,7 +349,7 @@ export async function ragSearch(request: RagSearchRequest): Promise<ApiResponse<
 // 基于已安装知识库的RAG搜索
 export async function ragSearchByUserRag(userRagId: string, request: RagSearchRequest): Promise<ApiResponse<DocumentUnitDTO[]>> {
   try {
-    console.log("RAG searching by user rag:", userRagId, request)
+ 
     
     const response = await httpClient.post<ApiResponse<DocumentUnitDTO[]>>(
       API_ENDPOINTS.RAG_SEARCH_BY_USER_RAG(userRagId),
@@ -358,7 +358,7 @@ export async function ragSearchByUserRag(userRagId: string, request: RagSearchRe
     
     return response
   } catch (error) {
-    console.error("基于已安装知识库的RAG搜索错误:", error)
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "未知错误",

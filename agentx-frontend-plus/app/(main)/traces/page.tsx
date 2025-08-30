@@ -31,7 +31,7 @@ export default function TracesPage() {
           setFilteredAgents(response.data)
         }
       } catch (error) {
-        console.error("加载 Agent 追踪统计失败:", error)
+ 
       } finally {
         setLoading(false)
       }

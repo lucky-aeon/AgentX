@@ -118,7 +118,7 @@ export default function ToolsPage() {
         });
       }
     } catch (error) {
-      console.error('加载工具列表失败:', error);
+ 
       toast({
         variant: "destructive",
         title: "获取工具列表失败",
@@ -137,7 +137,7 @@ export default function ToolsPage() {
         setStatistics(response.data);
       }
     } catch (error) {
-      console.error('加载统计数据失败:', error);
+ 
     }
   }, []);
 
@@ -231,7 +231,7 @@ export default function ToolsPage() {
       setTools(prevTools => prevTools.map(t => 
         t.id === tool.id ? originalTool : t
       ));
-      console.error('切换工具全局状态失败:', error);
+ 
       toast({
         variant: "destructive",
         title: "操作失败",
@@ -267,7 +267,7 @@ export default function ToolsPage() {
         });
       }
     } catch (error) {
-      console.error('审核操作失败:', error);
+ 
       toast({
         variant: "destructive",
         title: "操作失败",

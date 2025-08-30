@@ -57,7 +57,7 @@ export function ContentDisplay({
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch (err) {
-      console.error("复制失败:", err)
+ 
     }
   }
 

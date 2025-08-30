@@ -99,7 +99,7 @@ export function ToolHistoryVersionsDialog({
       }
     } catch (error) {
       setError("获取版本历史出错");
-      console.error("获取工具版本历史失败", error);
+ 
     } finally {
       setLoading(false);
     }
@@ -146,7 +146,7 @@ export function ToolHistoryVersionsDialog({
         }
       }
     } catch (error) {
-      console.error("切换版本状态失败", error);
+ 
     } finally {
       setUpdatingStatus(null);
     }

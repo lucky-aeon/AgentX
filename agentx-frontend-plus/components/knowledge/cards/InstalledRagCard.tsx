@@ -60,7 +60,7 @@ export function InstalledRagCard({
         setVersionsLoaded(true)
       }
     } catch (error) {
-      console.error("获取版本历史失败:", error)
+ 
     } finally {
       setVersionsLoading(false)
     }
@@ -79,7 +79,7 @@ export function InstalledRagCard({
         onVersionSwitch?.(response.data)
       }
     } catch (error) {
-      console.error("版本切换失败:", error)
+ 
     } finally {
       setIsSwitchingVersion(false)
     }

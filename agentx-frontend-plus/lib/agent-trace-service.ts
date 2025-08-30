@@ -120,7 +120,7 @@ export async function getUserAgentTraceStatistics(
   params?: GetAgentTraceStatisticsParams
 ): Promise<ApiResponse<AgentTraceStatistics[]>> {
   try {
-    console.log('Fetching user agent trace statistics')
+ 
     
     const response = await httpClient.get<ApiResponse<AgentTraceStatistics[]>>(
       '/traces/agents',
@@ -129,7 +129,7 @@ export async function getUserAgentTraceStatistics(
     
     return response;
   } catch (error) {
-    console.error('获取 Agent 追踪统计信息错误:', error)
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "未知错误",
@@ -145,7 +145,7 @@ export async function getAgentSessionTraceStatistics(
   params?: GetSessionTraceStatisticsParams
 ): Promise<ApiResponse<SessionTraceStatistics[]>> {
   try {
-    console.log(`Fetching session trace statistics for agent: ${agentId}`)
+ 
     
     const response = await httpClient.get<ApiResponse<SessionTraceStatistics[]>>(
       `/traces/agents/${agentId}/sessions`,
@@ -154,7 +154,7 @@ export async function getAgentSessionTraceStatistics(
     
     return response;
   } catch (error) {
-    console.error('获取会话追踪统计信息错误:', error)
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "未知错误",
@@ -167,13 +167,13 @@ export async function getAgentSessionTraceStatistics(
 // 获取执行详情（复用现有接口）
 export async function getTraceDetail(traceId: string): Promise<ApiResponse<any>> {
   try {
-    console.log(`Fetching trace detail: ${traceId}`)
+ 
     
     const response = await httpClient.get<ApiResponse<any>>(`/traces/${traceId}`);
     
     return response;
   } catch (error) {
-    console.error('获取追踪详情错误:', error)
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "未知错误",
@@ -186,13 +186,13 @@ export async function getTraceDetail(traceId: string): Promise<ApiResponse<any>>
 // 获取执行详情列表（复用现有接口）
 export async function getExecutionDetails(traceId: string): Promise<ApiResponse<any[]>> {
   try {
-    console.log(`Fetching execution details: ${traceId}`)
+ 
     
     const response = await httpClient.get<ApiResponse<any[]>>(`/traces/${traceId}/details`);
     
     return response;
   } catch (error) {
-    console.error('获取执行详情列表错误:', error)
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "未知错误",
@@ -205,13 +205,13 @@ export async function getExecutionDetails(traceId: string): Promise<ApiResponse<
 // 根据会话ID直接获取执行详情列表
 export async function getExecutionDetailsBySessionId(sessionId: string): Promise<ApiResponse<any[]>> {
   try {
-    console.log(`Fetching execution details by session ID: ${sessionId}`)
+ 
     
     const response = await httpClient.get<ApiResponse<any[]>>(`/traces/${sessionId}/details`);
     
     return response;
   } catch (error) {
-    console.error('获取会话执行详情列表错误:', error)
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "未知错误",
@@ -224,13 +224,13 @@ export async function getExecutionDetailsBySessionId(sessionId: string): Promise
 // 根据会话ID获取执行历史记录
 export async function getSessionExecutionHistory(sessionId: string): Promise<ApiResponse<SessionExecutionSummary[]>> {
   try {
-    console.log(`Fetching session execution history: ${sessionId}`)
+ 
     
     const response = await httpClient.get<ApiResponse<SessionExecutionSummary[]>>(`/traces/sessions/${sessionId}`);
     
     return response;
   } catch (error) {
-    console.error('获取会话执行历史错误:', error)
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "未知错误",
@@ -243,7 +243,7 @@ export async function getSessionExecutionHistory(sessionId: string): Promise<Api
 // 根据会话ID获取所有执行详情
 export async function getSessionExecutionDetails(sessionId: string): Promise<ApiResponse<SessionExecutionDetail[]>> {
   try {
-    console.log(`Fetching session execution details: ${sessionId}`)
+ 
     
     // 直接通过会话ID调用详情接口
     const detailsResponse = await getExecutionDetailsBySessionId(sessionId);
@@ -300,7 +300,7 @@ export async function getSessionExecutionDetails(sessionId: string): Promise<Api
     };
     
   } catch (error) {
-    console.error('获取会话执行详情错误:', error)
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "未知错误",

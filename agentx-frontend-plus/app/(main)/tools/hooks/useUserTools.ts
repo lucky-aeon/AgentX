@@ -136,7 +136,7 @@ export function useUserTools() {
       setUserTools([...apiUserTools, ...apiInstalledTools]);
       
     } catch (error) {
-      console.error("获取用户工具失败", error);
+ 
       toast({
         title: "获取用户工具失败",
         description: "无法加载工具列表",
@@ -167,7 +167,7 @@ export function useUserTools() {
         // 卸载（删除）用户安装的工具
         // 优先使用toolId，其次使用id
         const idToDelete = toolToDelete.toolId || toolToDelete.id;
-        console.log(`准备卸载工具: toolId=${idToDelete}`);
+ 
         response = await uninstallToolWithToast(idToDelete);
       }
       
@@ -191,7 +191,7 @@ export function useUserTools() {
       
       return true;
     } catch (error) {
-      console.error(toolToDelete.isOwner ? "删除工具失败" : "卸载工具失败", error);
+ 
       toast({
         title: toolToDelete.isOwner ? "删除失败" : "卸载失败",
         description: error instanceof Error ? error.message : "操作失败，请重试",

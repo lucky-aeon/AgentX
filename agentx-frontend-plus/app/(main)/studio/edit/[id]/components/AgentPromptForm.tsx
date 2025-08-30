@@ -48,7 +48,7 @@ const AgentPromptForm: React.FC<AgentPromptFormProps> = ({
         updateFormField("systemPrompt", response.data);
       }
     } catch (error) {
-      console.error("生成系统提示词失败:", error);
+ 
     } finally {
       setIsGenerating(false);
     }

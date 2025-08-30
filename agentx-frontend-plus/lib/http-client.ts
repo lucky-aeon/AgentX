@@ -41,7 +41,7 @@ const defaultInterceptor: Interceptor = {
 
   // 响应拦截器
   response: async (response, options) => {
-    console.log('ggg')
+ 
     if (response.status === 401) {
       // 清除本地存储的 token
       if (typeof window !== "undefined") {
@@ -72,7 +72,7 @@ const defaultInterceptor: Interceptor = {
 
   // 错误拦截器
   error: async (error) => {
-    console.log('ggg')
+ 
     // 处理超时错误
     if (error.name === "AbortError") {
       return {
@@ -170,7 +170,7 @@ class HttpClient {
 
     // 构建完整URL
     const url = this.buildUrl(endpoint, processedConfig.params);
-    console.log("HTTP Request URL:", url, "Params:", processedConfig.params);
+ 
 
     try {
       // 处理超时

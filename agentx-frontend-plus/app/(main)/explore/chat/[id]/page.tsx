@@ -31,7 +31,7 @@ export default function ChatPage({ params }: { params: { id: string } }) {
         }
         
       } catch (error) {
-        console.error("获取数据失败:", error)
+ 
       } finally {
         setLoading(false)
       }

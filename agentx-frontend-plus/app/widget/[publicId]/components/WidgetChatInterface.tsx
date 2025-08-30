@@ -75,7 +75,7 @@ export function WidgetChatInterface({
       setStreamingMessageId(null)
     },
     onInterruptError: (error) => {
-      console.error('Widget中断失败:', error)
+ 
     }
   });
   
@@ -216,7 +216,7 @@ export function WidgetChatInterface({
         fileUrls: [] // 暂不支持文件
       };
 
-      console.log('Widget聊天请求数据:', chatRequest);
+ 
 
       // 使用Widget聊天流式处理，传入AbortController
       const stream = await widgetChatStream(publicId, chatRequest, abortControllerRef.current?.signal);
@@ -238,15 +238,15 @@ export function WidgetChatInterface({
       await handleWidgetStream(
         stream,
         (response: WidgetChatResponse) => {
-          console.log('收到Widget流式响应:', response);
+ 
           // 处理消息 - 传递baseMessageId作为前缀
           handleStreamDataMessage(response, baseMessageId);
         },
         (error: Error) => {
-          console.error('Widget stream error:', error);
+ 
           // 检查是否是用户主动中断
           if (error.name === 'AbortError') {
-            console.log('用户主动中断Widget对话');
+ 
             setIsLoading(false);
             setIsThinking(false);
             return;
@@ -254,17 +254,17 @@ export function WidgetChatInterface({
           handleStreamError(error);
         },
         () => {
-          console.log('Widget stream completed');
+ 
           setIsLoading(false);
           setIsThinking(false);
           resetInterrupt(); // 重置中断状态
         }
       );
     } catch (error) {
-      console.error('Widget聊天请求失败:', error);
+ 
       // 检查是否是用户主动中断
       if (error instanceof Error && error.name === 'AbortError') {
-        console.log('Widget请求被中断');
+ 
         setIsLoading(false);
         setIsThinking(false);
         return;
@@ -293,7 +293,7 @@ export function WidgetChatInterface({
     // 生成当前消息序列的唯一ID
     const currentMessageId = `assistant-${messageType}-${baseMessageId}-seq${messageSequenceNumber.current}`;
     
-    console.log(`处理消息: 类型=${messageType}, 序列=${messageSequenceNumber.current}, ID=${currentMessageId}, done=${data.done}`);
+ 
     
     // 处理消息内容（用于UI显示）- 简化版本，只显示最终回答
     const displayableTypes = [
@@ -314,7 +314,7 @@ export function WidgetChatInterface({
     
     // 消息结束信号处理
     if (data.done) {
-      console.log(`消息完成 (done=true), 类型: ${messageType}, 序列: ${messageSequenceNumber.current}`);
+ 
       
       // 如果是可显示类型且有内容，完成该消息
       if (isDisplayableType && messageContentAccumulator.current.content) {
@@ -327,7 +327,7 @@ export function WidgetChatInterface({
       // 增加消息序列计数
       messageSequenceNumber.current += 1;
       
-      console.log(`消息序列增加到: ${messageSequenceNumber.current}`);
+ 
     }
   };
   
@@ -344,7 +344,7 @@ export function WidgetChatInterface({
       
       if (messageIndex >= 0) {
         // 消息已存在，只需更新内容
-        console.log(`更新现有消息: ${messageId}, 内容长度: ${messageData.content.length}`);
+ 
         const newMessages = [...prev];
         newMessages[messageIndex] = {
           ...newMessages[messageIndex],
@@ -354,7 +354,7 @@ export function WidgetChatInterface({
         return newMessages;
       } else {
         // 消息不存在，创建新消息
-        console.log(`创建新消息: ${messageId}, 类型: ${messageData.type}`);
+ 
         return [
           ...prev,
           {
@@ -381,11 +381,11 @@ export function WidgetChatInterface({
     type: MessageType;
     payload?: string;
   }) => {
-    console.log(`完成消息: ${messageId}, 类型: ${messageData.type}, 内容长度: ${messageData.content.length}`);
+ 
     
     // 如果消息内容为空，不处理
     if (!messageData.content || messageData.content.trim() === "") {
-      console.log("消息内容为空，不处理");
+ 
       return;
     }
     
@@ -396,7 +396,7 @@ export function WidgetChatInterface({
       
       if (messageIndex >= 0) {
         // 消息已存在，更新内容
-        console.log(`完成现有消息: ${messageId}`);
+ 
         const newMessages = [...prev];
         newMessages[messageIndex] = {
           ...newMessages[messageIndex],
@@ -407,7 +407,7 @@ export function WidgetChatInterface({
         return newMessages;
       } else {
         // 消息不存在，创建新消息
-        console.log(`创建并完成新消息: ${messageId}`);
+ 
         return [
           ...prev,
           {
@@ -435,7 +435,7 @@ export function WidgetChatInterface({
 
   // 重置消息累积器
   const resetMessageAccumulator = () => {
-    console.log("重置消息累积器");
+ 
     messageContentAccumulator.current = {
       content: "",
       type: MessageType.TEXT,
@@ -454,7 +454,7 @@ export function WidgetChatInterface({
 
   // 处理错误消息
   const handleErrorMessage = (data: WidgetChatResponse) => {
-    console.error("检测到后端错误:", data.content);
+ 
     // 这里可以添加 toast 通知，但先保持简单
   };
 

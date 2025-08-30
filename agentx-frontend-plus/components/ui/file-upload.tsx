@@ -163,7 +163,7 @@ export default function FileUpload({
         description: '文件已成功上传',
       })
     } catch (error) {
-      console.error('文件上传失败:', error)
+ 
       const errorMsg = error instanceof Error ? error.message : '上传失败'
       
       toast({

@@ -51,7 +51,7 @@ export async function getUploadCredential(): Promise<OssUploadCredential> {
 
     return response.data
   } catch (error) {
-    console.error('获取上传凭证失败:', error)
+ 
     throw new Error(error instanceof Error ? error.message : '获取上传凭证失败')
   }
 }
@@ -128,7 +128,7 @@ export async function uploadFileToOss(
       xhr.send(formData)
     })
   } catch (error) {
-    console.error('上传文件失败:', error)
+ 
     throw new Error(error instanceof Error ? error.message : '上传文件失败')
   }
 }
@@ -174,7 +174,7 @@ export async function uploadMultipleFiles(
 
     return results
   } catch (error) {
-    console.error('批量上传失败:', error)
+ 
     throw error
   }
 }
@@ -203,7 +203,7 @@ export async function uploadSingleFile(
 
     return await uploadFileToOss(fileInfo, credential, onProgress)
   } catch (error) {
-    console.error('单文件上传失败:', error)
+ 
     throw error
   }
 } 

@@ -57,11 +57,11 @@ const AgentToolsForm: React.FC<AgentToolsFormProps> = ({
           // 缓存工具数据
           cachedTools = tools;
         } else {
-          console.error("获取已安装工具失败:", response.message);
+ 
           setInstalledTools([]);
         }
       } catch (error) {
-        console.error("获取已安装工具错误:", error);
+ 
         setInstalledTools([]);
       } finally {
         setIsLoadingTools(false);
@@ -83,11 +83,11 @@ const AgentToolsForm: React.FC<AgentToolsFormProps> = ({
             setKnowledgeBases(kbs);
             cachedKnowledgeBases = kbs; // 缓存数据
           } else {
-            console.error("获取知识库失败:", response.message);
+ 
             setKnowledgeBases([]);
           }
         } catch (error) {
-          console.error("获取知识库错误:", error);
+ 
           setKnowledgeBases([]);
         } finally {
           setIsLoadingKnowledgeBases(false);
@@ -101,7 +101,7 @@ const AgentToolsForm: React.FC<AgentToolsFormProps> = ({
   const isToolSelected = (tool: Tool): boolean => {
     // 确保使用 toolId 作为工具的唯一标识符进行匹配
     if (!tool.toolId) {
-      console.warn("工具缺少 toolId 字段:", tool);
+ 
       return false;
     }
     return formData.tools.some(selectedTool => selectedTool.id === tool.toolId);

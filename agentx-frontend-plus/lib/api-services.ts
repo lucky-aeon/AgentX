@@ -36,7 +36,7 @@ export async function createSession(params: CreateSessionParams): Promise<ApiRes
     )
     return data
   } catch (error) {
-    console.error("创建会话错误:", error)
+ 
     // 返回格式化的错误响应
     return {
       code: 500,
@@ -50,7 +50,7 @@ export async function createSession(params: CreateSessionParams): Promise<ApiRes
 // 获取会话列表
 export async function getSessions(params: GetSessionsParams): Promise<ApiResponse<Session[]>> {
   try {
-    console.log(`Fetching sessions`)
+ 
 
     const data = await httpClient.get<ApiResponse<Session[]>>(
       API_ENDPOINTS.SESSION,
@@ -58,7 +58,7 @@ export async function getSessions(params: GetSessionsParams): Promise<ApiRespons
     )
     return data
   } catch (error) {
-    console.error("获取会话列表错误:", error)
+ 
     // 返回格式化的错误响应
     return {
       code: 500,
@@ -72,14 +72,14 @@ export async function getSessions(params: GetSessionsParams): Promise<ApiRespons
 // 获取单个会话详情
 export async function getSession(sessionId: string): Promise<ApiResponse<Session>> {
   try {
-    console.log(`Fetching session details for ${sessionId}`)
+ 
 
     const data = await httpClient.get<ApiResponse<Session>>(
       API_ENDPOINTS.SESSION_DETAIL(sessionId)
     )
     return data
   } catch (error) {
-    console.error("获取会话详情错误:", error)
+ 
     // 返回格式化的错误响应，确保与API响应格式一致
     return {
       code: 500,
@@ -93,7 +93,7 @@ export async function getSession(sessionId: string): Promise<ApiResponse<Session
 // 更新会话
 export async function updateSession(sessionId: string, params: UpdateSessionParams): Promise<ApiResponse<Session>> {
   try {
-    console.log(`Updating session ${sessionId}`)
+ 
 
     const data = await httpClient.put<ApiResponse<Session>>(
       API_ENDPOINTS.SESSION_DETAIL(sessionId),
@@ -102,7 +102,7 @@ export async function updateSession(sessionId: string, params: UpdateSessionPara
     )
     return data
   } catch (error) {
-    console.error("更新会话错误:", error)
+ 
     // 返回格式化的错误响应
     return {
       code: 500,
@@ -116,14 +116,14 @@ export async function updateSession(sessionId: string, params: UpdateSessionPara
 // 删除会话
 export async function deleteSession(sessionId: string): Promise<ApiResponse<null>> {
   try {
-    console.log(`Deleting session ${sessionId}`)
+ 
 
     const data = await httpClient.delete<ApiResponse<null>>(
       API_ENDPOINTS.DELETE_SESSION(sessionId)
     )
     return data
   } catch (error) {
-    console.error("删除会话错误:", error)
+ 
     // 返回格式化的错误响应
     return {
       code: 500,
@@ -171,14 +171,14 @@ export const deleteSessionWithToast = withToast(deleteSession, {
 // 获取服务提供商列表
 export async function getProviders(type?: string): Promise<ApiResponse<any[]>> {
   try {
-    console.log(`Fetching providers, type: ${type || 'all'}`)
+ 
     
     const params = type ? { type } : undefined;
     const response = await httpClient.get<ApiResponse<any[]>>(API_ENDPOINTS.PROVIDERS, { params });
     
     return response;
   } catch (error) {
-    console.error("获取服务提供商列表错误:", error)
+ 
     // 返回格式化的错误响应
     return {
       code: 500,
@@ -192,13 +192,13 @@ export async function getProviders(type?: string): Promise<ApiResponse<any[]>> {
 // 获取服务提供商详情
 export async function getProviderDetail(providerId: string): Promise<ApiResponse<any>> {
   try {
-    console.log(`Fetching provider detail for: ${providerId}`)
+ 
     
     const response = await httpClient.get<ApiResponse<any>>(API_ENDPOINTS.PROVIDER_DETAIL(providerId));
     
     return response;
   } catch (error) {
-    console.error("获取服务提供商详情错误:", error)
+ 
     // 返回格式化的错误响应
     return {
       code: 500,
@@ -212,13 +212,13 @@ export async function getProviderDetail(providerId: string): Promise<ApiResponse
 // 获取服务提供商协议列表
 export async function getProviderProtocols(): Promise<ApiResponse<string[]>> {
   try {
-    console.log('Fetching provider protocols')
+ 
     
     const response = await httpClient.get<ApiResponse<string[]>>(API_ENDPOINTS.PROVIDER_PROTOCOLS);
     
     return response;
   } catch (error) {
-    console.error("获取服务提供商协议列表错误:", error)
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "未知错误",
@@ -231,13 +231,13 @@ export async function getProviderProtocols(): Promise<ApiResponse<string[]>> {
 // 创建服务提供商
 export async function createProvider(data: any): Promise<ApiResponse<any>> {
   try {
-    console.log('Creating provider:', data)
+ 
     
     const response = await httpClient.post<ApiResponse<any>>(API_ENDPOINTS.CREATE_PROVIDER, data);
     
     return response;
   } catch (error) {
-    console.error("创建服务提供商错误:", error)
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "未知错误",
@@ -250,13 +250,13 @@ export async function createProvider(data: any): Promise<ApiResponse<any>> {
 // 更新服务提供商
 export async function updateProvider(data: any): Promise<ApiResponse<any>> {
   try {
-    console.log('Updating provider:', data)
+ 
     
     const response = await httpClient.put<ApiResponse<any>>(API_ENDPOINTS.UPDATE_PROVIDER, data);
     
     return response;
   } catch (error) {
-    console.error("更新服务提供商错误:", error)
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "未知错误",
@@ -269,13 +269,13 @@ export async function updateProvider(data: any): Promise<ApiResponse<any>> {
 // 删除服务提供商
 export async function deleteProvider(providerId: string): Promise<ApiResponse<null>> {
   try {
-    console.log(`Deleting provider: ${providerId}`)
+ 
     
     const response = await httpClient.delete<ApiResponse<null>>(API_ENDPOINTS.DELETE_PROVIDER(providerId));
     
     return response;
   } catch (error) {
-    console.error("删除服务提供商错误:", error)
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "未知错误",
@@ -288,13 +288,13 @@ export async function deleteProvider(providerId: string): Promise<ApiResponse<nu
 // 切换服务提供商状态
 export async function toggleProviderStatus(providerId: string): Promise<ApiResponse<null>> {
   try {
-    console.log(`Toggling provider status: ${providerId}`)
+ 
     
     const response = await httpClient.post<ApiResponse<null>>(API_ENDPOINTS.TOGGLE_PROVIDER_STATUS(providerId));
     
     return response;
   } catch (error) {
-    console.error("切换服务提供商状态错误:", error)
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "未知错误",
@@ -355,14 +355,14 @@ export const toggleProviderStatusWithToast = withToast(toggleProviderStatus, {
 // 获取模型列表
 export async function getModels(type?: string): Promise<ApiResponse<any[]>> {
   try {
-    console.log(`Fetching models, type: ${type || 'all'}`)
+ 
     
     const params = type ? { modelType: type } : undefined;
     const response = await httpClient.get<ApiResponse<any[]>>(API_ENDPOINTS.MODELS, { params });
     
     return response;
   } catch (error) {
-    console.error("获取模型列表错误:", error)
+ 
     // 返回格式化的错误响应
     return {
       code: 500,
@@ -376,13 +376,13 @@ export async function getModels(type?: string): Promise<ApiResponse<any[]>> {
 // 获取默认模型
 export async function getDefaultModel(): Promise<ApiResponse<any>> {
   try {
-    console.log('Fetching default model')
+ 
     
     const response = await httpClient.get<ApiResponse<any>>(API_ENDPOINTS.DEFAULT_MODEL);
     
     return response;
   } catch (error) {
-    console.error("获取默认模型错误:", error)
+ 
     // 返回格式化的错误响应
     return {
       code: 500,
@@ -423,7 +423,7 @@ export async function getAgentModel(agentId: string): Promise<ApiResponse<ModelC
     const response = await httpClient.get<ApiResponse<ModelConfig>>(API_ENDPOINTS.AGENT_MODEL_CONFIG(agentId));
     return response;
   } catch (error) {
-    console.error("获取Agent模型配置错误:", error);
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "未知错误",
@@ -442,7 +442,7 @@ export async function setAgentModel(agentId: string, config: ModelConfig): Promi
     );
     return response;
   } catch (error) {
-    console.error("设置Agent模型配置错误:", error);
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "未知错误",
@@ -463,13 +463,13 @@ export const setAgentModelWithToast = withToast(setAgentModel, {
 // 创建模型
 export async function createModel(data: any): Promise<ApiResponse<any>> {
   try {
-    console.log('Creating model:', data)
+ 
     
     const response = await httpClient.post<ApiResponse<any>>(API_ENDPOINTS.CREATE_MODEL, data);
     
     return response;
   } catch (error) {
-    console.error("创建模型错误:", error)
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "未知错误",
@@ -482,13 +482,13 @@ export async function createModel(data: any): Promise<ApiResponse<any>> {
 // 更新模型
 export async function updateModel(data: any): Promise<ApiResponse<any>> {
   try {
-    console.log('Updating model:', data)
+ 
     
     const response = await httpClient.put<ApiResponse<any>>(API_ENDPOINTS.UPDATE_MODEL, data);
     
     return response;
   } catch (error) {
-    console.error("更新模型错误:", error)
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "未知错误",
@@ -501,13 +501,13 @@ export async function updateModel(data: any): Promise<ApiResponse<any>> {
 // 删除模型
 export async function deleteModel(modelId: string): Promise<ApiResponse<null>> {
   try {
-    console.log(`Deleting model: ${modelId}`)
+ 
     
     const response = await httpClient.delete<ApiResponse<null>>(API_ENDPOINTS.DELETE_MODEL(modelId));
     
     return response;
   } catch (error) {
-    console.error("删除模型错误:", error)
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "未知错误",
@@ -520,13 +520,13 @@ export async function deleteModel(modelId: string): Promise<ApiResponse<null>> {
 // 切换模型状态
 export async function toggleModelStatus(modelId: string): Promise<ApiResponse<null>> {
   try {
-    console.log(`Toggling model status: ${modelId}`)
+ 
     
     const response = await httpClient.put<ApiResponse<null>>(API_ENDPOINTS.TOGGLE_MODEL_STATUS(modelId));
     
     return response;
   } catch (error) {
-    console.error("切换模型状态错误:", error)
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "未知错误",
@@ -567,13 +567,13 @@ export const toggleModelStatusWithToast = withToast(toggleModelStatus, {
 // 获取模型类型列表
 export async function getModelTypes(): Promise<ApiResponse<string[]>> {
   try {
-    console.log('Fetching model types')
+ 
     
     const response = await httpClient.get<ApiResponse<string[]>>(API_ENDPOINTS.MODEL_TYPES);
     
     return response;
   } catch (error) {
-    console.error("获取模型类型列表错误:", error)
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "未知错误",
@@ -592,13 +592,13 @@ export const getModelTypesWithToast = withToast(getModelTypes, {
 // 获取工作区Agent列表
 export async function getWorkspaceAgents(): Promise<ApiResponse<any[]>> {
   try {
-    console.log('Fetching workspace agents')
+ 
     
     const response = await httpClient.get<ApiResponse<any[]>>('/agents/workspaces/agents');
     
     return response;
   } catch (error) {
-    console.error("获取工作区Agent列表错误:", error)
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "未知错误",
@@ -723,7 +723,7 @@ export async function generateSystemPrompt(data: {
   toolIds: string[];
 }): Promise<ApiResponse<string>> {
   try {
-    console.log(`Generating system prompt for agent: ${data.agentName}`)
+ 
     
     const response = await httpClient.post<ApiResponse<string>>(
       API_ENDPOINTS.GENERATE_SYSTEM_PROMPT,
@@ -732,7 +732,7 @@ export async function generateSystemPrompt(data: {
     
     return response;
   } catch (error) {
-    console.error("生成系统提示词错误:", error)
+ 
     // 返回格式化的错误响应
     return {
       code: 500,

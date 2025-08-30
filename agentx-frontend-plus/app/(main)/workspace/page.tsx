@@ -71,7 +71,7 @@ export default function WorkspacePage() {
         setAgents(response.data)
       }
     } catch (error) {
-      console.error("Error fetching workspace agents:", error)
+ 
     } finally {
       setLoadingAgents(false)
     }
@@ -99,7 +99,7 @@ export default function WorkspacePage() {
           }
         }
       } catch (error) {
-        console.error("获取会话列表错误:", error)
+ 
       } finally {
         setLoadingSessions(false)
       }
@@ -124,7 +124,7 @@ export default function WorkspacePage() {
         await updateAgentSessionWithToast(response.data.id, defaultTitle)
       }
     } catch (error) {
-      console.error("Error creating agent session:", error)
+ 
     }
   }
 
@@ -150,7 +150,7 @@ export default function WorkspacePage() {
         // 错误已由withToast处理
       }
     } catch (error) {
-      console.error("删除助理错误:", error)
+ 
       // 错误已由withToast处理
     } finally {
       setIsDeleting(false)

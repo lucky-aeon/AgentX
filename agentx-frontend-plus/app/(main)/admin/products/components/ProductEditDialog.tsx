@@ -81,7 +81,7 @@ export function ProductEditDialog({ open, onOpenChange, product, onSuccess }: Pr
         setRules(response.data);
       }
     } catch (error) {
-      console.error('加载规则列表失败:', error);
+ 
     }
   };
 
@@ -96,7 +96,7 @@ export function ProductEditDialog({ open, onOpenChange, product, onSuccess }: Pr
       const options = await BusinessService.getBusinessOptions(productType);
       setBusinessOptions(options);
     } catch (error) {
-      console.error('加载业务选项失败:', error);
+ 
       setBusinessOptions([]);
     } finally {
       setLoadingBusinessOptions(false);
@@ -158,7 +158,7 @@ export function ProductEditDialog({ open, onOpenChange, product, onSuccess }: Pr
         onSuccess();
       }
     } catch (error) {
-      console.error('更新商品失败:', error);
+ 
     } finally {
       setLoading(false);
     }

@@ -80,7 +80,7 @@ export function AgentVersionsDialog({ open, onOpenChange, agentId, agentName }: 
         setVersions(response.data);
       }
     } catch (error) {
-      console.error('获取Agent版本失败:', error);
+ 
     } finally {
       setLoading(false);
     }
@@ -106,7 +106,7 @@ export function AgentVersionsDialog({ open, onOpenChange, agentId, agentName }: 
         });
       }
     } catch (error) {
-      console.error('审核版本失败:', error);
+ 
       toast({
         variant: "destructive",
         title: "操作失败",

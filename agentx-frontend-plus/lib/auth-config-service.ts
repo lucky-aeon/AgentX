@@ -107,7 +107,7 @@ export async function getAuthConfigWithToast(): Promise<ApiResponse<AuthConfig>>
   try {
     return await AuthConfigService.getAuthConfig();
   } catch (error) {
-    console.error('获取认证配置失败:', error);
+ 
     return {
       code: 500,
       message: "获取认证配置失败",
@@ -124,7 +124,7 @@ export async function getAllAuthSettingsWithToast(): Promise<ApiResponse<AuthSet
   try {
     return await AuthConfigService.getAllAuthSettings();
   } catch (error) {
-    console.error('获取认证设置失败:', error);
+ 
     return {
       code: 500,
       message: "获取认证设置失败",
@@ -138,7 +138,7 @@ export async function toggleAuthSettingWithToast(id: string): Promise<ApiRespons
   try {
     return await AuthConfigService.toggleAuthSetting(id);
   } catch (error) {
-    console.error('切换设置状态失败:', error);
+ 
     throw error;
   }
 }
@@ -147,7 +147,7 @@ export async function updateAuthSettingWithToast(id: string, data: UpdateAuthSet
   try {
     return await AuthConfigService.updateAuthSetting(id, data);
   } catch (error) {
-    console.error('更新认证设置失败:', error);
+ 
     throw error;
   }
 }
@@ -156,7 +156,7 @@ export async function deleteAuthSettingWithToast(id: string): Promise<ApiRespons
   try {
     return await AuthConfigService.deleteAuthSetting(id);
   } catch (error) {
-    console.error('删除认证设置失败:', error);
+ 
     throw error;
   }
 }

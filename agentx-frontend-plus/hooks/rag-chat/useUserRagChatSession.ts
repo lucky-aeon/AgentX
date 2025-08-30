@@ -65,7 +65,7 @@ export function useUserRagChatSession(options: UseUserRagChatSessionOptions = {}
 
   // 发送消息 - 基于用户安装的RAG
   const sendMessage = useCallback(async (question: string, userRagId: string) => {
-    console.log('[Chat Hook] sendMessage called:', { question, userRagId, isLoading });
+ 
     if (!question.trim() || isLoading || !userRagId) return;
 
     // 创建用户消息
@@ -86,7 +86,7 @@ export function useUserRagChatSession(options: UseUserRagChatSessionOptions = {}
     };
 
     const initialMessages = [userMessage, assistantMessage];
-    console.log('[Chat Hook] Adding initial messages:', initialMessages);
+ 
     setMessages(prev => [...prev, userMessage, assistantMessage]);
     setIsLoading(true);
     setCurrentThinking(null);
@@ -113,10 +113,10 @@ export function useUserRagChatSession(options: UseUserRagChatSessionOptions = {}
         },
         {
           onThinking: (data) => {
-            console.log('[Chat Hook] onThinking called with:', data);
+ 
             // 检查 data 是否存在且有 type 属性
             if (!data || typeof data !== 'object') {
-              console.warn('[Chat Hook] onThinking received invalid data:', data);
+ 
               return;
             }
             
@@ -178,38 +178,38 @@ export function useUserRagChatSession(options: UseUserRagChatSessionOptions = {}
             });
           },
           onContent: (content, timestamp) => {
-            console.log('[Chat Hook] onContent called with:', { content, timestamp });
+ 
             // 移除时间戳去重逻辑，因为可能会导致内容丢失
             
             setMessages(prev => {
-              console.log('[Chat Hook] Current messages before content update:', prev.length);
+ 
               if (prev.length > 0) {
                 const lastMessage = prev[prev.length - 1];
-                console.log('[Chat Hook] Last message before content update:', lastMessage);
+ 
                 if (lastMessage && lastMessage.role === 'assistant') {
                   const updatedMessage = {
                     ...lastMessage,
                     content: lastMessage.content + content
                   };
-                  console.log('[Chat Hook] Updated message with new content:', updatedMessage);
+ 
                   return [
                     ...prev.slice(0, -1),
                     updatedMessage
                   ];
                 }
               }
-              console.log('[Chat Hook] No assistant message to update with content');
+ 
               return prev;
             });
           },
           onError: (error) => {
-            console.log('[Chat Hook] onError called with:', error);
+ 
             // 移除Toast错误通知，只通过聊天界面显示错误
             setMessages(prev => {
-              console.log('[Chat Hook] Current messages before error update:', prev.length);
+ 
               if (prev.length > 0) {
                 const lastMessage = prev[prev.length - 1];
-                console.log('[Chat Hook] Last message:', lastMessage);
+ 
                 if (lastMessage && lastMessage.role === 'assistant') {
                   const updatedMessages = [
                     ...prev.slice(0, -1),
@@ -219,11 +219,11 @@ export function useUserRagChatSession(options: UseUserRagChatSessionOptions = {}
                       isStreaming: false
                     }
                   ];
-                  console.log('[Chat Hook] Updated messages with error:', updatedMessages);
+ 
                   return updatedMessages;
                 }
               }
-              console.log('[Chat Hook] No messages to update with error');
+ 
               return prev;
             });
           },
@@ -249,7 +249,7 @@ export function useUserRagChatSession(options: UseUserRagChatSessionOptions = {}
         }
       );
     } catch (error) {
-      console.error('User RAG chat error:', error);
+ 
       const errorMessage = error instanceof Error ? error.message : '发送消息失败';
       
       // 将错误消息显示在聊天界面中

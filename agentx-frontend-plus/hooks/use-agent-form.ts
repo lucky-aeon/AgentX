@@ -88,10 +88,10 @@ export function useAgentForm({ initialData, isEditMode = false }: UseAgentFormPr
         if (response.code === 200 && response.data && Array.isArray(response.data.records)) {
           setInstalledTools(response.data.records);
         } else {
-          console.error("获取已安装工具失败:", response.message);
+ 
         }
       } catch (error) {
-        console.error("获取已安装工具错误:", error);
+ 
       } finally {
         setIsLoadingTools(false);
       }
@@ -113,7 +113,7 @@ export function useAgentForm({ initialData, isEditMode = false }: UseAgentFormPr
         const invalidToolIds = formToolIds.filter(formToolId => !installedToolIds.includes(formToolId));
         
         if (invalidToolIds.length > 0) {
-          console.warn('[useAgentForm] 清理无效工具ID:', invalidToolIds);
+ 
           
           // 过滤出有效的工具
           const validTools = prev.tools.filter(tool => installedToolIds.includes(tool.id));
@@ -150,7 +150,7 @@ export function useAgentForm({ initialData, isEditMode = false }: UseAgentFormPr
     // 确保优先使用 toolId 作为工具的唯一标识符
     const toolIdentifier = toolToToggle.toolId;
     if (!toolIdentifier) {
-      console.error("工具缺少 toolId 字段:", toolToToggle);
+ 
       toast({
         title: "工具配置错误",
         description: "工具缺少必要的标识符",
@@ -180,7 +180,7 @@ export function useAgentForm({ initialData, isEditMode = false }: UseAgentFormPr
         updatedTools = [...prev.tools, newAgentTool];
       }
       
-      console.log('[toggleTool] 更新后的工具列表:', updatedTools);
+ 
       return { ...prev, tools: updatedTools };
     });
     
@@ -240,7 +240,7 @@ export function useAgentForm({ initialData, isEditMode = false }: UseAgentFormPr
     const selectedTool = installedTools.find((t: Tool) => t.toolId === toolId);
     
     if (!selectedTool || !selectedTool.mcpServerName) {
-      console.error("无法找到对应的工具或工具缺少 mcpServerName，查找的 toolId:", toolId);
+ 
       toast({
         title: "无法更新工具参数",
         description: "工具信息不完整",

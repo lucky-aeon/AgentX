@@ -47,12 +47,12 @@ export default function ToolDetailRedirectPage({ params }: { params: { id: strin
               router.replace('/tools-market')
             }
           } catch (error) {
-            console.error("重定向查询失败", error)
+ 
             router.replace('/tools-market')
           }
         }
       } catch (error) {
-        console.error("重定向失败", error)
+ 
         router.replace('/tools-market')
       }
     }

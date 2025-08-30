@@ -217,7 +217,7 @@ export default function DatasetDetailPage() {
         setFiles(response.data.records || [])
       }
     } catch (error) {
-      console.error("加载文件列表失败:", error)
+ 
     } finally {
       setFilesLoading(false)
     }
@@ -242,7 +242,7 @@ export default function DatasetDetailPage() {
         }
       }
     } catch (error) {
-      console.error("文件上传失败:", error)
+ 
     } finally {
       setIsUploading(false)
       // 清空文件输入
@@ -264,7 +264,7 @@ export default function DatasetDetailPage() {
         loadDatasetDetail()
       }
     } catch (error) {
-      console.error("删除文件失败:", error)
+ 
     } finally {
       setIsDeleting(false)
       setFileToDelete(null)
@@ -365,11 +365,11 @@ export default function DatasetDetailPage() {
         
         if (hasChanged) {
           setFilesProgress(newProgress)
-          console.log('文件进度已更新:', newProgress)
+ 
         }
       }
     } catch (error) {
-      console.error("加载文件处理进度失败:", error)
+ 
     }
   }
 
@@ -396,7 +396,7 @@ export default function DatasetDetailPage() {
         }, 2000)
       }
     } catch (error) {
-      console.error("启动文件预处理失败:", error)
+ 
     } finally {
       setIsProcessing(prev => ({ ...prev, [fileId]: false }))
     }
@@ -453,7 +453,7 @@ export default function DatasetDetailPage() {
         setSearchDocuments([])
       }
     } catch (error) {
-      console.error("RAG搜索失败:", error)
+ 
       setSearchDocuments([])
     } finally {
       setIsRagSearching(false)

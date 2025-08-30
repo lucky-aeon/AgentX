@@ -66,7 +66,7 @@ export async function getUsersWithToast(params?: GetUsersParams): Promise<ApiRes
     const response = await AdminUserService.getUsers(params);
     return response;
   } catch (error) {
-    console.error('获取用户列表失败:', error);
+ 
     return {
       code: 500,
       message: "获取用户列表失败",

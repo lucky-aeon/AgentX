@@ -16,9 +16,9 @@ export function TestMarkdown() {
   - 多个：\`first\` 和 \`second\`
   `;
 
-  console.log("Test content 1:", testContent1);
-  console.log("Test content 2:", testContent2);
-  console.log("Test content 3:", testContent3);
+ 
+ 
+ 
 
   return (
     <div className="p-4 space-y-4">
@@ -32,7 +32,7 @@ export function TestMarkdown() {
           remarkPlugins={[remarkGfm]}
           components={{
             code: ({ inline, children, className, ...props }: any) => {
-              console.log("Code component called:", { inline, children, className });
+ 
               const isInline = inline || !className?.includes('language-');
               
               if (isInline) {
@@ -61,7 +61,7 @@ export function TestMarkdown() {
           remarkPlugins={[remarkGfm]}
           components={{
             code: ({ inline, children, className, ...props }: any) => {
-              console.log("Code component called:", { inline, children, className });
+ 
               const isInline = inline || !className?.includes('language-');
               
               if (isInline) {
@@ -90,7 +90,7 @@ export function TestMarkdown() {
           remarkPlugins={[remarkGfm]}
           components={{
             code: ({ inline, children, className, ...props }: any) => {
-              console.log("Code component called:", { inline, children, className });
+ 
               const isInline = inline || !className?.includes('language-');
               
               if (isInline) {

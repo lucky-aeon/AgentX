@@ -147,7 +147,7 @@ export function PublishToolDialog({
       // Errors are handled by publishToolToMarketWithToast
     } catch (error) {
       // Errors are handled by publishToolToMarketWithToast
-      console.error("上架工具时发生错误:", error);
+ 
     } finally {
       setIsPublishing(false);
     }

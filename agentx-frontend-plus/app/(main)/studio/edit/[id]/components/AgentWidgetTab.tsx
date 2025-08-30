@@ -55,7 +55,7 @@ export function AgentWidgetTab({ agentId }: AgentWidgetTabProps) {
         setWidgets(response.data || []);
       }
     } catch (error) {
-      console.error('Failed to load widgets:', error);
+ 
     } finally {
       setLoading(false);
     }
@@ -69,7 +69,7 @@ export function AgentWidgetTab({ agentId }: AgentWidgetTabProps) {
         setModels(response.data || []);
       }
     } catch (error) {
-      console.error('Failed to load models:', error);
+ 
     }
   };
 
@@ -86,7 +86,7 @@ export function AgentWidgetTab({ agentId }: AgentWidgetTabProps) {
         loadWidgets(); // 重新加载数据
       }
     } catch (error) {
-      console.error('Failed to toggle widget status:', error);
+ 
     }
   };
 
@@ -108,7 +108,7 @@ export function AgentWidgetTab({ agentId }: AgentWidgetTabProps) {
         setSelectedWidget(null);
       }
     } catch (error) {
-      console.error('Failed to delete widget:', error);
+ 
     }
   };
 

@@ -158,7 +158,7 @@ export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName
               try {
                 messageType = msg.messageType as MessageType
               } catch (e) {
-                console.warn("Unknown message type:", msg.messageType)
+ 
               }
             }
             
@@ -176,11 +176,11 @@ export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName
           setMessages(formattedMessages)
         } else {
           const errorMessage = messagesResponse.message || "获取会话消息失败"
-          console.error(errorMessage)
+ 
           setError(errorMessage)
         }
       } catch (error) {
-        console.error("获取会话消息错误:", error)
+ 
         setError(error instanceof Error ? error.message : "获取会话消息时发生未知错误")
       } finally {
         setLoading(false)
@@ -225,7 +225,7 @@ export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "中断对话失败"
-      console.error('中断对话失败:', error)
+ 
       toast({
         title: "中断失败",
         description: errorMessage,
@@ -269,7 +269,7 @@ export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName
     if (!input.trim() && uploadedFiles.length === 0) return
 
     // 添加调试信息
-    console.log("当前聊天模式:", isFunctionalAgent ? "功能性Agent" : "普通对话")
+ 
     
     // 获取已完成上传的文件URL
     const completedFiles = uploadedFiles.filter(file => file.url && file.uploadProgress === 100)
@@ -296,7 +296,7 @@ export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName
 
     // 输出文件URL到控制台
     if (fileUrls.length > 0) {
-      console.log('发送消息包含的文件URL:', fileUrls)
+ 
     }
 
     // 添加用户消息到消息列表
@@ -346,7 +346,7 @@ export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName
       while (true) {
         // 检查是否被中断
         if (abortControllerRef.current?.signal.aborted) {
-          console.log('检测到中断信号，停止读取数据流')
+ 
           break
         }
         
@@ -370,25 +370,25 @@ export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName
               if (jsonStr.startsWith("data:")) {
                 jsonStr = jsonStr.substring(5);
               }
-              console.log("收到SSE消息:", jsonStr);
+ 
               
               const data = JSON.parse(jsonStr) as StreamData
-              console.log("解析后的消息:", data, "消息类型:", data.messageType);
+ 
               
               // 处理消息 - 传递baseMessageId作为前缀
               handleStreamDataMessage(data, baseMessageId);
             } catch (e) {
-              console.error("Error parsing SSE data:", e, line)
+ 
             }
           }
         }
       }
     } catch (error) {
-      console.error("Error in stream chat:", error)
+ 
       
       // 如果是中断导致的错误，不显示错误提示
       if (error instanceof Error && error.name === 'AbortError') {
-        console.log('对话已被用户中断')
+ 
       } else {
         setIsThinking(false) // 错误发生时关闭思考状态
         toast({
@@ -427,7 +427,7 @@ export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName
     // 生成当前消息序列的唯一ID
     const currentMessageId = `assistant-${messageType}-${baseMessageId}-seq${messageSequenceNumber.current}`;
     
-    console.log(`处理消息: 类型=${messageType}, 序列=${messageSequenceNumber.current}, ID=${currentMessageId}, done=${data.done}`);
+ 
     
     // 处理消息内容（用于UI显示）
     const displayableTypes = [undefined, "TEXT", "TOOL_CALL"];
@@ -444,7 +444,7 @@ export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName
     
     // 消息结束信号处理
     if (data.done) {
-      console.log(`消息完成 (done=true), 类型: ${messageType}, 序列: ${messageSequenceNumber.current}`);
+ 
       
       // 如果是可显示类型且有内容，完成该消息
       if (isDisplayableType && messageContentAccumulator.current.content) {
@@ -457,7 +457,7 @@ export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName
       // 增加消息序列计数
       messageSequenceNumber.current += 1;
       
-      console.log(`消息序列增加到: ${messageSequenceNumber.current}`);
+ 
     }
   }
   
@@ -473,7 +473,7 @@ export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName
       
       if (messageIndex >= 0) {
         // 消息已存在，只需更新内容
-        console.log(`更新现有消息: ${messageId}, 内容长度: ${messageData.content.length}`);
+ 
         const newMessages = [...prev];
         newMessages[messageIndex] = {
           ...newMessages[messageIndex],
@@ -482,7 +482,7 @@ export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName
         return newMessages;
       } else {
         // 消息不存在，创建新消息
-        console.log(`创建新消息: ${messageId}, 类型: ${messageData.type}`);
+ 
         return [
           ...prev,
           {
@@ -505,11 +505,11 @@ export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName
     content: string;
     type: MessageType;
   }) => {
-    console.log(`完成消息: ${messageId}, 类型: ${messageData.type}, 内容长度: ${messageData.content.length}`);
+ 
     
     // 如果消息内容为空，不处理
     if (!messageData.content || messageData.content.trim() === "") {
-      console.log("消息内容为空，不处理");
+ 
       return;
     }
     
@@ -520,7 +520,7 @@ export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName
       
       if (messageIndex >= 0) {
         // 消息已存在，更新内容
-        console.log(`完成现有消息: ${messageId}`);
+ 
         const newMessages = [...prev];
         newMessages[messageIndex] = {
           ...newMessages[messageIndex],
@@ -529,7 +529,7 @@ export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName
         return newMessages;
       } else {
         // 消息不存在，创建新消息
-        console.log(`创建并完成新消息: ${messageId}`);
+ 
         return [
           ...prev,
           {
@@ -553,7 +553,7 @@ export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName
 
   // 重置消息累积器
   const resetMessageAccumulator = () => {
-    console.log("重置消息累积器");
+ 
     messageContentAccumulator.current = {
       content: "",
       type: MessageType.TEXT
@@ -614,7 +614,7 @@ export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName
 
   // 处理错误消息
   const handleErrorMessage = (data: StreamData) => {
-    console.error("检测到后端错误:", data.content);
+ 
     toast({
       title: "任务执行错误",
       description: "服务器处理任务时遇到问题，请稍后再试",

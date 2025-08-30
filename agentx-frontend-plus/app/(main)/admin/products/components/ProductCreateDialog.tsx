@@ -76,7 +76,7 @@ export function ProductCreateDialog({ open, onOpenChange, onSuccess }: ProductCr
         setRules(response.data);
       }
     } catch (error) {
-      console.error('加载规则列表失败:', error);
+ 
     }
   };
 
@@ -91,7 +91,7 @@ export function ProductCreateDialog({ open, onOpenChange, onSuccess }: ProductCr
       const options = await BusinessService.getBusinessOptions(productType);
       setBusinessOptions(options);
     } catch (error) {
-      console.error('加载业务选项失败:', error);
+ 
       setBusinessOptions([]);
     } finally {
       setLoadingBusinessOptions(false);
@@ -166,7 +166,7 @@ export function ProductCreateDialog({ open, onOpenChange, onSuccess }: ProductCr
         onSuccess();
       }
     } catch (error) {
-      console.error('创建商品失败:', error);
+ 
     } finally {
       setLoading(false);
     }

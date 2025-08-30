@@ -75,7 +75,7 @@ export function InstallToolDialog({
       
       onOpenChange(false)
     } catch (error) {
-      console.error("安装工具失败", error)
+ 
     } finally {
       setInstalling(false)
     }

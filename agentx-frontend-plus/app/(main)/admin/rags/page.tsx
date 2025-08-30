@@ -124,7 +124,7 @@ export default function RagManagementPage() {
         });
       }
     } catch (error) {
-      console.error('加载RAG列表失败:', error);
+ 
     } finally {
       setLoading(false);
     }
@@ -138,7 +138,7 @@ export default function RagManagementPage() {
         setStatistics(response.data);
       }
     } catch (error) {
-      console.error('加载统计数据失败:', error);
+ 
     }
   }, []);
 
@@ -197,7 +197,7 @@ export default function RagManagementPage() {
         loadStatistics();
       }
     } catch (error) {
-      console.error('快速审核失败:', error);
+ 
     }
   };
 
@@ -249,7 +249,7 @@ export default function RagManagementPage() {
         loadStatistics();
       }
     } catch (error) {
-      console.error('批量审核失败:', error);
+ 
     } finally {
       setSubmitting(false);
     }
@@ -264,7 +264,7 @@ export default function RagManagementPage() {
         loadStatistics();
       }
     } catch (error) {
-      console.error('下架失败:', error);
+ 
     }
   };
 

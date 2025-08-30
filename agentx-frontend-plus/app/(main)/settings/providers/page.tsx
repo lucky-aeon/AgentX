@@ -103,13 +103,13 @@ export default function ProvidersPage() {
       
       const response = await getProviders(type);
       if (response.code === 200) {
-        console.log("服务商数据:", response.data)
+ 
         setProviders(response.data)
       } else {
         setError(response.message || "获取服务商列表失败")
       }
     } catch (err) {
-      console.error("获取服务商错误:", err)
+ 
       setError("获取服务商数据失败")
     } finally {
       setLoading(false)
@@ -138,7 +138,7 @@ export default function ProvidersPage() {
         // 不再需要单独加载模型列表，因为服务商详情已包含models数组
       }
     } catch (err) {
-      console.error("获取服务商详情错误:", err);
+ 
     } finally {
       setDetailLoading(false);
     }
@@ -171,7 +171,7 @@ export default function ProvidersPage() {
         });
       }
     } catch (err) {
-      console.error("获取服务商详情错误:", err);
+ 
       toast({
         title: "获取提供商详情失败",
         description: "请稍后重试",
@@ -206,7 +206,7 @@ export default function ProvidersPage() {
         loadProviders();
       }
     } catch (error) {
-      console.error("删除服务商失败:", error);
+ 
     } finally {
       setIsDeleting(false);
     }
@@ -237,7 +237,7 @@ export default function ProvidersPage() {
         }));
       }
     } catch (error) {
-      console.error("切换服务商状态失败:", error);
+ 
     } finally {
       setIsTogglingStatus(false);
     }
@@ -290,11 +290,11 @@ export default function ProvidersPage() {
             }));
           }
         } catch (error) {
-          console.error("刷新服务商详情失败:", error);
+ 
         }
       }
     } catch (error) {
-      console.error("删除模型失败:", error);
+ 
     } finally {
       setIsDeletingModel(false);
     }
@@ -336,7 +336,7 @@ export default function ProvidersPage() {
         }));
       }
     } catch (error) {
-      console.error("切换模型状态失败:", error);
+ 
     } finally {
       setIsTogglingModelStatus(false);
     }
@@ -967,7 +967,7 @@ export default function ProvidersPage() {
                 }));
               }
             } catch (error) {
-              console.error("刷新服务商详情失败:", error);
+ 
             }
           }}
         />

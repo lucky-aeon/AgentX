@@ -78,7 +78,7 @@ export function MarketRagDetailDialog({
         setFiles([])
       }
     } catch (error) {
-      console.error("加载文件列表失败:", error)
+ 
       setFiles([])
     } finally {
       setFilesLoading(false)
