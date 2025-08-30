@@ -3,9 +3,11 @@ package org.xhy.application.knowledgeGraph.query;
 import java.util.HashMap;
 import java.util.Map;
 
-/** 关系存在性规约实现
+/**
+ * 关系存在性规约实现
  * 
- * @author zang */
+ * @author zang
+ */
 public class RelationshipExistsSpecification implements CypherSpecification {
 
     private final String relationshipType;
@@ -20,16 +22,16 @@ public class RelationshipExistsSpecification implements CypherSpecification {
     public String toCypher(String alias) {
         String pattern;
         switch (direction.toUpperCase()) {
-            case "INCOMING" :
+            case "INCOMING":
                 pattern = "()<-[:" + relationshipType + "]-(" + alias + ")";
                 break;
-            case "OUTGOING" :
+            case "OUTGOING":
                 pattern = "(" + alias + ")-[:" + relationshipType + "]->()";
                 break;
-            case "BOTH" :
+            case "BOTH":
                 pattern = "(" + alias + ")-[:" + relationshipType + "]-()";
                 break;
-            default :
+            default:
                 throw new IllegalArgumentException("Unsupported direction: " + direction);
         }
         return "exists(" + pattern + ")";

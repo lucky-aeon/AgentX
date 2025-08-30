@@ -4,9 +4,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-/** 数值比较规约实现
+/**
+ * 数值比较规约实现
  * 
- * @author zang */
+ * @author zang
+ */
 public class PropertyComparisonSpecification implements CypherSpecification {
 
     private final String property;
@@ -18,8 +20,7 @@ public class PropertyComparisonSpecification implements CypherSpecification {
         this.property = property;
         this.value = value;
         this.operator = operator;
-        this.paramKey = "param_" + property + "_" + operator + "_"
-                + UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+        this.paramKey = "param_" + property + "_" + operator + "_" + UUID.randomUUID().toString().replace("-", "").substring(0, 8);
     }
 
     @Override

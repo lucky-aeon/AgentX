@@ -4,9 +4,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-/** 属性包含规约实现
+/**
+ * 属性包含规约实现
  * 
- * @author zang */
+ * @author zang
+ */
 public class PropertyContainsSpecification implements CypherSpecification {
 
     private final String property;
@@ -16,8 +18,7 @@ public class PropertyContainsSpecification implements CypherSpecification {
     public PropertyContainsSpecification(String property, String value) {
         this.property = property;
         this.value = value;
-        this.paramKey = "param_" + property + "_contains_"
-                + UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+        this.paramKey = "param_" + property + "_contains_" + UUID.randomUUID().toString().replace("-", "").substring(0, 8);
     }
 
     @Override

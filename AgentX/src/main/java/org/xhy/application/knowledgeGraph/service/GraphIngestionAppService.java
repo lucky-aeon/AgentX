@@ -9,10 +9,13 @@ import org.xhy.application.knowledgeGraph.dto.GraphIngestionResponse;
 import org.xhy.domain.knowledgeGraph.service.KnowledgeGraphDomainService;
 import org.xhy.infrastructure.exception.BusinessException;
 
-/** 知识图谱数据摄取应用服务 负责协调知识图谱数据的批量处理和存储业务流程
+/**
+ * 知识图谱数据摄取应用服务
+ * 负责协调知识图谱数据的批量处理和存储业务流程
  * 
  * @author zang
- * @since 1.0.0 */
+ * @since 1.0.0
+ */
 @Service
 public class GraphIngestionAppService {
 
@@ -20,18 +23,23 @@ public class GraphIngestionAppService {
 
     private final KnowledgeGraphDomainService knowledgeGraphDomainService;
 
-    /** 构造函数
+    /**
+     * 构造函数
      * 
-     * @param knowledgeGraphDomainService 知识图谱领域服务 */
+     * @param knowledgeGraphDomainService 知识图谱领域服务
+     */
     public GraphIngestionAppService(KnowledgeGraphDomainService knowledgeGraphDomainService) {
         this.knowledgeGraphDomainService = knowledgeGraphDomainService;
     }
 
-    /** 摄取知识图谱数据 协调知识图谱数据的摄取流程，包括数据验证和批量处理
+    /**
+     * 摄取知识图谱数据
+     * 协调知识图谱数据的摄取流程，包括数据验证和批量处理
      * 
      * @param request 图数据摄取请求，包含实体和关系数据
      * @return 摄取结果响应，包含处理统计信息
-     * @throws BusinessException 当请求参数无效或处理失败时抛出 */
+     * @throws BusinessException 当请求参数无效或处理失败时抛出
+     */
     @Transactional
     public GraphIngestionResponse ingestGraphData(GraphIngestionRequest request) {
         if (request == null) {
@@ -50,7 +58,7 @@ public class GraphIngestionAppService {
             // 检查是否有数据要处理
             boolean hasEntities = request.getEntities() != null && !request.getEntities().isEmpty();
             boolean hasRelationships = request.getRelationships() != null && !request.getRelationships().isEmpty();
-
+            
             if (!hasEntities && !hasRelationships) {
                 return GraphIngestionResponse.success(request.getDocumentId(), 0, 0, "无数据需要摄取");
             }
@@ -59,14 +67,14 @@ public class GraphIngestionAppService {
             GraphIngestionResponse response = knowledgeGraphDomainService.ingestGraphData(request);
             response.setProcessingTime(startTime);
 
-            logger.info("Graph data ingestion completed for document: {}, processing time: {}ms",
+            logger.info("Graph data ingestion completed for document: {}, processing time: {}ms", 
                     request.getDocumentId(), response.getProcessingTimeMs());
 
             return response;
 
         } catch (Exception e) {
-            logger.error("Graph data ingestion failed for document: {}, error: {}", request.getDocumentId(),
-                    e.getMessage(), e);
+            logger.error("Graph data ingestion failed for document: {}, error: {}", 
+                    request.getDocumentId(), e.getMessage(), e);
             throw new BusinessException("图数据摄取失败: " + e.getMessage(), e);
         }
     }
