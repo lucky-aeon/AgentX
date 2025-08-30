@@ -1,4 +1,4 @@
-package org.xhy.domain.knowledgeGraph;
+package org.xhy.infrastructure.knowledgeGraph.consumer;
 
 import static org.xhy.infrastructure.mq.model.MQSendEventModel.HEADER_NAME_TRACE_ID;
 
@@ -25,7 +25,7 @@ import org.springframework.amqp.rabbit.annotation.QueueBinding;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 import org.xhy.application.knowledgeGraph.dto.GraphIngestionRequest;
-import org.xhy.application.knowledgeGraph.service.GraphIngestionService;
+import org.xhy.application.knowledgeGraph.service.GraphIngestionAppService;
 import org.xhy.application.knowledgeGraph.service.PagedGraphProcessingOrchestrator;
 import org.xhy.application.knowledgeGraph.service.ContextAwareGraphExtractionService;
 import org.xhy.domain.knowledgeGraph.message.DocIeInferMessage;
@@ -51,15 +51,15 @@ public class DocIeInferConsumer {
     private static final Logger log = LoggerFactory.getLogger(DocIeInferConsumer.class);
 
     // AI服务和图数据存储服务
-    private final GraphIngestionService graphIngestionService;
+    private final GraphIngestionAppService graphIngestionAppService;
     private final PagedGraphProcessingOrchestrator processingOrchestrator;
     private final ContextAwareGraphExtractionService contextAwareExtractionService;
 
     public DocIeInferConsumer(
-            GraphIngestionService graphIngestionService,
+            GraphIngestionAppService graphIngestionAppService,
             PagedGraphProcessingOrchestrator processingOrchestrator,
             ContextAwareGraphExtractionService contextAwareExtractionService) {
-        this.graphIngestionService = graphIngestionService;
+        this.graphIngestionAppService = graphIngestionAppService;
         this.processingOrchestrator = processingOrchestrator;
         this.contextAwareExtractionService = contextAwareExtractionService;
     }

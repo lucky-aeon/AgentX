@@ -1,30 +1,28 @@
 package org.xhy.application.knowledgeGraph.service;
 
 import java.util.List;
-import org.dromara.streamquery.stream.core.stream.Steam;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.xhy.domain.knowledgeGraph.message.DocIeInferMessage;
-import org.xhy.domain.knowledgeGraph.service.KnowledgeGraphIeService;
-import org.xhy.domain.rag.message.RagDocSyncOcrMessage;
 import org.xhy.domain.rag.model.DocumentUnitEntity;
 import org.xhy.domain.rag.service.DocumentUnitDomainService;
 import org.xhy.infrastructure.mq.enums.EventType;
 import org.xhy.infrastructure.mq.events.DocIeInferEvent;
-import org.xhy.infrastructure.mq.events.RagDocSyncOcrEvent;
 
 /**
- * 图谱生成服务
+ * 知识图谱生成应用服务
+ * 负责协调知识图谱生成的业务流程，包括文档分页处理和事件发布
+ * 
  * @author shilong.zang
- * @date 14:33 <br/>
+ * @since 1.0.0
  */
 @Service
-public class GenerateGraphService {
+public class KnowledgeGraphAppService {
 
     private final DocumentUnitDomainService documentUnitDomainService;
     private final ApplicationEventPublisher applicationEventPublisher;
 
-    public GenerateGraphService(DocumentUnitDomainService documentUnitDomainService,
+    public KnowledgeGraphAppService(DocumentUnitDomainService documentUnitDomainService,
             ApplicationEventPublisher applicationEventPublisher) {
         this.documentUnitDomainService = documentUnitDomainService;
         this.applicationEventPublisher = applicationEventPublisher;

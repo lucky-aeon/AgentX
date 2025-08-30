@@ -10,7 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.xhy.application.knowledgeGraph.dto.GraphQueryResponse;
-import org.xhy.application.knowledgeGraph.service.GraphQueryService;
+import org.xhy.application.knowledgeGraph.service.GraphQueryAppService;
 import org.xhy.application.rag.assembler.DocumentUnitAssembler;
 import org.xhy.application.rag.dto.DocumentUnitDTO;
 import org.xhy.application.rag.dto.KgEnhancedRagRequest;
@@ -31,16 +31,16 @@ public class KnowledgeGraphEnhancedRagService {
     private static final Logger log = LoggerFactory.getLogger(KnowledgeGraphEnhancedRagService.class);
 
     private final RagQaDatasetAppService ragQaDatasetAppService;
-    private final GraphQueryService graphQueryService;
+    private final GraphQueryAppService graphQueryAppService;
     private final GraphEntityExtractorService entityExtractorService;
     private final HybridSearchStrategy hybridSearchStrategy;
 
     public KnowledgeGraphEnhancedRagService(RagQaDatasetAppService ragQaDatasetAppService, 
-                                          GraphQueryService graphQueryService,
+                                          GraphQueryAppService graphQueryAppService,
                                           GraphEntityExtractorService entityExtractorService,
                                           HybridSearchStrategy hybridSearchStrategy) {
         this.ragQaDatasetAppService = ragQaDatasetAppService;
-        this.graphQueryService = graphQueryService;
+        this.graphQueryAppService = graphQueryAppService;
         this.entityExtractorService = entityExtractorService;
         this.hybridSearchStrategy = hybridSearchStrategy;
     }
