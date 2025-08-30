@@ -65,8 +65,8 @@ export function MessageMarkdown({
   // 调试：检查内容中的反引号字符
   React.useEffect(() => {
     if (content.includes('character varying')) {
-      console.log("Debug - original content:", content);
-      console.log("Debug - processed content:", processedContent);
+ 
+ 
       console.log("Debug - content bytes:", Array.from(content).map(char => ({ 
         char, 
         code: char.charCodeAt(0), 
@@ -81,7 +81,7 @@ export function MessageMarkdown({
         char.charCodeAt(0) === 8217 || // 右单引号 '
         char.includes('`')
       );
-      console.log("Debug - found backtick-like chars:", backticks);
+ 
     }
   }, [content, processedContent]);
   
@@ -117,7 +117,7 @@ export function MessageMarkdown({
             remarkPlugins={[remarkGfm]}
             components={{
               code: ({ inline, children, className, ...props }: any) => {
-                console.log("ReactMarkdown code component called:", { inline, children, className, props });
+ 
                 
                 // 多重检测内联代码：inline 属性或者没有 language- 前缀
                 const isInline = inline || !className?.includes('language-');

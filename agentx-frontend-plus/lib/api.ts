@@ -10,7 +10,7 @@ export async function streamChat(message: string, sessionId?: string, fileUrls?:
     const response = await streamChatService(sessionId, message, fileUrls);
     return response;
   } catch (error) {
-    console.error("Stream chat error:", error);
+ 
     throw error;
   }
 }

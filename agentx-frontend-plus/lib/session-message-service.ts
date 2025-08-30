@@ -24,7 +24,7 @@ export async function getSessionMessages(sessionId: string): Promise<ApiResponse
     )
     return data
   } catch (error) {
-    console.error("Error fetching session messages:", error)
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "获取会话消息失败",
@@ -45,7 +45,7 @@ export async function createSession(title: string, userId: string, description?:
     )
     return data
   } catch (error) {
-    console.error("Error creating session:", error)
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "创建会话失败",
@@ -66,7 +66,7 @@ export async function updateSession(id: string, title: string, description?: str
     )
     return data
   } catch (error) {
-    console.error("Error updating session:", error)
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "更新会话失败",
@@ -84,7 +84,7 @@ export async function deleteSession(sessionId: string): Promise<ApiResponse<null
     )
     return data
   } catch (error) {
-    console.error("Error deleting session:", error)
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "删除会话失败",
@@ -104,7 +104,7 @@ export async function getSessions(userId: string, archived?: boolean): Promise<A
     )
     return data
   } catch (error) {
-    console.error("Error fetching sessions:", error)
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "获取会话列表失败",

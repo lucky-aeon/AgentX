@@ -81,7 +81,7 @@ export class BusinessService {
       nameMap.set('storage', '存储使用');
 
     } catch (error) {
-      console.error('获取业务名称映射失败:', error);
+ 
     }
 
     return nameMap;

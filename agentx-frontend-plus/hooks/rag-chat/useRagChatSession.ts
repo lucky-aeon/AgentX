@@ -64,7 +64,7 @@ export function useRagChatSession(options: UseRagChatSessionOptions = {}) {
       });
     } catch (error) {
       // 静默处理停止过程中的错误，确保 UI 状态正确更新
-      console.log('[RAG Chat] Stop generation completed');
+ 
       setIsLoading(false);
     }
   }, []);
@@ -237,7 +237,7 @@ export function useRagChatSession(options: UseRagChatSessionOptions = {}) {
         }
       );
     } catch (error) {
-      console.error('Chat error:', error);
+ 
       options.onError?.(error instanceof Error ? error.message : '发送消息失败');
     } finally {
       setIsLoading(false);

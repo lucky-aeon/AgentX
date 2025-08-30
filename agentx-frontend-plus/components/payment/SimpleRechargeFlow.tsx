@@ -70,7 +70,7 @@ export default function SimpleRechargeFlow({
         });
       }
     } catch (error) {
-      console.error('加载支付方法失败:', error);
+ 
     } finally {
       setMethodsLoading(false);
     }
@@ -159,7 +159,7 @@ export default function SimpleRechargeFlow({
         throw new Error(response.message);
       }
     } catch (error) {
-      console.error('创建支付失败:', error);
+ 
       setQrStatus('failed');
       toast({
         title: "创建支付失败",

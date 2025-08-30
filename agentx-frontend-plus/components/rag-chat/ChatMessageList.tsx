@@ -26,7 +26,7 @@ export function ChatMessageList({
   selectedSegmentId,
   className 
 }: ChatMessageListProps) {
-  console.log('[ChatMessageList] Rendering with messages:', messages.length, messages);
+ 
   const [expandedThinking, setExpandedThinking] = useState<Record<string, boolean>>({});
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
   

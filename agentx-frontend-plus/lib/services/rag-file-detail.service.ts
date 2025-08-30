@@ -10,7 +10,7 @@ import type {
 // 获取文件详情（使用现有的后端接口）
 export async function getFileDetail(request: GetFileDetailRequest): Promise<ApiResponse<FileDetailResponse>> {
   try {
-    console.log('获取文件详情:', request);
+ 
     
     // 1. 获取文件基本信息
     const fileInfoResponse = await httpClient.get<ApiResponse<any>>(
@@ -59,7 +59,7 @@ export async function getFileDetail(request: GetFileDetailRequest): Promise<ApiR
       timestamp: Date.now(),
     };
   } catch (error) {
-    console.error('获取文件详情错误:', error);
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : '获取文件详情失败',
@@ -72,7 +72,7 @@ export async function getFileDetail(request: GetFileDetailRequest): Promise<ApiR
 // 获取文件内容（用于预览）
 export async function getFileContent(fileId: string, documentId?: string): Promise<ApiResponse<string>> {
   try {
-    console.log('获取文件内容:', { fileId, documentId });
+ 
     
     const response = await httpClient.get<ApiResponse<string>>(
       API_ENDPOINTS.RAG_FILE_CONTENT,
@@ -86,7 +86,7 @@ export async function getFileContent(fileId: string, documentId?: string): Promi
     
     return response;
   } catch (error) {
-    console.error('获取文件内容错误:', error);
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : '获取文件内容失败',

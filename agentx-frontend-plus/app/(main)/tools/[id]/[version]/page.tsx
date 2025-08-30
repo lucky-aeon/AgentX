@@ -93,7 +93,7 @@ export default function ToolDetailPage({ params }: { params: { id: string, versi
             setVersionHistory(versions);
             }
           } catch (versionError) {
-            console.error("获取版本历史失败", versionError);
+ 
             // 版本历史获取失败不影响主要功能，继续使用默认数据
           }
           
@@ -168,7 +168,7 @@ export default function ToolDetailPage({ params }: { params: { id: string, versi
             setVersionHistory(versions);
           }
         } catch (error) {
-          console.error("获取版本历史失败", error);
+ 
           toast({
             title: "获取版本历史失败",
             description: error instanceof Error ? error.message : "未知错误",
@@ -218,7 +218,7 @@ export default function ToolDetailPage({ params }: { params: { id: string, versi
         });
       }
     } catch (error) {
-      console.error("获取版本详情失败", error);
+ 
       toast({
         title: "获取版本详情失败",
         description: error instanceof Error ? error.message : "未知错误",

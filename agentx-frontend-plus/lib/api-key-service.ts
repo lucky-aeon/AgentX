@@ -13,7 +13,7 @@ import { API_ENDPOINTS } from "@/lib/api-config"
 // 获取用户的API密钥列表
 export async function getUserApiKeys(params?: GetUserApiKeysParams): Promise<ApiResponse<ApiKeyResponse[]>> {
   try {
-    console.log("Fetching user API keys with params:", params)
+ 
     
     const response = await httpClient.get<ApiResponse<ApiKeyResponse[]>>(
       API_ENDPOINTS.API_KEYS,
@@ -22,7 +22,7 @@ export async function getUserApiKeys(params?: GetUserApiKeysParams): Promise<Api
     
     return response
   } catch (error) {
-    console.error("获取API密钥列表错误:", error)
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "未知错误",
@@ -35,7 +35,7 @@ export async function getUserApiKeys(params?: GetUserApiKeysParams): Promise<Api
 // 获取Agent的API密钥列表
 export async function getAgentApiKeys(params: GetAgentApiKeysParams): Promise<ApiResponse<ApiKeyResponse[]>> {
   try {
-    console.log(`Fetching API keys for agent: ${params.agentId}`)
+ 
     
     const response = await httpClient.get<ApiResponse<ApiKeyResponse[]>>(
       API_ENDPOINTS.AGENT_API_KEYS(params.agentId)
@@ -43,7 +43,7 @@ export async function getAgentApiKeys(params: GetAgentApiKeysParams): Promise<Ap
     
     return response
   } catch (error) {
-    console.error("获取Agent API密钥列表错误:", error)
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "未知错误",
@@ -56,7 +56,7 @@ export async function getAgentApiKeys(params: GetAgentApiKeysParams): Promise<Ap
 // 获取API密钥详情
 export async function getApiKey(apiKeyId: string): Promise<ApiResponse<ApiKeyResponse>> {
   try {
-    console.log(`Fetching API key detail: ${apiKeyId}`)
+ 
     
     const response = await httpClient.get<ApiResponse<ApiKeyResponse>>(
       API_ENDPOINTS.API_KEY_DETAIL(apiKeyId)
@@ -64,7 +64,7 @@ export async function getApiKey(apiKeyId: string): Promise<ApiResponse<ApiKeyRes
     
     return response
   } catch (error) {
-    console.error("获取API密钥详情错误:", error)
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "未知错误",
@@ -77,7 +77,7 @@ export async function getApiKey(apiKeyId: string): Promise<ApiResponse<ApiKeyRes
 // 创建API密钥
 export async function createApiKey(request: CreateApiKeyRequest): Promise<ApiResponse<ApiKeyResponse>> {
   try {
-    console.log("Creating API key", request)
+ 
     
     const response = await httpClient.post<ApiResponse<ApiKeyResponse>>(
       API_ENDPOINTS.CREATE_API_KEY,
@@ -86,7 +86,7 @@ export async function createApiKey(request: CreateApiKeyRequest): Promise<ApiRes
     
     return response
   } catch (error) {
-    console.error("创建API密钥错误:", error)
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "未知错误",
@@ -102,7 +102,7 @@ export async function updateApiKeyStatus(
   request: UpdateApiKeyStatusRequest
 ): Promise<ApiResponse<void>> {
   try {
-    console.log(`Updating API key status: ${apiKeyId}`, request)
+ 
     
     const response = await httpClient.put<ApiResponse<void>>(
       API_ENDPOINTS.UPDATE_API_KEY_STATUS(apiKeyId),
@@ -111,7 +111,7 @@ export async function updateApiKeyStatus(
     
     return response
   } catch (error) {
-    console.error("更新API密钥状态错误:", error)
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "未知错误",
@@ -124,7 +124,7 @@ export async function updateApiKeyStatus(
 // 删除API密钥
 export async function deleteApiKey(apiKeyId: string): Promise<ApiResponse<void>> {
   try {
-    console.log(`Deleting API key: ${apiKeyId}`)
+ 
     
     const response = await httpClient.delete<ApiResponse<void>>(
       API_ENDPOINTS.DELETE_API_KEY(apiKeyId)
@@ -132,7 +132,7 @@ export async function deleteApiKey(apiKeyId: string): Promise<ApiResponse<void>>
     
     return response
   } catch (error) {
-    console.error("删除API密钥错误:", error)
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "未知错误",
@@ -145,7 +145,7 @@ export async function deleteApiKey(apiKeyId: string): Promise<ApiResponse<void>>
 // 重置API密钥
 export async function resetApiKey(apiKeyId: string): Promise<ApiResponse<ApiKeyResponse>> {
   try {
-    console.log(`Resetting API key: ${apiKeyId}`)
+ 
     
     const response = await httpClient.post<ApiResponse<ApiKeyResponse>>(
       API_ENDPOINTS.RESET_API_KEY(apiKeyId),
@@ -154,7 +154,7 @@ export async function resetApiKey(apiKeyId: string): Promise<ApiResponse<ApiKeyR
     
     return response
   } catch (error) {
-    console.error("重置API密钥错误:", error)
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "未知错误",

@@ -22,7 +22,7 @@ export function RetrievalProcess({
   selectedFileId,
   selectedSegmentId 
 }: RetrievalProcessProps) {
-  console.log('[RetrievalProcess] Rendering with retrieval:', retrieval);
+ 
   
   if (!retrieval || retrieval.type !== 'retrieval') {
     return null;
@@ -59,7 +59,7 @@ export function RetrievalProcess({
         
         {/* 检索到的文档 */}
         {retrieval.documents && retrieval.documents.length > 0 && (() => {
-          console.log('[RetrievalProcess] Processing documents:', retrieval.documents);
+ 
           
           // 按fileId去重，保留每个文件的最高分文档
           const uniqueFiles = retrieval.documents.reduce((acc, doc) => {

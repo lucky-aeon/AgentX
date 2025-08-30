@@ -151,7 +151,7 @@ export default function AdminUploadToolPage() {
         });
       }
     } catch (error) {
-      console.error("创建官方工具失败", error);
+ 
       toast({
         title: "创建失败",
         description: "创建工具时出现错误，请稍后重试",

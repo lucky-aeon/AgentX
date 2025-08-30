@@ -127,7 +127,7 @@ export default function RechargeFlow({
         throw new Error(response.message);
       }
     } catch (error) {
-      console.error('创建支付失败:', error);
+ 
       updateState({
         error: error instanceof Error ? error.message : '创建支付失败',
         step: RechargeStep.PAYMENT_FAILED

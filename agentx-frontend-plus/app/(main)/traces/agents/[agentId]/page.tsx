@@ -54,7 +54,7 @@ export default function AgentSessionsPage() {
           }
         }
       } catch (error) {
-        console.error("加载会话追踪统计失败:", error)
+ 
       } finally {
         setLoading(false)
       }

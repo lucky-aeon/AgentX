@@ -111,7 +111,7 @@ export async function getAgentsWithToast(params?: GetAgentsParams): Promise<ApiR
     const response = await AdminAgentService.getAgents(params);
     return response;
   } catch (error) {
-    console.error('获取Agent列表失败:', error);
+ 
     return {
       code: 500,
       message: "获取Agent列表失败",

@@ -48,7 +48,7 @@ async function handleErrorResponse(response: Response): Promise<Response> {
     }
   } catch (e) {
     // 如果无法解析JSON，使用默认错误消息
-    console.error("无法解析错误响应:", e);
+ 
   }
 
   
@@ -74,7 +74,7 @@ export async function streamChat(sessionId: string, message: string, fileUrls?: 
     // 使用API_ENDPOINTS.CHAT常量
     const url = `${API_CONFIG.BASE_URL}${API_ENDPOINTS.CHAT}`
     
-    console.log(`Sending stream chat message to: ${url}`)
+ 
     
     // 构建请求体，包含可选的文件URL
     const requestBody: any = {
@@ -85,7 +85,7 @@ export async function streamChat(sessionId: string, message: string, fileUrls?: 
     // 如果有文件URL，添加到请求体中
     if (fileUrls && fileUrls.length > 0) {
       requestBody.fileUrls = fileUrls
-      console.log('包含文件URL:', fileUrls)
+ 
     }
     
     const response = await fetch(url, {
@@ -101,7 +101,7 @@ export async function streamChat(sessionId: string, message: string, fileUrls?: 
     
     return response
   } catch (error) {
-    console.error("Error in stream chat:", error)
+ 
     // 显示网络错误提示
     toast({
       title: "网络错误",
@@ -122,7 +122,7 @@ export async function streamSendMessage(sessionId: string, message: any): Promis
   try {
     const url = `${API_CONFIG.BASE_URL}${API_ENDPOINTS.SEND_MESSAGE(sessionId)}`
     
-    console.log(`Sending structured message to: ${url}`)
+ 
     
     const response = await fetch(url, {
       method: "POST",
@@ -137,7 +137,7 @@ export async function streamSendMessage(sessionId: string, message: any): Promis
     
     return response
   } catch (error) {
-    console.error("Error in stream send message:", error)
+ 
     // 显示网络错误提示
     toast({
       title: "网络错误",
@@ -181,14 +181,14 @@ export async function parseSSEResponse(
             const jsonData = JSON.parse(line.slice(5))
             onMessage(jsonData)
           } catch (e) {
-            console.error("Error parsing SSE data:", e)
+ 
             if (onError) onError(e)
           }
         }
       }
     }
   } catch (error) {
-    console.error("Error parsing SSE response:", error)
+ 
     if (onError) onError(error)
   }
 } 

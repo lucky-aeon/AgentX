@@ -72,7 +72,7 @@ export function RagReviewDialog({
         setContentPreview(response.data);
       }
     } catch (error) {
-      console.error('加载内容预览失败:', error);
+ 
     } finally {
       setPreviewLoading(false);
     }
@@ -103,7 +103,7 @@ export function RagReviewDialog({
         onReviewComplete();
       }
     } catch (error) {
-      console.error('审核失败:', error);
+ 
     } finally {
       setSubmitting(false);
     }

@@ -106,12 +106,12 @@ export default function MultiModalUpload({
                 : file
             )
           )
-          console.log(`文件上传完成:`, result)
+ 
         },
         // 错误回调
         (fileIndex, error) => {
           const tempFileId = tempFiles[fileIndex].id
-          console.error(`文件 ${uploadFiles[fileIndex].fileName} 上传失败:`, error)
+ 
           
           // 移除失败的文件
           setUploadedFiles(prev => prev.filter(file => file.id !== tempFileId))
@@ -131,7 +131,7 @@ export default function MultiModalUpload({
         })
       }
     } catch (error) {
-      console.error('批量文件上传失败:', error)
+ 
       
       // 清理所有临时文件
       setUploadedFiles(prev => 

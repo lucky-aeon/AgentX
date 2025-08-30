@@ -66,7 +66,7 @@ export function RagDetailsDialog({
         setContentPreview(response.data);
       }
     } catch (error) {
-      console.error('加载内容预览失败:', error);
+ 
     } finally {
       setPreviewLoading(false);
     }

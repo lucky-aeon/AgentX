@@ -111,7 +111,7 @@ export function DocumentUnitsDialog({ open, onOpenChange, file }: DocumentUnitsD
         setFileInfo(response.data)
       }
     } catch (error) {
-      console.error("加载文件信息失败:", error)
+ 
     }
   }
 
@@ -131,7 +131,7 @@ export function DocumentUnitsDialog({ open, onOpenChange, file }: DocumentUnitsD
         setDocumentUnits(response.data.records || [])
       }
     } catch (error) {
-      console.error("加载文档单元失败:", error)
+ 
     } finally {
       setLoading(false)
     }
@@ -178,7 +178,7 @@ export function DocumentUnitsDialog({ open, onOpenChange, file }: DocumentUnitsD
         cancelEdit()
       }
     } catch (error) {
-      console.error("保存失败:", error)
+ 
     } finally {
       setSavingUnit(null)
     }
@@ -195,7 +195,7 @@ export function DocumentUnitsDialog({ open, onOpenChange, file }: DocumentUnitsD
         loadDocumentUnits(pageData.current, debouncedQuery)
       }
     } catch (error) {
-      console.error("删除失败:", error)
+ 
     } finally {
       setDeletingUnit(null)
     }
@@ -363,7 +363,7 @@ export function DocumentUnitsDialog({ open, onOpenChange, file }: DocumentUnitsD
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => {
-                                  console.log('编辑语料单元:', unit);
+ 
                                   startEdit(unit);
                                 }}
                                 title="编辑语料"
@@ -375,7 +375,7 @@ export function DocumentUnitsDialog({ open, onOpenChange, file }: DocumentUnitsD
                                 size="sm"
                                 className="text-red-600 hover:text-red-700"
                                 onClick={() => {
-                                  console.log('删除语料单元:', unit);
+ 
                                   setDeletingUnit(unit);
                                 }}
                                 title="删除语料"

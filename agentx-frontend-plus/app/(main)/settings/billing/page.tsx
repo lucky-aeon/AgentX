@@ -75,7 +75,7 @@ export default function BillingPage() {
         setTotalCost(totalCostResponse.data);
       }
     } catch (error) {
-      console.error('加载总消费失败:', error);
+ 
     }
   };
 

@@ -66,7 +66,7 @@ export async function previewAgentStream(request: AgentPreviewRequest, signal?: 
 
     return response.body
   } catch (error) {
-    console.error('Preview request failed:', error)
+ 
     throw error
   }
 }
@@ -91,17 +91,17 @@ export function parseStreamData(line: string): AgentChatResponse | null {
         return { content: '', done: true, messageType: 'TEXT', timestamp: Date.now() }
       }
       
-      console.log('Parsing JSON string:', jsonStr);
+ 
       
       // 解析JSON数据
       const parsed = JSON.parse(jsonStr) as AgentChatResponse;
-      console.log('Parsed result:', parsed);
+ 
       
       return parsed;
     }
     return null
   } catch (error) {
-    console.error('Failed to parse stream data:', error, 'Line:', line)
+ 
     return null
   }
 }
@@ -121,16 +121,16 @@ export function createStreamDecoder(): {
       const newText = decoder.decode(chunk, { stream: true });
       buffer += newText;
       
-      console.log('Received chunk:', newText);
-      console.log('Current buffer:', buffer);
+ 
+ 
       
       // 按双换行符分割SSE数据块
       const blocks = buffer.split('\n\n');
       // 保留最后一个可能不完整的块
       buffer = blocks.pop() || '';
       
-      console.log('Split blocks:', blocks);
-      console.log('Remaining buffer:', buffer);
+ 
+ 
       
       // 返回完整的数据块，并过滤空块
       return blocks.filter(block => block.trim() !== '');
@@ -156,7 +156,7 @@ export async function handlePreviewStream(
       const { done, value } = await reader.read()
       
       if (done) {
-        console.log('Stream reading completed')
+ 
         onComplete?.()
         break
       }
@@ -179,21 +179,21 @@ export async function handlePreviewStream(
               if (jsonStr.startsWith("data:")) {
                 jsonStr = jsonStr.substring(5)
               }
-              console.log("收到SSE消息:", jsonStr)
+ 
               
               const data = JSON.parse(jsonStr) as AgentChatResponse
-              console.log("解析后的消息:", data, "消息类型:", data.messageType)
+ 
               
               onData(data)
             } catch (e) {
-              console.error("Error parsing SSE data:", e, line)
+ 
             }
           }
         }
       }
     }
   } catch (error) {
-    console.error('Stream processing error:', error)
+ 
     onError?.(error as Error)
   } finally {
     reader.releaseLock()

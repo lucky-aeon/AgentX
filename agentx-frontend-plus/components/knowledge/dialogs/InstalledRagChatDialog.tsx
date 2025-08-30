@@ -40,14 +40,14 @@ export function InstalledRagChatDialog({
 
   // 处理文件点击
   const handleFileClick = (file: RetrievedFileInfo) => {
-    console.log('[InstalledRagChatDialog] File clicked:', file);
+ 
     // 为已安装RAG的文件添加必要的标识信息
     const enrichedFile: RetrievedFileInfo = {
       ...file,
       isInstalledRag: true,
       userRagId: userRag?.id || ''
     };
-    console.log('[InstalledRagChatDialog] Enriched file info:', enrichedFile);
+ 
     selectFile(enrichedFile)
   }
 
@@ -59,7 +59,7 @@ export function InstalledRagChatDialog({
   // 处理发送消息 - 使用 userRagId 作为数据源
   const handleSendMessage = async (message: string) => {
     if (!userRag?.id) {
-      console.error("无法获取知识库数据源");
+ 
       return
     }
 

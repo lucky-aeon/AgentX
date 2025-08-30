@@ -112,14 +112,14 @@ export default function AgentFormModal({
     const validToolIds = formToolIds.filter(formToolId => installedToolIds.includes(formToolId));
     
     // 打印调试信息
-    console.log('[AgentFormModal] 表单中的工具ID:', formToolIds);
-    console.log('[AgentFormModal] 已安装工具的ID列表:', installedToolIds);
-    console.log('[AgentFormModal] 过滤后的有效工具ID:', validToolIds);
+ 
+ 
+ 
     
     // 检查是否有无效的工具ID
     const invalidToolIds = formToolIds.filter(formToolId => !installedToolIds.includes(formToolId));
     if (invalidToolIds.length > 0) {
-      console.warn('[AgentFormModal] 发现无效工具ID（已删除的工具）:', invalidToolIds);
+ 
     }
     
     return validToolIds;
@@ -129,7 +129,7 @@ export default function AgentFormModal({
   useEffect(() => {
     const validToolIds = getValidToolIds();
     if (validToolIds.length > 0) {
-      console.log('[AgentFormModal] 预览将使用的工具ID列表:', validToolIds);
+ 
     }
   }, [formData.tools, installedTools])
 

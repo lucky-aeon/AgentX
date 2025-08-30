@@ -66,7 +66,7 @@ export function ScheduledTaskList({ onTaskUpdate, onEditTask, agentId }: Schedul
         setTasks(response.data)
       }
     } catch (error) {
-      console.error("获取任务列表失败:", error)
+ 
     } finally {
       setLoading(false)
     }
@@ -89,7 +89,7 @@ export function ScheduledTaskList({ onTaskUpdate, onEditTask, agentId }: Schedul
         setSessionsMap(map)
       }
     } catch (error) {
-      console.error("获取会话列表失败:", error)
+ 
     }
   }
 
@@ -121,7 +121,7 @@ export function ScheduledTaskList({ onTaskUpdate, onEditTask, agentId }: Schedul
         onTaskUpdate?.()
       }
     } catch (error) {
-      console.error("切换任务状态失败:", error)
+ 
     } finally {
       setOperatingTaskId(null)
     }
@@ -138,7 +138,7 @@ export function ScheduledTaskList({ onTaskUpdate, onEditTask, agentId }: Schedul
         onTaskUpdate?.()
       }
     } catch (error) {
-      console.error("删除任务失败:", error)
+ 
     } finally {
       setOperatingTaskId(null)
       setDeleteTaskId(null)

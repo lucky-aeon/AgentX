@@ -48,7 +48,7 @@ export default function SsoCallbackPage({ params }: SsoCallbackPageProps) {
           router.push("/login")
         }
       } catch (error) {
-        console.error("SSO回调处理失败:", error)
+ 
         toast({
           variant: "destructive",
           title: "登录失败",

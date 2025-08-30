@@ -60,7 +60,7 @@ export function CreateWidgetDialog({ open, onClose, agentId, models, onSuccess }
         setKnowledgeBases(response.data.records || []);
       }
     } catch (error) {
-      console.error('Failed to load knowledge bases:', error);
+ 
     } finally {
       setLoadingKnowledgeBases(false);
     }
@@ -98,7 +98,7 @@ export function CreateWidgetDialog({ open, onClose, agentId, models, onSuccess }
         handleClose();
       }
     } catch (error) {
-      console.error('Failed to create widget:', error);
+ 
     } finally {
       setSubmitting(false);
     }

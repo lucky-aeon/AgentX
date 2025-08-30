@@ -71,7 +71,7 @@ export function RuleCreateDialog({ open, onOpenChange, onSuccess }: RuleCreateDi
         onSuccess();
       }
     } catch (error) {
-      console.error('创建规则失败:', error);
+ 
     } finally {
       setLoading(false);
     }

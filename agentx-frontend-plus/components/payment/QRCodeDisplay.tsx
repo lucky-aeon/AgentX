@@ -58,7 +58,7 @@ export default function QRCodeDisplay({
       
       setQrCodeGenerated(true);
     } catch (error) {
-      console.error('生成二维码失败:', error);
+ 
       setQrCodeGenerated(false);
     }
   };

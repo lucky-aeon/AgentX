@@ -85,7 +85,7 @@ export default function ExplorePage() {
       }
     } catch (error) {
       // 错误已由withToast处理
-      console.error("添加助理到工作区失败:", error)
+ 
     } finally {
       setAddingAgentId(null)
     }

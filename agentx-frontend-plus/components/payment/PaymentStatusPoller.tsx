@@ -45,43 +45,43 @@ export default function PaymentStatusPoller({
   
   // 开始轮询
   const startPolling = useCallback(async () => {
-    console.log(`[PaymentStatusPoller] 尝试开始轮询 - orderNo: ${orderNo}, enabled: ${enabled}`);
+ 
     
     if (!orderNo || !enabled) {
-      console.log(`[PaymentStatusPoller] 轮询条件不满足，跳过 - orderNo: ${orderNo}, enabled: ${enabled}`);
+ 
       return;
     }
     
     // 如果已经在轮询同一个订单，不重复启动
     if (lastOrderNoRef.current === orderNo && stopPollingRef.current) {
-      console.log(`[PaymentStatusPoller] 已在轮询同一订单，跳过 - orderNo: ${orderNo}`);
+ 
       return;
     }
     
     // 停止之前的轮询
-    console.log(`[PaymentStatusPoller] 停止之前的轮询 - 上一个orderNo: ${lastOrderNoRef.current}`);
+ 
     if (stopPollingRef.current) {
       stopPollingRef.current();
       stopPollingRef.current = null;
     }
     
-    console.log(`[PaymentStatusPoller] 设置当前轮询订单 - orderNo: ${orderNo}`);
+ 
     lastOrderNoRef.current = orderNo;
     
     try {
-      console.log(`[PaymentStatusPoller] 调用PaymentService.pollOrderStatus - orderNo: ${orderNo}`);
+ 
       const finalConfig = { ...defaultConfig, ...configRef.current };
       
       stopPollingRef.current = await PaymentService.pollOrderStatus(
         orderNo,
         {
           onStatusChange: (status: OrderStatusResponse) => {
-            console.log(`[PaymentStatusPoller] 状态变化回调 - orderNo: ${orderNo}, status: ${status.status}`);
+ 
             callbacksRef.current.onStatusChange?.(status);
           },
           
           onSuccess: (orderNo: string) => {
-            console.log(`[PaymentStatusPoller] 支付成功回调 - orderNo: ${orderNo}`);
+ 
             toast({
               title: "支付成功",
               description: "您的充值已完成，余额正在更新...",
@@ -90,7 +90,7 @@ export default function PaymentStatusPoller({
             
             // 延迟执行成功回调，确保后端数据同步
             setTimeout(() => {
-              console.log(`[PaymentStatusPoller] 延迟执行成功回调 - orderNo: ${orderNo}`);
+ 
               callbacksRef.current.onSuccess?.(orderNo);
               
               // 再次延迟显示更新完成提示
@@ -110,7 +110,7 @@ export default function PaymentStatusPoller({
           },
           
           onFailed: (reason: string) => {
-            console.log(`[PaymentStatusPoller] 支付失败回调 - orderNo: ${orderNo}, reason: ${reason}`);
+ 
             toast({
               title: "支付失败",
               description: reason,
@@ -124,7 +124,7 @@ export default function PaymentStatusPoller({
           },
           
           onExpired: () => {
-            console.log(`[PaymentStatusPoller] 支付过期回调 - orderNo: ${orderNo}`);
+ 
             toast({
               title: "支付超时",
               description: "支付二维码已过期，请重新发起支付",
@@ -138,7 +138,7 @@ export default function PaymentStatusPoller({
           },
           
           onError: (error: string) => {
-            console.error(`[PaymentStatusPoller] 轮询错误回调 - orderNo: ${orderNo}, error: ${error}`);
+ 
             // 不显示toast，避免频繁提示网络错误
             callbacksRef.current.onError?.(error);
           }
@@ -146,9 +146,9 @@ export default function PaymentStatusPoller({
         finalConfig
       );
       
-      console.log(`[PaymentStatusPoller] 轮询启动成功 - orderNo: ${orderNo}, stopFunction:`, stopPollingRef.current);
+ 
     } catch (error) {
-      console.error(`[PaymentStatusPoller] 启动轮询失败 - orderNo: ${orderNo}`, error);
+ 
       toast({
         title: "查询支付状态失败",
         description: "网络连接异常，请检查网络后重试",

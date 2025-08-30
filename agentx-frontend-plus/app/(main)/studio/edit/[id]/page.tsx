@@ -108,7 +108,7 @@ export default function EditAgentPage() {
           router.push("/studio")
         }
       } catch (error) {
-        console.error("获取助理详情错误:", error)
+ 
         toast({
           title: "获取助理详情失败",
           description: "请稍后再试",
@@ -147,7 +147,7 @@ export default function EditAgentPage() {
         setVersionNumber("1.0.0")
       }
     } catch (error) {
-      console.error("获取最新版本错误:", error)
+ 
       setVersionNumber("1.0.0")
     } finally {
       setIsLoadingLatestVersion(false)
@@ -191,7 +191,7 @@ export default function EditAgentPage() {
         setInitialData(formData)
       }
     } catch (error) {
-      console.error("更新失败:", error)
+ 
       throw error // 重新抛出错误，让AgentFormModal处理loading状态
     } finally {
       setIsSubmitting(false)
@@ -209,7 +209,7 @@ export default function EditAgentPage() {
         router.push("/studio")
       }
     } catch (error) {
-      console.error("删除失败:", error)
+ 
     } finally {
       setIsDeleting(false)
       setShowDeleteDialog(false)
@@ -255,7 +255,7 @@ export default function EditAgentPage() {
         fetchLatestVersion()
       }
     } catch (error) {
-      console.error("发布失败:", error)
+ 
     } finally {
       setIsPublishing(false)
     }
@@ -285,7 +285,7 @@ export default function EditAgentPage() {
         })
       }
     } catch (error) {
-      console.error("获取版本列表失败:", error)
+ 
       toast({
         title: "获取版本列表失败",
         description: "请稍后再试",
@@ -336,7 +336,7 @@ export default function EditAgentPage() {
       setSelectedVersion(null)
       setShowVersionsDialog(false)
     } catch (error) {
-      console.error("回滚失败:", error)
+ 
       toast({
         title: "回滚失败",
         description: "请稍后再试",

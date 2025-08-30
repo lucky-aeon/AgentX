@@ -91,11 +91,11 @@ export function FileDetailPanel({ selectedFile, selectedSegment, onDataLoad }: F
   const loadFileInfo = async () => {
     if (!selectedFile) return;
     
-    console.log('[FileDetailPanel] Loading file info for:', selectedFile);
+ 
     
     // 对于已安装RAG的文件，调用专门的API获取文件信息
     if (selectedFile.isInstalledRag && selectedFile.userRagId) {
-      console.log('[FileDetailPanel] Processing as installed RAG file, loading from API');
+ 
       
       try {
         const response = await getInstalledRagFileInfoWithToast(selectedFile.userRagId, selectedFile.fileId);
@@ -126,7 +126,7 @@ export function FileDetailPanel({ selectedFile, selectedSegment, onDataLoad }: F
           throw new Error(response.message || '获取文件信息失败');
         }
       } catch (error) {
-        console.error('[FileDetailPanel] Failed to load installed RAG file info:', error);
+ 
         // 如果API调用失败，仍然显示基本信息
         const fallbackFileInfo: FileDetailInfoDTO = {
           id: selectedFile.fileId,
@@ -162,7 +162,7 @@ export function FileDetailPanel({ selectedFile, selectedSegment, onDataLoad }: F
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : '获取文件信息失败';
       setError(errorMessage);
-      console.error('获取文件信息失败:', err);
+ 
     }
   };
 
@@ -178,12 +178,12 @@ export function FileDetailPanel({ selectedFile, selectedSegment, onDataLoad }: F
       
       if (selectedFile.isInstalledRag && selectedFile.userRagId) {
         // 已安装RAG：使用快照感知API
-        console.log('[FileDetailPanel] Loading documents for installed RAG:', { userRagId: selectedFile.userRagId, fileId: selectedFile.fileId });
+ 
         const documentsResponse = await getInstalledRagFileDocumentsWithToast(
           selectedFile.userRagId, 
           selectedFile.fileId
         );
-        console.log('[FileDetailPanel] Documents response:', documentsResponse);
+ 
         
         if (documentsResponse.code === 200) {
           let documents = documentsResponse.data || [];
@@ -234,7 +234,7 @@ export function FileDetailPanel({ selectedFile, selectedSegment, onDataLoad }: F
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : '获取文档单元失败';
       setError(errorMessage);
-      console.error('获取文档单元失败:', err);
+ 
     } finally {
       setLoading(false);
     }
@@ -244,7 +244,7 @@ export function FileDetailPanel({ selectedFile, selectedSegment, onDataLoad }: F
   const loadSegmentInfo = async () => {
     if (!selectedSegment) return;
     
-    console.log('[FileDetailPanel] Loading segment info for:', selectedSegment);
+ 
     
     try {
       setLoading(true);
@@ -289,7 +289,7 @@ export function FileDetailPanel({ selectedFile, selectedSegment, onDataLoad }: F
         setError(response.message || '获取文档片段失败');
       }
     } catch (error) {
-      console.error('Failed to load segment info:', error);
+ 
       setError('加载文档片段失败');
     } finally {
       setLoading(false);

@@ -81,7 +81,7 @@ export default function EditToolPage() {
         
         if (response.code === 200 && response.data) {
           const tool = response.data;
-          console.log("获取到的工具信息:", tool);
+ 
           
           // 填充表单数据
           form.reset({
@@ -111,7 +111,7 @@ export default function EditToolPage() {
           router.push("/tools");
         }
       } catch (error) {
-        console.error("获取工具详情失败", error);
+ 
         toast({
           title: "获取工具详情失败",
           description: "无法加载工具数据，请稍后重试",
@@ -196,7 +196,7 @@ export default function EditToolPage() {
         icon: values.icon,
       };
       
-      console.log("提交的数据:", updateData);
+ 
       
       // 调用API更新工具
       const response = await updateToolWithToast(toolId, updateData);
@@ -210,7 +210,7 @@ export default function EditToolPage() {
         router.push("/tools");
       }
     } catch (error) {
-      console.error("更新工具失败", error);
+ 
       toast({
         title: "更新失败",
         description: "无法更新工具，请稍后重试",

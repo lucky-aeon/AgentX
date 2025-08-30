@@ -61,10 +61,10 @@ const data = {
 
 axios.post('https://api.agentx.ai/v1/chat/completions', data, { headers })
   .then(response => {
-    console.log(response.data);
+ 
   })
   .catch(error => {
-    console.error('Error:', error.response.data);
+ 
   });`
 
   return (

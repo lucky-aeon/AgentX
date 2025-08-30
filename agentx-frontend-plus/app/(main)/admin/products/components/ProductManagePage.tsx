@@ -100,7 +100,7 @@ export function ProductManagePage() {
       const nameMap = await BusinessService.getBusinessNameMappings();
       setBusinessNameMap(nameMap);
     } catch (error) {
-      console.error('加载业务名称映射失败:', error);
+ 
     }
   };
 

@@ -86,7 +86,7 @@ export default function AgentsPage() {
         });
       }
     } catch (error) {
-      console.error('加载Agent列表失败:', error);
+ 
       toast({
         variant: "destructive",
         title: "获取Agent列表失败",
@@ -105,7 +105,7 @@ export default function AgentsPage() {
         setStatistics(response.data);
       }
     } catch (error) {
-      console.error('加载统计数据失败:', error);
+ 
     }
   }, []);
 

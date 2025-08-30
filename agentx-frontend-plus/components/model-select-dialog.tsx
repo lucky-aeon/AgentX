@@ -109,7 +109,7 @@ export function ModelSelectDialog({
           if (threshold !== undefined) setSummaryThreshold(threshold);
         }
       } catch (error) {
-        console.error("加载数据失败:", error);
+ 
       } finally {
         setLoading(false);
       }
@@ -144,7 +144,7 @@ export function ModelSelectDialog({
         onOpenChange(false);
       }
     } catch (error) {
-      console.error("设置模型失败:", error);
+ 
     } finally {
       setSaving(false);
     }

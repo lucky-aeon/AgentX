@@ -43,7 +43,7 @@ export function useAgentVersion() {
         setVersionNumber("1.0.0")
       }
     } catch (error) {
-      console.error("获取最新版本错误:", error)
+ 
       // 出错，设置初始版本号
       setVersionNumber("1.0.0")
     }
@@ -66,7 +66,7 @@ export function useAgentVersion() {
         })
       }
     } catch (error) {
-      console.error("获取版本列表失败:", error)
+ 
       toast({
         title: "获取版本列表失败",
         description: "请稍后再试",

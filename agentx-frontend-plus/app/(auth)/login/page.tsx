@@ -66,7 +66,7 @@ export default function LoginPage() {
           setAuthConfig(response.data)
         }
       } catch (error) {
-        console.error("获取认证配置失败:", error)
+ 
       } finally {
         setConfigLoading(false)
       }
@@ -104,7 +104,7 @@ export default function LoginPage() {
       }
     } catch (error: any) {
       // 错误已由API处理
-      console.error("登录失败:", error)
+ 
     } finally {
       setLoading(false)
     }
@@ -124,7 +124,7 @@ export default function LoginPage() {
         })
       }
     } catch (error) {
-      console.error("GitHub登录失败:", error)
+ 
       toast({
         variant: "destructive",
         title: "错误",
@@ -149,7 +149,7 @@ export default function LoginPage() {
         })
       }
     } catch (error) {
-      console.error("敲鸭登录失败:", error)
+ 
       toast({
         variant: "destructive",
         title: "错误",

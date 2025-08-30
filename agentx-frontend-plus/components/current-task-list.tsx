@@ -50,9 +50,9 @@ export function CurrentTaskList({
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   // 添加调试日志
-  console.log("CurrentTaskList接收到任务数量:", tasks.length);
+ 
   if (tasks.length > 0) {
-    console.log("CurrentTaskList任务状态:", tasks.map(t => ({id: t.id, name: t.taskName, status: t.status, progress: t.progress})));
+ 
   }
 
   // 转换任务格式
@@ -72,7 +72,7 @@ export function CurrentTaskList({
     }
     
     // 记录状态转换日志
-    console.log(`任务[${task.id}] '${task.taskName}' 状态: ${task.status}, 进度: ${task.progress} => UI状态: ${derivedStatus}`);
+ 
     
     return {
       id: task.id,

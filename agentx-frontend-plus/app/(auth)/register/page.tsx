@@ -47,7 +47,7 @@ export default function RegisterPage() {
           setAuthConfig(response.data)
         }
       } catch (error) {
-        console.error("获取认证配置失败:", error)
+ 
       } finally {
         setConfigLoading(false)
       }
@@ -94,7 +94,7 @@ export default function RegisterPage() {
         setFormData(prev => ({ ...prev, captchaCode: "" }))
       }
     } catch (error) {
-      console.error("获取图形验证码失败:", error)
+ 
     } finally {
       setLoadingCaptcha(false)
     }
@@ -146,7 +146,7 @@ export default function RegisterPage() {
         })
       }
     } catch (error) {
-      console.error("发送验证码失败:", error)
+ 
     } finally {
       setSendingCode(false)
     }
@@ -179,14 +179,14 @@ export default function RegisterPage() {
         })
       }
     } catch (error) {
-      console.error("验证码验证失败:", error)
+ 
     } finally {
       setVerifying(false)
     }
   }
 
   const validateForm = () => {
-    console.log(formData)
+ 
     if (!formData.password) {
       toast({
         variant: "destructive",
@@ -261,7 +261,7 @@ export default function RegisterPage() {
         router.push("/login")
       }
     } catch (error: any) {
-      console.error("注册失败:", error)
+ 
     } finally {
       setLoading(false)
     }

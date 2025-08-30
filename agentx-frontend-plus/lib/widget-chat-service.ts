@@ -47,7 +47,7 @@ export async function widgetChatStream(publicId: string, request: WidgetChatRequ
 
     return response.body;
   } catch (error) {
-    console.error('Widget chat request failed:', error);
+ 
     throw error;
   }
 }
@@ -72,16 +72,16 @@ export function parseWidgetStreamData(line: string): WidgetChatResponse | null {
         return { content: '', done: true, messageType: 'TEXT', timestamp: Date.now() };
       }
       
-      console.log('Parsing Widget JSON string:', jsonStr);
+ 
       
       // 解析JSON数据
       const parsed = JSON.parse(jsonStr) as WidgetChatResponse;
-      console.log('Parsed Widget result:', parsed);
+ 
       
       return parsed;
     }
   } catch (error) {
-    console.error('Failed to parse widget stream data:', error);
+ 
   }
   
   return null;
@@ -145,7 +145,7 @@ export async function handleWidgetStream(
     
     onComplete();
   } catch (error) {
-    console.error('Widget stream processing error:', error);
+ 
     onError(error instanceof Error ? error : new Error('Widget stream processing error'));
   }
 }

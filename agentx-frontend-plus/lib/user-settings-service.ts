@@ -58,7 +58,7 @@ export async function getUserSettings(): Promise<ApiResponse<UserSettings>> {
     const response = await httpClient.get<ApiResponse<UserSettings>>('/users/settings')
     return response
   } catch (error) {
-    console.error("获取用户设置错误:", error)
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "未知错误",
@@ -71,13 +71,13 @@ export async function getUserSettings(): Promise<ApiResponse<UserSettings>> {
 // 更新用户设置
 export async function updateUserSettings(data: UserSettingsUpdateRequest): Promise<ApiResponse<UserSettings>> {
   try {
-    console.log('Updating user settings:', data)
+ 
     
     const response = await httpClient.put<ApiResponse<UserSettings>>('/users/settings', data)
     
     return response
   } catch (error) {
-    console.error("更新用户设置错误:", error)
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "未知错误",
@@ -93,7 +93,7 @@ export async function getUserDefaultModelId(): Promise<ApiResponse<string>> {
     const response = await httpClient.get<ApiResponse<string>>('/users/settings/default-model')
     return response
   } catch (error) {
-    console.error("获取用户默认模型错误:", error)
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "未知错误",
@@ -106,13 +106,13 @@ export async function getUserDefaultModelId(): Promise<ApiResponse<string>> {
 // 获取所有激活的模型（使用正确的API）
 export async function getAllModels(): Promise<ApiResponse<Model[]>> {
   try {
-    console.log('Fetching all models for user settings')
+ 
     
     const response = await httpClient.get<ApiResponse<Model[]>>('/llms/models')
     
     return response
   } catch (error) {
-    console.error("获取模型列表错误:", error)
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "未知错误",
@@ -125,7 +125,7 @@ export async function getAllModels(): Promise<ApiResponse<Model[]>> {
 // 获取指定类型的模型
 export async function getModelsByType(modelType: 'CHAT' | 'EMBEDDING'): Promise<ApiResponse<Model[]>> {
   try {
-    console.log(`Fetching models of type: ${modelType}`)
+ 
     
     const response = await httpClient.get<ApiResponse<Model[]>>('/llms/models', {
       params: { modelType }
@@ -133,7 +133,7 @@ export async function getModelsByType(modelType: 'CHAT' | 'EMBEDDING'): Promise<
     
     return response
   } catch (error) {
-    console.error("获取模型列表错误:", error)
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "未知错误",
@@ -151,13 +151,13 @@ export async function getChatModels(): Promise<ApiResponse<Model[]>> {
 // 获取OCR模型（使用独立API）
 export async function getOcrModels(): Promise<ApiResponse<Model[]>> {
   try {
-    console.log('Fetching OCR models from dedicated API')
+ 
     
     const response = await httpClient.get<ApiResponse<Model[]>>('/users/settings/ocr-models')
     
     return response
   } catch (error) {
-    console.error("获取OCR模型列表错误:", error)
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "未知错误",
@@ -170,13 +170,13 @@ export async function getOcrModels(): Promise<ApiResponse<Model[]>> {
 // 获取嵌入模型（使用独立API，按模型类型筛选）
 export async function getEmbeddingModels(): Promise<ApiResponse<Model[]>> {
   try {
-    console.log('Fetching embedding models from dedicated API')
+ 
     
     const response = await httpClient.get<ApiResponse<Model[]>>('/users/settings/embedding-models')
     
     return response
   } catch (error) {
-    console.error("获取嵌入模型列表错误:", error)
+ 
     return {
       code: 500,
       message: error instanceof Error ? error.message : "未知错误",

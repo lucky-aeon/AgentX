@@ -86,7 +86,7 @@ export function ModelDialog({
           setModelTypes(response.data);
         }
       } catch (error) {
-        console.error("获取模型类型列表失败:", error);
+ 
       } finally {
         setTypesLoading(false);
       }
@@ -173,7 +173,7 @@ export function ModelDialog({
         if (onSuccess) onSuccess();
       }
     } catch (error) {
-      console.error("提交模型失败:", error);
+ 
     } finally {
       setLoading(false);
     }
