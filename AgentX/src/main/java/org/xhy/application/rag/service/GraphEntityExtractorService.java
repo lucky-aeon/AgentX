@@ -15,7 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.xhy.application.knowledgeGraph.dto.GraphQueryResponse;
-import org.xhy.application.knowledgeGraph.service.GraphQueryService;
+import org.xhy.application.knowledgeGraph.service.GraphQueryAppService;
 import org.xhy.application.rag.dto.KgEnhancedRagRequest;
 import org.xhy.application.rag.dto.EntityExtractionResponse;
 import org.xhy.domain.neo4j.constant.EntityExtractionPrompt;
@@ -40,7 +40,7 @@ public class GraphEntityExtractorService {
 
     private static final Logger log = LoggerFactory.getLogger(GraphEntityExtractorService.class);
 
-    private final GraphQueryService graphQueryService;
+    private final GraphQueryAppService graphQueryAppService;
 
     // 预定义的实体类型和关键词模式
     private static final Map<String, List<Pattern>> ENTITY_PATTERNS = new HashMap<>();
@@ -84,8 +84,8 @@ public class GraphEntityExtractorService {
         ));
     }
 
-    public GraphEntityExtractorService(GraphQueryService graphQueryService) {
-        this.graphQueryService = graphQueryService;
+    public GraphEntityExtractorService(GraphQueryAppService graphQueryAppService) {
+        this.graphQueryAppService = graphQueryAppService;
     }
 
     /**
@@ -373,7 +373,7 @@ public class GraphEntityExtractorService {
                                    int maxRelationsPerEntity) {
         try {
             // 1. 精确匹配查询
-            GraphQueryResponse exactMatch = graphQueryService.findNodesByProperty(
+            GraphQueryResponse exactMatch = graphQueryAppService.findNodesByProperty(
                 "GenericNode", "name", entity.getText(), 5);
             
             if (exactMatch.isSuccess() && exactMatch.getNodes() != null && !exactMatch.getNodes().isEmpty()) {
@@ -388,7 +388,7 @@ public class GraphEntityExtractorService {
                 
                 // 为模糊匹配的节点查询关系
                 for (GraphQueryResponse.NodeResult node : fuzzyMatches) {
-                    GraphQueryResponse relationResults = graphQueryService.findNodeRelationships(
+                    GraphQueryResponse relationResults = graphQueryAppService.findNodeRelationships(
                         node.getId(), null, "BOTH", maxRelationsPerEntity);
                     
                     if (relationResults.isSuccess()) {
@@ -420,7 +420,7 @@ public class GraphEntityExtractorService {
             // 为每个找到的节点查询其关系
             for (GraphQueryResponse.NodeResult node : queryResult.getNodes()) {
                 try {
-                    GraphQueryResponse relationResults = graphQueryService.findNodeRelationships(
+                    GraphQueryResponse relationResults = graphQueryAppService.findNodeRelationships(
                         node.getId(), null, "BOTH", maxRelationsPerEntity);
                     
                     if (relationResults.isSuccess()) {

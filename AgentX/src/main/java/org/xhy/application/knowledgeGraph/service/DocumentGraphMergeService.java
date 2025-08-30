@@ -26,7 +26,7 @@ public class DocumentGraphMergeService {
     private static final Logger logger = LoggerFactory.getLogger(DocumentGraphMergeService.class);
 
     private final EntityConflictResolutionService conflictResolutionService;
-    private final GraphIngestionService graphIngestionService;
+    private final GraphIngestionAppService graphIngestionAppService;
     private final DocumentStructuringService documentStructuringService;
     
     // 临时存储每个文档的分页图谱数据（实际项目中应使用Redis或数据库）
@@ -34,10 +34,10 @@ public class DocumentGraphMergeService {
 
     public DocumentGraphMergeService(
             EntityConflictResolutionService conflictResolutionService,
-            GraphIngestionService graphIngestionService,
+            GraphIngestionAppService graphIngestionAppService,
             DocumentStructuringService documentStructuringService) {
         this.conflictResolutionService = conflictResolutionService;
-        this.graphIngestionService = graphIngestionService;
+        this.graphIngestionAppService = graphIngestionAppService;
         this.documentStructuringService = documentStructuringService;
     }
 
@@ -156,7 +156,7 @@ public class DocumentGraphMergeService {
      */
     public GraphIngestionResponse processSinglePageGraph(GraphIngestionRequest request) {
         logger.info("处理非分页文档 {} 的图谱数据", request.getDocumentId());
-        return graphIngestionService.ingestGraphData(request);
+        return graphIngestionAppService.ingestGraphData(request);
     }
 
     /**

@@ -33,10 +33,10 @@ public class DocumentStructuringService {
 
     private static final Logger logger = LoggerFactory.getLogger(DocumentStructuringService.class);
 
-    private final GraphIngestionService graphIngestionService;
+    private final GraphIngestionAppService graphIngestionAppService;
 
-    public DocumentStructuringService(GraphIngestionService graphIngestionService) {
-        this.graphIngestionService = graphIngestionService;
+    public DocumentStructuringService(GraphIngestionAppService graphIngestionAppService) {
+        this.graphIngestionAppService = graphIngestionAppService;
     }
 
     /**
@@ -72,7 +72,7 @@ public class DocumentStructuringService {
                     documentId, structureResult, allEntities, allRelationships);
 
             // 4. 保存到Neo4j
-            GraphIngestionResponse response = graphIngestionService.ingestGraphData(finalRequest);
+            GraphIngestionResponse response = graphIngestionAppService.ingestGraphData(finalRequest);
 
             logger.info("文档 {} 结构化完成，新增主节点: {}, 主题节点: {}, 层次关系: {}",
                     documentId, 1, structureResult.topicNodes.size(), structureResult.hierarchicalRelationships.size());
