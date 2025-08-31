@@ -47,7 +47,7 @@ docker run -d \
   --env-file .env \
   -v agentx-data:/var/lib/postgresql/data \
   -v agentx-storage:/app/storage \
-  ghcr.io/lucky-aeon/agentx:latest
+  ghcr.nju.edu.cn/lucky-aeon/agentx:latest
 ```
 
 > 🚀 **智能部署**：无需区分本地或服务器环境，前端自动检测当前访问IP并连接对应的后端服务
