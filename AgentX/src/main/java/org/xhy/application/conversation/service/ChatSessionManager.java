@@ -108,13 +108,7 @@ public class ChatSessionManager {
         try {
             SseEmitter emitter = sessionInfo.getEmitter();
 
-            // 检查emitter是否已经完成
-            if (SseEmitterUtils.isEmitterCompleted(emitter)) {
-                logger.info("SSE连接已完成，无需再次发送中断消息: sessionId={}", sessionId);
-                return true;
-            }
-
-            // 尝试发送中断消息给前端
+            // 直接尝试发送中断消息，如果连接已关闭会自动处理
             SseEmitterUtils.safeSend(emitter,
                     SseEmitter.event().name("interrupt").data("{\"interrupted\": true, \"message\": \"对话已被中断\"}"));
 

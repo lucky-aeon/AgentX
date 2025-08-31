@@ -261,12 +261,9 @@ public abstract class AbstractMessageHandler {
             onChatCompleted(chatContext, true, null);
 
         } catch (Exception e) {
-            // 错误处理 - 发送错误消息前检查中断状态和连接状态
-            if (!chatSessionManager.isSessionInterrupted(chatContext.getSessionId())
-                    && isConnectionActive(connection)) {
-                AgentChatResponse errorResponse = AgentChatResponse.buildEndMessage(e.getMessage(), MessageType.TEXT);
-                transport.sendMessage(connection, errorResponse);
-            }
+            // 直接发送错误消息
+            AgentChatResponse errorResponse = AgentChatResponse.buildEndMessage(e.getMessage(), MessageType.TEXT);
+            transport.sendMessage(connection, errorResponse);
 
             long latency = System.currentTimeMillis() - startTime;
             highAvailabilityDomainService.reportCallResult(chatContext.getInstanceId(), chatContext.getModel().getId(),
@@ -310,12 +307,9 @@ public abstract class AbstractMessageHandler {
         long startTime = System.currentTimeMillis();
 
         tokenStream.onError(throwable -> {
-            // 发送错误消息前检查中断状态和连接状态
-            if (!chatSessionManager.isSessionInterrupted(chatContext.getSessionId())
-                    && isConnectionActive(connection)) {
-                transport.sendMessage(connection,
-                        AgentChatResponse.buildEndMessage(throwable.getMessage(), MessageType.TEXT));
-            }
+            // 直接发送错误消息，transport内部处理连接异常
+            transport.sendMessage(connection,
+                    AgentChatResponse.buildEndMessage(throwable.getMessage(), MessageType.TEXT));
 
             // 上报调用失败结果
             long latency = System.currentTimeMillis() - startTime;
@@ -329,23 +323,14 @@ public abstract class AbstractMessageHandler {
 
         // 部分响应处理
         tokenStream.onPartialResponse(reply -> {
-            // 检查会话是否已被中断
-            if (chatSessionManager.isSessionInterrupted(chatContext.getSessionId())) {
-                logger.info("检测到会话中断，停止处理响应: sessionId={}", chatContext.getSessionId());
-                return;
-            }
-
             messageBuilder.get().append(reply);
             // 删除换行后消息为空字符串
             if (messageBuilder.get().toString().trim().isEmpty()) {
                 return;
             }
 
-            // 发送消息前检查中断状态和连接状态
-            if (!chatSessionManager.isSessionInterrupted(chatContext.getSessionId())
-                    && isConnectionActive(connection)) {
-                transport.sendMessage(connection, AgentChatResponse.build(reply, MessageType.TEXT));
-            }
+            // 直接发送消息，transport内部处理连接异常
+            transport.sendMessage(connection, AgentChatResponse.build(reply, MessageType.TEXT));
         });
 
         // 完整响应处理
@@ -358,11 +343,8 @@ public abstract class AbstractMessageHandler {
             messageDomainService.saveMessageAndUpdateContext(Collections.singletonList(llmEntity),
                     chatContext.getContextEntity());
 
-            // 发送结束消息前检查中断状态和连接状态
-            if (!chatSessionManager.isSessionInterrupted(chatContext.getSessionId())
-                    && isConnectionActive(connection)) {
-                transport.sendEndMessage(connection, AgentChatResponse.buildEndMessage(MessageType.TEXT));
-            }
+            // 发送结束消息
+            transport.sendEndMessage(connection, AgentChatResponse.buildEndMessage(MessageType.TEXT));
 
             // 上报调用成功结果
             long latency = System.currentTimeMillis() - startTime;
@@ -390,8 +372,7 @@ public abstract class AbstractMessageHandler {
 
         // 工具执行处理
         tokenStream.onToolExecuted(toolExecution -> {
-            if (!messageBuilder.get().isEmpty() && !chatSessionManager.isSessionInterrupted(chatContext.getSessionId())
-                    && isConnectionActive(connection)) {
+            if (!messageBuilder.get().isEmpty()) {
                 transport.sendMessage(connection, AgentChatResponse.buildEndMessage(MessageType.TEXT));
                 llmEntity.setContent(messageBuilder.get().toString());
                 messageDomainService.saveMessageAndUpdateContext(Collections.singletonList(llmEntity),
@@ -405,11 +386,8 @@ public abstract class AbstractMessageHandler {
             messageDomainService.saveMessageAndUpdateContext(Collections.singletonList(toolMessage),
                     chatContext.getContextEntity());
 
-            // 发送工具调用消息前检查中断状态和连接状态
-            if (!chatSessionManager.isSessionInterrupted(chatContext.getSessionId())
-                    && isConnectionActive(connection)) {
-                transport.sendMessage(connection, AgentChatResponse.buildEndMessage(message, MessageType.TOOL_CALL));
-            }
+            // 直接发送工具调用消息
+            transport.sendMessage(connection, AgentChatResponse.buildEndMessage(message, MessageType.TOOL_CALL));
 
             // 调用工具调用完成钩子
             ToolCallInfo toolCallInfo = buildToolCallInfo(toolExecution);
@@ -614,13 +592,10 @@ public abstract class AbstractMessageHandler {
             logger.warn("用户余额不足 - 用户: {}, 模型: {}, 错误: {}", chatContext.getUserId(), chatContext.getModel().getId(),
                     e.getMessage());
 
-            // 发送余额不足提示消息前检查中断状态和连接状态
-            if (!chatSessionManager.isSessionInterrupted(chatContext.getSessionId())
-                    && isConnectionActive(connection)) {
-                AgentChatResponse balanceWarning = new AgentChatResponse("⚠️ 账户余额不足，请及时充值以继续使用服务", false);
-                balanceWarning.setMessageType(MessageType.TEXT);
-                transport.sendMessage(connection, balanceWarning);
-            }
+            // 发送余额不足提示消息
+            AgentChatResponse balanceWarning = new AgentChatResponse("⚠️ 账户余额不足，请及时充值以继续使用服务", false);
+            balanceWarning.setMessageType(MessageType.TEXT);
+            transport.sendMessage(connection, balanceWarning);
 
         } catch (BusinessException e) {
             // 业务异常：记录日志但不影响对话
@@ -702,15 +677,4 @@ public abstract class AbstractMessageHandler {
                 .build();
     }
 
-    /** 检查连接是否活跃
-     * @param connection 连接对象
-     * @return 是否活跃 */
-    private <T> boolean isConnectionActive(T connection) {
-        if (connection instanceof org.springframework.web.servlet.mvc.method.annotation.SseEmitter) {
-            return SseEmitterUtils
-                    .isEmitterActive((org.springframework.web.servlet.mvc.method.annotation.SseEmitter) connection);
-        }
-        // 对于其他类型的连接，假设活跃
-        return connection != null;
-    }
 }

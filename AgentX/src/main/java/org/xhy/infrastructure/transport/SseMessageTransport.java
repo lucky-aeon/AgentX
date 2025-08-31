@@ -24,8 +24,14 @@ public class SseMessageTransport implements MessageTransport<SseEmitter> {
     public SseEmitter createConnection(long timeout) {
         SseEmitter emitter = new SseEmitter(timeout);
 
+        // 添加简单的生命周期回调
+        emitter.onCompletion(() -> {
+            logger.debug("SSE连接正常完成");
+        });
+        
         // 添加超时回调
         emitter.onTimeout(() -> {
+            logger.debug("SSE连接超时");
             try {
                 AgentChatResponse response = new AgentChatResponse();
                 response.setContent(TIMEOUT_MESSAGE);
@@ -38,6 +44,7 @@ public class SseMessageTransport implements MessageTransport<SseEmitter> {
 
         // 添加错误回调
         emitter.onError((ex) -> {
+            logger.debug("SSE连接发生错误: {}", ex.getMessage());
             try {
                 AgentChatResponse response = new AgentChatResponse();
                 response.setContent(ERROR_MESSAGE_PREFIX + ex.getMessage() + "]");
@@ -82,20 +89,35 @@ public class SseMessageTransport implements MessageTransport<SseEmitter> {
         }
     }
 
-    /** 安全发送消息，避免向已完成的连接发送
+    /** 安全发送消息，直接处理网络异常
      * @param emitter SSE发送器
      * @param response 响应消息 */
     private void safeSendMessage(SseEmitter emitter, AgentChatResponse response) {
-        if (!SseEmitterUtils.safeSend(emitter, response)) {
-            logger.debug("消息发送失败或连接已关闭");
+        try {
+            emitter.send(response);
+        } catch (IllegalStateException e) {
+            // 连接已关闭，这是正常情况
+            logger.debug("SSE连接已关闭，跳过消息发送: {}", e.getMessage());
+        } catch (IOException e) {
+            // 网络问题，这也是正常情况
+            logger.debug("SSE网络异常，跳过消息发送: {}", e.getMessage());
+        } catch (Exception e) {
+            // 其他异常，记录但不抛出
+            logger.debug("SSE消息发送异常: {}", e.getMessage());
         }
     }
 
-    /** 安全完成SSE连接，避免重复完成
+    /** 安全完成SSE连接
      * @param emitter SSE发送器 */
     private void safeCompleteEmitter(SseEmitter emitter) {
-        if (!SseEmitterUtils.safeComplete(emitter)) {
-            logger.debug("连接完成失败或已完成");
+        try {
+            emitter.complete();
+        } catch (IllegalStateException e) {
+            // 连接已关闭，正常情况
+            logger.debug("SSE连接已完成或已关闭: {}", e.getMessage());
+        } catch (Exception e) {
+            // 其他异常，记录但不抛出
+            logger.debug("完成SSE连接时异常: {}", e.getMessage());
         }
     }
 }
