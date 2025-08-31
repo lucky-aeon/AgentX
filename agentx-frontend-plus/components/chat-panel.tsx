@@ -688,7 +688,7 @@ export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName
                             : <div className="text-lg">🤖</div>
                           }
                         </div>
-                        <div className="max-w-[80%]">
+                        <div className="max-w-[95%]">
                           {/* 消息类型指示 */}
                           <div className="flex items-center mb-1 text-xs text-gray-500">
                             <span className="font-medium">
@@ -727,7 +727,7 @@ export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName
                   <div className="h-8 w-8 mr-2 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
                     <div className="text-lg">🤖</div>
                   </div>
-                  <div className="max-w-[80%]">
+                  <div className="max-w-[95%]">
                     <div className="flex items-center mb-1 text-xs text-gray-500">
                       <span className="font-medium">{agentName}</span>
                       <span className="mx-1 text-gray-400">·</span>

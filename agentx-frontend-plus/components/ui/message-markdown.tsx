@@ -109,7 +109,7 @@ export function MessageMarkdown({
       ) : (
         // 正常消息使用 Markdown 渲染
         <div className={cn(
-          "prose prose-sm dark:prose-invert w-full min-w-0",
+          "prose prose-sm dark:prose-invert w-full min-w-0 max-w-none",
           "prose-pre:bg-white prose-pre:border prose-pre:border-gray-200 prose-pre:text-gray-900",
           shouldShowAsError && "text-destructive"
         )}>

@@ -554,7 +554,7 @@ export function WidgetChatInterface({
                         ))
                     }
                   </div>
-                  <div className="max-w-[80%]">
+                  <div className="max-w-[95%]">
                     {/* 消息类型指示 */}
                     <div className="flex items-center mb-1 text-xs text-gray-500">
                       <span className="font-medium">
@@ -605,7 +605,7 @@ export function WidgetChatInterface({
                   <div className="text-lg">🤖</div>
                 )}
               </div>
-              <div className="max-w-[80%]">
+              <div className="max-w-[95%]">
                 <div className="flex items-center mb-1 text-xs text-gray-500">
                   <span className="font-medium">{agentName}</span>
                   <span className="mx-1 text-gray-400">·</span>
