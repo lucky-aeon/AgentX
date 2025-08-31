@@ -138,8 +138,9 @@ start.bat
  - [x] 模型高可用组件
  - [x] RAG
  - [x] 计费
+ - [x] Agent 监控
+ - [x] 嵌入网站组件
  - [ ] Multi Agent
- - [ ] Agent 监控
  - [ ] 知识图谱
  - [ ] 长期记忆 
  
