@@ -51,7 +51,10 @@
       "Bash(wc:*)",
       "Bash(head:*)",
       "Bash(rm:*)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(ssh-keygen:*)",
+      "Read(/Users/xhy/.ssh/**)",
+      "Read(/Users/xhy/.ssh/**)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"

@@ -94,3 +94,19 @@ jobs:
         # This step uses the identity token to provision an ephemeral certificate
         # against the sigstore community Fulcio instance.
         run: echo "${TAGS}" | xargs -I {} cosign sign --yes {}@${DIGEST}
+
+      # Deploy to production server
+      - name: Deploy to Production Server
+        if: ${{ github.event_name != 'pull_request' }}
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.PROD_HOST }}
+          username: ${{ secrets.PROD_USERNAME }}
+          key: ${{ secrets.PROD_SSH_KEY }}
+          port: ${{ secrets.PROD_PORT }}
+          script: |
+            echo "🚀 开始自动部署 AgentX ${{ env.TAG }}"
+            cd /opt/agentx
+            chmod +x scripts/deploy.sh
+            ./scripts/deploy.sh ${{ env.TAG }}
+            echo "✅ 自动部署完成"

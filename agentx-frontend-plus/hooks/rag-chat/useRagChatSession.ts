@@ -30,6 +30,7 @@ export function useRagChatSession(options: UseRagChatSessionOptions = {}) {
   const chatSessionRef = useRef<RagChatSession | null>(null);
   const thinkingContentRef = useRef<string>('');
   const processedTimestamps = useRef<Set<number>>(new Set());
+  const isDoneCalledRef = useRef<boolean>(false);
 
   // 清空对话
   const clearMessages = useCallback(() => {
@@ -41,6 +42,7 @@ export function useRagChatSession(options: UseRagChatSessionOptions = {}) {
     setCurrentThinkingContent('');
     thinkingContentRef.current = '';
     processedTimestamps.current.clear();
+    isDoneCalledRef.current = false;
     setIsLoading(false);
   }, []);
 
@@ -96,6 +98,7 @@ export function useRagChatSession(options: UseRagChatSessionOptions = {}) {
     setCurrentThinkingContent('');
     thinkingContentRef.current = '';
     processedTimestamps.current.clear();
+    isDoneCalledRef.current = false;
 
     // 确保聊天会话已初始化
     if (!chatSessionRef.current) {
@@ -217,22 +220,37 @@ export function useRagChatSession(options: UseRagChatSessionOptions = {}) {
             });
           },
           onDone: () => {
-            setMessages(prev => {
-              if (prev.length > 0) {
-                const lastMessage = prev[prev.length - 1];
-                if (lastMessage && lastMessage.role === 'assistant') {
-                  return [
-                    ...prev.slice(0, -1),
-                    {
-                      ...lastMessage,
-                      isStreaming: false
-                    }
-                  ];
+            // 防止重复调用
+            if (isDoneCalledRef.current) {
+              return;
+            }
+            isDoneCalledRef.current = true;
+
+            try {
+              setMessages(prev => {
+                if (prev.length > 0) {
+                  const lastMessage = prev[prev.length - 1];
+                  if (lastMessage && lastMessage.role === 'assistant') {
+                    return [
+                      ...prev.slice(0, -1),
+                      {
+                        ...lastMessage,
+                        isStreaming: false
+                      }
+                    ];
+                  }
                 }
-              }
-              return prev;
-            });
-            options.onDone?.();
+                return prev;
+              });
+
+              // 确保状态总是被重置
+              setIsLoading(false);
+              options.onDone?.();
+            } catch (error) {
+              // 即使回调出错，也要确保状态重置
+              setIsLoading(false);
+              console.error('onDone callback error:', error);
+            }
           }
         }
       );
@@ -240,6 +258,7 @@ export function useRagChatSession(options: UseRagChatSessionOptions = {}) {
  
       options.onError?.(error instanceof Error ? error.message : '发送消息失败');
     } finally {
+      // 作为最后的安全保障，确保 isLoading 状态被重置
       setIsLoading(false);
     }
   }, [isLoading, options]);

@@ -13,6 +13,11 @@ export interface RagChatOptions {
   signal?: AbortSignal;
 }
 
+// 内部状态管理，防止重复调用
+interface SessionState {
+  isDone: boolean;
+}
+
 // 基于已安装知识库的RAG流式问答
 export async function ragStreamChatByUserRag(
   userRagId: string,
@@ -20,6 +25,20 @@ export async function ragStreamChatByUserRag(
   options: RagChatOptions = {}
 ): Promise<void> {
   const { onThinking, onThinkingContent, onThinkingEnd, onContent, onError, onDone, signal } = options;
+  
+  // 会话状态管理
+  const sessionState: SessionState = { isDone: false };
+  
+  // 安全的 onDone 调用，防止重复调用
+  const safeDone = () => {
+    if (sessionState.isDone) return;
+    sessionState.isDone = true;
+    try {
+      onDone?.();
+    } catch (error) {
+      console.error('onDone callback error:', error);
+    }
+  };
   
   try {
  
@@ -66,7 +85,7 @@ export async function ragStreamChatByUserRag(
       
       if (done) {
  
-        onDone?.();
+        safeDone();
         break;
       }
       
@@ -86,7 +105,7 @@ export async function ragStreamChatByUserRag(
           
           if (data.trim() === '[DONE]') {
  
-            onDone?.();
+            safeDone();
             return;
           }
           
@@ -160,7 +179,7 @@ export async function ragStreamChatByUserRag(
               case 'RAG_ANSWER_COMPLETE':
               case 'RAG_ANSWER_END':
  
-                onDone?.();
+                safeDone();
                 break;
               case 'ERROR':
  
@@ -198,6 +217,20 @@ export async function ragStreamChat(
   options: RagChatOptions = {}
 ): Promise<void> {
   const { onThinking, onThinkingContent, onThinkingEnd, onContent, onError, onDone, signal } = options;
+  
+  // 会话状态管理
+  const sessionState: SessionState = { isDone: false };
+  
+  // 安全的 onDone 调用，防止重复调用
+  const safeDone = () => {
+    if (sessionState.isDone) return;
+    sessionState.isDone = true;
+    try {
+      onDone?.();
+    } catch (error) {
+      console.error('onDone callback error:', error);
+    }
+  };
   
   try {
  
@@ -247,7 +280,7 @@ export async function ragStreamChat(
           const data = line.slice(5).trim();
           
           if (data === '[DONE]') {
-            onDone?.();
+            safeDone();
             return;
           }
 
@@ -291,7 +324,7 @@ export async function ragStreamChat(
                 onContent?.(message.content || '', message.timestamp);
                 break;
               case 'RAG_ANSWER_END':
-                onDone?.();
+                safeDone();
                 break;
               case 'ERROR':
                 onError?.(message.content || '未知错误');
@@ -306,7 +339,7 @@ export async function ragStreamChat(
             
             // 如果消息标记为done，也触发完成回调
             if (message.done === true) {
-              onDone?.();
+              safeDone();
             }
           } catch (e) {
  
