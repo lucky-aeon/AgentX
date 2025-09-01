@@ -240,6 +240,13 @@
             <artifactId>slf4j-api</artifactId>
         </dependency>
 
+        <!-- 结构化日志 -->
+        <dependency>
+            <groupId>net.logstash.logback</groupId>
+            <artifactId>logstash-logback-encoder</artifactId>
+            <version>7.4</version>
+        </dependency>
+
         <!-- 测试相关依赖 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
