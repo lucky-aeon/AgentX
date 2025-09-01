@@ -28,7 +28,7 @@ public class SseMessageTransport implements MessageTransport<SseEmitter> {
         emitter.onCompletion(() -> {
             logger.debug("SSE连接正常完成");
         });
-        
+
         // 添加超时回调
         emitter.onTimeout(() -> {
             logger.debug("SSE连接超时");
