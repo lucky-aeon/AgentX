@@ -15,9 +15,8 @@ public class WebMvcConfig implements WebMvcConfigurer {
     private final AdminAuthInterceptor adminAuthInterceptor;
     private final LoggingInterceptor loggingInterceptor;
 
-    public WebMvcConfig(UserAuthInterceptor userAuthInterceptor, 
-                       AdminAuthInterceptor adminAuthInterceptor,
-                       LoggingInterceptor loggingInterceptor) {
+    public WebMvcConfig(UserAuthInterceptor userAuthInterceptor, AdminAuthInterceptor adminAuthInterceptor,
+            LoggingInterceptor loggingInterceptor) {
         this.userAuthInterceptor = userAuthInterceptor;
         this.adminAuthInterceptor = adminAuthInterceptor;
         this.loggingInterceptor = loggingInterceptor;
@@ -27,7 +26,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
         // 日志拦截器 - 最先执行，拦截所有请求
         registry.addInterceptor(loggingInterceptor).addPathPatterns("/**").order(1);
-        
+
         registry.addInterceptor(userAuthInterceptor).addPathPatterns("/**") // 拦截所有请求
                 .excludePathPatterns( // 不拦截以下路径
                         "/login", // 登录接口

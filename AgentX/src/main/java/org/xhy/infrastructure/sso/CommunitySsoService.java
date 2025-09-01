@@ -17,7 +17,6 @@ import java.util.Map;
 @Service
 public class CommunitySsoService implements SsoService {
 
-
     private final RestTemplate restTemplate;
     private final SsoConfigProvider ssoConfigProvider;
 
