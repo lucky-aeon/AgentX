@@ -6,11 +6,9 @@ import org.xhy.application.knowledgeGraph.dto.GraphQueryResponse;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 
-/**
- * 知识图谱增强RAG检索响应DTO
+/** 知识图谱增强RAG检索响应DTO
  * 
- * @author AgentX
- */
+ * @author AgentX */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class KgEnhancedRagResponse {
 
@@ -38,9 +36,7 @@ public class KgEnhancedRagResponse {
     /** 搜索统计信息 */
     private SearchStatistics statistics;
 
-    /**
-     * 增强搜索结果
-     */
+    /** 增强搜索结果 */
     public static class EnhancedResult {
         /** 文档单元（来自向量搜索） */
         private DocumentUnitDTO documentUnit;
@@ -132,9 +128,7 @@ public class KgEnhancedRagResponse {
         }
     }
 
-    /**
-     * 搜索统计信息
-     */
+    /** 搜索统计信息 */
     public static class SearchStatistics {
         /** 总查询时间 */
         private long totalQueryTime;
@@ -280,9 +274,7 @@ public class KgEnhancedRagResponse {
         this.statistics = statistics;
     }
 
-    /**
-     * 创建成功响应
-     */
+    /** 创建成功响应 */
     public static KgEnhancedRagResponse success(List<EnhancedResult> results) {
         KgEnhancedRagResponse response = new KgEnhancedRagResponse();
         response.setSuccess(true);
@@ -290,9 +282,7 @@ public class KgEnhancedRagResponse {
         return response;
     }
 
-    /**
-     * 创建失败响应
-     */
+    /** 创建失败响应 */
     public static KgEnhancedRagResponse failure(String errorMessage) {
         KgEnhancedRagResponse response = new KgEnhancedRagResponse();
         response.setSuccess(false);
@@ -302,12 +292,8 @@ public class KgEnhancedRagResponse {
 
     @Override
     public String toString() {
-        return "KgEnhancedRagResponse{" +
-                "success=" + success +
-                ", resultCount=" + (results != null ? results.size() : 0) +
-                ", vectorResultCount=" + vectorResultCount +
-                ", graphEntityCount=" + graphEntityCount +
-                ", processingTimeMs=" + processingTimeMs +
-                '}';
+        return "KgEnhancedRagResponse{" + "success=" + success + ", resultCount="
+                + (results != null ? results.size() : 0) + ", vectorResultCount=" + vectorResultCount
+                + ", graphEntityCount=" + graphEntityCount + ", processingTimeMs=" + processingTimeMs + '}';
     }
 }

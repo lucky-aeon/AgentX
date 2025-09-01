@@ -10,11 +10,9 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
 
-/**
- * 知识图谱增强RAG检索请求DTO
+/** 知识图谱增强RAG检索请求DTO
  * 
- * @author AgentX
- */
+ * @author AgentX */
 public class KgEnhancedRagRequest {
 
     /** 数据集ID列表 */
@@ -72,9 +70,7 @@ public class KgEnhancedRagRequest {
     @Max(value = 20, message = "实体关系数量不能超过20")
     private Integer maxRelationsPerEntity = 5;
 
-    /**
-     * 实体提取策略枚举
-     */
+    /** 实体提取策略枚举 */
     public enum EntityExtractionStrategy {
         /** 关键词匹配 */
         KEYWORD,
@@ -191,14 +187,8 @@ public class KgEnhancedRagRequest {
 
     @Override
     public String toString() {
-        return "KgEnhancedRagRequest{" +
-                "datasetIds=" + datasetIds +
-                ", question='" + question + '\'' +
-                ", maxResults=" + maxResults +
-                ", minScore=" + minScore +
-                ", enableGraphEnhancement=" + enableGraphEnhancement +
-                ", graphWeight=" + graphWeight +
-                ", entityExtractionStrategy=" + entityExtractionStrategy +
-                '}';
+        return "KgEnhancedRagRequest{" + "datasetIds=" + datasetIds + ", question='" + question + '\'' + ", maxResults="
+                + maxResults + ", minScore=" + minScore + ", enableGraphEnhancement=" + enableGraphEnhancement
+                + ", graphWeight=" + graphWeight + ", entityExtractionStrategy=" + entityExtractionStrategy + '}';
     }
 }

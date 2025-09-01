@@ -5,12 +5,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.xhy.application.rag.dto.KgEnhancedRagRequest;
 
-/**
- * LLM实体提取使用示例
- * 展示如何使用新实现的LLM实体提取功能
+/** LLM实体提取使用示例 展示如何使用新实现的LLM实体提取功能
  * 
- * @author AgentX
- */
+ * @author AgentX */
 @Component
 public class LLMEntityExtractionExample {
 
@@ -22,9 +19,7 @@ public class LLMEntityExtractionExample {
         this.graphEntityExtractorService = graphEntityExtractorService;
     }
 
-    /**
-     * 演示LLM实体提取功能
-     */
+    /** 演示LLM实体提取功能 */
     public void demonstrateLLMEntityExtraction() {
         log.info("=== LLM实体提取功能演示 ===");
 
@@ -49,13 +44,10 @@ public class LLMEntityExtractionExample {
 
         try {
             // 使用LLM策略进行实体提取
-            GraphEntityExtractorService.EntityExtractionResult result = 
-                graphEntityExtractorService.extractEntitiesAndQuery(
-                    query, 
-                    KgEnhancedRagRequest.EntityExtractionStrategy.LLM, 
-                    2, // maxDepth
-                    5  // maxRelationsPerEntity
-                );
+            GraphEntityExtractorService.EntityExtractionResult result = graphEntityExtractorService
+                    .extractEntitiesAndQuery(query, KgEnhancedRagRequest.EntityExtractionStrategy.LLM, 2, // maxDepth
+                            5 // maxRelationsPerEntity
+                    );
 
             log.info("提取结果:");
             log.info("- 处理时间: {} ms", result.getProcessingTimeMs());
@@ -66,9 +58,8 @@ public class LLMEntityExtractionExample {
             // 详细显示提取的实体
             if (!result.getExtractedEntities().isEmpty()) {
                 log.info("提取的实体详情:");
-                result.getExtractedEntities().forEach(entity -> 
-                    log.info("  * {} [{}] (置信度: {:.2f})", 
-                        entity.getText(), entity.getType(), entity.getConfidence()));
+                result.getExtractedEntities().forEach(entity -> log.info("  * {} [{}] (置信度: {:.2f})", entity.getText(),
+                        entity.getType(), entity.getConfidence()));
             }
 
         } catch (Exception e) {
@@ -76,36 +67,32 @@ public class LLMEntityExtractionExample {
         }
     }
 
-    /**
-     * 比较不同提取策略的效果
-     */
+    /** 比较不同提取策略的效果 */
     public void compareExtractionStrategies(String query) {
         log.info("\n=== 提取策略比较 ===");
         log.info("查询文本: {}", query);
 
         // 测试三种策略
         KgEnhancedRagRequest.EntityExtractionStrategy[] strategies = {
-            KgEnhancedRagRequest.EntityExtractionStrategy.KEYWORD,
-            KgEnhancedRagRequest.EntityExtractionStrategy.NER,
-            KgEnhancedRagRequest.EntityExtractionStrategy.LLM
-        };
+                KgEnhancedRagRequest.EntityExtractionStrategy.KEYWORD,
+                KgEnhancedRagRequest.EntityExtractionStrategy.NER, KgEnhancedRagRequest.EntityExtractionStrategy.LLM};
 
         for (KgEnhancedRagRequest.EntityExtractionStrategy strategy : strategies) {
             try {
                 long startTime = System.currentTimeMillis();
-                
-                GraphEntityExtractorService.EntityExtractionResult result = 
-                    graphEntityExtractorService.extractEntitiesAndQuery(query, strategy, 2, 5);
-                
+
+                GraphEntityExtractorService.EntityExtractionResult result = graphEntityExtractorService
+                        .extractEntitiesAndQuery(query, strategy, 2, 5);
+
                 long duration = System.currentTimeMillis() - startTime;
-                
+
                 log.info("\n{} 策略结果:", strategy);
                 log.info("- 耗时: {} ms", duration);
                 log.info("- 实体数: {}", result.getExtractedEntities().size());
-                
-                result.getExtractedEntities().forEach(entity -> 
-                    log.info("  * {} [{}]", entity.getText(), entity.getType()));
-                    
+
+                result.getExtractedEntities()
+                        .forEach(entity -> log.info("  * {} [{}]", entity.getText(), entity.getType()));
+
             } catch (Exception e) {
                 log.error("{} 策略执行失败: {}", strategy, e.getMessage());
             }

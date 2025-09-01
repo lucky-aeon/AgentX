@@ -38,9 +38,7 @@ import org.xhy.infrastructure.llm.protocol.enums.ProviderProtocol;
 import org.xhy.infrastructure.mq.events.DocIeInferEvent;
 import org.xhy.infrastructure.mq.model.MqMessage;
 
-/**
- * 文档信息抽取推理消费者
- * 使用LangChain4j从文档文本中提取知识图谱数据
+/** 文档信息抽取推理消费者 使用LangChain4j从文档文本中提取知识图谱数据
  * 
  * @author shilong.zang
  * @date 15:13 <br/>
@@ -55,27 +53,18 @@ public class DocIeInferConsumer {
     private final PagedGraphProcessingOrchestrator processingOrchestrator;
     private final ContextAwareGraphExtractionService contextAwareExtractionService;
 
-    public DocIeInferConsumer(
-            GraphIngestionAppService graphIngestionAppService,
+    public DocIeInferConsumer(GraphIngestionAppService graphIngestionAppService,
             PagedGraphProcessingOrchestrator processingOrchestrator,
             ContextAwareGraphExtractionService contextAwareExtractionService) {
         this.graphIngestionAppService = graphIngestionAppService;
         this.processingOrchestrator = processingOrchestrator;
         this.contextAwareExtractionService = contextAwareExtractionService;
     }
-    
 
-
-    /**
-     * 处理文档信息抽取推理事件
-     * 
-     */
-    @RabbitListener(bindings = @QueueBinding(
-        value = @Queue(DocIeInferEvent.QUEUE_NAME), 
-        exchange = @Exchange(value = DocIeInferEvent.EXCHANGE_NAME, type = ExchangeTypes.TOPIC), 
-        key = DocIeInferEvent.ROUTE_KEY))
+    /** 处理文档信息抽取推理事件 */
+    @RabbitListener(bindings = @QueueBinding(value = @Queue(DocIeInferEvent.QUEUE_NAME), exchange = @Exchange(value = DocIeInferEvent.EXCHANGE_NAME, type = ExchangeTypes.TOPIC), key = DocIeInferEvent.ROUTE_KEY))
     public void receiveMessage(Message message, String msg, Channel channel) throws IOException {
-        
+
         log.info("DocIeInferConsumer 收到消息: {}", msg);
 
         MqMessage mqMessageBody = JSONObject.parseObject(msg, MqMessage.class);
@@ -86,32 +75,31 @@ public class DocIeInferConsumer {
         long deliveryTag = messageProperties.getDeliveryTag();
         DocIeInferMessage ocrMessage = JSON.parseObject(JSON.toJSONString(mqMessageBody.getData()),
                 DocIeInferMessage.class);
-        
+
         // 检查重试次数，避免无限重试
         Integer retryCount = (Integer) messageProperties.getHeaders().get("x-delivery-count");
         if (retryCount == null) {
             retryCount = 0;
         }
         final int MAX_RETRY_COUNT = 3;
-        
+
         if (retryCount >= MAX_RETRY_COUNT) {
-            log.error("文档 {} 处理失败次数已达到最大重试次数 {}，消息将被丢弃", 
-                     ocrMessage.getFileId(), MAX_RETRY_COUNT);
+            log.error("文档 {} 处理失败次数已达到最大重试次数 {}，消息将被丢弃", ocrMessage.getFileId(), MAX_RETRY_COUNT);
             channel.basicAck(deliveryTag, false);
             MDC.remove(HEADER_NAME_TRACE_ID);
             return;
         }
-        
+
         if (ocrMessage.isPaged()) {
-            log.info("开始处理文档 {} 的知识图谱提取任务，页码: {}/{}, 重试次数: {}", 
-                    ocrMessage.getFileId(), ocrMessage.getPageNumber(), ocrMessage.getTotalPages(), retryCount);
+            log.info("开始处理文档 {} 的知识图谱提取任务，页码: {}/{}, 重试次数: {}", ocrMessage.getFileId(), ocrMessage.getPageNumber(),
+                    ocrMessage.getTotalPages(), retryCount);
         } else {
             log.info("开始处理文档 {} 的知识图谱提取任务（非分页模式），重试次数: {}", ocrMessage.getFileId(), retryCount);
         }
-        
+
         // 标记消息是否已经被处理（确认或拒绝）
         boolean messageProcessed = false;
-        
+
         try {
             // 验证分页消息的完整性
             if (!processingOrchestrator.validatePagedMessage(ocrMessage)) {
@@ -124,22 +112,25 @@ public class DocIeInferConsumer {
             // 使用上下文感知的图谱提取服务
             GraphIngestionRequest extractedGraph = contextAwareExtractionService.extractWithContext(ocrMessage);
 
-            if (extractedGraph != null && extractedGraph.getEntities() != null && !extractedGraph.getEntities().isEmpty()) {
-                
+            if (extractedGraph != null && extractedGraph.getEntities() != null
+                    && !extractedGraph.getEntities().isEmpty()) {
+
                 // 使用协调器处理图谱数据（支持分页和非分页模式）
                 var response = processingOrchestrator.orchestrateGraphProcessing(ocrMessage, extractedGraph);
-                
+
                 if (response.isSuccess()) {
                     if (ocrMessage.isPaged()) {
-                        log.info("文档 {} 第 {} 页知识图谱处理成功，实体数: {}, 关系数: {}",
-                                ocrMessage.getFileId(), ocrMessage.getPageNumber(),
-                                extractedGraph.getEntities().size(),
-                                extractedGraph.getRelationships() != null ? extractedGraph.getRelationships().size() : 0);
+                        log.info("文档 {} 第 {} 页知识图谱处理成功，实体数: {}, 关系数: {}", ocrMessage.getFileId(),
+                                ocrMessage.getPageNumber(), extractedGraph.getEntities().size(),
+                                extractedGraph.getRelationships() != null
+                                        ? extractedGraph.getRelationships().size()
+                                        : 0);
                     } else {
-                        log.info("文档 {} 知识图谱处理成功，实体数: {}, 关系数: {}",
-                                ocrMessage.getFileId(),
+                        log.info("文档 {} 知识图谱处理成功，实体数: {}, 关系数: {}", ocrMessage.getFileId(),
                                 extractedGraph.getEntities().size(),
-                                extractedGraph.getRelationships() != null ? extractedGraph.getRelationships().size() : 0);
+                                extractedGraph.getRelationships() != null
+                                        ? extractedGraph.getRelationships().size()
+                                        : 0);
                     }
                 } else {
                     log.error("文档 {} 知识图谱处理失败: {}", ocrMessage.getFileId(), response.getMessage());
@@ -149,11 +140,11 @@ public class DocIeInferConsumer {
             } else {
                 log.warn("未能从文档 {} 中提取到有效的知识图谱数据", ocrMessage.getFileId());
             }
-            
+
             // 成功处理完成，确认消息
             channel.basicAck(deliveryTag, false);
             messageProcessed = true;
-             
+
             if (ocrMessage.isPaged()) {
                 log.info("文档 {} 第 {} 页处理完成，消息已确认", ocrMessage.getFileId(), ocrMessage.getPageNumber());
             } else {
@@ -162,26 +153,26 @@ public class DocIeInferConsumer {
 
         } catch (Exception e) {
             log.error("处理文档 {} 的知识图谱提取任务失败: {}", ocrMessage.getFileId(), e.getMessage(), e);
-            
+
             if (!messageProcessed) {
                 try {
                     // 如果还没有达到最大重试次数，拒绝消息并重新入队
                     if (retryCount < MAX_RETRY_COUNT - 1) {
                         channel.basicNack(deliveryTag, false, true);
                         messageProcessed = true;
-                        
+
                         if (ocrMessage.isPaged()) {
-                            log.info("文档 {} 第 {} 页处理失败，消息已拒绝并重新入队，重试次数: {}/{}",
-                                    ocrMessage.getFileId(), ocrMessage.getPageNumber(), retryCount + 1, MAX_RETRY_COUNT);
+                            log.info("文档 {} 第 {} 页处理失败，消息已拒绝并重新入队，重试次数: {}/{}", ocrMessage.getFileId(),
+                                    ocrMessage.getPageNumber(), retryCount + 1, MAX_RETRY_COUNT);
                         } else {
-                            log.info("文档 {} 处理失败，消息已拒绝并重新入队，重试次数: {}/{}",
-                                    ocrMessage.getFileId(), retryCount + 1, MAX_RETRY_COUNT);
+                            log.info("文档 {} 处理失败，消息已拒绝并重新入队，重试次数: {}/{}", ocrMessage.getFileId(), retryCount + 1,
+                                    MAX_RETRY_COUNT);
                         }
                     } else {
                         // 达到最大重试次数，确认消息避免重复处理
                         channel.basicAck(deliveryTag, false);
                         messageProcessed = true;
-                        
+
                         log.error("文档 {} 处理失败且已达到最大重试次数，消息将被丢弃", ocrMessage.getFileId());
                     }
                 } catch (IOException ioException) {
