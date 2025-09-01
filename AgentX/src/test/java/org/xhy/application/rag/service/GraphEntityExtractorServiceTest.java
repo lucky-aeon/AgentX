@@ -14,11 +14,9 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * GraphEntityExtractorService 测试类
+/** GraphEntityExtractorService 测试类
  * 
- * @author AgentX
- */
+ * @author AgentX */
 @ExtendWith(MockitoExtension.class)
 class GraphEntityExtractorServiceTest {
 
@@ -39,18 +37,17 @@ class GraphEntityExtractorServiceTest {
         int maxRelationsPerEntity = 5;
 
         // When
-        GraphEntityExtractorService.EntityExtractionResult result = 
-            graphEntityExtractorService.extractEntitiesAndQuery(question, strategy, maxDepth, maxRelationsPerEntity);
+        GraphEntityExtractorService.EntityExtractionResult result = graphEntityExtractorService
+                .extractEntitiesAndQuery(question, strategy, maxDepth, maxRelationsPerEntity);
 
         // Then
         assertNotNull(result);
         assertNotNull(result.getExtractedEntities());
         log.info("提取到的实体数量: {}", result.getExtractedEntities().size());
-        
+
         // 打印提取到的实体
-        result.getExtractedEntities().forEach(entity -> 
-            log.info("实体: {} - 类型: {} - 置信度: {}", 
-                entity.getText(), entity.getType(), entity.getConfidence()));
+        result.getExtractedEntities().forEach(entity -> log.info("实体: {} - 类型: {} - 置信度: {}", entity.getText(),
+                entity.getType(), entity.getConfidence()));
     }
 
     @Test
@@ -62,23 +59,24 @@ class GraphEntityExtractorServiceTest {
         int maxRelationsPerEntity = 5;
 
         // When
-        GraphEntityExtractorService.EntityExtractionResult result = 
-            graphEntityExtractorService.extractEntitiesAndQuery(question, strategy, maxDepth, maxRelationsPerEntity);
+        GraphEntityExtractorService.EntityExtractionResult result = graphEntityExtractorService
+                .extractEntitiesAndQuery(question, strategy, maxDepth, maxRelationsPerEntity);
 
         // Then
         assertNotNull(result);
         assertNotNull(result.getExtractedEntities());
         log.info("关键词提取到的实体数量: {}", result.getExtractedEntities().size());
-        
+
         // 打印提取到的实体
-        result.getExtractedEntities().forEach(entity -> 
-            log.info("关键词实体: {} - 类型: {}", entity.getText(), entity.getType()));
+        result.getExtractedEntities()
+                .forEach(entity -> log.info("关键词实体: {} - 类型: {}", entity.getText(), entity.getType()));
     }
 
     @Test
     void testExtractJsonFromText() throws Exception {
         // 使用反射访问私有方法进行测试
-        java.lang.reflect.Method method = GraphEntityExtractorService.class.getDeclaredMethod("extractJsonFromText", String.class);
+        java.lang.reflect.Method method = GraphEntityExtractorService.class.getDeclaredMethod("extractJsonFromText",
+                String.class);
         method.setAccessible(true);
 
         // Test case 1: JSON with markdown

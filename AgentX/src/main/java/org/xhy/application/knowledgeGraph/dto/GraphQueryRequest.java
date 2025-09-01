@@ -5,51 +5,36 @@ import jakarta.validation.Valid;
 
 import java.util.List;
 
-/**
- * 图查询请求DTO
- * 用于定义复杂的动态图查询条件
+/** 图查询请求DTO 用于定义复杂的动态图查询条件
  * 
- * @author zang
- */
+ * @author zang */
 public class GraphQueryRequest {
 
-    /**
-     * 查询的起始节点列表
-     */
+    /** 查询的起始节点列表 */
     @JsonProperty("startNodes")
     @Valid
     private List<NodeFilter> startNodes;
 
-    /**
-     * 遍历步骤列表，定义图遍历路径
-     */
+    /** 遍历步骤列表，定义图遍历路径 */
     @JsonProperty("traversals")
     @Valid
     private List<TraversalStep> traversals;
 
-    /**
-     * 过滤条件列表
-     */
+    /** 过滤条件列表 */
     @JsonProperty("filters")
     @Valid
     private List<QueryFilter> filters;
 
-    /**
-     * 返回结果定义
-     */
+    /** 返回结果定义 */
     @JsonProperty("returnDefinition")
     @Valid
     private ReturnDefinition returnDefinition;
 
-    /**
-     * 查询限制条件
-     */
+    /** 查询限制条件 */
     @JsonProperty("limit")
     private Integer limit = 100;
 
-    /**
-     * 节点过滤器
-     */
+    /** 节点过滤器 */
     public static class NodeFilter {
         @JsonProperty("label")
         private String label;
@@ -63,7 +48,8 @@ public class GraphQueryRequest {
         @JsonProperty("operator")
         private String operator = "eq"; // eq, contains, in, gt, lt, etc.
 
-        public NodeFilter() {}
+        public NodeFilter() {
+        }
 
         public NodeFilter(String label, String property, Object value) {
             this.label = label;
@@ -104,9 +90,7 @@ public class GraphQueryRequest {
         }
     }
 
-    /**
-     * 遍历步骤
-     */
+    /** 遍历步骤 */
     public static class TraversalStep {
         @JsonProperty("relationshipType")
         private String relationshipType; // 关系类型，* 表示任意类型
@@ -120,7 +104,8 @@ public class GraphQueryRequest {
         @JsonProperty("maxHops")
         private Integer maxHops = 1;
 
-        public TraversalStep() {}
+        public TraversalStep() {
+        }
 
         public TraversalStep(String relationshipType, String direction) {
             this.relationshipType = relationshipType;
@@ -160,9 +145,7 @@ public class GraphQueryRequest {
         }
     }
 
-    /**
-     * 查询过滤器
-     */
+    /** 查询过滤器 */
     public static class QueryFilter {
         @JsonProperty("target")
         private String target; // node, relationship
@@ -176,7 +159,8 @@ public class GraphQueryRequest {
         @JsonProperty("value")
         private Object value;
 
-        public QueryFilter() {}
+        public QueryFilter() {
+        }
 
         public QueryFilter(String target, String property, String operator, Object value) {
             this.target = target;
@@ -218,9 +202,7 @@ public class GraphQueryRequest {
         }
     }
 
-    /**
-     * 返回结果定义
-     */
+    /** 返回结果定义 */
     public static class ReturnDefinition {
         @JsonProperty("includeNodes")
         private boolean includeNodes = true;
@@ -234,7 +216,8 @@ public class GraphQueryRequest {
         @JsonProperty("relationshipProperties")
         private List<String> relationshipProperties;
 
-        public ReturnDefinition() {}
+        public ReturnDefinition() {
+        }
 
         public boolean isIncludeNodes() {
             return includeNodes;
@@ -269,7 +252,8 @@ public class GraphQueryRequest {
         }
     }
 
-    public GraphQueryRequest() {}
+    public GraphQueryRequest() {
+    }
 
     public List<NodeFilter> getStartNodes() {
         return startNodes;
@@ -313,12 +297,7 @@ public class GraphQueryRequest {
 
     @Override
     public String toString() {
-        return "GraphQueryRequest{" +
-                "startNodes=" + startNodes +
-                ", traversals=" + traversals +
-                ", filters=" + filters +
-                ", returnDefinition=" + returnDefinition +
-                ", limit=" + limit +
-                '}';
+        return "GraphQueryRequest{" + "startNodes=" + startNodes + ", traversals=" + traversals + ", filters=" + filters
+                + ", returnDefinition=" + returnDefinition + ", limit=" + limit + '}';
     }
 }

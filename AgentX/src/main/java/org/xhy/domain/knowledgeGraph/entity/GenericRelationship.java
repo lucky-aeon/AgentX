@@ -10,48 +10,32 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * 通用动态关系实体类
- * 支持任意类型的关系和任意数量的属性
+/** 通用动态关系实体类 支持任意类型的关系和任意数量的属性
  * 
- * @author zang
- */
+ * @author zang */
 @RelationshipProperties
 public class GenericRelationship {
 
-    /**
-     * 关系的唯一标识符，由Neo4j自动生成
-     */
+    /** 关系的唯一标识符，由Neo4j自动生成 */
     @Id
     @GeneratedValue
     private Long id;
 
-    /**
-     * 关系的类型，例如："掌握"、"工作于"、"属于" 等
-     */
+    /** 关系的类型，例如："掌握"、"工作于"、"属于" 等 */
     private String type;
 
-    /**
-     * 动态属性映射，存储关系的所有自定义属性
-     * 支持任意数量和类型的属性，在运行时动态确定
-     */
+    /** 动态属性映射，存储关系的所有自定义属性 支持任意数量和类型的属性，在运行时动态确定 */
     @CompositeProperty
     private Map<String, Object> properties;
 
-    /**
-     * 目标节点，关系指向的节点
-     */
+    /** 目标节点，关系指向的节点 */
     @TargetNode
     private GenericNode targetNode;
 
-    /**
-     * 创建时间戳
-     */
+    /** 创建时间戳 */
     private LocalDateTime createdAt;
 
-    /**
-     * 更新时间戳
-     */
+    /** 更新时间戳 */
     private LocalDateTime updatedAt;
 
     public GenericRelationship() {
@@ -70,9 +54,7 @@ public class GenericRelationship {
         this.targetNode = targetNode;
     }
 
-    /**
-     * 设置属性
-     */
+    /** 设置属性 */
     public void setProperty(String key, Object value) {
         if (this.properties == null) {
             this.properties = new HashMap<>();
@@ -81,24 +63,18 @@ public class GenericRelationship {
         this.updatedAt = LocalDateTime.now();
     }
 
-    /**
-     * 获取属性
-     */
+    /** 获取属性 */
     public Object getProperty(String key) {
         return this.properties != null ? this.properties.get(key) : null;
     }
 
-    /**
-     * 获取字符串类型属性
-     */
+    /** 获取字符串类型属性 */
     public String getStringProperty(String key) {
         Object value = getProperty(key);
         return value != null ? value.toString() : null;
     }
 
-    /**
-     * 移除属性
-     */
+    /** 移除属性 */
     public void removeProperty(String key) {
         if (this.properties != null) {
             this.properties.remove(key);
@@ -106,23 +82,17 @@ public class GenericRelationship {
         }
     }
 
-    /**
-     * 检查是否包含指定属性
-     */
+    /** 检查是否包含指定属性 */
     public boolean hasProperty(String key) {
         return this.properties != null && this.properties.containsKey(key);
     }
 
-    /**
-     * 获取关系的描述（通常来自description属性）
-     */
+    /** 获取关系的描述（通常来自description属性） */
     public String getDescription() {
         return getStringProperty("description");
     }
 
-    /**
-     * 设置关系的描述
-     */
+    /** 设置关系的描述 */
     public void setDescription(String description) {
         setProperty("description", description);
     }
@@ -180,20 +150,17 @@ public class GenericRelationship {
 
     @Override
     public String toString() {
-        return "GenericRelationship{" +
-                "id=" + id +
-                ", type='" + type + '\'' +
-                ", properties=" + properties +
-                ", targetNodeId=" + (targetNode != null ? targetNode.getId() : null) +
-                ", createdAt=" + createdAt +
-                ", updatedAt=" + updatedAt +
-                '}';
+        return "GenericRelationship{" + "id=" + id + ", type='" + type + '\'' + ", properties=" + properties
+                + ", targetNodeId=" + (targetNode != null ? targetNode.getId() : null) + ", createdAt=" + createdAt
+                + ", updatedAt=" + updatedAt + '}';
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
 
         GenericRelationship that = (GenericRelationship) o;
 
