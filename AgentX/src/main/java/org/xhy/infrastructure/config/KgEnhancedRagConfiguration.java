@@ -9,12 +9,9 @@ import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 
-/**
- * 知识图谱增强RAG配置类
- * 支持通过配置文件调整增强RAG的各种参数
+/** 知识图谱增强RAG配置类 支持通过配置文件调整增强RAG的各种参数
  * 
- * @author AgentX
- */
+ * @author AgentX */
 @Configuration
 @ConfigurationProperties(prefix = "agentx.rag.kg-enhanced")
 @Validated
@@ -66,9 +63,7 @@ public class KgEnhancedRagConfiguration {
     /** 性能配置 */
     private Performance performance = new Performance();
 
-    /**
-     * 实体提取配置
-     */
+    /** 实体提取配置 */
     public static class EntityExtraction {
         /** 默认实体提取策略 */
         private String defaultStrategy = "KEYWORD";
@@ -122,9 +117,7 @@ public class KgEnhancedRagConfiguration {
         }
     }
 
-    /**
-     * 融合策略配置
-     */
+    /** 融合策略配置 */
     public static class FusionStrategy {
         /** 默认融合策略 */
         private String defaultStrategy = "ADAPTIVE_FUSION";
@@ -178,9 +171,7 @@ public class KgEnhancedRagConfiguration {
         }
     }
 
-    /**
-     * 性能配置
-     */
+    /** 性能配置 */
     public static class Performance {
         /** 向量搜索超时时间（毫秒） */
         @Min(value = 1000, message = "向量搜索超时时间不能小于1秒")
@@ -346,13 +337,9 @@ public class KgEnhancedRagConfiguration {
 
     @Override
     public String toString() {
-        return "KgEnhancedRagConfiguration{" +
-                "enabled=" + enabled +
-                ", defaultGraphWeight=" + defaultGraphWeight +
-                ", defaultMaxResults=" + defaultMaxResults +
-                ", defaultMinScore=" + defaultMinScore +
-                ", defaultMaxGraphDepth=" + defaultMaxGraphDepth +
-                ", defaultMaxRelationsPerEntity=" + defaultMaxRelationsPerEntity +
-                '}';
+        return "KgEnhancedRagConfiguration{" + "enabled=" + enabled + ", defaultGraphWeight=" + defaultGraphWeight
+                + ", defaultMaxResults=" + defaultMaxResults + ", defaultMinScore=" + defaultMinScore
+                + ", defaultMaxGraphDepth=" + defaultMaxGraphDepth + ", defaultMaxRelationsPerEntity="
+                + defaultMaxRelationsPerEntity + '}';
     }
 }

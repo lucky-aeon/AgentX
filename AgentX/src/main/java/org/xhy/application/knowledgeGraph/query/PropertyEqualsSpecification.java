@@ -4,11 +4,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * 属性等值规约实现
+/** 属性等值规约实现
  * 
- * @author zang
- */
+ * @author zang */
 public class PropertyEqualsSpecification implements CypherSpecification {
 
     private final String property;
