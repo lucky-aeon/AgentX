@@ -449,4 +449,20 @@ public class FileDetailDomainService {
         return fileEntity;
     }
 
+    public FileDetailEntity validateFileInitialized(String fileId, String userId) {
+
+        final FileDetailEntity fileDetailEntity = getFileById(fileId, userId);
+
+        final Integer processingStatus = fileDetailEntity.getProcessingStatus();
+
+        final FileProcessingStatusEnum fileProcessingStatusEnum = FileProcessingStatusEnum.fromCode(processingStatus);
+
+        final boolean isOcrAfter = fileProcessingStatusEnum.isAfter(FileProcessingStatusEnum.OCR_COMPLETED);
+
+        if (isOcrAfter) {
+            return fileDetailEntity;
+        }
+        throw new BusinessException("文件未初始化完成，当前状态：" + fileProcessingStatusEnum.getDescription());
+
+    }
 }

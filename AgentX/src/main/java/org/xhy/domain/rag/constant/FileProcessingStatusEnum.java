@@ -93,4 +93,11 @@ public enum FileProcessingStatusEnum {
     public boolean canStartEmbedding() {
         return this == OCR_COMPLETED;
     }
+
+    // 判断当前文件的流程是否处于某个流程之后
+    public boolean isAfter(FileProcessingStatusEnum other) {
+        return this.code >= other.code;
+    }
+
+
 }

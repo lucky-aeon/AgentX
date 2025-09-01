@@ -294,7 +294,7 @@ public class KnowledgeGraphRepositoryImpl implements KnowledgeGraphRepository {
         // 准备实体参数，并转换为Neo4j支持的类型
         List<Map<String, Object>> entityParams = entities.stream().map(entity -> Map.of("id", entity.getId(), "labels",
                 entity.getLabels(), "properties", Neo4jValueConverter.convertProperties(entity.getProperties())))
-                .collect(Collectors.toList());
+                .toList();
 
         // 构建Cypher查询（不使用APOC，使用标准Cypher）
         String entityQuery = """
@@ -333,7 +333,7 @@ public class KnowledgeGraphRepositoryImpl implements KnowledgeGraphRepository {
                         "properties",
                         Neo4jValueConverter
                                 .convertProperties(rel.getProperties() != null ? rel.getProperties() : Map.of())))
-                .collect(Collectors.toList());
+                .toList();
 
         // 构建Cypher查询（使用标准Cypher，不依赖APOC）
         String relationshipQuery = """
@@ -380,14 +380,12 @@ public class KnowledgeGraphRepositoryImpl implements KnowledgeGraphRepository {
                     continue;
                 }
 
-                if (value instanceof Node && includeNodes) {
-                    Node node = (Node) value;
+                if (value instanceof Node node && includeNodes) {
                     GraphQueryResponse.NodeResult nodeResult = mapNodeToResult(node);
                     if (!containsNode(nodes, nodeResult.getId())) {
                         nodes.add(nodeResult);
                     }
-                } else if (value instanceof Relationship && includeRelationships) {
-                    Relationship relationship = (Relationship) value;
+                } else if (value instanceof Relationship relationship && includeRelationships) {
                     relationships.add(mapRelationshipToResult(relationship));
                 }
             }
@@ -434,12 +432,6 @@ public class KnowledgeGraphRepositoryImpl implements KnowledgeGraphRepository {
      * @param value Neo4j值
      * @return 转换后的Java对象 */
     private Object convertNeo4jValue(Object value) {
-        if (value == null) {
-            return null;
-        }
-
-        // Neo4j特殊类型转换 - 简化版本，避免使用不存在的类
-        // 如果需要DateTime处理，可以在运行时通过反射判断
         return value;
     }
 

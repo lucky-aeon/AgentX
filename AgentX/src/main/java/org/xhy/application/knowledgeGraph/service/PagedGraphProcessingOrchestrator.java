@@ -157,11 +157,6 @@ public class PagedGraphProcessingOrchestrator {
             return false;
         }
 
-        if (totalPages < 1) {
-            logger.error("分页消息总页数无效: totalPages={}", totalPages);
-            return false;
-        }
-
         return true;
     }
 

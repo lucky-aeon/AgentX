@@ -16,6 +16,8 @@ import org.xhy.application.rag.dto.DocumentUnitDTO;
 import org.xhy.application.rag.dto.KgEnhancedRagRequest;
 import org.xhy.application.rag.dto.KgEnhancedRagResponse;
 import org.xhy.application.rag.dto.RagSearchRequest;
+import org.xhy.application.rag.service.manager.RagQaDatasetAppService;
+import org.xhy.application.rag.service.search.RAGSearchAppService;
 import org.xhy.domain.rag.model.DocumentUnitEntity;
 import org.xhy.infrastructure.exception.BusinessException;
 
@@ -27,16 +29,14 @@ public class KnowledgeGraphEnhancedRagService {
 
     private static final Logger log = LoggerFactory.getLogger(KnowledgeGraphEnhancedRagService.class);
 
-    private final RagQaDatasetAppService ragQaDatasetAppService;
-    private final GraphQueryAppService graphQueryAppService;
+    private final RAGSearchAppService ragSearchAppService;
     private final GraphEntityExtractorService entityExtractorService;
     private final HybridSearchStrategy hybridSearchStrategy;
 
-    public KnowledgeGraphEnhancedRagService(RagQaDatasetAppService ragQaDatasetAppService,
-            GraphQueryAppService graphQueryAppService, GraphEntityExtractorService entityExtractorService,
+    public KnowledgeGraphEnhancedRagService(RAGSearchAppService ragSearchAppService,
+            GraphEntityExtractorService entityExtractorService,
             HybridSearchStrategy hybridSearchStrategy) {
-        this.ragQaDatasetAppService = ragQaDatasetAppService;
-        this.graphQueryAppService = graphQueryAppService;
+        this.ragSearchAppService = ragSearchAppService;
         this.entityExtractorService = entityExtractorService;
         this.hybridSearchStrategy = hybridSearchStrategy;
     }
@@ -206,7 +206,7 @@ public class KnowledgeGraphEnhancedRagService {
             ragRequest.setEnableQueryExpansion(request.getEnableQueryExpansion());
 
             // 执行向量搜索
-            List<DocumentUnitDTO> dtos = ragQaDatasetAppService.ragSearch(ragRequest, userId);
+            List<DocumentUnitDTO> dtos = ragSearchAppService.ragSearch(ragRequest, userId);
             return DocumentUnitAssembler.toEntities(dtos);
 
         } catch (Exception e) {

@@ -2,15 +2,10 @@ package org.xhy.infrastructure.knowledgeGraph.consumer;
 
 import static org.xhy.infrastructure.mq.model.MQSendEventModel.HEADER_NAME_TRACE_ID;
 
-import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.rabbitmq.client.Channel;
-import dev.langchain4j.data.message.TextContent;
-import dev.langchain4j.data.message.UserMessage;
-import dev.langchain4j.model.chat.ChatModel;
-import dev.langchain4j.model.chat.response.ChatResponse;
 import java.io.IOException;
 import java.util.Objects;
 import org.slf4j.Logger;
@@ -29,12 +24,6 @@ import org.xhy.application.knowledgeGraph.service.GraphIngestionAppService;
 import org.xhy.application.knowledgeGraph.service.PagedGraphProcessingOrchestrator;
 import org.xhy.application.knowledgeGraph.service.ContextAwareGraphExtractionService;
 import org.xhy.domain.knowledgeGraph.message.DocIeInferMessage;
-import org.xhy.domain.neo4j.constant.GraphExtractorPrompt;
-import org.xhy.domain.rag.message.RagDocSyncOcrMessage;
-import org.xhy.infrastructure.exception.BusinessException;
-import org.xhy.infrastructure.llm.LLMProviderService;
-import org.xhy.infrastructure.llm.config.ProviderConfig;
-import org.xhy.infrastructure.llm.protocol.enums.ProviderProtocol;
 import org.xhy.infrastructure.mq.events.DocIeInferEvent;
 import org.xhy.infrastructure.mq.model.MqMessage;
 
@@ -105,7 +94,6 @@ public class DocIeInferConsumer {
             if (!processingOrchestrator.validatePagedMessage(ocrMessage)) {
                 log.error("分页消息验证失败，跳过处理");
                 channel.basicAck(deliveryTag, false);
-                messageProcessed = true;
                 return;
             }
 

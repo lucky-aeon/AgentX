@@ -100,4 +100,63 @@ public class DocumentUnitDomainService {
     public void checkDocumentUnitExists(String documentUnitId, String userId) {
         getDocumentUnit(documentUnitId, userId);
     }
+
+
+    /** 根据文件ID查询向量化的文档单元列表
+     *
+     * @param fileId 文件ID
+     * @return 向量化的文档单元列表 */
+    public List<DocumentUnitEntity> listVectorizedDocumentsByFile(String fileId) {
+        LambdaQueryWrapper<DocumentUnitEntity> wrapper = Wrappers.<DocumentUnitEntity>lambdaQuery()
+                .eq(DocumentUnitEntity::getFileId, fileId).eq(DocumentUnitEntity::getIsVector, true);
+        return documentUnitRepository.selectList(wrapper);
+    }
+
+    /** 根据文件ID查询所有文档单元列表
+     *
+     * @param fileId 文件ID
+     * @return 文档单元列表 */
+    public List<DocumentUnitEntity> listDocumentsByFile(String fileId) {
+        LambdaQueryWrapper<DocumentUnitEntity> wrapper = Wrappers.<DocumentUnitEntity>lambdaQuery()
+                .eq(DocumentUnitEntity::getFileId, fileId);
+        return documentUnitRepository.selectList(wrapper);
+    }
+
+    /** 根据文件ID和OCR状态查询文档单元列表
+     *
+     * @param fileId 文件ID
+     * @param isOcr 是否已OCR
+     * @param isVector 是否已向量化
+     * @return 文档单元列表 */
+    public List<DocumentUnitEntity> listDocumentsByFileAndStatus(String fileId, Boolean isOcr, Boolean isVector) {
+        LambdaQueryWrapper<DocumentUnitEntity> wrapper = Wrappers.<DocumentUnitEntity>lambdaQuery()
+                .eq(DocumentUnitEntity::getFileId, fileId);
+
+        if (isOcr != null) {
+            wrapper.eq(DocumentUnitEntity::getIsOcr, isOcr);
+        }
+
+        if (isVector != null) {
+            wrapper.eq(DocumentUnitEntity::getIsVector, isVector);
+        }
+
+        return documentUnitRepository.selectList(wrapper);
+    }
+
+    /** 批量删除文档单元
+     *
+     * @param documentUnitIds 文档单元ID列表 */
+    public void batchDeleteDocumentUnits(List<String> documentUnitIds) {
+        if (documentUnitIds != null && !documentUnitIds.isEmpty()) {
+            documentUnitRepository.deleteByIds(documentUnitIds);
+        }
+    }
+
+    /** 更新单个文档单元（包括向量化状态）
+     *
+     * @param documentUnit 文档单元实体 */
+    public void updateDocumentUnitById(DocumentUnitEntity documentUnit) {
+        documentUnitRepository.updateById(documentUnit);
+    }
+
 }

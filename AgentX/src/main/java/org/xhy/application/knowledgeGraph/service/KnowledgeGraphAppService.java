@@ -5,7 +5,10 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.xhy.domain.knowledgeGraph.message.DocIeInferMessage;
 import org.xhy.domain.rag.model.DocumentUnitEntity;
+import org.xhy.domain.rag.model.FileDetailEntity;
 import org.xhy.domain.rag.service.DocumentUnitDomainService;
+import org.xhy.domain.rag.service.FileDetailDomainService;
+import org.xhy.infrastructure.auth.UserContext;
 import org.xhy.infrastructure.mq.enums.EventType;
 import org.xhy.infrastructure.mq.events.DocIeInferEvent;
 
@@ -17,11 +20,14 @@ import org.xhy.infrastructure.mq.events.DocIeInferEvent;
 public class KnowledgeGraphAppService {
 
     private final DocumentUnitDomainService documentUnitDomainService;
+    private final FileDetailDomainService fileDetailDomainService;
     private final ApplicationEventPublisher applicationEventPublisher;
 
     public KnowledgeGraphAppService(DocumentUnitDomainService documentUnitDomainService,
+            FileDetailDomainService fileDetailDomainService,
             ApplicationEventPublisher applicationEventPublisher) {
         this.documentUnitDomainService = documentUnitDomainService;
+        this.fileDetailDomainService = fileDetailDomainService;
         this.applicationEventPublisher = applicationEventPublisher;
     }
 
@@ -30,12 +36,12 @@ public class KnowledgeGraphAppService {
      * @return 图谱生成结果描述 */
     public String generateGraph(String fileId) {
 
+        // 校验文件是否完成初始化
+        final FileDetailEntity fileDetailEntity = fileDetailDomainService.validateFileInitialized(fileId,
+                UserContext.getCurrentUserId());
+
         final List<DocumentUnitEntity> documentUnitEntities = documentUnitDomainService
                 .listDocumentUnitsByFileId(fileId);
-
-        if (documentUnitEntities == null || documentUnitEntities.isEmpty()) {
-            throw new IllegalArgumentException("No document units found for fileId: " + fileId);
-        }
 
         // 获取文档总页数
         int totalPages = documentUnitEntities.size();
@@ -43,14 +49,14 @@ public class KnowledgeGraphAppService {
         // 逐页发送消息进行知识图谱提取
         for (int i = 0; i < totalPages; i++) {
             DocumentUnitEntity documentUnit = documentUnitEntities.get(i);
-            Integer pageNumber = documentUnit.getPage() != null ? documentUnit.getPage() : (i + 1);
+            int pageNumber = documentUnit.getPage() != null ? documentUnit.getPage() : (i + 1);
 
             // 创建分页消息
-            final DocIeInferMessage docIeInferMessage = new DocIeInferMessage(fileId, // 文件ID
-                    null, // 文件名（可选）
-                    documentUnit.getContent(), // 当前页内容
-                    pageNumber + 1, // 当前页码
-                    totalPages // 总页数
+            final DocIeInferMessage docIeInferMessage = new DocIeInferMessage(fileId,
+                    fileDetailEntity.getFilename(),
+                    documentUnit.getContent(),
+                    pageNumber + 1,
+                    totalPages
             );
 
             // 发送分页消息
