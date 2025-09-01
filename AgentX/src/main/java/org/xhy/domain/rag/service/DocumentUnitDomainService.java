@@ -64,13 +64,10 @@ public class DocumentUnitDomainService {
         return entity;
     }
 
-    /**
-     * 根据文件id获取所有语料
-     */
+    /** 根据文件id获取所有语料 */
     public List<DocumentUnitEntity> listDocumentUnitsByFileId(String fileId) {
         LambdaQueryWrapper<DocumentUnitEntity> wrapper = Wrappers.<DocumentUnitEntity>lambdaQuery()
-                .eq(DocumentUnitEntity::getFileId, fileId)
-                .orderByAsc(DocumentUnitEntity::getPage);
+                .eq(DocumentUnitEntity::getFileId, fileId).orderByAsc(DocumentUnitEntity::getPage);
 
         return documentUnitRepository.selectList(wrapper);
     }

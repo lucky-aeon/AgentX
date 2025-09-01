@@ -9,12 +9,9 @@ import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import java.util.Map;
 
-/**
- * 图数据摄取请求DTO
- * 用于接收批量图数据摄取请求
+/** 图数据摄取请求DTO 用于接收批量图数据摄取请求
  * 
- * @author zang
- */
+ * @author zang */
 public class GraphIngestionRequest {
 
     @JsonProperty("documentId")
@@ -32,7 +29,8 @@ public class GraphIngestionRequest {
     @Valid
     private List<RelationshipDto> relationships;
 
-    public GraphIngestionRequest() {}
+    public GraphIngestionRequest() {
+    }
 
     public GraphIngestionRequest(String documentId, List<EntityDto> entities, List<RelationshipDto> relationships) {
         this.documentId = documentId;
@@ -40,9 +38,7 @@ public class GraphIngestionRequest {
         this.relationships = relationships;
     }
 
-    /**
-     * 实体DTO - 支持动态标签和属性，包含文档分页信息
-     */
+    /** 实体DTO - 支持动态标签和属性，包含文档分页信息 */
     public static class EntityDto {
         @JsonProperty("id")
         @NotBlank(message = "实体ID不能为空")
@@ -55,22 +51,24 @@ public class GraphIngestionRequest {
         @JsonProperty("properties")
         @NotNull(message = "实体属性不能为null")
         private Map<String, Object> properties;
-        
+
         @JsonProperty("fileId")
         private String fileId;
-        
+
         @JsonProperty("pageNumber")
         private Integer pageNumber;
 
-        public EntityDto() {}
+        public EntityDto() {
+        }
 
         public EntityDto(String id, List<String> labels, Map<String, Object> properties) {
             this.id = id;
             this.labels = labels;
             this.properties = properties;
         }
-        
-        public EntityDto(String id, List<String> labels, Map<String, Object> properties, String fileId, Integer pageNumber) {
+
+        public EntityDto(String id, List<String> labels, Map<String, Object> properties, String fileId,
+                Integer pageNumber) {
             this.id = id;
             this.labels = labels;
             this.properties = properties;
@@ -101,38 +99,31 @@ public class GraphIngestionRequest {
         public void setProperties(Map<String, Object> properties) {
             this.properties = properties;
         }
-        
+
         public String getFileId() {
             return fileId;
         }
-        
+
         public void setFileId(String fileId) {
             this.fileId = fileId;
         }
-        
+
         public Integer getPageNumber() {
             return pageNumber;
         }
-        
+
         public void setPageNumber(Integer pageNumber) {
             this.pageNumber = pageNumber;
         }
 
         @Override
         public String toString() {
-            return "EntityDto{" +
-                    "id='" + id + '\'' +
-                    ", labels=" + labels +
-                    ", properties=" + properties +
-                    ", fileId='" + fileId + '\'' +
-                    ", pageNumber=" + pageNumber +
-                    '}';
+            return "EntityDto{" + "id='" + id + '\'' + ", labels=" + labels + ", properties=" + properties
+                    + ", fileId='" + fileId + '\'' + ", pageNumber=" + pageNumber + '}';
         }
     }
 
-    /**
-     * 关系DTO - 支持动态关系类型和属性，包含文档分页信息
-     */
+    /** 关系DTO - 支持动态关系类型和属性，包含文档分页信息 */
     public static class RelationshipDto {
         @JsonProperty("sourceId")
         @NotBlank(message = "源节点ID不能为空")
@@ -148,14 +139,15 @@ public class GraphIngestionRequest {
 
         @JsonProperty("properties")
         private Map<String, Object> properties;
-        
+
         @JsonProperty("fileId")
         private String fileId;
-        
+
         @JsonProperty("pageNumber")
         private Integer pageNumber;
 
-        public RelationshipDto() {}
+        public RelationshipDto() {
+        }
 
         public RelationshipDto(String sourceId, String targetId, String type, Map<String, Object> properties) {
             this.sourceId = sourceId;
@@ -163,8 +155,9 @@ public class GraphIngestionRequest {
             this.type = type;
             this.properties = properties;
         }
-        
-        public RelationshipDto(String sourceId, String targetId, String type, Map<String, Object> properties, String fileId, Integer pageNumber) {
+
+        public RelationshipDto(String sourceId, String targetId, String type, Map<String, Object> properties,
+                String fileId, Integer pageNumber) {
             this.sourceId = sourceId;
             this.targetId = targetId;
             this.type = type;
@@ -204,33 +197,28 @@ public class GraphIngestionRequest {
         public void setProperties(Map<String, Object> properties) {
             this.properties = properties;
         }
-        
+
         public String getFileId() {
             return fileId;
         }
-        
+
         public void setFileId(String fileId) {
             this.fileId = fileId;
         }
-        
+
         public Integer getPageNumber() {
             return pageNumber;
         }
-        
+
         public void setPageNumber(Integer pageNumber) {
             this.pageNumber = pageNumber;
         }
 
         @Override
         public String toString() {
-            return "RelationshipDto{" +
-                    "sourceId='" + sourceId + '\'' +
-                    ", targetId='" + targetId + '\'' +
-                    ", type='" + type + '\'' +
-                    ", properties=" + properties +
-                    ", fileId='" + fileId + '\'' +
-                    ", pageNumber=" + pageNumber +
-                    '}';
+            return "RelationshipDto{" + "sourceId='" + sourceId + '\'' + ", targetId='" + targetId + '\'' + ", type='"
+                    + type + '\'' + ", properties=" + properties + ", fileId='" + fileId + '\'' + ", pageNumber="
+                    + pageNumber + '}';
         }
     }
 
@@ -269,11 +257,7 @@ public class GraphIngestionRequest {
 
     @Override
     public String toString() {
-        return "GraphIngestionRequest{" +
-                "documentId='" + documentId + '\'' +
-                ", source='" + source + '\'' +
-                ", entities=" + entities +
-                ", relationships=" + relationships +
-                '}';
+        return "GraphIngestionRequest{" + "documentId='" + documentId + '\'' + ", source='" + source + '\''
+                + ", entities=" + entities + ", relationships=" + relationships + '}';
     }
 }

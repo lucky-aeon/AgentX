@@ -3,12 +3,9 @@ package org.xhy.application.knowledgeGraph.query;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * 组合Cypher规约实现
- * 用于将多个规约通过AND或OR逻辑组合
+/** 组合Cypher规约实现 用于将多个规约通过AND或OR逻辑组合
  * 
- * @author zang
- */
+ * @author zang */
 public class CompositeCypherSpecification implements CypherSpecification {
 
     private final CypherSpecification left;

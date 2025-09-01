@@ -3,11 +3,9 @@ package org.xhy.application.knowledgeGraph.dto;
 import jakarta.validation.constraints.NotBlank;
 import io.swagger.v3.oas.annotations.media.Schema;
 
-/**
- * 图谱生成请求DTO
+/** 图谱生成请求DTO
  * 
- * @author shilong.zang
- */
+ * @author shilong.zang */
 @Schema(description = "图谱生成请求")
 public class GraphGenerateRequest {
 
@@ -19,7 +17,8 @@ public class GraphGenerateRequest {
     private Boolean async = true;
 
     // Constructors
-    public GraphGenerateRequest() {}
+    public GraphGenerateRequest() {
+    }
 
     public GraphGenerateRequest(String fileId) {
         this.fileId = fileId;
@@ -49,9 +48,6 @@ public class GraphGenerateRequest {
 
     @Override
     public String toString() {
-        return "GraphGenerateRequest{" +
-                "fileId='" + fileId + '\'' +
-                ", async=" + async +
-                '}';
+        return "GraphGenerateRequest{" + "fileId='" + fileId + '\'' + ", async=" + async + '}';
     }
 }

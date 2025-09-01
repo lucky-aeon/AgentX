@@ -4,47 +4,30 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 
-/**
- * 分页处理状态实体
- * 用于追踪文档分页知识图谱提取的处理状态
+/** 分页处理状态实体 用于追踪文档分页知识图谱提取的处理状态
  * 
- * @author shilong.zang
- */
+ * @author shilong.zang */
 public class PageProcessingState {
 
-    /**
-     * 文档ID
-     */
+    /** 文档ID */
     private String documentId;
-    
-    /**
-     * 总页数
-     */
+
+    /** 总页数 */
     private Integer totalPages;
-    
-    /**
-     * 已处理完成的页码列表
-     */
+
+    /** 已处理完成的页码列表 */
     private List<Integer> completedPages;
-    
-    /**
-     * 处理失败的页码列表
-     */
+
+    /** 处理失败的页码列表 */
     private List<Integer> failedPages;
-    
-    /**
-     * 创建时间
-     */
+
+    /** 创建时间 */
     private LocalDateTime createdAt;
-    
-    /**
-     * 最后更新时间
-     */
+
+    /** 最后更新时间 */
     private LocalDateTime updatedAt;
-    
-    /**
-     * 处理状态
-     */
+
+    /** 处理状态 */
     private ProcessingStatus status;
 
     public PageProcessingState() {
@@ -59,9 +42,7 @@ public class PageProcessingState {
         this.totalPages = totalPages;
     }
 
-    /**
-     * 检查是否所有页面都已处理完成
-     */
+    /** 检查是否所有页面都已处理完成 */
     public boolean isAllPagesCompleted() {
         if (completedPages == null || totalPages == null) {
             return false;
@@ -69,23 +50,17 @@ public class PageProcessingState {
         return completedPages.size() == totalPages;
     }
 
-    /**
-     * 检查指定页面是否已处理完成
-     */
+    /** 检查指定页面是否已处理完成 */
     public boolean isPageCompleted(Integer pageNumber) {
         return completedPages != null && completedPages.contains(pageNumber);
     }
 
-    /**
-     * 检查指定页面是否处理失败
-     */
+    /** 检查指定页面是否处理失败 */
     public boolean isPageFailed(Integer pageNumber) {
         return failedPages != null && failedPages.contains(pageNumber);
     }
 
-    /**
-     * 获取剩余未处理页面数
-     */
+    /** 获取剩余未处理页面数 */
     public int getRemainingPages() {
         if (totalPages == null) {
             return 0;
@@ -94,9 +69,7 @@ public class PageProcessingState {
         return totalPages - completed;
     }
 
-    /**
-     * 标记页面处理完成
-     */
+    /** 标记页面处理完成 */
     public void markPageCompleted(Integer pageNumber) {
         if (completedPages != null && !completedPages.contains(pageNumber)) {
             completedPages.add(pageNumber);
@@ -106,16 +79,14 @@ public class PageProcessingState {
             failedPages.remove(pageNumber);
         }
         this.updatedAt = LocalDateTime.now();
-        
+
         // 检查是否所有页面都已完成
         if (isAllPagesCompleted()) {
             this.status = ProcessingStatus.COMPLETED;
         }
     }
 
-    /**
-     * 标记页面处理失败
-     */
+    /** 标记页面处理失败 */
     public void markPageFailed(Integer pageNumber) {
         if (failedPages != null && !failedPages.contains(pageNumber)) {
             failedPages.add(pageNumber);
@@ -128,12 +99,10 @@ public class PageProcessingState {
         this.status = ProcessingStatus.PARTIAL_FAILED;
     }
 
-    /**
-     * 更新处理状态
-     */
+    /** 更新处理状态 */
     public void updateStatus() {
         this.updatedAt = LocalDateTime.now();
-        
+
         if (isAllPagesCompleted()) {
             this.status = ProcessingStatus.COMPLETED;
         } else if (failedPages != null && !failedPages.isEmpty()) {
@@ -202,8 +171,10 @@ public class PageProcessingState {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         PageProcessingState that = (PageProcessingState) o;
         return Objects.equals(documentId, that.documentId);
     }
@@ -215,24 +186,15 @@ public class PageProcessingState {
 
     @Override
     public String toString() {
-        return "PageProcessingState{" +
-                "documentId='" + documentId + '\'' +
-                ", totalPages=" + totalPages +
-                ", completedPages=" + (completedPages != null ? completedPages.size() : 0) +
-                ", failedPages=" + (failedPages != null ? failedPages.size() : 0) +
-                ", status=" + status +
-                ", updatedAt=" + updatedAt +
-                '}';
+        return "PageProcessingState{" + "documentId='" + documentId + '\'' + ", totalPages=" + totalPages
+                + ", completedPages=" + (completedPages != null ? completedPages.size() : 0) + ", failedPages="
+                + (failedPages != null ? failedPages.size() : 0) + ", status=" + status + ", updatedAt=" + updatedAt
+                + '}';
     }
 
-    /**
-     * 处理状态枚举
-     */
+    /** 处理状态枚举 */
     public enum ProcessingStatus {
-        PROCESSING("处理中"),
-        COMPLETED("已完成"),
-        PARTIAL_FAILED("部分失败"),
-        FAILED("全部失败");
+        PROCESSING("处理中"), COMPLETED("已完成"), PARTIAL_FAILED("部分失败"), FAILED("全部失败");
 
         private final String description;
 

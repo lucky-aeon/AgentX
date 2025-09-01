@@ -2,11 +2,9 @@ package org.xhy.application.knowledgeGraph.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
-/**
- * 图谱生成响应DTO
+/** 图谱生成响应DTO
  * 
- * @author shilong.zang
- */
+ * @author shilong.zang */
 @Schema(description = "图谱生成响应")
 public class GraphGenerateResponse {
 
@@ -26,7 +24,8 @@ public class GraphGenerateResponse {
     private Long timestamp;
 
     // Constructors
-    public GraphGenerateResponse() {}
+    public GraphGenerateResponse() {
+    }
 
     public GraphGenerateResponse(String taskId, String status, String message) {
         this.taskId = taskId;
@@ -99,12 +98,7 @@ public class GraphGenerateResponse {
 
     @Override
     public String toString() {
-        return "GraphGenerateResponse{" +
-                "taskId='" + taskId + '\'' +
-                ", status='" + status + '\'' +
-                ", message='" + message + '\'' +
-                ", documentPreview='" + documentPreview + '\'' +
-                ", timestamp=" + timestamp +
-                '}';
+        return "GraphGenerateResponse{" + "taskId='" + taskId + '\'' + ", status='" + status + '\'' + ", message='"
+                + message + '\'' + ", documentPreview='" + documentPreview + '\'' + ", timestamp=" + timestamp + '}';
     }
 }
