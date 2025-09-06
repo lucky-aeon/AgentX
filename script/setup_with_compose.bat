@@ -1,4 +1,8 @@
 @echo off
+@REM 启用延迟变量扩展
+setlocal enabledelayedexpansion
+@REM 设置控制台编码为UTF-8
+chcp 65001 > nul
 @REM 设置颜色代码
 set GREEN=[32m
 set YELLOW=[33m
@@ -60,18 +64,18 @@ if not exist "docker-compose.yml" (
 docker ps -a | findstr "agentx-postgres" > nul
 if %ERRORLEVEL% equ 0 (
     echo %YELLOW%警告: 容器 'agentx-postgres' 已存在%NC%
-    set /p REPLY=是否停止并删除已有容器? [y/N] 
-    if /i "%REPLY%"=="y" (
+    set /p "REPLY=是否停止并删除已有容器? [y/N]: "
+    if /i "!REPLY!"=="y" (
         @REM 尝试使用 docker-compose 停止并删除容器
         echo 停止并删除容器...
-        
+
         @REM 检查是否支持 docker compose 命令
         if %COMPOSE_V2% equ 0 (
             docker compose down -v
         ) else (
             docker-compose down -v
         )
-        
+
         @REM 如果 docker-compose 失败，使用 docker 命令删除
         docker ps -a | findstr "agentx-postgres" > nul
         if %ERRORLEVEL% equ 0 (
@@ -81,7 +85,9 @@ if %ERRORLEVEL% equ 0 (
             docker rm agentx-postgres > nul
         )
     ) else (
-        echo 操作取消
+        echo 操作已取消，容器继续运行
+        echo 如需重新初始化，请手动停止容器后重新运行此脚本
+        pause
         exit /b 0
     )
 )
@@ -142,3 +148,4 @@ echo   启动容器: cd script ^&^& setup_with_compose.bat
 echo   停止容器: cd script ^&^& docker-compose down 或 docker compose down
 echo   查看容器状态: docker ps
 echo   查看容器日志: docker logs agentx-postgres
+pause

@@ -1,31 +1,42 @@
 version: "3"
 
 services:
-  app:
-    build: .
-    ports:
-      - "8080:8080"
-    depends_on:
-      - postgres
-    environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/agentx
-      - SPRING_DATASOURCE_USERNAME=postgres
-      - SPRING_DATASOURCE_PASSWORD=postgres
-    networks:
-      - agentx-network
-
   postgres:
     image: ankane/pgvector:latest
+    container_name: agentx-postgres              # ✅ 固定容器名，脚本能找到
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=agentx
     ports:
-      - "5432:5432"
+      - "5432:5432"                              # 若与本机 PG 冲突，改成 "15432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
+      - ./docs/sql:/docker-entrypoint-initdb.d:ro  # ✅ 首次自动执行 init.sql
+    healthcheck:                                  # ✅ 给 app 等待依据
+      test: ["CMD-SHELL", "pg_isready -U postgres -d agentx"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
     networks:
       - agentx-network
+    restart: unless-stopped
+
+  app:
+    build: AgentX
+    container_name: agentx-app
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy               # ✅ 等 PG ready 再启
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/agentx?currentSchema=public
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+    networks:
+      - agentx-network
+    restart: unless-stopped
 
 volumes:
   postgres-data:
