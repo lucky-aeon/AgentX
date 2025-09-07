@@ -38,10 +38,11 @@ if not exist "..\docs\sql" (
 docker ps -a | findstr "agentx-postgres" >nul
 if %ERRORLEVEL% equ 0 (
     echo %YELLOW%Warning: Container 'agentx-postgres' already exists%NC%
-    set /p REPLY="Do you want to remove it? (y/N) "
+    set /p REPLY="Do you want to remove it and its volumes? (y/N) "
     if /i "!REPLY!"=="y" (
-        echo Removing existing container...
-        docker rm -f agentx-postgres
+        echo Removing existing container and volumes...
+        docker-compose down -v
+        docker volume rm agentx-postgres-data 2>nul
     ) else (
         echo Operation cancelled
         exit /b 0
@@ -83,4 +84,4 @@ echo %YELLOW%  Password: postgres%NC%
 echo.
 echo %BLUE%To stop the container, run: docker-compose down%NC%
 
-endlocal 
+endlocal
