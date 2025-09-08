@@ -146,6 +146,13 @@ dromara:
         domain: ${S3_DOMAIN} # 访问域名，注意“/”结尾，例如：https://abc.hn-bkt.clouddn.com/
         base-path: s3/ # 基础路径
 
+oss:
+  endpoint: ${S3_ENDPOINT}
+  access-key: ${S3_SECRET_ID}
+  secret-key: ${S3_SECRET_KEY}
+  bucket-name: ${S3_BUCKET_NAME}
+
+
 payment:
   alipay:
     app-id: ${ALIPAY_APP_ID:your_alipay_app_id}
