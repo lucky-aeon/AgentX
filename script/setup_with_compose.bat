@@ -8,6 +8,12 @@ set "RED=[31m"
 set "BLUE=[34m"
 set "NC=[0m"
 
+echo %BLUE%AgentX Database Initialization Script%NC%
+echo %BLUE%=====================================%NC%
+echo This script will set up a fresh PostgreSQL database for AgentX.
+echo If existing data exists, you will be prompted to remove it for complete reinitialization.
+echo.
+
 :: 检查是否安装了 Docker
 where docker >nul 2>nul
 if %ERRORLEVEL% neq 0 (
@@ -34,17 +40,38 @@ if not exist "..\docs\sql" (
     exit /b 1
 )
 
-:: 检查容器是否已存在
+:: 检查容器和数据卷是否已存在
 docker ps -a | findstr "agentx-postgres" >nul
-if %ERRORLEVEL% equ 0 (
+set CONTAINER_EXISTS=%ERRORLEVEL%
+
+docker volume ls | findstr "agentx-postgres-data" >nul
+set VOLUME_EXISTS=%ERRORLEVEL%
+
+if %CONTAINER_EXISTS% equ 0 (
     echo %YELLOW%Warning: Container 'agentx-postgres' already exists%NC%
-    set /p REPLY="Do you want to remove it? (y/N) "
+)
+if %VOLUME_EXISTS% equ 0 (
+    echo %YELLOW%Warning: Data volume 'agentx-postgres-data' already exists%NC%
+)
+
+if %CONTAINER_EXISTS% equ 0 (
+    set /p REPLY="Do you want to completely reinitialize the database (remove container and data)? (y/N) "
     if /i "!REPLY!"=="y" (
-        echo Removing existing container...
-        docker rm -f agentx-postgres
+        echo Stopping and removing existing container...
+        docker-compose down
+        echo Removing data volume for complete reinitialization...
+        docker volume rm agentx-postgres-data 2>nul
+        echo %GREEN%Complete cleanup finished. Database will be fully reinitialized.%NC%
     ) else (
         echo Operation cancelled
         exit /b 0
+    )
+) else if %VOLUME_EXISTS% equ 0 (
+    set /p REPLY="Data volume exists but no container. Remove volume for fresh initialization? (y/N) "
+    if /i "!REPLY!"=="y" (
+        echo Removing existing data volume...
+        docker volume rm agentx-postgres-data 2>nul
+        echo %GREEN%Data volume removed. Database will be fully reinitialized.%NC%
     )
 )
 
@@ -74,6 +101,7 @@ if %ERRORLEVEL% neq 0 (
 
 echo.
 echo %GREEN%PostgreSQL is now running and ready for connections!%NC%
+echo %GREEN%Database has been completely initialized with fresh data.%NC%
 echo %BLUE%Connection Information:%NC%
 echo %YELLOW%  Host: localhost%NC%
 echo %YELLOW%  Port: 5432%NC%
@@ -81,6 +109,8 @@ echo %YELLOW%  Database: agentx%NC%
 echo %YELLOW%  Username: postgres%NC%
 echo %YELLOW%  Password: postgres%NC%
 echo.
-echo %BLUE%To stop the container, run: docker-compose down%NC%
+echo %BLUE%Management Commands:%NC%
+echo %YELLOW%  Stop container: docker-compose down%NC%
+echo %YELLOW%  Complete cleanup: docker-compose down && docker volume rm agentx-postgres-data%NC%
 
-endlocal 
+endlocal
