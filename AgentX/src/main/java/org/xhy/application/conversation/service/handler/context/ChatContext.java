@@ -75,6 +75,7 @@ public class ChatContext {
     /** 公开访问ID（嵌入模式使用） */
     private String publicId;
 
+
     public String getSessionId() {
         return sessionId;
     }
@@ -218,4 +219,5 @@ public class ChatContext {
     public void setPublicId(String publicId) {
         this.publicId = publicId;
     }
+
 }
