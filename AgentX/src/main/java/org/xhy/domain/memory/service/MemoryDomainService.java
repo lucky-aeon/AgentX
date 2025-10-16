@@ -241,7 +241,7 @@ public class MemoryDomainService {
     /** 归档（软删除）记忆条目 */
     public boolean delete(String userId, String itemId) {
         LambdaQueryWrapper<MemoryItemEntity> qw = Wrappers.<MemoryItemEntity>lambdaQuery().eq(MemoryItemEntity::getUserId, userId).eq(MemoryItemEntity::getId, itemId);
-        memoryItemRepository.deleteById(qw);
+        memoryItemRepository.delete(qw);
         return true;
     }
 

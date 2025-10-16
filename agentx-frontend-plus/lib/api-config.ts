@@ -156,6 +156,11 @@ export const API_ENDPOINTS = {
   // RAG 文件详情相关
   RAG_FILE_DETAIL: "/rag/files/detail", // 获取文件详情
   RAG_FILE_CONTENT: "/rag/files/content", // 获取文件内容
+
+  // 用户记忆管理
+  MEMORY_ITEMS: "/portal/memory/items", // 分页查询记忆
+  CREATE_MEMORY: "/portal/memory/items", // 新增记忆
+  DELETE_MEMORY: (itemId: string) => `/portal/memory/items/${itemId}`, // 删除记忆
 }
 
 // 构建完整的API URL
@@ -181,4 +186,3 @@ export function buildApiUrl(endpoint: string, queryParams?: Record<string, any>)
 
   return url
 }
-
