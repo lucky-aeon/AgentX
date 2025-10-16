@@ -4,6 +4,7 @@ import static dev.langchain4j.store.embedding.filter.MetadataFilterBuilder.metad
 
 import org.dromara.x.file.storage.core.FileInfo;
 import org.springframework.stereotype.Component;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.xhy.domain.file.constant.FileTypeEnum;
 import org.xhy.domain.rag.constant.FileProcessingStatusEnum;
 import org.xhy.domain.rag.constant.MetadataConstant;
@@ -39,7 +40,8 @@ public class RagFileStorageStrategy implements FileStorageStrategy {
     private final EmbeddingStore<TextSegment> embeddingStore;
 
     public RagFileStorageStrategy(FileDetailRepository fileDetailRepository,
-            DocumentUnitRepository documentUnitRepository, EmbeddingStore<TextSegment> embeddingStore) {
+            DocumentUnitRepository documentUnitRepository,
+            @Qualifier("initEmbeddingStore") EmbeddingStore<TextSegment> embeddingStore) {
         this.fileDetailRepository = fileDetailRepository;
         this.documentUnitRepository = documentUnitRepository;
         this.embeddingStore = embeddingStore;

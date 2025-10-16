@@ -20,6 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xhy.infrastructure.mq.core.MessageEnvelope;
 import org.xhy.infrastructure.mq.core.MessagePublisher;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -71,7 +72,7 @@ public class EmbeddingDomainService implements MetadataConstant {
     private final DocumentUnitRepository documentUnitRepository;
 
     public EmbeddingDomainService(EmbeddingModelFactory embeddingModelFactory,
-            EmbeddingStore<TextSegment> embeddingStore, FileDetailRepository fileDetailRepository,
+            @Qualifier("initEmbeddingStore") EmbeddingStore<TextSegment> embeddingStore, FileDetailRepository fileDetailRepository,
             MessagePublisher messagePublisher, DocumentUnitRepository documentUnitRepository) {
         this.embeddingModelFactory = embeddingModelFactory;
         this.embeddingStore = embeddingStore;

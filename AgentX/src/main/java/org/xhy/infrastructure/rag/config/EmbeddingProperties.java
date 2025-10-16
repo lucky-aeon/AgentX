@@ -1,11 +1,9 @@
 package org.xhy.infrastructure.rag.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.Configuration;
 
 /** OpenAI嵌入服务配置属性类 用于绑定application.yml中的embedding配置
  * @author zang */
-@Configuration
 @ConfigurationProperties(prefix = "embedding")
 public class EmbeddingProperties {
 

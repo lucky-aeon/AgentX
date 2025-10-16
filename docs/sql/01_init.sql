@@ -1173,3 +1173,20 @@ comment on column public.agent_widgets.deleted_at is '删除时间（软删除�
 comment on column public.agent_widgets.widget_type is 'Widget类型：AGENT（Agent类型）/RAG（RAG类型）';
 comment on column public.agent_widgets.knowledge_base_ids is 'RAG类型Widget专用：知识库ID列表（JSON数组格式）';
 
+
+
+CREATE TABLE IF NOT EXISTS public.memory_items (
+                                                   id                  VARCHAR(64) PRIMARY KEY,
+    user_id             VARCHAR(64) NOT NULL,
+    type                VARCHAR(16) NOT NULL,
+    text                TEXT NOT NULL,
+    data                JSONB,
+    importance          REAL NOT NULL DEFAULT 0.5,
+    tags                JSONB DEFAULT '[]'::jsonb,
+    source_session_id   VARCHAR(64),
+    dedupe_hash         VARCHAR(128),
+    status              SMALLINT NOT NULL DEFAULT 1,
+    created_at timestamp without time zone default CURRENT_TIMESTAMP, -- 创建时间
+    updated_at timestamp without time zone default CURRENT_TIMESTAMP, -- 更新时间
+    deleted_at timestamp without time zone -- 删除时间（软删除）
+    )
