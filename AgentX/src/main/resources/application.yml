@@ -109,6 +109,20 @@ embedding:
     drop-table-first: ${VECTOR_DB_DROP_TABLE_FIRST:false}
     create-table: ${VECTOR_DB_CREATE_TABLE:true}
 
+# Memory 向量存储配置（独立于知识库向量库）
+memory:
+  embedding:
+    vector-store:
+      host: ${VECTOR_DB_HOST:${DB_HOST:localhost}}
+      port: ${VECTOR_DB_PORT:${DB_PORT:5432}}
+      user: ${VECTOR_DB_USER:${DB_USER:postgres}}
+      password: ${VECTOR_DB_PASSWORD:${DB_PASSWORD:postgres}}
+      database: ${VECTOR_DB_NAME:${DB_NAME:agentx}}
+      table: ${MEMORY_VECTOR_DB_TABLE:public.memory_vector_store}
+      dimension: ${VECTOR_DB_DIMENSION:1024}
+      drop-table-first: ${MEMORY_VECTOR_DB_DROP_TABLE_FIRST:false}
+      create-table: ${MEMORY_VECTOR_DB_CREATE_TABLE:true}
+
 rerank:
   name: OpenAI
   api-key: ${SILICONFLOW_API_KEY}

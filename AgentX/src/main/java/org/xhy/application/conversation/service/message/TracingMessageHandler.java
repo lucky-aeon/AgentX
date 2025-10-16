@@ -137,6 +137,8 @@ public abstract class TracingMessageHandler extends AbstractMessageHandler {
 
     @Override
     protected void onChatCompleted(ChatContext chatContext, boolean success, String errorMessage) {
+        // 先调用父类钩子（执行记忆抽取与写入等通用逻辑）
+        super.onChatCompleted(chatContext, success, errorMessage);
         TraceContext traceContext = getCurrentTraceContext();
         if (traceContext != null && traceContext.isTraceEnabled()) {
             try {

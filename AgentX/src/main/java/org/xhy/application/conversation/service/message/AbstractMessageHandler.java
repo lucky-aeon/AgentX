@@ -1,7 +1,7 @@
 package org.xhy.application.conversation.service.message;
 
 import cn.hutool.core.collection.CollectionUtil;
-import com.baomidou.mybatisplus.core.toolkit.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.data.message.*;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
@@ -32,6 +32,12 @@ import org.xhy.domain.llm.model.ProviderEntity;
 import org.xhy.domain.llm.service.HighAvailabilityDomainService;
 import org.xhy.domain.llm.service.LLMDomainService;
 import org.xhy.domain.user.service.UserSettingsDomainService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.xhy.domain.memory.service.MemoryDomainService;
+import org.xhy.domain.memory.service.MemoryExtractorService;
+import org.springframework.scheduling.annotation.Async;
+import org.xhy.application.conversation.service.message.rag.RagChatContext;
+import org.xhy.domain.memory.model.MemoryResult;
 import org.xhy.domain.user.service.AccountDomainService;
 import org.xhy.infrastructure.exception.BusinessException;
 import org.xhy.infrastructure.llm.LLMServiceFactory;
@@ -75,6 +81,14 @@ public abstract class AbstractMessageHandler {
     protected final BillingService billingService;
     protected final AccountDomainService accountDomainService;
     protected final ChatSessionManager chatSessionManager;
+    @Autowired
+    protected MemoryDomainService memoryDomainService;
+    @Autowired
+    protected MemoryExtractorService memoryExtractorService;
+    // 无需事件或单独服务，直接调用异步方法
+    // 记忆注入常量（默认开启）
+    private static final String MEMORY_SECTION_TITLE = "[记忆要点]";
+    private static final int MEMORY_TOP_K = 5;
     public AbstractMessageHandler(LLMServiceFactory llmServiceFactory, MessageDomainService messageDomainService,
             HighAvailabilityDomainService highAvailabilityDomainService, SessionDomainService sessionDomainService,
             UserSettingsDomainService userSettingsDomainService, LLMDomainService llmDomainService,
@@ -175,7 +189,22 @@ public abstract class AbstractMessageHandler {
      * @param success 是否成功
      * @param errorMessage 错误信息（成功时为null） */
     protected void onChatCompleted(ChatContext chatContext, boolean success, String errorMessage) {
-        // 默认空实现，子类可选择性覆盖
+        // 对话完成钩子：成功时进行记忆抽取（异步）；RAG/公开访问跳过
+        if (!success || chatContext == null) return;
+        if (chatContext.isPublicAccess()) return;
+        if (chatContext instanceof RagChatContext) return;
+
+        String userId = chatContext.getUserId();
+        String sessionId = chatContext.getSessionId();
+        String userText = StringUtils.defaultString(chatContext.getUserMessage(), "").trim();
+        if (StringUtils.isBlank(userId) || StringUtils.isBlank(sessionId) || StringUtils.isBlank(userText)) return;
+
+        // 直接调用异步方法，避免阻塞主流程
+        try {
+            memoryExtractorService.extractAndPersistAsync(userId, sessionId, userText);
+        } catch (Exception ignore) {
+            // 异步任务调度异常不影响主流程
+        }
     }
 
     /** 追踪钩子方法 - 发生异常时调用
@@ -227,8 +256,8 @@ public abstract class AbstractMessageHandler {
             List<ChatMessage> messages = memory.messages();
             messages.add(new UserMessage(chatContext.getUserMessage()));
 
-            // 4. 构建同步Agent并调用
-            ChatResponse chatResponse = syncClient.chat(messages);
+        // 4. 构建同步Agent并调用
+        ChatResponse chatResponse = syncClient.chat(messages);
 
             // 5. 处理响应 - 设置消息token
             this.setMessageTokenCount(chatContext.getMessageHistory(), userEntity, llmEntity, chatResponse);
@@ -337,6 +366,8 @@ public abstract class AbstractMessageHandler {
         tokenStream.onCompleteResponse(chatResponse -> {
 
             this.setMessageTokenCount(chatContext.getMessageHistory(), userEntity, llmEntity, chatResponse);
+
+            // 按仅用户抽取策略，不记录AI文本
 
             messageDomainService.updateMessage(userEntity);
             // 保存AI消息
@@ -490,7 +521,12 @@ public abstract class AbstractMessageHandler {
             presetToolPrompt = AgentPromptTemplates.generatePresetToolPrompt(toolPresetParams);
         }
 
-        memory.add(new SystemMessage(chatContext.getAgent().getSystemPrompt() + "\n" + presetToolPrompt));
+        // 读取长期记忆，组装为要点，直接合入系统提示词尾部
+        String memorySection = buildMemorySection(chatContext);
+        String fullSystemPrompt = chatContext.getAgent().getSystemPrompt() + "\n" + presetToolPrompt
+                + (memorySection.isEmpty() ? "" : ("\n" + memorySection));
+
+        memory.add(new SystemMessage(fullSystemPrompt));
         List<MessageEntity> messageHistory = chatContext.getMessageHistory();
         for (MessageEntity messageEntity : messageHistory) {
             // 注意不要重复发送摘要消息
@@ -507,6 +543,38 @@ public abstract class AbstractMessageHandler {
             } else if (messageEntity.isSystemMessage()) {
                 memory.add(new SystemMessage(messageEntity.getContent()));
             }
+        }
+    }
+
+    /** 构造“记忆要点”片段，合入系统提示词尾部 */
+    private String buildMemorySection(ChatContext chatContext) {
+        try {
+            int topK = MEMORY_TOP_K;
+            String title = MEMORY_SECTION_TITLE;
+            // 必须有用户消息和 userId 才进行召回
+            if (chatContext == null || !StringUtils.isNotBlank(chatContext.getUserId())
+                    || !StringUtils.isNotBlank(chatContext.getUserMessage())) {
+                return "";
+            }
+            var results = memoryDomainService.searchRelevant(chatContext.getUserId(), chatContext.getUserMessage(),
+                    topK);
+            if (results == null || results.isEmpty()) {
+                return "";
+            }
+            StringBuilder sb = new StringBuilder();
+            sb.append(title).append('\n');
+            int idx = 0;
+            for (MemoryResult r : results) {
+                if (r == null || r.getText() == null) continue;
+                String text = r.getText().replaceAll("\n+", " ");
+                sb.append("- [").append(r.getType() != null ? r.getType().name() : "FACT").append("] ")
+                        .append(text).append("\n");
+                if (++idx >= topK) break;
+            }
+            return sb.toString();
+        } catch (Exception e) {
+            // 召回异常不影响主流程
+            return "";
         }
     }
 
