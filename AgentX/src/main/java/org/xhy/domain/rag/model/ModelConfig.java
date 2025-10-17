@@ -1,5 +1,7 @@
 package org.xhy.domain.rag.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.xhy.domain.llm.model.enums.ModelType;
 import org.xhy.infrastructure.llm.protocol.enums.ProviderProtocol;
 
@@ -9,6 +11,7 @@ import java.io.Serializable;
 /** RAG模型配置
  * 
  * @author shilong.zang */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class ModelConfig implements Serializable {
 
     @Serial
@@ -70,6 +73,7 @@ public class ModelConfig implements Serializable {
         this.protocol = protocol;
     }
 
+    @JsonIgnore
     public boolean isChatType() {
         return this.modelType == ModelType.CHAT;
     }

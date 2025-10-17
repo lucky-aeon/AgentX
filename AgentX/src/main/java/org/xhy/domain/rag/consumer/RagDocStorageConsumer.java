@@ -1,6 +1,6 @@
 package org.xhy.domain.rag.consumer;
 
-import static org.xhy.infrastructure.mq.model.MQSendEventModel.HEADER_NAME_TRACE_ID;
+import static org.xhy.infrastructure.mq.core.MessageHeaders.TRACE_ID;
 
 import java.io.IOException;
 import java.util.Objects;
@@ -22,13 +22,16 @@ import org.xhy.domain.rag.model.DocumentUnitEntity;
 import org.xhy.domain.rag.repository.DocumentUnitRepository;
 import org.xhy.domain.rag.service.EmbeddingDomainService;
 import org.xhy.domain.rag.service.FileDetailDomainService;
+import org.xhy.infrastructure.mq.core.MessageEnvelope;
 import org.xhy.infrastructure.mq.events.RagDocSyncStorageEvent;
-import org.xhy.infrastructure.mq.model.MqMessage;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.rabbitmq.client.Channel;
 
 /** @author shilong.zang
@@ -39,6 +42,10 @@ import com.rabbitmq.client.Channel;
 public class RagDocStorageConsumer {
 
     private static final Logger log = LoggerFactory.getLogger(RagDocStorageConsumer.class);
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
+            .registerModule(new JavaTimeModule())
+            .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
     private final EmbeddingDomainService embeddingService;
     private final FileDetailDomainService fileDetailDomainService;
@@ -52,16 +59,20 @@ public class RagDocStorageConsumer {
     }
 
     @RabbitHandler
-    public void receiveMessage(Message message, String msg, Channel channel) throws IOException {
-        MqMessage mqMessageBody = JSONObject.parseObject(msg, MqMessage.class);
-
-        MDC.put(HEADER_NAME_TRACE_ID,
-                Objects.nonNull(mqMessageBody.getTraceId()) ? mqMessageBody.getTraceId() : IdWorker.getTimeId());
+    public void receiveMessage(java.util.Map<String, Object> payload, Message message, Channel channel)
+            throws IOException {
         MessageProperties messageProperties = message.getMessageProperties();
         long deliveryTag = messageProperties.getDeliveryTag();
-        RagDocSyncStorageMessage mqRecordReqDTO = JSON.parseObject(JSON.toJSONString(mqMessageBody.getData()),
-                RagDocSyncStorageMessage.class);
+
         try {
+            // 将已由 Jackson 转换的 Map 转为强类型 Envelope
+            MessageEnvelope<RagDocSyncStorageMessage> envelope = OBJECT_MAPPER.convertValue(payload,
+                    new TypeReference<MessageEnvelope<RagDocSyncStorageMessage>>() {
+                    });
+
+            MDC.put(TRACE_ID, Objects.nonNull(envelope.getTraceId()) ? envelope.getTraceId() : IdWorker.getTimeId());
+            RagDocSyncStorageMessage mqRecordReqDTO = envelope.getData();
+
             log.info("当前文件 {} 页面 {} ———— 开始向量化", mqRecordReqDTO.getFileName(), mqRecordReqDTO.getPage());
 
             // 执行向量化处理

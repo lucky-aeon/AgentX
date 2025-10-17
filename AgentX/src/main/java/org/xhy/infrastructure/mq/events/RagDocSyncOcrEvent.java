@@ -1,56 +1,19 @@
 package org.xhy.infrastructure.mq.events;
 
-import java.io.Serial;
-import java.util.Arrays;
-import java.util.List;
+import org.xhy.infrastructure.mq.core.MessageRoute;
 
-import org.xhy.infrastructure.mq.enums.EventType;
-import org.xhy.infrastructure.mq.model.MQSendEventModel;
+/**
+ * Route constants for OCR processing messages.
+ */
+public final class RagDocSyncOcrEvent {
 
-/** @author zang */
-public class RagDocSyncOcrEvent<T> extends MQSendEventModel<T> {
+    private RagDocSyncOcrEvent() {}
 
-    @Serial
-    private static final long serialVersionUID = -8799365828172646170L;
-    private final EventType[] eventType;
+    public static final String EXCHANGE_NAME = "rag.doc.task.syncOcr.exchange-10";
+    public static final String QUEUE_NAME = "rag.doc.task.syncOcr.queue-10";
+    public static final String ROUTE_KEY = "rag.doc.task.syncOcr-10";
 
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    private String description = "文件ocr任务发送成功";
-
-    public RagDocSyncOcrEvent(T data, EventType... eventType) {
-        super(data);
-        this.eventType = eventType;
-    }
-    //
-    public static final String EXCHANGE_NAME = "rag.doc.task.syncOcr.exchange-1";
-    public static final String QUEUE_NAME = "rag.doc.task.syncOcr.queue-1";
-    public static final String ROUTE_KEY = "rag.doc.task.syncOcr-1";
-
-    @Override
-    public String description() {
-        return description;
-    }
-
-    @Override
-    public String exchangeName() {
-        return "rag.doc.task.syncOcr.exchange-1";
-    }
-
-    @Override
-    public String queueName() {
-        return "rag.doc.task.syncOcr.queue-1";
-    }
-
-    @Override
-    public String routeKey() {
-        return "rag.doc.task.syncOcr-1";
-    }
-
-    @Override
-    public List<EventType> eventType() {
-        return Arrays.asList(eventType);
+    public static MessageRoute route() {
+        return MessageRoute.topic(EXCHANGE_NAME, ROUTE_KEY, QUEUE_NAME);
     }
 }
