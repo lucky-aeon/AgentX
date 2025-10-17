@@ -2,7 +2,8 @@ package org.xhy.application.rag.service.manager;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import org.springframework.context.ApplicationEventPublisher;
+import org.xhy.infrastructure.mq.core.MessageEnvelope;
+import org.xhy.infrastructure.mq.core.MessagePublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.xhy.application.rag.assembler.DocumentUnitAssembler;
@@ -27,15 +28,15 @@ public class FileOperationAppService {
 
     private final FileDetailDomainService fileDetailDomainService;
     private final DocumentUnitDomainService documentUnitDomainService;
-    private final ApplicationEventPublisher applicationEventPublisher;
+    private final MessagePublisher messagePublisher;
     private final FileStorageService fileStorageService;
 
     public FileOperationAppService(FileDetailDomainService fileDetailDomainService,
-            DocumentUnitDomainService documentUnitDomainService, ApplicationEventPublisher applicationEventPublisher,
+            DocumentUnitDomainService documentUnitDomainService, MessagePublisher messagePublisher,
             FileStorageService fileStorageService) {
         this.fileDetailDomainService = fileDetailDomainService;
         this.documentUnitDomainService = documentUnitDomainService;
-        this.applicationEventPublisher = applicationEventPublisher;
+        this.messagePublisher = messagePublisher;
         this.fileStorageService = fileStorageService;
     }
 
@@ -153,11 +154,11 @@ public class FileOperationAppService {
             storageMessage.setVector(true);
             storageMessage.setDatasetId(fileEntity.getDataSetId());
 
-            // 发送MQ事件
-            RagDocSyncStorageEvent<RagDocSyncStorageMessage> storageEvent = new RagDocSyncStorageEvent<>(storageMessage,
-                    EventType.DOC_SYNC_RAG);
-            storageEvent.setDescription("语料内容修改后重新向量化 - 页面 " + documentUnit.getPage());
-            applicationEventPublisher.publishEvent(storageEvent);
+            // 发送消息
+            MessageEnvelope<RagDocSyncStorageMessage> envelope = MessageEnvelope.builder(storageMessage)
+                    .addEventType(EventType.DOC_SYNC_RAG)
+                    .description("语料内容修改后重新向量化 - 页面 " + documentUnit.getPage()).build();
+            messagePublisher.publish(RagDocSyncStorageEvent.route(), envelope);
 
         } catch (Exception e) {
             // 记录日志但不影响主流程

@@ -2,7 +2,8 @@ package org.xhy.infrastructure.rag.processor;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.ApplicationContext;
+import org.xhy.infrastructure.mq.core.MessageEnvelope;
+import org.xhy.infrastructure.mq.core.MessagePublisher;
 import org.springframework.stereotype.Service;
 import org.xhy.domain.rag.message.RagDocMessage;
 import org.xhy.domain.rag.message.RagDocSyncStorageMessage;
@@ -28,17 +29,17 @@ public class DocumentVectorizationOrchestrator {
     private final MarkdownAstRewriter translator;
     private final MarkdownContentSplitter splitter;
     private final DocumentUnitRepository documentUnitRepository;
-    private final ApplicationContext applicationContext;
+    private final MessagePublisher messagePublisher;
     private final FileDetailDomainService fileDetailDomainService;
     private final UserModelConfigResolver userModelConfigResolver;
 
     public DocumentVectorizationOrchestrator(MarkdownAstRewriter translator, MarkdownContentSplitter splitter,
-            DocumentUnitRepository documentUnitRepository, ApplicationContext applicationContext,
+            DocumentUnitRepository documentUnitRepository, MessagePublisher messagePublisher,
             FileDetailDomainService fileDetailDomainService, UserModelConfigResolver userModelConfigResolver) {
         this.translator = translator;
         this.splitter = splitter;
         this.documentUnitRepository = documentUnitRepository;
-        this.applicationContext = applicationContext;
+        this.messagePublisher = messagePublisher;
         this.fileDetailDomainService = fileDetailDomainService;
         this.userModelConfigResolver = userModelConfigResolver;
     }
@@ -181,11 +182,10 @@ public class DocumentVectorizationOrchestrator {
             }
 
             // 发送向量化消息到消息队列
-            RagDocSyncStorageEvent<RagDocSyncStorageMessage> storageEvent = new RagDocSyncStorageEvent<>(storageMessage,
-                    EventType.DOC_SYNC_RAG);
-            storageEvent.setDescription("二次分割后的向量化处理任务 - 段落 " + segmentIndex + " 页面 " + vectorPage);
-
-            applicationContext.publishEvent(storageEvent);
+            MessageEnvelope<RagDocSyncStorageMessage> env = MessageEnvelope.builder(storageMessage)
+                    .addEventType(EventType.DOC_SYNC_RAG)
+                    .description("二次分割后的向量化处理任务 - 段落 " + segmentIndex + " 页面 " + vectorPage).build();
+            messagePublisher.publish(RagDocSyncStorageEvent.route(), env);
 
             log.debug("Triggered vectorization for segment {} from unit {} with fileName: {}", segmentIndex,
                     originalUnit.getId(), fileEntity.getOriginalFilename());

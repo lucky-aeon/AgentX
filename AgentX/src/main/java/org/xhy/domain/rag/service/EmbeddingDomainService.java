@@ -18,7 +18,8 @@ import org.xhy.domain.rag.model.VectorStoreResult;
 import org.dromara.streamquery.stream.core.stream.Steam;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.ApplicationContext;
+import org.xhy.infrastructure.mq.core.MessageEnvelope;
+import org.xhy.infrastructure.mq.core.MessagePublisher;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -61,7 +62,7 @@ public class EmbeddingDomainService implements MetadataConstant {
 
     private final EmbeddingModelFactory embeddingModelFactory;
 
-    private final ApplicationContext applicationContext;
+    private final MessagePublisher messagePublisher;
 
     private final EmbeddingStore<TextSegment> embeddingStore;
 
@@ -71,11 +72,11 @@ public class EmbeddingDomainService implements MetadataConstant {
 
     public EmbeddingDomainService(EmbeddingModelFactory embeddingModelFactory,
             EmbeddingStore<TextSegment> embeddingStore, FileDetailRepository fileDetailRepository,
-            ApplicationContext applicationContext, DocumentUnitRepository documentUnitRepository) {
+            MessagePublisher messagePublisher, DocumentUnitRepository documentUnitRepository) {
         this.embeddingModelFactory = embeddingModelFactory;
         this.embeddingStore = embeddingStore;
         this.fileDetailRepository = fileDetailRepository;
-        this.applicationContext = applicationContext;
+        this.messagePublisher = messagePublisher;
         this.documentUnitRepository = documentUnitRepository;
     }
 
@@ -188,8 +189,11 @@ public class EmbeddingDomainService implements MetadataConstant {
     /** 批量向量化入库 */
     private void indexEmbedding(List<DocumentUnitEntity> documentUnitEntityList) {
 
-        Steam.of(documentUnitEntityList).forEach(documentUnit -> applicationContext
-                .publishEvent(new RagDocSyncStorageEvent<>(documentUnit, EventType.DOC_SYNC_RAG)));
+        Steam.of(documentUnitEntityList).forEach(documentUnit -> {
+            MessageEnvelope<DocumentUnitEntity> env = MessageEnvelope.builder(documentUnit)
+                    .addEventType(EventType.DOC_SYNC_RAG).description("批量向量化入库任务").build();
+            messagePublisher.publish(RagDocSyncStorageEvent.route(), env);
+        });
 
     }
 
