@@ -17,9 +17,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Direct RabbitMQ publisher using the raw client API.
- */
+/** Direct RabbitMQ publisher using the raw client API. */
 public final class RabbitDirectPublisher implements MessagePublisher {
 
     private static final Logger log = LoggerFactory.getLogger(RabbitDirectPublisher.class);
@@ -49,8 +47,8 @@ public final class RabbitDirectPublisher implements MessagePublisher {
                 headers.put(MessageHeaders.TRACE_ID, envelope.getTraceId());
             }
 
-            AMQP.BasicProperties.Builder builder = new AMQP.BasicProperties.Builder()
-                    .contentType("application/json").deliveryMode(2).headers(headers);
+            AMQP.BasicProperties.Builder builder = new AMQP.BasicProperties.Builder().contentType("application/json")
+                    .deliveryMode(2).headers(headers);
             if (ttlMillis != null && ttlMillis > 0) {
                 builder.expiration(Long.toString(ttlMillis));
             }
@@ -64,4 +62,3 @@ public final class RabbitDirectPublisher implements MessagePublisher {
         }
     }
 }
-

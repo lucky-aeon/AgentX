@@ -9,4 +9,3 @@ public final class MessageHeaders {
     /** Trace id header used across the system. */
     public static final String TRACE_ID = "seqId";
 }
-

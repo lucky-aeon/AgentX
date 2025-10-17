@@ -7,9 +7,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.xhy.infrastructure.mq.core.MessagePublisher;
 
-/**
- * Minimal RabbitMQ client configuration using the raw client.
- */
+/** Minimal RabbitMQ client configuration using the raw client. */
 @Configuration
 public class RabbitDirectConfig {
 
@@ -39,4 +37,3 @@ public class RabbitDirectConfig {
         return new RabbitDirectPublisher(connection);
     }
 }
-

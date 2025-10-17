@@ -42,8 +42,7 @@ import com.rabbitmq.client.Channel;
 public class RagDocStorageConsumer {
 
     private static final Logger log = LoggerFactory.getLogger(RagDocStorageConsumer.class);
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
-            .registerModule(new JavaTimeModule())
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper().registerModule(new JavaTimeModule())
             .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 

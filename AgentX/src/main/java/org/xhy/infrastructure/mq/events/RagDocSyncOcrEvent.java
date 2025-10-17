@@ -2,12 +2,11 @@ package org.xhy.infrastructure.mq.events;
 
 import org.xhy.infrastructure.mq.core.MessageRoute;
 
-/**
- * Route constants for OCR processing messages.
- */
+/** Route constants for OCR processing messages. */
 public final class RagDocSyncOcrEvent {
 
-    private RagDocSyncOcrEvent() {}
+    private RagDocSyncOcrEvent() {
+    }
 
     public static final String EXCHANGE_NAME = "rag.doc.task.syncOcr.exchange-10";
     public static final String QUEUE_NAME = "rag.doc.task.syncOcr.queue-10";

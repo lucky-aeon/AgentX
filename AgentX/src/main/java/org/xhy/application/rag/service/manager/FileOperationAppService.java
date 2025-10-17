@@ -156,8 +156,8 @@ public class FileOperationAppService {
 
             // 发送消息
             MessageEnvelope<RagDocSyncStorageMessage> envelope = MessageEnvelope.builder(storageMessage)
-                    .addEventType(EventType.DOC_SYNC_RAG)
-                    .description("语料内容修改后重新向量化 - 页面 " + documentUnit.getPage()).build();
+                    .addEventType(EventType.DOC_SYNC_RAG).description("语料内容修改后重新向量化 - 页面 " + documentUnit.getPage())
+                    .build();
             messagePublisher.publish(RagDocSyncStorageEvent.route(), envelope);
 
         } catch (Exception e) {

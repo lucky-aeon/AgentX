@@ -12,9 +12,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
-/**
- * Canonical message envelope wrapping any payload with metadata.
- */
+/** Canonical message envelope wrapping any payload with metadata. */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public final class MessageEnvelope<T> {
 
@@ -125,4 +123,3 @@ public final class MessageEnvelope<T> {
         }
     }
 }
-

@@ -51,8 +51,7 @@ import org.xhy.infrastructure.rag.service.UserModelConfigResolver;
 public class RagDocConsumer {
 
     private static final Logger log = LoggerFactory.getLogger(RagDocConsumer.class);
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
-            .registerModule(new JavaTimeModule())
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper().registerModule(new JavaTimeModule())
             .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
@@ -81,9 +80,8 @@ public class RagDocConsumer {
         RagDocMessage docMessage = null;
         try {
             // 将已由 Jackson 转换的 Map 转为强类型 Envelope
-            MessageEnvelope<RagDocMessage> envelope = OBJECT_MAPPER.convertValue(payload,
-                    new TypeReference<>() {
-                    });
+            MessageEnvelope<RagDocMessage> envelope = OBJECT_MAPPER.convertValue(payload, new TypeReference<>() {
+            });
 
             MDC.put(TRACE_ID, Objects.nonNull(envelope.getTraceId()) ? envelope.getTraceId() : IdWorker.getTimeId());
             docMessage = envelope.getData();
@@ -143,8 +141,7 @@ public class RagDocConsumer {
                     fileDetailDomainService.failFileOcrProcessing(docMessage.getFileId(), fileEntity.getUserId());
                 }
             } catch (Exception ex) {
-                log.error("更新文件状态为失败失败，文件ID: {}",
-                        docMessage != null ? docMessage.getFileId() : "unknown", ex);
+                log.error("更新文件状态为失败失败，文件ID: {}", docMessage != null ? docMessage.getFileId() : "unknown", ex);
             }
         } finally {
             channel.basicAck(deliveryTag, false);
@@ -191,8 +188,8 @@ public class RagDocConsumer {
                         userModelConfigResolver.getUserEmbeddingModelConfig(fileEntity.getUserId()));
 
                 MessageEnvelope<RagDocSyncStorageMessage> env = MessageEnvelope.builder(storageMessage)
-                        .addEventType(EventType.DOC_SYNC_RAG)
-                        .description("文件自动向量化处理任务 - 页面 " + documentUnit.getPage()).build();
+                        .addEventType(EventType.DOC_SYNC_RAG).description("文件自动向量化处理任务 - 页面 " + documentUnit.getPage())
+                        .build();
                 messagePublisher.publish(RagDocSyncStorageEvent.route(), env);
             }
 

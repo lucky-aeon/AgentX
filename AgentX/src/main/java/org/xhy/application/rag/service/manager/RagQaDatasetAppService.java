@@ -518,8 +518,8 @@ public class RagQaDatasetAppService {
                 storageMessage.setDatasetId(request.getDatasetId()); // 设置数据集ID
 
                 MessageEnvelope<RagDocSyncStorageMessage> env = MessageEnvelope.builder(storageMessage)
-                        .addEventType(EventType.DOC_SYNC_RAG)
-                        .description("文件向量化处理任务 - 页面 " + documentUnit.getPage()).build();
+                        .addEventType(EventType.DOC_SYNC_RAG).description("文件向量化处理任务 - 页面 " + documentUnit.getPage())
+                        .build();
                 messagePublisher.publish(RagDocSyncStorageEvent.route(), env);
             }
 
