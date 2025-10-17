@@ -9,4 +9,3 @@ public interface MessagePublisher {
         publish(route, envelope); // TTL optional; implementations may override
     }
 }
-

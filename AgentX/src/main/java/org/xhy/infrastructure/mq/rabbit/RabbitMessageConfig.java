@@ -12,22 +12,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
-/**
- * RabbitMQ 消息转换器配置
- * 配置 Jackson JSON 消息转换器以支持自动序列化/反序列化
+/** RabbitMQ 消息转换器配置 配置 Jackson JSON 消息转换器以支持自动序列化/反序列化
  *
  * @author zang
- * @date 2025-10-17
- */
+ * @date 2025-10-17 */
 @EnableRabbit
 @Configuration
 public class RabbitMessageConfig {
 
-    /**
-     * 创建 Jackson JSON 消息转换器
+    /** 创建 Jackson JSON 消息转换器
      *
-     * @return JSON 消息转换器
-     */
+     * @return JSON 消息转换器 */
     @Bean
     public MessageConverter jsonMessageConverter() {
         ObjectMapper objectMapper = new ObjectMapper();
@@ -39,15 +34,12 @@ public class RabbitMessageConfig {
         return new Jackson2JsonMessageConverter(objectMapper);
     }
 
-    /**
-     * 配置监听器容器工厂
+    /** 配置监听器容器工厂
      *
      * @param connectionFactory RabbitMQ 连接工厂
-     * @return 监听器容器工厂
-     */
+     * @return 监听器容器工厂 */
     @Bean
-    public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory(
-            ConnectionFactory connectionFactory) {
+    public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory(ConnectionFactory connectionFactory) {
         SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
         factory.setConnectionFactory(connectionFactory);
         // 设置 JSON 消息转换器
