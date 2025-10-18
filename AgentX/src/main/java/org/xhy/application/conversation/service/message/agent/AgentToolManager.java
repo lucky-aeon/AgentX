@@ -42,6 +42,9 @@ public class AgentToolManager {
         Map<String, Map<String, Map<String, String>>> toolPresetParams = chatContext.getAgent().getToolPresetParams();
         String userId = chatContext.getUserId();
 
+        org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(AgentToolManager.class);
+        logger.debug("🔧 [创建工具提供者] MCP服务器列表: {}, UserId: {}", mcpServerNames, userId);
+
         if (mcpServerNames != null && !mcpServerNames.isEmpty()) {
             List<McpClient> mcpClients = new ArrayList<>();
             for (String mcpServerName : mcpServerNames) {
@@ -61,6 +64,9 @@ public class AgentToolManager {
                 mcpClients.add(mcpClient);
             }
             mcpProvider = McpToolProvider.builder().mcpClients(mcpClients).build();
+            logger.debug("🔧 [工具提供者已创建] MCP客户端数量: {}", mcpClients.size());
+        } else {
+            logger.debug("🔧 [工具提供者] MCP服务器列表为空，返回null");
         }
 
         return mcpProvider;

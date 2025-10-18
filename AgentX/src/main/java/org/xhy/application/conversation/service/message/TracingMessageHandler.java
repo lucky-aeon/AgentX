@@ -236,6 +236,13 @@ public abstract class TracingMessageHandler extends AbstractMessageHandler {
             // 返回包装后的 TokenStream
             return new TracingTokenStreamWrapper(originalTokenStream, capturedTraceContext);
         }
+
+        @Override
+        public dev.langchain4j.model.output.Response<dev.langchain4j.data.message.AiMessage> chatSync(String message) {
+            // 同步调用不需要包装，TraceContext 已在当前线程中
+            // 直接调用原始 Agent 的同步方法
+            return originalAgent.chatSync(message);
+        }
     }
 
     /** 带追踪功能的 TokenStream 包装器 */

@@ -35,13 +35,11 @@ public class ContainerMonitorService {
     public void checkContainerStatus() {
         try {
             List<ContainerEntity> containers = containerDomainService.getMonitoringContainers();
-            logger.info("开始检查 {} 个容器的状态", containers.size());
 
             for (ContainerEntity container : containers) {
                 checkSingleContainer(container);
             }
 
-            logger.info("容器状态检查完成");
         } catch (Exception e) {
             logger.error("容器状态检查失败", e);
         }
@@ -58,7 +56,6 @@ public class ContainerMonitorService {
                 updateContainerResourceUsage(container);
             }
 
-            logger.debug("容器资源使用率更新完成");
         } catch (Exception e) {
             logger.error("容器资源使用率更新失败", e);
         }

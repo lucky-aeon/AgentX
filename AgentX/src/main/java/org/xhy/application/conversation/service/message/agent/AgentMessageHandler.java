@@ -40,7 +40,11 @@ public class AgentMessageHandler extends TracingMessageHandler {
 
     @Override
     protected ToolProvider provideTools(ChatContext chatContext) {
+        logger.debug("🔧 [提供工具] Agent: {}, MCP服务器: {}",
+            chatContext.getAgent().getName(), chatContext.getMcpServerNames());
         // 统一通过AgentToolManager创建：合并 MCP + 子Agent 工具
-        return agentToolManager.createToolProvider(chatContext);
+        ToolProvider toolProvider = agentToolManager.createToolProvider(chatContext);
+        logger.debug("🔧 [工具提供者] 已创建: {}", toolProvider != null ? "是" : "否");
+        return toolProvider;
     }
 }

@@ -252,6 +252,8 @@ public class ConversationAppService {
 
         // 工具配置
         List<String> mcpServerNames = getMcpServerNames(targetAgent.getToolIds(), userId);
+        logger.debug("🔧 [子Agent工具配置] Agent: {}, ToolIds: {}, MCP服务器: {}",
+            targetAgent.getName(), targetAgent.getToolIds(), mcpServerNames);
 
         // 模型配置（基于目标Agent的工作区）
         AgentWorkspaceEntity workspace = agentWorkspaceDomainService.getWorkspace(targetAgentId, userId);

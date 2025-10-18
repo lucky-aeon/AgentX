@@ -54,7 +54,9 @@
       "WebSearch",
       "Bash(ssh-keygen:*)",
       "Read(/Users/xhy/.ssh/**)",
-      "Read(/Users/xhy/.ssh/**)"
+      "Read(/Users/xhy/.ssh/**)",
+      "Bash(mvn compile:*)",
+      "WebFetch(domain:docs.langchain4j.dev)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"

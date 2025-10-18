@@ -8,6 +8,7 @@ import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.model.chat.response.ChatResponse;
+import dev.langchain4j.model.output.Response;
 import dev.langchain4j.service.AiServices;
 import dev.langchain4j.service.TokenStream;
 import dev.langchain4j.service.tool.ToolExecutor;
@@ -252,8 +253,8 @@ public abstract class AbstractMessageHandler {
             MessageEntity userEntity, MessageEntity llmEntity, MessageWindowChatMemory memory,
             ToolProvider toolProvider) {
 
-        // 1. 获取同步LLM客户端
-        ChatModel syncClient = llmServiceFactory.getStrandClient(chatContext.getProvider(), chatContext.getModel());
+        // 1. 获取同步LLM客户端（使用 ChatModel 而不是 StreamingChatModel）
+        ChatModel chatModel = llmServiceFactory.getStrandClient(chatContext.getProvider(), chatContext.getModel());
 
         // 2. 保存用户消息和摘要（子Agent等场景可抑制持久化）
         if (!chatContext.isSuppressPersistence()) {
@@ -264,50 +265,76 @@ public abstract class AbstractMessageHandler {
         long startTime = System.currentTimeMillis();
 
         try {
+            // 4. 构建历史消息
+            buildHistoryMessage(chatContext, memory);
 
-            List<ChatMessage> messages = memory.messages();
-            messages.add(new UserMessage(chatContext.getUserMessage()));
+            // 5. 构建支持工具的同步Agent
+            Agent agent = buildSyncAgent(chatModel, memory, toolProvider, chatContext.getAgent(), chatContext);
 
-        // 4. 构建同步Agent并调用
-        ChatResponse chatResponse = syncClient.chat(messages);
+            // 6. 同步调用（阻塞直到完成，工具调用会自动执行）
+            Response<AiMessage> response = agent.chatSync(chatContext.getUserMessage());
 
-            // 5. 处理响应 - 设置消息token
-            this.setMessageTokenCount(chatContext.getMessageHistory(), userEntity, llmEntity, chatResponse);
+            // 7. 提取响应内容
+            String aiResponse = response.content().text();
+            llmEntity.setContent(aiResponse);
 
-            // 6. 调用模型调用完成钩子
-            ModelCallInfo modelCallInfo = buildModelCallInfo(chatContext, chatResponse,
-                    System.currentTimeMillis() - startTime, true);
-            onModelCallCompleted(chatContext, chatResponse, modelCallInfo);
+            // 8. 设置token信息
+            if (response.tokenUsage() != null) {
+                Integer inputTokens = response.tokenUsage().inputTokenCount();
+                Integer outputTokens = response.tokenUsage().outputTokenCount();
 
-            // 7. 保存消息（子Agent等场景可抑制持久化；避免空白内容）
+                llmEntity.setTokenCount(outputTokens);
+                llmEntity.setBodyTokenCount(outputTokens);
+                userEntity.setTokenCount(inputTokens);
+
+                // 计算用户消息的本体token
+                int bodyTokenSum = 0;
+                if (!chatContext.getMessageHistory().isEmpty()) {
+                    bodyTokenSum = chatContext.getMessageHistory().stream().mapToInt(MessageEntity::getBodyTokenCount)
+                            .sum();
+                }
+                userEntity.setBodyTokenCount(inputTokens - bodyTokenSum);
+            }
+
+            // 9. 保存消息（子Agent等场景可抑制持久化；避免空白内容）
             if (!chatContext.isSuppressPersistence()) {
                 messageDomainService.updateMessage(userEntity);
-                String contentToPersist = StringUtils.defaultString(llmEntity.getContent(), "");
-                if (StringUtils.isNotBlank(contentToPersist)) {
+                if (StringUtils.isNotBlank(aiResponse)) {
                     messageDomainService.saveMessageAndUpdateContext(Collections.singletonList(llmEntity),
                             chatContext.getContextEntity());
                 }
             }
 
-            // 8. 发送完整响应
-            AgentChatResponse response = new AgentChatResponse(chatResponse.aiMessage().text(), true);
-            response.setMessageType(MessageType.TEXT);
-            transport.sendEndMessage(connection, response);
+            // 10. 发送完整响应
+            AgentChatResponse chatResponse = new AgentChatResponse(aiResponse, true);
+            chatResponse.setMessageType(MessageType.TEXT);
+            transport.sendEndMessage(connection, chatResponse);
 
-            // 9. 上报调用成功结果
+            // 11. 上报调用成功结果
             long latency = System.currentTimeMillis() - startTime;
             highAvailabilityDomainService.reportCallResult(chatContext.getInstanceId(), chatContext.getModel().getId(),
                     true, latency, null);
 
-            // 10. 执行模型调用计费
-            performBillingWithErrorHandling(chatContext, chatResponse.tokenUsage().inputTokenCount(),
-                    chatResponse.tokenUsage().outputTokenCount(), transport, connection);
+            // 12. 构建模型调用信息并调用钩子
+            if (response.tokenUsage() != null) {
+                ChatResponse legacyChatResponse = ChatResponse.builder()
+                        .aiMessage(response.content())
+                        .tokenUsage(new dev.langchain4j.model.output.TokenUsage(
+                                response.tokenUsage().inputTokenCount(),
+                                response.tokenUsage().outputTokenCount()))
+                        .build();
 
-            // 11. 调用对话完成钩子
+                ModelCallInfo modelCallInfo = buildModelCallInfo(chatContext, legacyChatResponse, latency, true);
+                onModelCallCompleted(chatContext, legacyChatResponse, modelCallInfo);
+            }
+
+            // 13. 调用对话完成钩子
             onChatCompleted(chatContext, true, null);
 
         } catch (Exception e) {
-            // 直接发送错误消息
+            // 错误处理
+            logger.error("同步对话处理失败: {}", e.getMessage(), e);
+
             AgentChatResponse errorResponse = AgentChatResponse.buildEndMessage(e.getMessage(), MessageType.TEXT);
             transport.sendMessage(connection, errorResponse);
 
@@ -521,6 +548,28 @@ public abstract class AbstractMessageHandler {
 
         // 添加外部工具提供者（MCP 等）。若其需要会话上下文，请在具体工具实现中自行获取；
         // 目前我们主要依赖内置工具（Multi-Agent 等）使用上下文。
+        if (toolProvider != null) {
+            agentService.toolProvider(toolProvider);
+        }
+
+        return agentService.build();
+    }
+
+    /** 构建同步Agent（用于同步对话，支持工具调用） */
+    protected Agent buildSyncAgent(ChatModel model, MessageWindowChatMemory memory, ToolProvider toolProvider,
+            AgentEntity agent, ChatContext chatContext) {
+
+        // 通过内置工具注册器获取所有适用的内置工具
+        Map<ToolSpecification, ToolExecutor> builtInTools = builtInToolRegistry.createToolsForAgent(agent);
+
+        AiServices<Agent> agentService = AiServices.builder(Agent.class).chatModel(model).chatMemory(memory);
+
+        // 添加内置工具（如RAG等）并注入上下文包装
+        if (builtInTools != null && !builtInTools.isEmpty()) {
+            agentService.tools(wrapExecutorsWithContext(builtInTools, chatContext));
+        }
+
+        // 添加外部工具提供者（MCP 等）
         if (toolProvider != null) {
             agentService.toolProvider(toolProvider);
         }
