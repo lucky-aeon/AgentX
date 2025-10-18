@@ -72,8 +72,9 @@ public class EmbeddingDomainService implements MetadataConstant {
     private final DocumentUnitRepository documentUnitRepository;
 
     public EmbeddingDomainService(EmbeddingModelFactory embeddingModelFactory,
-            @Qualifier("initEmbeddingStore") EmbeddingStore<TextSegment> embeddingStore, FileDetailRepository fileDetailRepository,
-            MessagePublisher messagePublisher, DocumentUnitRepository documentUnitRepository) {
+            @Qualifier("initEmbeddingStore") EmbeddingStore<TextSegment> embeddingStore,
+            FileDetailRepository fileDetailRepository, MessagePublisher messagePublisher,
+            DocumentUnitRepository documentUnitRepository) {
         this.embeddingModelFactory = embeddingModelFactory;
         this.embeddingStore = embeddingStore;
         this.fileDetailRepository = fileDetailRepository;

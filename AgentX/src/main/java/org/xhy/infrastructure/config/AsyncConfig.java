@@ -12,9 +12,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 @EnableAsync
 public class AsyncConfig {
 
-    /**
-     * 专用于记忆抽取与持久化的线程池，避免与其他异步任务互相影响
-     */
+    /** 专用于记忆抽取与持久化的线程池，避免与其他异步任务互相影响 */
     @Bean(name = "memoryTaskExecutor")
     public ThreadPoolTaskExecutor memoryTaskExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();

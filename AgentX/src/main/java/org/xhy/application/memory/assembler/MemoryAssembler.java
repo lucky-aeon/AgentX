@@ -24,4 +24,3 @@ public class MemoryAssembler {
         return list.stream().map(MemoryAssembler::toDTO).collect(Collectors.toList());
     }
 }
-

@@ -190,14 +190,18 @@ public abstract class AbstractMessageHandler {
      * @param errorMessage 错误信息（成功时为null） */
     protected void onChatCompleted(ChatContext chatContext, boolean success, String errorMessage) {
         // 对话完成钩子：成功时进行记忆抽取（异步）；RAG/公开访问跳过
-        if (!success || chatContext == null) return;
-        if (chatContext.isPublicAccess()) return;
-        if (chatContext instanceof RagChatContext) return;
+        if (!success || chatContext == null)
+            return;
+        if (chatContext.isPublicAccess())
+            return;
+        if (chatContext instanceof RagChatContext)
+            return;
 
         String userId = chatContext.getUserId();
         String sessionId = chatContext.getSessionId();
         String userText = StringUtils.defaultString(chatContext.getUserMessage(), "").trim();
-        if (StringUtils.isBlank(userId) || StringUtils.isBlank(sessionId) || StringUtils.isBlank(userText)) return;
+        if (StringUtils.isBlank(userId) || StringUtils.isBlank(sessionId) || StringUtils.isBlank(userText))
+            return;
 
         // 直接调用异步方法，避免阻塞主流程
         try {
@@ -256,8 +260,8 @@ public abstract class AbstractMessageHandler {
             List<ChatMessage> messages = memory.messages();
             messages.add(new UserMessage(chatContext.getUserMessage()));
 
-        // 4. 构建同步Agent并调用
-        ChatResponse chatResponse = syncClient.chat(messages);
+            // 4. 构建同步Agent并调用
+            ChatResponse chatResponse = syncClient.chat(messages);
 
             // 5. 处理响应 - 设置消息token
             this.setMessageTokenCount(chatContext.getMessageHistory(), userEntity, llmEntity, chatResponse);
@@ -565,11 +569,13 @@ public abstract class AbstractMessageHandler {
             sb.append(title).append('\n');
             int idx = 0;
             for (MemoryResult r : results) {
-                if (r == null || r.getText() == null) continue;
+                if (r == null || r.getText() == null)
+                    continue;
                 String text = r.getText().replaceAll("\n+", " ");
-                sb.append("- [").append(r.getType() != null ? r.getType().name() : "FACT").append("] ")
-                        .append(text).append("\n");
-                if (++idx >= topK) break;
+                sb.append("- [").append(r.getType() != null ? r.getType().name() : "FACT").append("] ").append(text)
+                        .append("\n");
+                if (++idx >= topK)
+                    break;
             }
             return sb.toString();
         } catch (Exception e) {

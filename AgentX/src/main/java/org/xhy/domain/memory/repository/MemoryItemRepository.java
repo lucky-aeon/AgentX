@@ -8,4 +8,3 @@ import org.xhy.infrastructure.repository.MyBatisPlusExtRepository;
 @Mapper
 public interface MemoryItemRepository extends MyBatisPlusExtRepository<MemoryItemEntity> {
 }
-
