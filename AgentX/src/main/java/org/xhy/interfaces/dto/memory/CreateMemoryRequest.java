@@ -21,15 +21,34 @@ public class CreateMemoryRequest {
 
     private Map<String, Object> data;
 
-    public String getType() { return type; }
-    public void setType(String type) { this.type = type; }
-    public String getText() { return text; }
-    public void setText(String text) { this.text = text; }
-    public Float getImportance() { return importance; }
-    public void setImportance(Float importance) { this.importance = importance; }
-    public List<String> getTags() { return tags; }
-    public void setTags(List<String> tags) { this.tags = tags; }
-    public Map<String, Object> getData() { return data; }
-    public void setData(Map<String, Object> data) { this.data = data; }
+    public String getType() {
+        return type;
+    }
+    public void setType(String type) {
+        this.type = type;
+    }
+    public String getText() {
+        return text;
+    }
+    public void setText(String text) {
+        this.text = text;
+    }
+    public Float getImportance() {
+        return importance;
+    }
+    public void setImportance(Float importance) {
+        this.importance = importance;
+    }
+    public List<String> getTags() {
+        return tags;
+    }
+    public void setTags(List<String> tags) {
+        this.tags = tags;
+    }
+    public Map<String, Object> getData() {
+        return data;
+    }
+    public void setData(Map<String, Object> data) {
+        this.data = data;
+    }
 }
-

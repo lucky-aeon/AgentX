@@ -51,4 +51,3 @@ public class CandidateMemory {
         this.data = data;
     }
 }
-

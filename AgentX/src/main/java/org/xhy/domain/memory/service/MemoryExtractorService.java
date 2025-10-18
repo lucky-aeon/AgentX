@@ -113,15 +113,13 @@ public class MemoryExtractorService {
     private final ObjectMapper objectMapper;
 
     public MemoryExtractorService(UserModelConfigResolver userModelConfigResolver,
-                                  MemoryDomainService memoryDomainService) {
+            MemoryDomainService memoryDomainService) {
         this.userModelConfigResolver = userModelConfigResolver;
         this.memoryDomainService = memoryDomainService;
         this.objectMapper = new ObjectMapper();
     }
 
-    /**
-     * 异步抽取并持久化（供外部直接调用，无需处理返回值）
-     */
+    /** 异步抽取并持久化（供外部直接调用，无需处理返回值） */
     @Async("memoryTaskExecutor")
     public void extractAndPersistAsync(String userId, String sessionId, String userMessage) {
         try {
@@ -175,7 +173,8 @@ public class MemoryExtractorService {
     }
 
     private static Double asDouble(Object o) {
-        if (o instanceof Number n) return n.doubleValue();
+        if (o instanceof Number n)
+            return n.doubleValue();
         try {
             return o == null ? null : Double.parseDouble(String.valueOf(o));
         } catch (Exception ignore) {
@@ -203,7 +202,8 @@ public class MemoryExtractorService {
             NodeList list = root.getElementsByTagName("memory");
             for (int i = 0; i < list.getLength(); i++) {
                 Node node = list.item(i);
-                if (node.getNodeType() != Node.ELEMENT_NODE) continue;
+                if (node.getNodeType() != Node.ELEMENT_NODE)
+                    continue;
                 Element el = (Element) node;
 
                 String type = childText(el, "type");
@@ -220,7 +220,8 @@ public class MemoryExtractorService {
                         Node tagNode = tagNodes.item(j);
                         if (tagNode.getNodeType() == Node.ELEMENT_NODE) {
                             String t = tagNode.getTextContent();
-                            if (StringUtils.hasText(t)) tags.add(t.trim());
+                            if (StringUtils.hasText(t))
+                                tags.add(t.trim());
                         }
                     }
                 }
@@ -229,13 +230,15 @@ public class MemoryExtractorService {
                 String dataStr = childText(el, "data");
                 if (StringUtils.hasText(dataStr)) {
                     try {
-                        data = objectMapper.readValue(dataStr, new TypeReference<Map<String, Object>>() {});
+                        data = objectMapper.readValue(dataStr, new TypeReference<Map<String, Object>>() {
+                        });
                     } catch (Exception ignore) {
                         // 如果 data 不是 JSON，则忽略
                     }
                 }
 
-                if (!StringUtils.hasText(text)) continue;
+                if (!StringUtils.hasText(text))
+                    continue;
                 CandidateMemory cm = new CandidateMemory();
                 cm.setType(MemoryType.safeOf(type));
                 cm.setText(text.trim());
@@ -252,7 +255,8 @@ public class MemoryExtractorService {
 
     private static String childText(Element parent, String tag) {
         NodeList nl = parent.getElementsByTagName(tag);
-        if (nl.getLength() == 0) return null;
+        if (nl.getLength() == 0)
+            return null;
         String v = nl.item(0).getTextContent();
         return v == null ? null : v.trim();
     }

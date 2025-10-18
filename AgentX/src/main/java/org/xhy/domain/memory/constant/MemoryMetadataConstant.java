@@ -18,4 +18,3 @@ public interface MemoryMetadataConstant {
     /** 状态（可选，1=active） */
     String STATUS = "STATUS";
 }
-

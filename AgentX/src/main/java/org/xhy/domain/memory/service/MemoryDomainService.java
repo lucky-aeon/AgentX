@@ -47,8 +47,8 @@ public class MemoryDomainService {
 
     private final EmbeddingStore<TextSegment> memoryEmbeddingStore;
 
-    public MemoryDomainService(MemoryItemRepository memoryItemRepository,
-            EmbeddingModelFactory embeddingModelFactory, UserModelConfigResolver userModelConfigResolver,
+    public MemoryDomainService(MemoryItemRepository memoryItemRepository, EmbeddingModelFactory embeddingModelFactory,
+            UserModelConfigResolver userModelConfigResolver,
             @Qualifier("memoryEmbeddingStore") EmbeddingStore<TextSegment> memoryEmbeddingStore) {
         this.memoryItemRepository = memoryItemRepository;
         this.embeddingModelFactory = embeddingModelFactory;
@@ -66,9 +66,8 @@ public class MemoryDomainService {
 
         // 构造嵌入模型
         var embeddingCfg = userModelConfigResolver.getUserEmbeddingModelConfig(userId);
-        var embeddingModel = embeddingModelFactory
-                .createEmbeddingModel(new EmbeddingModelFactory.EmbeddingConfig(embeddingCfg.getApiKey(),
-                        embeddingCfg.getBaseUrl(), embeddingCfg.getModelEndpoint()));
+        var embeddingModel = embeddingModelFactory.createEmbeddingModel(new EmbeddingModelFactory.EmbeddingConfig(
+                embeddingCfg.getApiKey(), embeddingCfg.getBaseUrl(), embeddingCfg.getModelEndpoint()));
 
         List<String> itemIds = new ArrayList<>();
         for (CandidateMemory c : candidates) {
@@ -97,11 +96,11 @@ public class MemoryDomainService {
                 toSave.setSourceSessionId(sessionId);
                 toSave.setDedupeHash(hash);
                 toSave.setStatus(ACTIVE);
-              try {
-                  memoryItemRepository.insert(toSave);
-              }catch (Exception e){
-                  e.printStackTrace();
-              }
+                try {
+                    memoryItemRepository.insert(toSave);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             } else {
                 // 合并（简单策略：importance 取 max，tags 合并去重，text 以更长者为准）
                 toSave = existed;
@@ -145,19 +144,15 @@ public class MemoryDomainService {
 
         // 构造嵌入模型
         var embeddingCfg = userModelConfigResolver.getUserEmbeddingModelConfig(userId);
-        var embeddingModel = embeddingModelFactory
-                .createEmbeddingModel(new EmbeddingModelFactory.EmbeddingConfig(embeddingCfg.getApiKey(),
-                        embeddingCfg.getBaseUrl(), embeddingCfg.getModelEndpoint()));
+        var embeddingModel = embeddingModelFactory.createEmbeddingModel(new EmbeddingModelFactory.EmbeddingConfig(
+                embeddingCfg.getApiKey(), embeddingCfg.getBaseUrl(), embeddingCfg.getModelEndpoint()));
 
         try {
             Embedding queryEmbedding = embeddingModel.embed(query).content();
 
-            EmbeddingSearchRequest req = EmbeddingSearchRequest.builder()
-                    .filter(new IsEqualTo(USER_ID, userId)) // 仅召回本用户记忆
+            EmbeddingSearchRequest req = EmbeddingSearchRequest.builder().filter(new IsEqualTo(USER_ID, userId)) // 仅召回本用户记忆
                     .maxResults(k * 3) // 候选加倍，再做加权筛选
-                    .minScore(0.3)
-                    .queryEmbedding(queryEmbedding)
-                    .build();
+                    .minScore(0.3).queryEmbedding(queryEmbedding).build();
 
             EmbeddingSearchResult<TextSegment> result = memoryEmbeddingStore.search(req);
             List<EmbeddingMatch<TextSegment>> matches = result.matches();
@@ -166,8 +161,7 @@ public class MemoryDomainService {
             }
 
             // 批量获取 itemIds 并过滤 status=1
-            List<String> itemIds = matches.stream()
-                    .map(m -> (String) m.embedded().metadata().toMap().get(ITEM_ID))
+            List<String> itemIds = matches.stream().map(m -> (String) m.embedded().metadata().toMap().get(ITEM_ID))
                     .filter(Objects::nonNull).collect(Collectors.toList());
 
             if (itemIds.isEmpty()) {
@@ -213,8 +207,7 @@ public class MemoryDomainService {
     /** 分页列出用户记忆（可按类型过滤） */
     public Page<MemoryItemEntity> pageMemories(String userId, String type, int page, int pageSize) {
         Page<MemoryItemEntity> mpPage = new Page<>(Math.max(1, page), Math.max(1, pageSize));
-        var qw = Wrappers.<MemoryItemEntity>lambdaQuery()
-                .eq(MemoryItemEntity::getUserId, userId);
+        var qw = Wrappers.<MemoryItemEntity>lambdaQuery().eq(MemoryItemEntity::getUserId, userId);
         if (type != null && !type.isBlank()) {
             qw.eq(MemoryItemEntity::getType, type.trim().toUpperCase());
         }
@@ -225,8 +218,7 @@ public class MemoryDomainService {
 
     /** 列出用户的记忆（可按类型过滤，带上限） */
     public List<MemoryItemEntity> listMemories(String userId, String type, Integer limit) {
-        var qw = Wrappers.<MemoryItemEntity>lambdaQuery()
-                .eq(MemoryItemEntity::getUserId, userId);
+        var qw = Wrappers.<MemoryItemEntity>lambdaQuery().eq(MemoryItemEntity::getUserId, userId);
         if (type != null && !type.isBlank()) {
             qw.eq(MemoryItemEntity::getType, type.trim().toUpperCase());
         }
@@ -240,7 +232,8 @@ public class MemoryDomainService {
 
     /** 归档（软删除）记忆条目 */
     public boolean delete(String userId, String itemId) {
-        LambdaQueryWrapper<MemoryItemEntity> qw = Wrappers.<MemoryItemEntity>lambdaQuery().eq(MemoryItemEntity::getUserId, userId).eq(MemoryItemEntity::getId, itemId);
+        LambdaQueryWrapper<MemoryItemEntity> qw = Wrappers.<MemoryItemEntity>lambdaQuery()
+                .eq(MemoryItemEntity::getUserId, userId).eq(MemoryItemEntity::getId, itemId);
         memoryItemRepository.delete(qw);
         return true;
     }
@@ -254,7 +247,8 @@ public class MemoryDomainService {
             MessageDigest md = MessageDigest.getInstance("SHA-256");
             byte[] digest = md.digest(s.getBytes(StandardCharsets.UTF_8));
             StringBuilder sb = new StringBuilder();
-            for (byte b : digest) sb.append(String.format("%02x", b));
+            for (byte b : digest)
+                sb.append(String.format("%02x", b));
             return sb.toString();
         } catch (Exception e) {
             throw new BusinessException("计算hash失败", e);
@@ -262,7 +256,8 @@ public class MemoryDomainService {
     }
 
     private static Float safeImportance(Float f) {
-        if (f == null) return 0.5f;
+        if (f == null)
+            return 0.5f;
         return Math.max(0f, Math.min(1f, f));
     }
 
@@ -271,29 +266,38 @@ public class MemoryDomainService {
     }
 
     private static Float max(Float a, Float b) {
-        if (a == null) return b == null ? 0.5f : b;
-        if (b == null) return a;
+        if (a == null)
+            return b == null ? 0.5f : b;
+        if (b == null)
+            return a;
         return Math.max(a, b);
     }
 
     private static List<String> mergeTags(List<String> a, List<String> b) {
         Set<String> set = new LinkedHashSet<>();
-        if (a != null) set.addAll(a);
-        if (b != null) set.addAll(b);
+        if (a != null)
+            set.addAll(a);
+        if (b != null)
+            set.addAll(b);
         return new ArrayList<>(set);
     }
 
     private static Map<String, Object> mergeData(Map<String, Object> a, Map<String, Object> b) {
-        if (a == null && b == null) return null;
+        if (a == null && b == null)
+            return null;
         Map<String, Object> m = new LinkedHashMap<>();
-        if (a != null) m.putAll(a);
-        if (b != null) m.putAll(b);
+        if (a != null)
+            m.putAll(a);
+        if (b != null)
+            m.putAll(b);
         return m;
     }
 
     private static String pickRichText(String oldText, String newText) {
-        if (!StringUtils.hasText(newText)) return oldText;
-        if (!StringUtils.hasText(oldText)) return newText;
+        if (!StringUtils.hasText(newText))
+            return oldText;
+        if (!StringUtils.hasText(oldText))
+            return newText;
         return newText.length() >= oldText.length() ? newText : oldText;
     }
 }
