@@ -206,10 +206,10 @@ public abstract class TracingMessageHandler extends AbstractMessageHandler {
 
     @Override
     protected Agent buildStreamingAgent(StreamingChatModel model, MessageWindowChatMemory memory,
-            ToolProvider toolProvider, AgentEntity agent) {
+            ToolProvider toolProvider, AgentEntity agent, org.xhy.application.conversation.service.handler.context.ChatContext chatContext) {
 
         // 调用父类方法，获取原始 Agent
-        Agent originalAgent = super.buildStreamingAgent(model, memory, toolProvider, agent);
+        Agent originalAgent = super.buildStreamingAgent(model, memory, toolProvider, agent, chatContext);
 
         // 捕获当前线程的 TraceContext
         TraceContext currentTrace = getCurrentTraceContext();

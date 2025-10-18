@@ -111,6 +111,7 @@ export default function AgentPreviewChat({
     type: MessageType.TEXT as MessageType
   })
   const messageSequenceNumber = useRef(0)
+  const subAgentTitleRef = useRef<string | null>(null)
   const [completedTextMessages, setCompletedTextMessages] = useState<Set<string>>(new Set())
   const [currentAssistantMessage, setCurrentAssistantMessage] = useState<{ id: string; hasContent: boolean } | null>(null)
   const [autoScroll, setAutoScroll] = useState(true) // 新增：自动滚动控制
@@ -323,23 +324,53 @@ export default function AgentPreviewChat({
     
     // 获取消息类型，默认为TEXT
     const messageType = (data.messageType as MessageType) || MessageType.TEXT
-    
-    // 生成当前消息序列的唯一ID
+
+    if (messageType === MessageType.SUB_AGENT_CALL_START) {
+      const raw = (data.content || '').trim()
+      const m = /^开始调用子Agent:\s*(.+)$/.exec(raw)
+      let display = raw
+      if (m && m[1]) {
+        display = `子 Agent 调用：${m[1].trim()}`
+      } else if (!raw.startsWith('子 Agent 调用')) {
+        display = `子 Agent 调用：${raw || '子Agent'}`
+      }
+      addMessage({
+        id: `assistant-subagentstart-${baseMessageId}-seq${messageSequenceNumber.current}`,
+        role: 'assistant',
+        content: display,
+        type: MessageType.SUB_AGENT_CALL_START,
+        createdAt: new Date()
+      })
+      messageSequenceNumber.current += 1
+      return
+    }
+
+    if (
+      messageType === MessageType.SUB_AGENT_PARTIAL ||
+      messageType === MessageType.SUB_AGENT_COMPLETE ||
+      messageType === MessageType.SUB_AGENT_ERROR
+    ) {
+      return
+    }
+
     const currentMessageId = `assistant-${messageType}-${baseMessageId}-seq${messageSequenceNumber.current}`
     
  
     
     // 处理消息内容（用于UI显示）
-    const displayableTypes = [undefined, "TEXT", "TOOL_CALL"]
+    const displayableTypes = [
+      undefined,
+      MessageType.TEXT,
+      MessageType.TOOL_CALL,
+    ]
     const isDisplayableType = displayableTypes.includes(data.messageType)
     
-    if (isDisplayableType && data.content) {
-      // 累积消息内容
-      messageContentAccumulator.current.content += data.content
-      messageContentAccumulator.current.type = messageType
-      
-      // 更新UI显示
-      updateOrCreateMessageInUI(currentMessageId, messageContentAccumulator.current)
+    if (isDisplayableType) {
+      if (data.content) {
+        messageContentAccumulator.current.content += data.content
+        messageContentAccumulator.current.type = messageType
+        updateOrCreateMessageInUI(currentMessageId, messageContentAccumulator.current)
+      }
     }
     
     // 消息结束信号处理
@@ -356,6 +387,7 @@ export default function AgentPreviewChat({
       
       // 增加消息序列计数
       messageSequenceNumber.current += 1
+      subAgentTitleRef.current = null
       
  
     }
@@ -516,6 +548,11 @@ export default function AgentPreviewChat({
         return {
           icon: <Wrench className="h-4 w-4 text-blue-500" />,
           text: '工具调用'
+        }
+      case MessageType.SUB_AGENT_CALL_START:
+        return {
+          icon: <Bot className="h-4 w-4" />,
+          text: '子 Agent 调用'
         }
       case MessageType.TEXT:
       default:

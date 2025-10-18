@@ -89,6 +89,8 @@ export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName
   const [completedTextMessages, setCompletedTextMessages] = useState<Set<string>>(new Set());
   // 添加消息序列计数器
   const messageSequenceNumber = useRef(0);
+  // 子Agent 调用标题（从 SUB_AGENT_CALL_START 提取）
+  const subAgentTitleRef = useRef<string | null>(null);
 
   // 在组件初始化和conversationId变更时重置状态
   useEffect(() => {
@@ -423,23 +425,57 @@ export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName
     
     // 获取消息类型，默认为TEXT
     const messageType = data.messageType as MessageType || MessageType.TEXT;
-    
+
+    // 子Agent调用：像工具调用一样单独展示一条记录
+    if (messageType === MessageType.SUB_AGENT_CALL_START) {
+      const raw = (data.content || "").trim();
+      const m = /^开始调用子Agent:\s*(.+)$/.exec(raw);
+      let display = raw;
+      if (m && m[1]) {
+        display = `子 Agent 调用：${m[1].trim()}`;
+      } else if (!raw.startsWith("子 Agent 调用")) {
+        display = `子 Agent 调用：${raw || "子Agent"}`;
+      }
+      addMessage({
+        id: `assistant-subagentstart-${baseMessageId}-seq${messageSequenceNumber.current}`,
+        role: "assistant",
+        content: display,
+        type: MessageType.SUB_AGENT_CALL_START,
+        createdAt: new Date()
+      });
+      messageSequenceNumber.current += 1;
+      return;
+    }
+
+    // 子Agent输出与结束：不在主时间线展示正文，直接忽略
+    if (
+      messageType === MessageType.SUB_AGENT_PARTIAL ||
+      messageType === MessageType.SUB_AGENT_COMPLETE ||
+      messageType === MessageType.SUB_AGENT_ERROR
+    ) {
+      return;
+    }
+
     // 生成当前消息序列的唯一ID
     const currentMessageId = `assistant-${messageType}-${baseMessageId}-seq${messageSequenceNumber.current}`;
     
  
     
     // 处理消息内容（用于UI显示）
-    const displayableTypes = [undefined, "TEXT", "TOOL_CALL"];
+    const displayableTypes = [
+      undefined,
+      MessageType.TEXT,
+      MessageType.TOOL_CALL,
+    ];
     const isDisplayableType = displayableTypes.includes(data.messageType);
     
-    if (isDisplayableType && data.content) {
-      // 累积消息内容
-      messageContentAccumulator.current.content += data.content;
-      messageContentAccumulator.current.type = messageType;
-      
-      // 更新UI显示
-      updateOrCreateMessageInUI(currentMessageId, messageContentAccumulator.current);
+    if (isDisplayableType) {
+      if (data.content) {
+        // 其它子Agent片段或普通类型，正常拼接
+        messageContentAccumulator.current.content += data.content;
+        messageContentAccumulator.current.type = messageType;
+        updateOrCreateMessageInUI(currentMessageId, messageContentAccumulator.current);
+      }
     }
     
     // 消息结束信号处理
@@ -456,6 +492,8 @@ export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName
       
       // 增加消息序列计数
       messageSequenceNumber.current += 1;
+      // 清理子Agent标题
+      subAgentTitleRef.current = null;
       
  
     }
@@ -592,6 +630,11 @@ export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName
         return {
           icon: <Wrench className="h-5 w-5 text-blue-500" />,
           text: '工具调用'
+        };
+      case MessageType.SUB_AGENT_CALL_START:
+        return {
+          icon: <div className="text-lg">🤖</div>,
+          text: '子 Agent 调用'
         };
       case MessageType.TEXT:
       default:
@@ -867,4 +910,3 @@ export function ChatPanel({ conversationId, isFunctionalAgent = false, agentName
     </div>
   )
 }
-

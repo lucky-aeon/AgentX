@@ -51,6 +51,10 @@ public class AgentEntity extends BaseEntity {
     @TableField(value = "knowledge_base_ids", typeHandler = ListStringConverter.class)
     private List<String> knowledgeBaseIds;
 
+    /** 关联的子Agent ID列表（Multi-Agent） */
+    @TableField(value = "linked_agent_ids", typeHandler = ListStringConverter.class)
+    private List<String> linkedAgentIds;
+
     /** 当前发布的版本ID */
     @TableField("published_version")
     private String publishedVersion;
@@ -140,6 +144,14 @@ public class AgentEntity extends BaseEntity {
 
     public void setKnowledgeBaseIds(List<String> knowledgeBaseIds) {
         this.knowledgeBaseIds = knowledgeBaseIds;
+    }
+
+    public List<String> getLinkedAgentIds() {
+        return linkedAgentIds != null ? linkedAgentIds : new ArrayList<>();
+    }
+
+    public void setLinkedAgentIds(List<String> linkedAgentIds) {
+        this.linkedAgentIds = linkedAgentIds;
     }
 
     public String getPublishedVersion() {

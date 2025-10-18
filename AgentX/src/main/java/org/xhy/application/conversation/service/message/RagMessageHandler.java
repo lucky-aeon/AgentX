@@ -183,7 +183,7 @@ public class RagMessageHandler extends AbstractMessageHandler {
 
         // 创建RAG专用的流式Agent
         Agent agent = buildRagStreamingAgent(streamingClient, memory, toolProvider, ragContext.getAgent(),
-                retrievalResult.getRetrievedDocuments());
+                retrievalResult.getRetrievedDocuments(), ragContext);
 
         // 启动流式处理
         processRagChat(agent, connection, transport, ragContext, userEntity, llmEntity, ragContext.getUserMessage());
@@ -329,7 +329,7 @@ public class RagMessageHandler extends AbstractMessageHandler {
 
     /** 构建RAG专用的流式Agent */
     private Agent buildRagStreamingAgent(StreamingChatModel model, MessageWindowChatMemory memory,
-            ToolProvider toolProvider, AgentEntity agent, List<DocumentUnitDTO> documentUnitDTOS) {
+            ToolProvider toolProvider, AgentEntity agent, List<DocumentUnitDTO> documentUnitDTOS, ChatContext chatContext) {
 
         // 为RAG对话添加专用的系统提示词
         MessageWindowChatMemory ragMemory = MessageWindowChatMemory.builder().maxMessages(1000)
@@ -338,7 +338,7 @@ public class RagMessageHandler extends AbstractMessageHandler {
         // 添加RAG专用系统提示词
         ragMemory.add(new SystemMessage(ragSystemPrompt.replace("${context}", documentUnitDTOS.toString())));
 
-        return buildStreamingAgent(model, ragMemory, toolProvider, agent);
+        return buildStreamingAgent(model, ragMemory, toolProvider, agent, chatContext);
     }
 
     /** 设置消息Token计数（调用父类方法） */

@@ -59,6 +59,10 @@ public class AgentVersionEntity extends BaseEntity {
     @TableField(value = "knowledge_base_ids", typeHandler = ListConverter.class)
     private List<String> knowledgeBaseIds;
 
+    /** 关联的子Agent ID列表（Multi-Agent） */
+    @TableField(value = "linked_agent_ids", typeHandler = ListConverter.class)
+    private List<String> linkedAgentIds;
+
     /** 版本更新日志 */
     @TableField("change_log")
     private String changeLog;
@@ -95,6 +99,7 @@ public class AgentVersionEntity extends BaseEntity {
     public AgentVersionEntity() {
         this.toolIds = new ArrayList<>();
         this.knowledgeBaseIds = new ArrayList<>();
+        this.linkedAgentIds = new ArrayList<>();
     }
 
     // Getter和Setter方法
@@ -152,6 +157,14 @@ public class AgentVersionEntity extends BaseEntity {
 
     public void setKnowledgeBaseIds(List<String> knowledgeBaseIds) {
         this.knowledgeBaseIds = knowledgeBaseIds;
+    }
+
+    public List<String> getLinkedAgentIds() {
+        return linkedAgentIds != null ? linkedAgentIds : new ArrayList<>();
+    }
+
+    public void setLinkedAgentIds(List<String> linkedAgentIds) {
+        this.linkedAgentIds = linkedAgentIds;
     }
 
     public String getChangeLog() {
@@ -255,6 +268,7 @@ public class AgentVersionEntity extends BaseEntity {
         version.setWelcomeMessage(agent.getWelcomeMessage());
         version.setToolIds(agent.getToolIds());
         version.setKnowledgeBaseIds(agent.getKnowledgeBaseIds());
+        version.setLinkedAgentIds(agent.getLinkedAgentIds());
         version.setChangeLog(changeLog);
         version.setUserId(agent.getUserId());
 

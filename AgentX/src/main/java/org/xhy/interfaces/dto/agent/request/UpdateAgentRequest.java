@@ -22,6 +22,7 @@ public class UpdateAgentRequest {
     private LLMModelConfig modelConfig;
     private List<String> toolIds;
     private List<String> knowledgeBaseIds;
+    private List<String> linkedAgentIds;
     private Map<String, Map<String, Map<String, String>>> toolPresetParams;
     private Boolean multiModal;
 
@@ -96,6 +97,14 @@ public class UpdateAgentRequest {
 
     public void setKnowledgeBaseIds(List<String> knowledgeBaseIds) {
         this.knowledgeBaseIds = knowledgeBaseIds;
+    }
+
+    public List<String> getLinkedAgentIds() {
+        return linkedAgentIds;
+    }
+
+    public void setLinkedAgentIds(List<String> linkedAgentIds) {
+        this.linkedAgentIds = linkedAgentIds;
     }
 
     public Map<String, Map<String, Map<String, String>>> getToolPresetParams() {

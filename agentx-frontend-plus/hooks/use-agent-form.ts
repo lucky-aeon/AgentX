@@ -23,6 +23,7 @@ export interface AgentFormData {
   enabled: boolean
 
   multiModal: boolean
+  linkedAgentIds: string[]
 }
 
 interface UseAgentFormProps {
@@ -66,6 +67,7 @@ export function useAgentForm({ initialData, isEditMode = false }: UseAgentFormPr
     enabled: true,
 
     multiModal: false, // 默认关闭多模态
+    linkedAgentIds: [],
     ...initialData,
   })
 
@@ -208,6 +210,19 @@ export function useAgentForm({ initialData, isEditMode = false }: UseAgentFormPr
     })
   }
 
+  // 切换关联子Agent
+  const toggleLinkedAgent = (agentId: string) => {
+    setFormData(prev => {
+      const exists = prev.linkedAgentIds.includes(agentId)
+      return {
+        ...prev,
+        linkedAgentIds: exists
+          ? prev.linkedAgentIds.filter(id => id !== agentId)
+          : [...prev.linkedAgentIds, agentId]
+      }
+    })
+  }
+
   // 处理工具点击事件
   const handleToolClick = (tool: Tool) => {
     if (selectedToolForSidebar && selectedToolForSidebar.id === tool.id) {
@@ -346,6 +361,7 @@ export function useAgentForm({ initialData, isEditMode = false }: UseAgentFormPr
     // 表单操作函数
     toggleTool,
     toggleKnowledgeBase,
+    toggleLinkedAgent,
     handleToolClick,
     handleKnowledgeBaseClick,
     updateToolPresetParameters,

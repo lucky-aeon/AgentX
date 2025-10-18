@@ -88,6 +88,7 @@ export default function AgentFormModal({
     handleToolClick,
     handleKnowledgeBaseClick,
     updateToolPresetParameters,
+    toggleLinkedAgent,
     
     // 工具函数
     getAvailableTabs,
@@ -273,9 +274,11 @@ export default function AgentFormModal({
                 selectedType="agent"
                 toggleTool={toggleTool}
                 toggleKnowledgeBase={toggleKnowledgeBase}
+                toggleLinkedAgent={toggleLinkedAgent}
                 onToolClick={handleToolClick}
                 onKnowledgeBaseClick={handleKnowledgeBaseClick}
                 updateToolPresetParameters={updateToolPresetParameters}
+                currentAgentId={agentId}
               />
             </TabsContent>
 

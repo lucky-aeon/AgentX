@@ -17,7 +17,9 @@ import org.xhy.domain.llm.model.ProviderEntity;
 import org.xhy.domain.trace.model.TraceContext;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /** chat 上下文，包含对话所需的所有信息 */
 public class ChatContext {
@@ -74,6 +76,12 @@ public class ChatContext {
 
     /** 公开访问ID（嵌入模式使用） */
     private String publicId;
+
+    /** 子流程/特殊场景：抑制消息持久化（不写入会话消息，不做记忆抽取） */
+    private boolean suppressPersistence = false;
+
+    /** 在主时间线中需要抑制展示的工具名称（例如：子Agent工具） */
+    private Set<String> suppressedToolNames = new HashSet<>();
 
 
     public String getSessionId() {
@@ -218,6 +226,22 @@ public class ChatContext {
 
     public void setPublicId(String publicId) {
         this.publicId = publicId;
+    }
+
+    public boolean isSuppressPersistence() {
+        return suppressPersistence;
+    }
+
+    public void setSuppressPersistence(boolean suppressPersistence) {
+        this.suppressPersistence = suppressPersistence;
+    }
+
+    public Set<String> getSuppressedToolNames() {
+        return suppressedToolNames;
+    }
+
+    public void setSuppressedToolNames(Set<String> suppressedToolNames) {
+        this.suppressedToolNames = (suppressedToolNames != null) ? suppressedToolNames : new HashSet<>();
     }
 
 }

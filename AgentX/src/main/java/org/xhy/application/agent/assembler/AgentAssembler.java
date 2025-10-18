@@ -36,6 +36,7 @@ public class AgentAssembler {
         entity.setToolIds(request.getToolIds() != null ? request.getToolIds() : new ArrayList<>());
         entity.setKnowledgeBaseIds(
                 request.getKnowledgeBaseIds() != null ? request.getKnowledgeBaseIds() : new ArrayList<>());
+        entity.setLinkedAgentIds(request.getLinkedAgentIds() != null ? request.getLinkedAgentIds() : new ArrayList<>());
 
         // 设置创建和更新时间
         LocalDateTime now = LocalDateTime.now();

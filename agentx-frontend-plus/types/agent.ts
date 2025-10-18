@@ -44,6 +44,7 @@ export interface Agent {
   modelId?: string // 关联的模型ID
   modelName?: string // 关联的模型名称
   multiModal?: boolean // 多模态功能开关
+  linkedAgentIds?: string[] // 关联的子Agent ID 列表
 }
 
 // API响应基本结构
@@ -83,6 +84,7 @@ export interface CreateAgentRequest {
   knowledgeBaseIds?: string[]
   userId: string
   multiModal?: boolean // 多模态功能开关
+  linkedAgentIds?: string[] // 关联的子Agent ID 列表
 }
 
 // 更新助理请求参数
@@ -106,6 +108,7 @@ export interface UpdateAgentRequest {
 
   enabled?: boolean
   multiModal?: boolean // 多模态功能开关
+  linkedAgentIds?: string[] // 关联的子Agent ID 列表
 }
 
 // 发布助理版本请求参数
@@ -126,6 +129,7 @@ export interface PublishAgentVersionRequest {
   } // 工具预设参数
   knowledgeBaseIds?: string[]
   multiModal?: boolean // 多模态功能开关
+  linkedAgentIds?: string[] // 关联的子Agent ID 列表
 }
 
 // 搜索助理请求参数
@@ -170,6 +174,7 @@ export interface AgentVersion {
   removed?: boolean
   addWorkspace?: boolean // 是否已添加到工作区
   multiModal?: boolean // 多模态功能开关
+  linkedAgentIds?: string[] // 关联的子Agent ID 列表
 }
 
 // 发布状态枚举
@@ -179,4 +184,3 @@ export enum PublishStatus {
   REJECTED = 3,
   REMOVED = 4,
 }
-

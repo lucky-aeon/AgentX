@@ -44,5 +44,17 @@ public enum MessageType {
     RAG_ANSWER_PROGRESS,
 
     /** RAG回答结束 */
-    RAG_ANSWER_END
+    RAG_ANSWER_END,
+
+    /** 子Agent调用开始（多智能体） */
+    SUB_AGENT_CALL_START,
+
+    /** 子Agent流式片段（多智能体） */
+    SUB_AGENT_PARTIAL,
+
+    /** 子Agent调用完成（多智能体） */
+    SUB_AGENT_COMPLETE,
+
+    /** 子Agent调用异常（多智能体） */
+    SUB_AGENT_ERROR
 }

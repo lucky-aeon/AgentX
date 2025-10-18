@@ -205,6 +205,76 @@ public class ConversationAppService {
         return handler.chat(environment, transport);
     }
 
+    /** 同步对话（指定子Agent，仍使用同一session）
+     * 用于 Multi-Agent 子Agent 调用：在相同的 sessionId 下，按指定 agentId 构造上下文并执行同步对话。
+     */
+    public ChatResponse chatSyncWithAgent(ChatRequest chatRequest, String userId, String targetAgentId) {
+        return chatSyncWithAgent(chatRequest, userId, targetAgentId, false);
+    }
+
+    /** 同步对话（可选择抑制消息持久化，用于子Agent隐藏输出） */
+    public ChatResponse chatSyncWithAgent(ChatRequest chatRequest, String userId, String targetAgentId,
+            boolean suppressPersistence) {
+        // 1. 准备以“目标Agent”为主体的对话环境（同一session）
+        ChatContext environment = prepareEnvironmentWithTargetAgent(chatRequest, userId, targetAgentId);
+        environment.setStreaming(false);
+        environment.setSuppressPersistence(suppressPersistence);
+
+        // 2. 获取同步传输方式
+        MessageTransport<ChatResponse> transport = transportFactory
+                .getTransport(MessageTransportFactory.TRANSPORT_TYPE_SYNC);
+
+        // 3. 获取适合的消息处理器
+        AbstractMessageHandler handler = messageHandlerFactory.getHandler(environment.getAgent());
+
+        // 4. 执行
+        return handler.chat(environment, transport);
+    }
+
+    /** 嵌套流式对话（指定子Agent，复用外层SSE传输） */
+    public void chatStreamWithAgentNested(ChatRequest chatRequest, String userId, String targetAgentId,
+            MessageTransport<org.springframework.web.servlet.mvc.method.annotation.SseEmitter> transport) {
+        ChatContext environment = prepareEnvironmentWithTargetAgent(chatRequest, userId, targetAgentId);
+        environment.setStreaming(true);
+
+        AbstractMessageHandler handler = messageHandlerFactory.getHandler(environment.getAgent());
+        handler.chat(environment, transport);
+    }
+
+    /** 准备以“目标Agent”为主体的对话环境（共享同一session） */
+    private ChatContext prepareEnvironmentWithTargetAgent(ChatRequest chatRequest, String userId, String targetAgentId) {
+        String sessionId = chatRequest.getSessionId();
+        // 校验会话存在
+        SessionEntity session = sessionDomainService.getSession(sessionId, userId);
+
+        // 目标Agent（含版本覆盖）
+        AgentEntity targetAgent = getAgentWithValidation(targetAgentId, userId);
+
+        // 工具配置
+        List<String> mcpServerNames = getMcpServerNames(targetAgent.getToolIds(), userId);
+
+        // 模型配置（基于目标Agent的工作区）
+        AgentWorkspaceEntity workspace = agentWorkspaceDomainService.getWorkspace(targetAgentId, userId);
+        LLMModelConfig llmModelConfig = workspace.getLlmModelConfig();
+        ModelEntity model = getModelForChat(llmModelConfig, null, userId);
+
+        // 高可用服务商选择
+        List<String> fallbackChain = userSettingsDomainService.getUserFallbackChain(userId);
+        HighAvailabilityResult result = highAvailabilityDomainService.selectBestProvider(model, userId, sessionId,
+                fallbackChain);
+        ProviderEntity originalProvider = llmDomainService.getProvider(model.getProviderId());
+        ProviderEntity provider = result.getProvider();
+        ModelEntity selectedModel = result.getModel();
+        String instanceId = result.getInstanceId();
+        provider.isActive();
+
+        // 构造环境
+        ChatContext chatContext = createChatContext(chatRequest, userId, targetAgent, model, selectedModel,
+                originalProvider, provider, llmModelConfig, mcpServerNames, instanceId);
+        setupContextAndHistory(chatContext, chatRequest);
+        return chatContext;
+    }
+
     /** 准备对话环境
      *
      * @param chatRequest 聊天请求

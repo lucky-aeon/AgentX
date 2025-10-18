@@ -42,6 +42,7 @@ export default function CreateAgentPage() {
         toolPresetParams: formData.toolPresetParams,
         userId: API_CONFIG.CURRENT_USER_ID,
         multiModal: formData.multiModal,
+        linkedAgentIds: formData.linkedAgentIds || [],
       };
 
       const response = await createAgentWithToast(agentData);
@@ -80,4 +81,3 @@ export default function CreateAgentPage() {
     />
   )
 }
-

@@ -32,6 +32,9 @@ public class AgentDTO {
     /** 关联的知识库ID列表 */
     private List<String> knowledgeBaseIds;
 
+    /** 关联的子Agent ID列表 */
+    private List<String> linkedAgentIds;
+
     /** 当前发布的版本ID */
     private String publishedVersion;
 
@@ -124,6 +127,14 @@ public class AgentDTO {
 
     public void setKnowledgeBaseIds(List<String> knowledgeBaseIds) {
         this.knowledgeBaseIds = knowledgeBaseIds;
+    }
+
+    public List<String> getLinkedAgentIds() {
+        return linkedAgentIds != null ? linkedAgentIds : new ArrayList<>();
+    }
+
+    public void setLinkedAgentIds(List<String> linkedAgentIds) {
+        this.linkedAgentIds = linkedAgentIds;
     }
 
     public String getPublishedVersion() {

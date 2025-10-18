@@ -17,6 +17,7 @@ public class CreateAgentRequest {
     private String welcomeMessage;
     private List<String> toolIds;
     private List<String> knowledgeBaseIds;
+    private List<String> linkedAgentIds;
     private Map<String, Map<String, Map<String, String>>> toolPresetParams;
     private Boolean multiModal;
     // 构造方法
@@ -77,6 +78,14 @@ public class CreateAgentRequest {
 
     public void setKnowledgeBaseIds(List<String> knowledgeBaseIds) {
         this.knowledgeBaseIds = knowledgeBaseIds;
+    }
+
+    public List<String> getLinkedAgentIds() {
+        return linkedAgentIds;
+    }
+
+    public void setLinkedAgentIds(List<String> linkedAgentIds) {
+        this.linkedAgentIds = linkedAgentIds;
     }
 
     public Map<String, Map<String, Map<String, String>>> getToolPresetParams() {

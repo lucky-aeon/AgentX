@@ -96,6 +96,7 @@ export default function EditAgentPage() {
             toolPresetParams: agent.toolPresetParams || {},
             enabled: agent.enabled,
             multiModal: agent.multiModal || false,
+            linkedAgentIds: agent.linkedAgentIds || [],
           }
 
           setInitialData(formData)
@@ -183,7 +184,10 @@ export default function EditAgentPage() {
         multiModal: formData.multiModal,
       }
 
-      const response = await updateAgentWithToast(agentId, agentData)
+      const response = await updateAgentWithToast(agentId, {
+        ...agentData,
+        linkedAgentIds: formData.linkedAgentIds || [],
+      })
 
       if (response.code === 200) {
         // toast已通过withToast处理

@@ -85,7 +85,7 @@ export function useAgentOperations() {
           knowledgeBaseIds: agent.knowledgeBaseIds || [],
           toolPresetParams: agent.toolPresetParams || {},
           enabled: agent.enabled,
-
+          linkedAgentIds: agent.linkedAgentIds || [],
         })
 
         // 设置助理类型为默认值
@@ -190,7 +190,7 @@ export function useAgentOperations() {
         knowledgeBaseIds: formData.knowledgeBaseIds,
         toolPresetParams: formData.toolPresetParams,
         enabled: formData.enabled,
-
+        linkedAgentIds: formData.linkedAgentIds,
       }
 
       // 调用API更新助理
@@ -273,6 +273,7 @@ export function useAgentOperations() {
         toolIds: toolIds,
         knowledgeBaseIds: formData.knowledgeBaseIds,
         toolPresetParams: formData.toolPresetParams,
+        linkedAgentIds: formData.linkedAgentIds,
       })
 
       if (response.code === 200) {
@@ -318,7 +319,7 @@ export function useAgentOperations() {
         knowledgeBaseIds: version.knowledgeBaseIds || [],
         toolPresetParams: version.toolPresetParams || {},
         enabled: formData.enabled,
-
+        linkedAgentIds: version.linkedAgentIds || formData.linkedAgentIds,
       })
       setSelectedType("chat")
 

@@ -17,13 +17,16 @@ interface AgentToolsFormProps {
   formData: { // 只修改 formData 中 tools 的类型
     tools: AgentTool[]; // <-- Use AgentTool[]
     knowledgeBaseIds: string[];
+    linkedAgentIds?: string[];
   };
   selectedType?: "chat" | "agent"; // 可选参数，保持向后兼容
   toggleTool: (tool: Tool) => void; // <--- 修改签名以接受完整的 Tool 对象
   toggleKnowledgeBase: (kbId: string, kbName?: string) => void;
+  toggleLinkedAgent: (agentId: string) => void;
   onToolClick: (tool: Tool) => void;
   onKnowledgeBaseClick: (knowledgeBase: KnowledgeBase) => void;
   updateToolPresetParameters?: (toolId: string, presetParams: Record<string, Record<string, string>>) => void;
+  currentAgentId?: string;
 }
 
 const AgentToolsForm: React.FC<AgentToolsFormProps> = ({
@@ -31,14 +34,18 @@ const AgentToolsForm: React.FC<AgentToolsFormProps> = ({
   selectedType,
   toggleTool,
   toggleKnowledgeBase,
+  toggleLinkedAgent,
   onToolClick,
   onKnowledgeBaseClick,
   updateToolPresetParameters,
+  currentAgentId,
 }) => {
   const [installedTools, setInstalledTools] = useState<Tool[]>(cachedTools || []);
   const [isLoadingTools, setIsLoadingTools] = useState(cachedTools ? false : true);
   const [knowledgeBases, setKnowledgeBases] = useState<KnowledgeBase[]>(cachedKnowledgeBases || []);
   const [isLoadingKnowledgeBases, setIsLoadingKnowledgeBases] = useState(cachedKnowledgeBases ? false : true);
+  const [workspaceAgents, setWorkspaceAgents] = useState<any[]>([]);
+  const [isLoadingAgents, setIsLoadingAgents] = useState(true);
 
   useEffect(() => {
     // 如果已经有缓存数据，直接使用不重新请求
@@ -95,6 +102,23 @@ const AgentToolsForm: React.FC<AgentToolsFormProps> = ({
       };
       fetchKnowledgeBases();
     }
+    // 获取工作区助理列表
+    const fetchAgents = async () => {
+      try {
+        const { getWorkspaceAgentsWithToast } = await import("@/lib/agent-service");
+        const resp = await getWorkspaceAgentsWithToast();
+        if (resp.code === 200 && Array.isArray(resp.data)) {
+          setWorkspaceAgents(resp.data);
+        } else {
+          setWorkspaceAgents([]);
+        }
+      } catch (e) {
+        setWorkspaceAgents([]);
+      } finally {
+        setIsLoadingAgents(false);
+      }
+    };
+    fetchAgents();
   }, []);
 
   // 检查工具是否被选中
@@ -109,6 +133,45 @@ const AgentToolsForm: React.FC<AgentToolsFormProps> = ({
 
   return (
     <div className="space-y-6">
+      {/* 关联子助理 */}
+      <div>
+        <h2 className="text-lg font-medium mb-2">关联子助理（Multi-Agent）</h2>
+        <p className="text-sm text-muted-foreground mb-2">选择本助理可调用的其它助理</p>
+        <div className="min-h-[120px]">
+          {isLoadingAgents ? (
+            <div className="grid grid-cols-2 gap-4 mt-4">
+              {[1,2,3,4].map(i => (<Skeleton key={i} className="h-14 w-full rounded-lg" />))}
+            </div>
+          ) : workspaceAgents.length === 0 ? (
+            <p className="text-sm text-muted-foreground mt-4">暂无可用助理</p>
+          ) : (
+            <div className="grid grid-cols-2 gap-4 mt-4">
+              {workspaceAgents
+                .filter(a => !currentAgentId || a.id !== currentAgentId)
+                .map((a) => {
+                const selected = (formData.linkedAgentIds || []).includes(a.id);
+                return (
+                  <div
+                    key={a.id}
+                    className={`border rounded-lg p-4 cursor-pointer transition-all ${selected ? "border-blue-500 bg-blue-50" : "hover:border-gray-300"}`}
+                    onClick={() => toggleLinkedAgent(a.id)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-medium truncate">{a.name}</h3>
+                      <Switch
+                        checked={selected}
+                        onCheckedChange={() => toggleLinkedAgent(a.id)}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1 truncate">{a.description || ""}</p>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      </div>
       {/* 工具选择 */}
       <div>
         <h2 className="text-lg font-medium mb-2">可用工具</h2>

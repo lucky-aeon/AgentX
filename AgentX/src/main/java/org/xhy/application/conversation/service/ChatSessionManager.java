@@ -88,6 +88,22 @@ public class ChatSessionManager {
         }
     }
 
+    /** 获取会话对应的SseEmitter（用于嵌套子流程回显） */
+    public SseEmitter getEmitter(String sessionId) {
+        SessionInfo info = activeSessions.get(sessionId);
+        return info != null ? info.getEmitter() : null;
+    }
+
+    /** 向指定会话安全发送消息（不结束连接） */
+    public boolean send(String sessionId, Object data) {
+        SseEmitter emitter = getEmitter(sessionId);
+        if (emitter == null) {
+            logger.warn("会话不存在或已结束，无法发送: sessionId={}", sessionId);
+            return false;
+        }
+        return SseEmitterUtils.safeSend(emitter, data);
+    }
+
     /** 中断指定的对话会话
      * @param sessionId 会话ID
      * @return 是否成功中断（true表示会话存在且成功中断，false表示会话不存在） */

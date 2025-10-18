@@ -17,6 +17,7 @@ import org.xhy.application.conversation.dto.AgentChatResponse;
 import org.xhy.application.conversation.service.handler.context.AgentPromptTemplates;
 import org.xhy.application.conversation.service.handler.context.ChatContext;
 import org.xhy.application.conversation.service.message.Agent;
+import org.xhy.application.conversation.service.message.util.ChatContextHolder;
 import org.xhy.application.conversation.service.message.builtin.BuiltInToolRegistry;
 import org.xhy.application.conversation.service.ChatSessionManager;
 import org.xhy.domain.agent.model.AgentEntity;
@@ -113,41 +114,48 @@ public abstract class AbstractMessageHandler {
      * @return 连接对象
      * @param <T> 连接类型 */
     public <T> T chat(ChatContext chatContext, MessageTransport<T> transport) {
-        // 1. 创建连接
-        T connection = transport.createConnection(CONNECTION_TIMEOUT);
+        // 设置当前对话上下文（用于工具等下游组件按需获取）
+        ChatContextHolder.set(chatContext);
+        try {
+            // 1. 创建连接
+            T connection = transport.createConnection(CONNECTION_TIMEOUT);
 
-        // 2. 调用对话开始钩子
-        onChatStart(chatContext);
+            // 2. 调用对话开始钩子
+            onChatStart(chatContext);
 
-        // 3. 检查用户余额是否足够
-        checkBalanceBeforeChat(chatContext.getUserId(), transport, connection);
+            // 3. 检查用户余额是否足够
+            checkBalanceBeforeChat(chatContext.getUserId(), transport, connection);
 
-        // 4. 创建消息实体
-        MessageEntity llmMessageEntity = createLlmMessage(chatContext);
-        MessageEntity userMessageEntity = createUserMessage(chatContext);
+            // 4. 创建消息实体
+            MessageEntity llmMessageEntity = createLlmMessage(chatContext);
+            MessageEntity userMessageEntity = createUserMessage(chatContext);
 
-        // 5. 调用用户消息处理完成钩子
-        onUserMessageProcessed(chatContext, userMessageEntity);
+            // 5. 调用用户消息处理完成钩子
+            onUserMessageProcessed(chatContext, userMessageEntity);
 
-        // 6. 初始化聊天内存
-        MessageWindowChatMemory memory = initMemory();
+            // 6. 初始化聊天内存
+            MessageWindowChatMemory memory = initMemory();
 
-        // 7. 构建历史消息
-        buildHistoryMessage(chatContext, memory);
+            // 7. 构建历史消息
+            buildHistoryMessage(chatContext, memory);
 
-        // 8. 根据子类决定是否需要工具
-        ToolProvider toolProvider = provideTools(chatContext);
+            // 8. 根据子类决定是否需要工具
+            ToolProvider toolProvider = provideTools(chatContext);
 
-        // 9. 根据是否流式选择不同的处理方式
-        if (chatContext.isStreaming()) {
-            processStreamingChat(chatContext, connection, transport, userMessageEntity, llmMessageEntity, memory,
-                    toolProvider);
-        } else {
-            processSyncChat(chatContext, connection, transport, userMessageEntity, llmMessageEntity, memory,
-                    toolProvider);
+            // 9. 根据是否流式选择不同的处理方式
+            if (chatContext.isStreaming()) {
+                processStreamingChat(chatContext, connection, transport, userMessageEntity, llmMessageEntity, memory,
+                        toolProvider);
+            } else {
+                processSyncChat(chatContext, connection, transport, userMessageEntity, llmMessageEntity, memory,
+                        toolProvider);
+            }
+
+            return connection;
+        } finally {
+            // 确保上下文被清理，避免线程泄漏
+            ChatContextHolder.clear();
         }
-
-        return connection;
     }
 
     /** 追踪钩子方法 - 对话开始时调用 子类可以覆盖此方法实现追踪逻辑
@@ -189,8 +197,9 @@ public abstract class AbstractMessageHandler {
      * @param success 是否成功
      * @param errorMessage 错误信息（成功时为null） */
     protected void onChatCompleted(ChatContext chatContext, boolean success, String errorMessage) {
-        // 对话完成钩子：成功时进行记忆抽取（异步）；RAG/公开访问跳过
+        // 对话完成钩子：成功时进行记忆抽取（异步）；RAG/公开访问/抑制持久化场景跳过
         if (!success || chatContext == null) return;
+        if (chatContext.isSuppressPersistence()) return;
         if (chatContext.isPublicAccess()) return;
         if (chatContext instanceof RagChatContext) return;
 
@@ -205,6 +214,7 @@ public abstract class AbstractMessageHandler {
         } catch (Exception ignore) {
             // 异步任务调度异常不影响主流程
         }
+        // 清理上下文由 chat() 的 finally 保证
     }
 
     /** 追踪钩子方法 - 发生异常时调用
@@ -231,7 +241,7 @@ public abstract class AbstractMessageHandler {
                 chatContext.getModel());
 
         // 创建流式Agent
-        Agent agent = buildStreamingAgent(streamingClient, memory, toolProvider, chatContext.getAgent());
+        Agent agent = buildStreamingAgent(streamingClient, memory, toolProvider, chatContext.getAgent(), chatContext);
 
         // 使用现有的流式处理逻辑
         processChat(agent, connection, transport, chatContext, userEntity, llmEntity);
@@ -245,8 +255,10 @@ public abstract class AbstractMessageHandler {
         // 1. 获取同步LLM客户端
         ChatModel syncClient = llmServiceFactory.getStrandClient(chatContext.getProvider(), chatContext.getModel());
 
-        // 2. 保存用户消息和摘要
-        this.saveMessageAndUpdateContext(chatContext, userEntity);
+        // 2. 保存用户消息和摘要（子Agent等场景可抑制持久化）
+        if (!chatContext.isSuppressPersistence()) {
+            this.saveMessageAndUpdateContext(chatContext, userEntity);
+        }
 
         // 3. 记录调用开始时间
         long startTime = System.currentTimeMillis();
@@ -267,10 +279,15 @@ public abstract class AbstractMessageHandler {
                     System.currentTimeMillis() - startTime, true);
             onModelCallCompleted(chatContext, chatResponse, modelCallInfo);
 
-            // 7. 保存消息
-            messageDomainService.updateMessage(userEntity);
-            messageDomainService.saveMessageAndUpdateContext(Collections.singletonList(llmEntity),
-                    chatContext.getContextEntity());
+            // 7. 保存消息（子Agent等场景可抑制持久化；避免空白内容）
+            if (!chatContext.isSuppressPersistence()) {
+                messageDomainService.updateMessage(userEntity);
+                String contentToPersist = StringUtils.defaultString(llmEntity.getContent(), "");
+                if (StringUtils.isNotBlank(contentToPersist)) {
+                    messageDomainService.saveMessageAndUpdateContext(Collections.singletonList(llmEntity),
+                            chatContext.getContextEntity());
+                }
+            }
 
             // 8. 发送完整响应
             AgentChatResponse response = new AgentChatResponse(chatResponse.aiMessage().text(), true);
@@ -308,6 +325,9 @@ public abstract class AbstractMessageHandler {
      * @param chatContext 对话环境
      * @param userEntity 此次的用户消息 */
     private void saveMessageAndUpdateContext(ChatContext chatContext, MessageEntity userEntity) {
+        if (chatContext.isSuppressPersistence()) {
+            return;
+        }
         MessageEntity summary = this.getSummaryFromHistory(chatContext.getMessageHistory());
         ContextEntity contextEntity = chatContext.getContextEntity();
         if (summary != null) {
@@ -326,8 +346,10 @@ public abstract class AbstractMessageHandler {
     protected <T> void processChat(Agent agent, T connection, MessageTransport<T> transport, ChatContext chatContext,
             MessageEntity userEntity, MessageEntity llmEntity) {
 
-        // 保存用户消息和摘要
-        this.saveMessageAndUpdateContext(chatContext, userEntity);
+        // 保存用户消息和摘要（子Agent等场景可抑制持久化）
+        if (!chatContext.isSuppressPersistence()) {
+            this.saveMessageAndUpdateContext(chatContext, userEntity);
+        }
 
         AtomicReference<StringBuilder> messageBuilder = new AtomicReference<>(new StringBuilder());
         TokenStream tokenStream = agent.chat(chatContext.getUserMessage());
@@ -367,12 +389,22 @@ public abstract class AbstractMessageHandler {
 
             this.setMessageTokenCount(chatContext.getMessageHistory(), userEntity, llmEntity, chatResponse);
 
-            // 按仅用户抽取策略，不记录AI文本
+            // 按仅用户抽取策略，不记录AI文本；避免保存空白消息
+            if (!chatContext.isSuppressPersistence()) {
+                messageDomainService.updateMessage(userEntity);
 
-            messageDomainService.updateMessage(userEntity);
-            // 保存AI消息
-            messageDomainService.saveMessageAndUpdateContext(Collections.singletonList(llmEntity),
-                    chatContext.getContextEntity());
+                String contentToPersist = StringUtils.defaultString(llmEntity.getContent(), "");
+                if (StringUtils.isBlank(contentToPersist)) {
+                    // 回退使用已流式累积的文本
+                    // 注意：此处 messageBuilder 为外层原子引用
+                    contentToPersist = messageBuilder.get().toString();
+                    llmEntity.setContent(contentToPersist);
+                }
+                if (StringUtils.isNotBlank(contentToPersist)) {
+                    messageDomainService.saveMessageAndUpdateContext(Collections.singletonList(llmEntity),
+                            chatContext.getContextEntity());
+                }
+            }
 
             // 发送结束消息
             transport.sendEndMessage(connection, AgentChatResponse.buildEndMessage(MessageType.TEXT));
@@ -403,24 +435,35 @@ public abstract class AbstractMessageHandler {
 
         // 工具执行处理
         tokenStream.onToolExecuted(toolExecution -> {
-            if (!messageBuilder.get().isEmpty()) {
+            String builtSoFar = messageBuilder.get().toString();
+            if (StringUtils.isNotBlank(builtSoFar)) {
                 transport.sendMessage(connection, AgentChatResponse.buildEndMessage(MessageType.TEXT));
-                llmEntity.setContent(messageBuilder.get().toString());
-                messageDomainService.saveMessageAndUpdateContext(Collections.singletonList(llmEntity),
-                        chatContext.getContextEntity());
-                messageBuilder.set(new StringBuilder());
+                llmEntity.setContent(builtSoFar);
+                if (!chatContext.isSuppressPersistence()) {
+                    messageDomainService.saveMessageAndUpdateContext(Collections.singletonList(llmEntity),
+                            chatContext.getContextEntity());
+                }
             }
-            String message = "执行工具：" + toolExecution.request().name();
-            MessageEntity toolMessage = createLlmMessage(chatContext);
-            toolMessage.setMessageType(MessageType.TOOL_CALL);
-            toolMessage.setContent(message);
-            messageDomainService.saveMessageAndUpdateContext(Collections.singletonList(toolMessage),
-                    chatContext.getContextEntity());
+            // 无论是否保存，都重置累积器
+            messageBuilder.set(new StringBuilder());
+            String toolName = toolExecution.request().name();
+            boolean suppressed = chatContext.getSuppressedToolNames() != null
+                    && chatContext.getSuppressedToolNames().contains(toolName);
+            if (!suppressed) {
+                String message = "执行工具：" + toolName;
+                MessageEntity toolMessage = createLlmMessage(chatContext);
+                toolMessage.setMessageType(MessageType.TOOL_CALL);
+                toolMessage.setContent(message);
+                if (!chatContext.isSuppressPersistence()) {
+                    messageDomainService.saveMessageAndUpdateContext(Collections.singletonList(toolMessage),
+                            chatContext.getContextEntity());
+                }
 
-            // 直接发送工具调用消息
-            transport.sendMessage(connection, AgentChatResponse.buildEndMessage(message, MessageType.TOOL_CALL));
+                // 直接发送工具调用消息
+                transport.sendMessage(connection, AgentChatResponse.buildEndMessage(message, MessageType.TOOL_CALL));
+            }
 
-            // 调用工具调用完成钩子
+            // 调用工具调用完成钩子（即使被抑制展示也要上报追踪）
             ToolCallInfo toolCallInfo = buildToolCallInfo(toolExecution);
             onToolCallCompleted(chatContext, toolCallInfo);
         });
@@ -464,24 +507,45 @@ public abstract class AbstractMessageHandler {
 
     /** 构建流式Agent */
     protected Agent buildStreamingAgent(StreamingChatModel model, MessageWindowChatMemory memory,
-            ToolProvider toolProvider, AgentEntity agent) {
+            ToolProvider toolProvider, AgentEntity agent, ChatContext chatContext) {
 
         // 通过内置工具注册器获取所有适用的内置工具
         Map<ToolSpecification, ToolExecutor> builtInTools = builtInToolRegistry.createToolsForAgent(agent);
 
         AiServices<Agent> agentService = AiServices.builder(Agent.class).streamingChatModel(model).chatMemory(memory);
 
-        // 添加内置工具（如RAG等）
+        // 添加内置工具（如RAG等）并注入上下文包装
         if (builtInTools != null && !builtInTools.isEmpty()) {
-            agentService.tools(builtInTools);
+            agentService.tools(wrapExecutorsWithContext(builtInTools, chatContext));
         }
 
-        // 添加外部工具提供者
+        // 添加外部工具提供者（MCP 等）。若其需要会话上下文，请在具体工具实现中自行获取；
+        // 目前我们主要依赖内置工具（Multi-Agent 等）使用上下文。
         if (toolProvider != null) {
             agentService.toolProvider(toolProvider);
         }
 
         return agentService.build();
+    }
+
+    /** 将工具执行器包装为在执行前设置ChatContext */
+    private Map<ToolSpecification, ToolExecutor> wrapExecutorsWithContext(
+            Map<ToolSpecification, ToolExecutor> source, ChatContext chatContext) {
+        if (source == null || source.isEmpty()) return source;
+        Map<ToolSpecification, ToolExecutor> wrapped = new LinkedHashMap<>();
+        for (Map.Entry<ToolSpecification, ToolExecutor> e : source.entrySet()) {
+            ToolExecutor exec = e.getValue();
+            ToolExecutor proxy = (request, memoryId) -> {
+                try {
+                    ChatContextHolder.set(chatContext);
+                    return exec.execute(request, memoryId);
+                } finally {
+                    ChatContextHolder.clear();
+                }
+            };
+            wrapped.put(e.getKey(), proxy);
+        }
+        return wrapped;
     }
 
     /** 创建用户消息实体 */
