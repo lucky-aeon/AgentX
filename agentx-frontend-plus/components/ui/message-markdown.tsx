@@ -27,10 +27,10 @@ const isErrorMessage = (content: string): boolean => {
   return errorKeywords.some(keyword => content.includes(keyword));
 };
 
-// 预处理文本内容，标准化反引号字符
+// 预处理文本内容，标准化反引号和特殊字符
 const preprocessContent = (content: string): string => {
   if (!content) return content;
-  
+
   // 替换各种可能的引号字符为标准反引号
   let processedContent = content
     // 全角反引号 ｀ -> 标准反引号 `
@@ -39,14 +39,13 @@ const preprocessContent = (content: string): string => {
     .replace(/['']([^'']*?)[''] /g, '`$1` ')
     // 其他可能的引号字符
     .replace(/‛/g, '`')
-    .replace(/′/g, '`');
-  
-  console.log("Debug - preprocessed content:", {
-    original: content,
-    processed: processedContent,
-    changed: content !== processedContent
-  });
-  
+    .replace(/′/g, '`')
+    // 修复可能的零宽字符和不可见字符
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')
+    // 标准化换行符
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n');
+
   return processedContent;
 };
 
@@ -61,30 +60,7 @@ export function MessageMarkdown({
   
   // 预处理内容
   const processedContent = preprocessContent(content);
-  
-  // 调试：检查内容中的反引号字符
-  React.useEffect(() => {
-    if (content.includes('character varying')) {
- 
- 
-      console.log("Debug - content bytes:", Array.from(content).map(char => ({ 
-        char, 
-        code: char.charCodeAt(0), 
-        hex: char.charCodeAt(0).toString(16) 
-      })));
-      
-      // 查找反引号字符
-      const backticks = Array.from(content).filter(char => 
-        char.charCodeAt(0) === 96 || // 标准反引号
-        char.charCodeAt(0) === 65344 || // 全角反引号 ｀
-        char.charCodeAt(0) === 8216 || // 左单引号 '
-        char.charCodeAt(0) === 8217 || // 右单引号 '
-        char.includes('`')
-      );
- 
-    }
-  }, [content, processedContent]);
-  
+
   // 自动检测错误消息或使用传入的 isError
   const shouldShowAsError = isError || isErrorMessage(content);
   
@@ -187,7 +163,7 @@ export function MessageMarkdown({
               )
             }}
           >
-            {content}
+            {processedContent}
           </ReactMarkdown>
           {isStreaming && (
             <span className="inline-block w-1 h-4 ml-1 bg-current animate-pulse" />
