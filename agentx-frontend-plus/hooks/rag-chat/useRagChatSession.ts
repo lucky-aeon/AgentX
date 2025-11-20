@@ -29,7 +29,6 @@ export function useRagChatSession(options: UseRagChatSessionOptions = {}) {
   
   const chatSessionRef = useRef<RagChatSession | null>(null);
   const thinkingContentRef = useRef<string>('');
-  const processedTimestamps = useRef<Set<number>>(new Set());
   const isDoneCalledRef = useRef<boolean>(false);
 
   // 清空对话
@@ -41,7 +40,6 @@ export function useRagChatSession(options: UseRagChatSessionOptions = {}) {
     setCurrentThinking(null);
     setCurrentThinkingContent('');
     thinkingContentRef.current = '';
-    processedTimestamps.current.clear();
     isDoneCalledRef.current = false;
     setIsLoading(false);
   }, []);
@@ -97,7 +95,6 @@ export function useRagChatSession(options: UseRagChatSessionOptions = {}) {
     setCurrentThinking(null);
     setCurrentThinkingContent('');
     thinkingContentRef.current = '';
-    processedTimestamps.current.clear();
     isDoneCalledRef.current = false;
 
     // 确保聊天会话已初始化
@@ -177,13 +174,9 @@ export function useRagChatSession(options: UseRagChatSessionOptions = {}) {
             });
           },
           onContent: (content, timestamp) => {
-            if (timestamp && processedTimestamps.current.has(timestamp)) {
-              return;
-            }
-            if (timestamp) {
-              processedTimestamps.current.add(timestamp);
-            }
-            
+            // 移除时间戳去重逻辑：SSE 是有序流，不会有重复消息
+            // 之前的去重导致相同毫秒内的多个片段被跳过，造成内容丢失
+
             setMessages(prev => {
               if (prev.length > 0) {
                 const lastMessage = prev[prev.length - 1];

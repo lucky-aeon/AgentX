@@ -29,7 +29,6 @@ export function useUserRagChatSession(options: UseUserRagChatSessionOptions = {}
   
   const chatSessionRef = useRef<UserRagChatSession | null>(null);
   const thinkingContentRef = useRef<string>('');
-  const processedTimestamps = useRef<Set<number>>(new Set());
 
   // 清空对话
   const clearMessages = useCallback(() => {
@@ -40,7 +39,6 @@ export function useUserRagChatSession(options: UseUserRagChatSessionOptions = {}
     setCurrentThinking(null);
     setCurrentThinkingContent('');
     thinkingContentRef.current = '';
-    processedTimestamps.current.clear();
     setIsLoading(false);
   }, []);
 
