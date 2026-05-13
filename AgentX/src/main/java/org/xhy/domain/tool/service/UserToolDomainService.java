@@ -48,9 +48,14 @@ public class UserToolDomainService {
     }
 
     public void delete(String toolId, String userId) {
-        LambdaQueryWrapper<UserToolEntity> wrapper = Wrappers.<UserToolEntity>lambdaQuery()
-                .eq(UserToolEntity::getToolId, toolId).eq(UserToolEntity::getUserId, userId);
-        userToolRepository.checkedDelete(wrapper);
+        int affected = userToolRepository.physicalDeleteByUserIdAndToolId(userId, toolId);
+        if (affected == 0) {
+            throw new BusinessException("数据更新失败");
+        }
+    }
+
+    public void purgeByToolIdAndUserId(String toolId, String userId) {
+        userToolRepository.physicalDeleteByUserIdAndToolId(userId, toolId);
     }
 
     // 获取工具的安装次数

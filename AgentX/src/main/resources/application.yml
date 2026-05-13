@@ -19,7 +19,7 @@ spring:
     driver-class-name: org.postgresql.Driver
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:agentx}
     username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:postgres}
+    password: ${DB_PASSWORD:123456}
   jackson:
     date-format: yyyy-MM-dd HH:mm:ss
     time-zone: GMT+8
@@ -55,10 +55,17 @@ logging:
     name: logs/agent-x.log
 mail:
   smtp:
-    host: ${MAIL_SMTP_HOST:qq}
-    port: ${MAIL_SMTP_PORT:25}
-    username: ${MAIL_SMTP_USERNAME:xx}
-    password: ${MAIL_SMTP_PASSWORD:xx}
+    host: ${MAIL_SMTP_HOST:smtp.qq.com}
+    port: ${MAIL_SMTP_PORT:465}
+    username: ${MAIL_SMTP_USERNAME:3362690944@qq.com}
+    password: ${MAIL_SMTP_PASSWORD:vyllkqhlzurdciih}
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.ssl.enable: true
+      mail.smtp.ssl.required: true
+      mail.smtp.connectiontimeout: 10000
+      mail.smtp.timeout: 10000
+      mail.smtp.writetimeout: 10000
   verification:
     template: ${MAIL_VERIFICATION_TEMPLATE:您的验证码是:%s，有效期10分钟，请勿泄露给他人。}
     subject: ${MAIL_VERIFICATION_SUBJECT:AgentX - 邮箱验证码}
@@ -66,15 +73,15 @@ mail:
 # GitHub OAuth 配置
 oauth:
   github:
-    client-id: ${GITHUB_CLIENT_ID}
-    client-secret: ${GITHUB_CLIENT_SECRET}
-    redirect-uri: ${GITHUB_REDIRECT_URI:https://xxx/oauth/github/callback}
+    client-id: Ov23liYcJzhzyMOYMoln
+    client-secret: fbe7e531f1fff4f0c45fc18eb88de4190ee3a5ec
+    redirect-uri: ${GITHUB_REDIRECT_URI:https://393f53e.r24.cpolar.top/oauth/github/callback}
 
 github:
   target:
-    username: ${GITHUB_TARGET_USERNAME:}
-    repo-name: ${GITHUB_TARGET_REPO_NAME:}
-    token: ${GITHUB_TARGET_TOKEN:}
+    username: ${GITHUB_TARGET_USERNAME:314159first }
+    repo-name: ${GITHUB_TARGET_REPO_NAME:mcp_system}
+    token: ${GITHUB_TARGET_TOKEN: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}
 mcp:
   gateway:
     api-key: 123456

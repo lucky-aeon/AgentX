@@ -10,8 +10,9 @@ CREATE TABLE IF NOT EXISTS agent_tasks (
     start_time TIMESTAMP,
     end_time TIMESTAMP,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    is_deleted BOOLEAN DEFAULT FALSE,
-    INDEX idx_tasks_session_id (session_id),
-    INDEX idx_tasks_user_id (user_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4; 
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    is_deleted BOOLEAN DEFAULT FALSE
+);
+
+CREATE INDEX IF NOT EXISTS idx_agent_tasks_session_id ON agent_tasks (session_id);
+CREATE INDEX IF NOT EXISTS idx_agent_tasks_user_id ON agent_tasks (user_id);

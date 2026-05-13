@@ -16,7 +16,6 @@ import org.xhy.infrastructure.exception.BusinessException;
 import java.util.List;
 import java.util.Set;
 
-/** 工具领域服务 */
 @Service
 public class ToolDomainService {
 
@@ -31,21 +30,14 @@ public class ToolDomainService {
         this.toolStateService = toolStateService;
     }
 
-    /** 创建工具
-     *
-     * @param toolEntity 工具实体
-     * @return 创建后的工具实体 */
     @Transactional
     public ToolEntity createTool(ToolEntity toolEntity) {
-        // 设置初始状态
         toolEntity.setStatus(ToolStatus.WAITING_REVIEW);
-
-        // 保存工具
         toolRepository.checkInsert(toolEntity);
 
-        // 提交到状态流转服务进行处理
+        // 工具创建后立刻提交到状态流转服务，
+        // 后续的 GitHub 校验、部署、拉取工具定义都走异步流程
         toolStateService.submitToolForProcessing(toolEntity);
-
         return toolEntity;
     }
 
@@ -66,7 +58,6 @@ public class ToolDomainService {
     }
 
     public ToolEntity updateApprovedToolStatus(String toolId, ToolStatus status) {
-
         LambdaUpdateWrapper<ToolEntity> wrapper = Wrappers.<ToolEntity>lambdaUpdate().eq(ToolEntity::getId, toolId)
                 .set(ToolEntity::getStatus, status);
         toolRepository.checkedUpdate(wrapper);
@@ -74,32 +65,28 @@ public class ToolDomainService {
     }
 
     public ToolEntity updateTool(ToolEntity toolEntity) {
-        /** 修改 name/description/icon/labels只触发人工审核状态 修改 upload_url/upload_command触发整个状态扭转 */
-        // 获取原工具信息
         ToolEntity oldTool = toolRepository.selectById(toolEntity.getId());
         if (oldTool == null) {
             throw new BusinessException("工具不存在: " + toolEntity.getId());
         }
 
-        // 检查是否修改了URL或安装命令
         boolean needStateTransition = false;
         if ((toolEntity.getUploadUrl() != null && !toolEntity.getUploadUrl().equals(oldTool.getUploadUrl()))
                 || (toolEntity.getInstallCommand() != null
                         && !toolEntity.getInstallCommand().equals(oldTool.getInstallCommand()))) {
             needStateTransition = true;
+            // 源地址或安装命令变化，说明工具执行能力可能变化，需要重跑完整自动化流程
             toolEntity.setStatus(ToolStatus.WAITING_REVIEW);
         } else {
-            // 只修改了信息，设置为人工审核状态
+            // 只改文案、图标、标签等展示信息时，只进入人工审核，不重跑部署流程
             toolEntity.setStatus(ToolStatus.MANUAL_REVIEW);
         }
 
-        // 更新工具
         LambdaUpdateWrapper<ToolEntity> wrapper = Wrappers.<ToolEntity>lambdaUpdate()
                 .eq(ToolEntity::getId, toolEntity.getId())
                 .eq(toolEntity.needCheckUserId(), ToolEntity::getUserId, toolEntity.getUserId());
         toolRepository.update(toolEntity, wrapper);
 
-        // 如果需要状态流转，提交到状态流转服务
         if (needStateTransition) {
             toolStateService.submitToolForProcessing(toolEntity);
         }
@@ -109,11 +96,8 @@ public class ToolDomainService {
 
     @Transactional
     public void deleteTool(String toolId, String userId) {
-        // 删除工具
         Wrapper<ToolEntity> wrapper = Wrappers.<ToolEntity>lambdaQuery().eq(ToolEntity::getId, toolId)
                 .eq(ToolEntity::getUserId, userId);
-
-        // 删除工具版本
         Wrapper<ToolVersionEntity> versionWrapper = Wrappers.<ToolVersionEntity>lambdaQuery()
                 .eq(ToolVersionEntity::getToolId, toolId);
         toolRepository.checkedDelete(wrapper);
@@ -140,6 +124,7 @@ public class ToolDomainService {
     public List<ToolEntity> findProcessingTools() {
         Set<ToolStatus> terminalStatuses = new java.util.HashSet<>(ToolStatus.getTerminalStatuses());
         terminalStatuses.add(ToolStatus.MANUAL_REVIEW);
+        // 处理中 = 既没结束，也没停在等待管理员判断的人工审核状态
         LambdaQueryWrapper<ToolEntity> wrapper = Wrappers.<ToolEntity>lambdaQuery()
                 .notIn(ToolEntity::getStatus, terminalStatuses);
         return toolRepository.selectList(wrapper);

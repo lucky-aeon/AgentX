@@ -64,13 +64,14 @@ public class MCPGatewayService {
      * @throws BusinessException 如果API调用失败 */
     public boolean deployTool(String installCommand) {
         String url = properties.getBaseUrl() + "/deploy";
+        String normalizedInstallCommand = normalizeInstallCommand(installCommand);
 
         try (CloseableHttpClient httpClient = createHttpClient()) {
             HttpPost httpPost = new HttpPost(url);
             httpPost.setHeader("Content-Type", "application/json");
             httpPost.setHeader("Authorization", "Bearer " + properties.getApiKey());
 
-            httpPost.setEntity(new StringEntity(installCommand, "UTF-8"));
+            httpPost.setEntity(new StringEntity(normalizedInstallCommand, "UTF-8"));
 
             logger.info("发送部署请求到MCP Gateway: {}", url);
             try (CloseableHttpResponse response = httpClient.execute(httpPost)) {
@@ -95,6 +96,31 @@ public class MCPGatewayService {
             logger.error("调用MCP Gateway API失败", e);
             throw new BusinessException("调用MCP Gateway API失败: " + e.getMessage(), e);
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private String normalizeInstallCommand(String installCommand) {
+        Map<String, Object> root = JsonUtils.parseObject(installCommand, Map.class);
+        Object mcpServersValue = root.get("mcpServers");
+        if (!(mcpServersValue instanceof Map<?, ?> rawServers)) {
+            return installCommand;
+        }
+
+        for (Object serverConfigValue : rawServers.values()) {
+            if (!(serverConfigValue instanceof Map<?, ?> rawServerConfig)) {
+                continue;
+            }
+            Map<String, Object> serverConfig = (Map<String, Object>) rawServerConfig;
+            Object commandValue = serverConfig.get("command");
+            if (!(commandValue instanceof String command)) {
+                continue;
+            }
+            if ("npx.cmd".equalsIgnoreCase(command)) {
+                serverConfig.put("command", "npx");
+            }
+        }
+
+        return JsonUtils.toJsonString(root);
     }
 
     /** 从MCP Gateway获取工具列表

@@ -64,17 +64,17 @@ interface TaskAggregate {
 }
 
 // 定义消息类型为字符串字面量类型
-type MessageTypeValue = 
-  | "TEXT" 
-  | "TASK_IDS" 
-  | "TASK_EXEC" 
-  | "TASK_STATUS" 
+type MessageTypeValue =
+  | "TEXT"
+  | "TASK_IDS"
+  | "TASK_EXEC"
+  | "TASK_STATUS"
   | "TOOL_CALL"
   | "TASK_SPLIT_FINISH"
   | "TASK_STATUS_TO_FINISH";
 
 // 定义任务状态为字符串字面量类型
-type TaskStatusValue = 
+type TaskStatusValue =
   | "WAITING"
   | "IN_PROGRESS"
   | "COMPLETED"
@@ -107,7 +107,7 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
   const chatContainerRef = useRef<HTMLDivElement>(null)
   const [taskFetchingInProgress, setTaskFetchingInProgress] = useState(false);
   const taskFetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  
+
   // 新增：使用useRef保存不需要触发重新渲染的状态
   const hasReceivedFirstResponse = useRef(false);
   const messageContentAccumulator = useRef({
@@ -148,11 +148,11 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
       content: message.content,
       type: message.type || MessageType.TEXT,
       taskId: message.taskId,
-      createdAt: message.createdAt instanceof Date 
-        ? message.createdAt.toISOString() 
+      createdAt: message.createdAt instanceof Date
+        ? message.createdAt.toISOString()
         : message.createdAt || new Date().toISOString()
     };
-    
+
     setMessages(prev => [...prev, messageObj]);
   };
 
@@ -160,23 +160,23 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
   useEffect(() => {
     const fetchSessionMessages = async () => {
       if (!conversationId) return
-      
+
       try {
         setLoading(true)
         setError(null)
         // 清空之前的消息，避免显示上一个会话的内容
         setMessages([])
         setTasks(new Map())
-        
+
         // 获取会话消息
         const messagesResponse = await getSessionMessagesWithToast(conversationId)
-        
+
         if (messagesResponse.code === 200 && messagesResponse.data) {
           // 转换消息格式
           const formattedMessages = messagesResponse.data.map((msg: MessageDTO) => {
             // 将SYSTEM角色的消息视为assistant
             const normalizedRole = msg.role === "SYSTEM" ? "assistant" : msg.role as "USER" | "SYSTEM" | "assistant"
-            
+
             // 获取消息类型，优先使用messageType字段
             let messageType = MessageType.TEXT
             if (msg.messageType) {
@@ -187,7 +187,7 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
                 console.warn("Unknown message type:", msg.messageType)
               }
             }
-            
+
             return {
               id: msg.id,
               role: normalizedRole,
@@ -197,7 +197,7 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
               updatedAt: msg.updatedAt
             }
           })
-          
+
           setMessages(formattedMessages)
         } else {
           const errorMessage = messagesResponse.message || "获取会话消息失败"
@@ -254,31 +254,31 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
       console.log("任务获取正在进行中，跳过重复请求");
       return;
     }
-    
+
     // 清除之前的超时
     if (taskFetchTimeoutRef.current) {
       clearTimeout(taskFetchTimeoutRef.current);
     }
-    
+
     console.log(`开始获取会话任务 (尝试 ${retryCount + 1})`, sessionId);
-    
+
     // 设置延迟时间根据重试次数增加
     const delay = retryCount === 0 ? 300 : Math.min(1000 * retryCount, 5000);
-    
+
     // 设置防抖
     taskFetchTimeoutRef.current = setTimeout(async () => {
       try {
         setTaskFetchingInProgress(true);
-        
+
         const tasksResponse = await getSessionTasksWithToast(sessionId);
-        
+
         if (tasksResponse.code === 200 && tasksResponse.data) {
           // 提取主任务和子任务
           const parentTask = tasksResponse.data.task;
           const subTasks = tasksResponse.data.subTasks || [];
-          
+
           console.log("获取到任务数据:", parentTask, subTasks);
-          
+
           // 检查是否有父任务
           if (!parentTask || !parentTask.id) {
             console.warn("API返回的父任务数据为空");
@@ -291,10 +291,10 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
             }
             return;
           }
-          
+
           // 创建新的任务Map
           const taskMap = new Map<string, TaskDTO>();
-          
+
           // 添加父任务
           console.log(`添加父任务: ${parentTask.id}, ${parentTask.taskName}, 状态=${parentTask.status}`);
           taskMap.set(parentTask.id, {
@@ -304,7 +304,7 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
             progress: parentTask.progress || 0,
             parentTaskId: parentTask.parentTaskId || "0"
           });
-          
+
           // 添加子任务
           subTasks.forEach((task: any) => {
             if (task && task.id) {
@@ -318,11 +318,11 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
               });
             }
           });
-          
+
           // 更新任务状态 - 直接替换，但保留现有任务的进行状态
           setTasks(currentTasks => {
             // 只保留API返回的任务，但可能保留一些特殊状态
-            
+
             // 1. 找出当前正在进行中的任务
             const inProgressTaskIds = new Set<string>();
             for (const [id, task] of currentTasks.entries()) {
@@ -330,10 +330,10 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
                 inProgressTaskIds.add(id);
               }
             }
-            
+
             // 2. 以API返回的任务为基础
             const newTaskMap = new Map<string, TaskDTO>();
-            
+
             // 3. 处理每个任务
             for (const [id, task] of taskMap.entries()) {
               // 如果任务在API中存在，添加到新Map中
@@ -348,11 +348,11 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
                 newTaskMap.set(id, task);
               }
             }
-            
+
             console.log(`任务更新: ${currentTasks.size} -> ${newTaskMap.size} (替换模式)`);
             return newTaskMap;
           });
-          
+
           // 添加任务完成检查
           setTimeout(() => {
             console.log("检查并自动标记已完成任务");
@@ -368,7 +368,7 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
                     status: "COMPLETED"
                   });
                 }
-                
+
                 if (task.taskResult && task.status !== "COMPLETED") {
                   console.log(`检测到任务[${id}] ${task.taskName} 含有结果，自动标记为已完成`);
                   newMap.set(id, {
@@ -383,7 +383,7 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
           }, 200);
         } else {
           console.warn("获取任务列表API返回错误:", tasksResponse);
-          
+
           // 如果API调用失败且重试次数小于5，则重试
           if (retryCount < 5) {
             setTimeout(() => fetchSessionTasks(sessionId, retryCount + 1), delay);
@@ -391,7 +391,7 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
         }
       } catch (error) {
         console.error("获取会话任务失败:", error);
-        
+
         // 如果发生异常且重试次数小于5，则重试
         if (retryCount < 5) {
           setTimeout(() => fetchSessionTasks(sessionId, retryCount + 1), delay);
@@ -402,25 +402,25 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
       }
     }, delay);
   }, [currentAssistantMessage, taskFetchingInProgress]);
-  
+
   // 更新任务状态
   const updateTaskStatus = (taskId: string, status: string) => {
     console.log(`尝试更新任务状态: ${taskId} -> ${status}`);
-    
+
     // 立即尝试更新
     setTasks(prev => {
       const newMap = new Map(prev);
       const task = newMap.get(taskId);
-      
+
       if (task) {
         console.log(`找到任务: ${taskId}，当前状态: ${task.status}，更新为: ${status}`);
-        
+
         // 创建新的任务对象而不是修改原对象，确保状态变更触发重新渲染
         newMap.set(taskId, {
           ...task,
           status: status
         });
-        
+
         // 如果状态变为完成，自动设置进度为100%
         if (status === "COMPLETED" && task.progress < 100) {
           console.log(`任务${taskId}状态变为COMPLETED，自动设置进度为100%`);
@@ -432,7 +432,7 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
             });
           }
         }
-        
+
         console.log(`任务${taskId}更新后状态:`, newMap.get(taskId));
       } else {
         console.warn(`尝试更新不存在的任务: ${taskId}，当前任务Map大小: ${prev.size}`);
@@ -440,17 +440,17 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
           console.debug("现有任务ID:", Array.from(prev.keys()));
         }
       }
-      
+
       return newMap;
     });
-    
+
     // 使用多阶段更新策略，确保状态确实被更新
     // 1. 初次延迟检查 (100ms)
     setTimeout(() => {
       setTasks(prev => {
         const task = prev.get(taskId);
         if (!task) return prev; // 任务不存在
-        
+
         if (task.status !== status) {
           console.log(`[检查1] 任务${taskId}状态未更新，再次尝试: ${task.status} -> ${status}`);
           const newMap = new Map(prev);
@@ -465,17 +465,17 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
         return prev; // 状态已是期望值，无需更新
       });
     }, 100);
-    
+
     // 2. 二次延迟检查 (500ms)
     setTimeout(() => {
       setTasks(prev => {
         // 先检查是否需要获取任务列表
         let needFetch = true;
         const task = prev.get(taskId);
-        
+
         if (task) {
           needFetch = false; // 任务存在，不需要获取
-          
+
           if (task.status !== status) {
             console.log(`[检查2] 任务${taskId}状态仍未更新，最后尝试: ${task.status} -> ${status}`);
             const newMap = new Map(prev);
@@ -487,36 +487,36 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
             return newMap;
           }
         }
-        
+
         // 如果任务不存在且conversationId存在，尝试获取任务列表
         if (needFetch && conversationId) {
           console.log(`任务${taskId}不存在，尝试获取任务列表`);
           fetchSessionTasks(conversationId);
         }
-        
+
         return prev;
       });
     }, 500);
   }
-  
+
   // 更新任务进度
   const updateTaskProgress = (taskId: string, progress: number) => {
     console.log(`更新任务进度: ${taskId} -> ${progress}%`);
     setTasks(prev => {
       const newMap = new Map(prev);
       const task = newMap.get(taskId);
-      
+
       if (task) {
         // 如果进度达到100%，自动设置状态为COMPLETED
         const status = progress >= 100 ? "COMPLETED" : task.status;
-        
+
         // 创建新对象以确保状态更新触发UI刷新
         newMap.set(taskId, {
           ...task,
           progress: progress,
           status: status
         });
-        
+
         console.log(`任务${taskId}进度更新为${progress}%，状态为${status}`);
       } else {
         console.warn(`尝试更新不存在的任务进度: ${taskId}`);
@@ -525,7 +525,7 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
           fetchSessionTasks(conversationId);
         }
       }
-      
+
       return newMap;
     });
   }
@@ -536,14 +536,14 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
 
     // 添加调试信息
     console.log("当前聊天模式:", agentType === 2 ? "功能性Agent" : "普通对话")
-    
+
     const userMessage = input.trim()
     setInput("")
     setIsTyping(true)
     setIsThinking(true) // 设置思考状态
     setCurrentAssistantMessage(null) // 重置助手消息状态
     scrollToBottom() // 用户发送新消息时强制滚动到底部
-    
+
     // 重置所有状态
     setCompletedTextMessages(new Set())
     resetMessageAccumulator()
@@ -582,7 +582,7 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
 
       // 生成基础消息ID，作为所有消息序列的前缀
       const baseMessageId = Date.now().toString()
-      
+
       // 重置状态
       hasReceivedFirstResponse.current = false;
       messageContentAccumulator.current = {
@@ -590,7 +590,7 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
         type: MessageType.TEXT,
         taskId: null
       };
-      
+
       const decoder = new TextDecoder()
       let buffer = ""
 
@@ -600,12 +600,12 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
 
         // 解码数据块并添加到缓冲区
         buffer += decoder.decode(value, { stream: true })
-        
+
         // 处理缓冲区中的SSE数据
         const lines = buffer.split("\n\n")
         // 保留最后一个可能不完整的行
         buffer = lines.pop() || ""
-        
+
         for (const line of lines) {
           if (line.startsWith("data:")) {
             try {
@@ -616,10 +616,10 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
                 jsonStr = jsonStr.substring(5);
               }
               console.log("收到SSE消息:", jsonStr);
-              
+
               const data = JSON.parse(jsonStr) as StreamData
               console.log("解析后的消息:", data, "消息类型:", data.messageType);
-              
+
               // 处理消息 - 传递baseMessageId作为前缀
               handleStreamDataMessage(data, baseMessageId);
             } catch (e) {
@@ -648,59 +648,59 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
       hasReceivedFirstResponse.current = true;
       setIsThinking(false);
     }
-    
+
     // 处理错误消息
     if (isErrorMessage(data)) {
       handleErrorMessage(data);
       return;
     }
-    
+
     // 获取消息类型，默认为TEXT
     const messageType = data.messageType as MessageType || MessageType.TEXT;
-    
+
     // 生成当前消息序列的唯一ID
     const currentMessageId = `assistant-${messageType}-${baseMessageId}-seq${messageSequenceNumber.current}`;
-    
+
     console.log(`处理消息: 类型=${messageType}, 序列=${messageSequenceNumber.current}, ID=${currentMessageId}, done=${data.done}`);
-    
+
     // 处理消息功能（任务状态更新等）
     if (data.messageType) {
       handleMessageTypeForTaskUpdate(data);
     }
-    
+
     // 处理消息内容（用于UI显示）
     const displayableTypes = [undefined, "TEXT", "TOOL_CALL", "TASK_EXEC"];
     const isDisplayableType = displayableTypes.includes(data.messageType);
-    
+
     if (isDisplayableType && data.content) {
       // 累积消息内容
       messageContentAccumulator.current.content += data.content;
       messageContentAccumulator.current.type = messageType;
       messageContentAccumulator.current.taskId = data.taskId || null;
-      
+
       // 更新UI显示
       updateOrCreateMessageInUI(currentMessageId, messageContentAccumulator.current);
     }
-    
+
     // 消息结束信号处理
     if (data.done) {
       console.log(`消息完成 (done=true), 类型: ${messageType}, 序列: ${messageSequenceNumber.current}`);
-      
+
       // 如果是可显示类型且有内容，完成该消息
       if (isDisplayableType && messageContentAccumulator.current.content) {
         finalizeMessage(currentMessageId, messageContentAccumulator.current);
       }
-      
+
       // 无论如何，都重置消息累积器，准备接收下一条消息
       resetMessageAccumulator();
-      
+
       // 增加消息序列计数
       messageSequenceNumber.current += 1;
-      
+
       console.log(`消息序列增加到: ${messageSequenceNumber.current}`);
     }
   }
-  
+
   // 更新或创建UI消息
   const updateOrCreateMessageInUI = (messageId: string, messageData: {
     content: string;
@@ -711,7 +711,7 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
     setMessages(prev => {
       // 检查消息是否已存在
       const messageIndex = prev.findIndex(msg => msg.id === messageId);
-      
+
       if (messageIndex >= 0) {
         // 消息已存在，只需更新内容
         console.log(`更新现有消息: ${messageId}, 内容长度: ${messageData.content.length}`);
@@ -737,11 +737,11 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
         ];
       }
     });
-    
+
     // 更新当前助手消息状态
     setCurrentAssistantMessage({ id: messageId, hasContent: true });
   }
-  
+
   // 完成消息处理
   const finalizeMessage = (messageId: string, messageData: {
     content: string;
@@ -749,18 +749,18 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
     taskId: string | null;
   }) => {
     console.log(`完成消息: ${messageId}, 类型: ${messageData.type}, 内容长度: ${messageData.content.length}`);
-    
+
     // 如果消息内容为空，不处理
     if (!messageData.content || messageData.content.trim() === "") {
       console.log("消息内容为空，不处理");
       return;
     }
-    
+
     // 确保UI已更新到最终状态，使用相同的原子操作模式
     setMessages(prev => {
       // 检查消息是否已存在
       const messageIndex = prev.findIndex(msg => msg.id === messageId);
-      
+
       if (messageIndex >= 0) {
         // 消息已存在，更新内容
         console.log(`完成现有消息: ${messageId}`);
@@ -786,7 +786,7 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
         ];
       }
     });
-    
+
     // 标记消息为已完成
     setCompletedTextMessages(prev => {
       const newSet = new Set(prev);
@@ -920,31 +920,34 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
                     <div className="code-block-container">
                       <pre
                         className={`${className} rounded p-2 my-2 overflow-x-auto max-w-full text-sm`}
-                        style={{...style, wordBreak: 'break-all', overflowWrap: 'break-word'}}
+                        style={{ ...style, wordBreak: 'break-all', overflowWrap: 'break-word' }}
                       >
-                        {tokens.map((line, i) => (
-                          <div key={i} {...getLineProps({ line, key: i })} style={{whiteSpace: 'pre-wrap', wordBreak: 'break-all'}}>
-                            <span className="text-gray-500 mr-2 text-right w-6 inline-block select-none">
-                              {i + 1}
-                            </span>
-                            {line.map((token, tokenIndex) => {
-                              // 获取token props但不包含key
-                              const tokenProps = getTokenProps({ token, key: tokenIndex });
-                              // 删除key属性
-                              const { key, ...restTokenProps } = tokenProps;
-                              // 单独传递key属性，并添加样式确保长字符串能换行
-                              return <span 
-                                key={tokenIndex} 
-                                {...restTokenProps} 
-                                style={{
-                                  ...restTokenProps.style,
-                                  wordBreak: 'break-all',
-                                  overflowWrap: 'break-word'
-                                }}
-                              />;
-                            })}
-                          </div>
-                        ))}
+                        {tokens.map((line, i) => {
+                          const { key, ...restLineProps } = getLineProps({ line, key: i });
+                          return (
+                            <div key={i} {...restLineProps} style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
+                              <span className="text-gray-500 mr-2 text-right w-6 inline-block select-none">
+                                {i + 1}
+                              </span>
+                              {line.map((token, tokenIndex) => {
+                                // 获取token props但不包含key
+                                const tokenProps = getTokenProps({ token, key: tokenIndex });
+                                // 删除key属性
+                                const { key, ...restTokenProps } = tokenProps;
+                                // 单独传递key属性，并添加样式确保长字符串能换行
+                                return <span
+                                  key={tokenIndex}
+                                  {...restTokenProps}
+                                  style={{
+                                    ...restTokenProps.style,
+                                    wordBreak: 'break-all',
+                                    overflowWrap: 'break-word'
+                                  }}
+                                />;
+                              })}
+                            </div>
+                          )
+                        })}
                       </pre>
                     </div>
                   )}
@@ -965,7 +968,7 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
 
   // 渲染任务状态图标
   const renderTaskStatusIcon = (status: string) => {
-    switch(status) {
+    switch (status) {
       case "COMPLETED":
         return <CheckCircle className="w-5 h-5 text-green-500" />
       case "IN_PROGRESS":
@@ -981,8 +984,8 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
   // 判断是否为错误消息
   const isErrorMessage = (data: StreamData): boolean => {
     return !!data.content && (
-      data.content.includes("Error updating database") || 
-      data.content.includes("PSQLException") || 
+      data.content.includes("Error updating database") ||
+      data.content.includes("PSQLException") ||
       data.content.includes("任务执行过程中发生错误")
     );
   };
@@ -1000,10 +1003,10 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
   // 处理消息类型函数 - 任务状态更新
   const handleMessageTypeForTaskUpdate = (data: StreamData) => {
     if (!data.messageType) return;
-    
+
     console.log(`处理任务消息: 类型=${data.messageType}, 任务ID=${data.taskId}, 内容=${data.content?.substring(0, 20)}...`);
-    
-    switch(data.messageType) {
+
+    switch (data.messageType) {
       case "TASK_SPLIT_FINISH":
         // 任务拆分完成 - 获取任务列表
         console.log("收到任务拆分完成消息, 开始获取任务列表");
@@ -1012,17 +1015,17 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
           updateMainTaskStatusToCompleted();
         }, 1000);
         break;
-        
+
       case "TASK_STATUS_TO_LOADING":
         // 更新任务状态为进行中
         if (data.taskId) {
           console.log(`任务状态更新为进行中: ${data.taskId}`);
-          
+
           // 直接更新state，确保立即反映在UI上
           setTasks(prev => {
             const newMap = new Map(prev);
             const task = newMap.get(data.taskId as string);
-            
+
             if (task) {
               console.log(`直接设置任务[${data.taskId}] ${task.taskName} 为进行中状态`);
               newMap.set(data.taskId as string, {
@@ -1036,18 +1039,18 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
                 setTimeout(() => fetchSessionTasks(conversationId), 500);
               }
             }
-            
+
             return newMap;
           });
-          
+
           // 同时调用状态更新函数
           updateTaskStatus(data.taskId, "IN_PROGRESS");
-          
+
           // 处理进度信息
           if (data.content && !isNaN(parseInt(data.content))) {
             updateTaskProgress(data.taskId, parseInt(data.content));
           }
-          
+
           // 额外检查，确保状态更新成功
           setTimeout(() => {
             setTasks(prev => {
@@ -1066,19 +1069,19 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
           }, 300);
         }
         break;
-        
+
       case "TASK_STATUS_TO_FINISH":
         // 更新任务状态为已完成
         if (data.taskId) {
           console.log(`任务状态更新为已完成: ${data.taskId}`);
           updateTaskStatus(data.taskId, "COMPLETED");
           updateTaskProgress(data.taskId, 100);
-          
+
           // 直接修改tasks状态，确保任务结果被记录
           setTasks(currentMap => {
             const newMap = new Map(currentMap);
             const task = newMap.get(data.taskId as string);
-            
+
             if (task) {
               console.log(`直接设置任务[${data.taskId}] ${task.taskName} 为已完成状态`);
               newMap.set(data.taskId as string, {
@@ -1090,18 +1093,18 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
             } else {
               console.warn(`找不到要完成的任务: ${data.taskId}`);
             }
-            
+
             return newMap;
           });
         }
         break;
-        
+
       case "TASK_IDS":
         // 任务ID列表 - 只更新任务状态
         console.log("收到任务列表消息", data.tasks?.length || 0, "个任务");
         if (data.tasks && data.tasks.length > 0) {
           const taskMap = new Map<string, TaskDTO>();
-          
+
           // 添加父任务
           if (data.taskId) {
             const parentTaskName = "任务处理中...";
@@ -1114,7 +1117,7 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
               parentTaskId: "0"
             });
           }
-          
+
           // 添加子任务
           data.tasks.forEach((task: any) => {
             if (task && task.id) {
@@ -1128,7 +1131,7 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
               });
             }
           });
-          
+
           // 更新任务状态
           setTasks(prev => {
             const merged = new Map(prev);
@@ -1140,34 +1143,34 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
           });
         }
         break;
-        
+
       case "TASK_STATUS":
         // 任务状态更新 - 只更新进度
-        if(data.taskId && data.content) {
+        if (data.taskId && data.content) {
           console.log(`任务进度更新: ${data.taskId} -> ${data.content}%`);
           updateTaskProgress(data.taskId, parseInt(data.content));
         }
         break;
-        
+
       case "TASK_IN_PROGRESS":
         // 任务进行中状态 - 只更新状态
-        if(data.taskId) {
+        if (data.taskId) {
           console.log(`任务状态设置为进行中: ${data.taskId}`);
           updateTaskStatus(data.taskId, "IN_PROGRESS");
         }
         break;
-        
+
       case "TASK_COMPLETED":
         // 任务完成状态 - 更新状态并可能创建通知
-        if(data.taskId) {
+        if (data.taskId) {
           console.log(`任务状态设置为已完成: ${data.taskId}`);
           updateTaskStatus(data.taskId, "COMPLETED");
           updateTaskProgress(data.taskId, 100);
-          
+
           // 检查是否为父任务
           const task = Array.from(tasks.values()).find(t => t.id === data.taskId);
           const isParentTask = task?.parentTaskId === "0";
-          
+
           // 仅为父任务创建完成消息
           if (isParentTask && data.content) {
             console.log(`创建父任务完成消息: ${data.taskId}`);
@@ -1205,7 +1208,7 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
         )}
       </div>
 
-      <div 
+      <div
         ref={chatContainerRef}
         className="flex-1 overflow-y-auto px-4 pt-3 pb-4 w-full"
       >
@@ -1224,7 +1227,7 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
                 {error}
               </div>
             )}
-            
+
             {/* 消息内容 */}
             <div className="space-y-6 w-full">
               {messages.length === 0 ? (
@@ -1253,8 +1256,8 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
                       /* AI消息 */
                       <div className="flex">
                         <div className="h-8 w-8 mr-2 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
-                          {message.type && message.type !== MessageType.TEXT 
-                            ? getMessageTypeInfo(message.type).icon 
+                          {message.type && message.type !== MessageType.TEXT
+                            ? getMessageTypeInfo(message.type).icon
                             : <div className="text-lg">🤖</div>
                           }
                         </div>
@@ -1267,7 +1270,7 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
                             <span className="mx-1 text-gray-400">·</span>
                             <span>{formatMessageTime(message.createdAt)}</span>
                           </div>
-                          
+
                           {/* 消息内容 */}
                           <div className="p-3 rounded-lg">
                             {renderMessageContent(message)}
@@ -1278,7 +1281,7 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
                   </div>
                 ))
               )}
-              
+
               {/* 思考中提示 */}
               {isThinking && (!currentAssistantMessage || !currentAssistantMessage.hasContent) && (
                 <div className="flex items-start">
@@ -1302,7 +1305,7 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
                   </div>
                 </div>
               )}
-              
+
               <div ref={messagesEndRef} />
               {!autoScroll && isTyping && (
                 <Button
@@ -1322,7 +1325,7 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
       {/* 输入框上方显示当前任务列表 */}
       {isFunctionalAgent && (
         <div className="px-4 py-2">
-          <CurrentTaskList 
+          <CurrentTaskList
             taskName={Array.from(tasks.values())
               .find(task => task.parentTaskId === "0")?.taskName || "任务处理中..."}
             tasks={Array.from(tasks.values())
@@ -1343,9 +1346,9 @@ export function ChatPanel({ conversationId, onToggleTaskHistory, showTaskHistory
             className="min-h-[56px] flex-1 resize-none overflow-hidden rounded-xl bg-white px-3 py-2 font-normal border-gray-200 shadow-sm focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-opacity-50"
             rows={Math.min(5, Math.max(2, input.split('\n').length))}
           />
-          <Button 
-            onClick={handleSendMessage} 
-            disabled={!input.trim()} 
+          <Button
+            onClick={handleSendMessage}
+            disabled={!input.trim()}
             className="h-10 w-10 rounded-xl bg-blue-500 hover:bg-blue-600 shadow-sm"
           >
             <Send className="h-5 w-5" />

@@ -11,16 +11,11 @@ import org.xhy.infrastructure.utils.JsonUtils;
 
 import java.util.Map;
 
-/** 工具部署处理器 */
 public class DeployingProcessor implements ToolStateProcessor {
 
     private static final Logger logger = LoggerFactory.getLogger(DeployingProcessor.class);
-
     private final MCPGatewayService mcpGatewayService;
 
-    /** 构造函数，注入MCPGatewayService
-     * 
-     * @param mcpGatewayService MCP网关服务 */
     public DeployingProcessor(MCPGatewayService mcpGatewayService) {
         this.mcpGatewayService = mcpGatewayService;
     }
@@ -32,39 +27,23 @@ public class DeployingProcessor implements ToolStateProcessor {
 
     @Override
     public void process(ToolEntity tool) {
-        logger.info("工具ID: {} 进入DEPLOYING状态，开始部署。", tool.getId());
+        logger.info("工具 ID: {} 进入 DEPLOYING 状态，开始部署。", tool.getId());
         try {
-            // 获取安装命令
+            // installCommand 是结构化部署配置，这里会整体转成 JSON 发给 MCP Gateway
             Map<String, Object> installCommand = tool.getInstallCommand();
             if (installCommand == null || installCommand.isEmpty()) {
-                throw new BusinessException("工具ID: " + tool.getId() + " 安装命令为空，无法部署。");
+                throw new BusinessException("工具 ID: " + tool.getId() + " 的安装命令为空，无法部署");
             }
             String installCommandJson = JsonUtils.toJsonString(installCommand);
 
-            // 调用MCPGatewayService进行部署
             boolean deploySuccess = mcpGatewayService.deployTool(installCommandJson);
-
-            if (deploySuccess) {
-                logger.info("工具部署成功，工具ID: {}", tool.getId());
-                // ToolStateService will handle the status transition to FETCHING_TOOLS
-            } else {
-                // MCPGatewayService.deployTool should throw BusinessException on API errors,
-                // so this else block might only be reached if the API returned success: false
-                // or if there's a specific condition for non-exception failure.
-                // For now, assuming deployTool throws exception on API issues, this might be
-                // redundant.
-                // Re-throwing a BusinessException for clarity if needed.
-                logger.error("工具部署失败 (API returned non-success status)，工具ID: {}", tool.getId());
-                throw new BusinessException("MCP Gateway部署返回非成功状态。");
+            if (!deploySuccess) {
+                throw new BusinessException("MCP Gateway 部署返回了非成功状态");
             }
         } catch (BusinessException e) {
-            // Catch BusinessException from MCPGatewayService or internal checks
-            logger.error("部署工具 {} (ID: {}) 失败: {}", tool.getName(), tool.getId(), e.getMessage(), e);
-            throw e; // Re-throw BusinessException to be caught by ToolStateService
+            throw e;
         } catch (Exception e) {
-            // Catch any unexpected exceptions
-            logger.error("部署工具 {} (ID: {}) 过程中发生意外错误: {}", tool.getName(), tool.getId(), e.getMessage(), e);
-            throw new BusinessException("部署工具过程中发生意外错误: " + e.getMessage(), e); // Wrap unexpected exceptions
+            throw new BusinessException("部署工具过程中发生意外错误: " + e.getMessage(), e);
         }
     }
 

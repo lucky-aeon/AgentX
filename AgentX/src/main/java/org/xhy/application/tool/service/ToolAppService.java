@@ -3,7 +3,6 @@ package org.xhy.application.tool.service;
 import java.util.*;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,56 +20,48 @@ import org.xhy.domain.user.model.UserEntity;
 import org.xhy.domain.user.service.UserDomainService;
 import org.xhy.infrastructure.exception.BusinessException;
 import org.xhy.infrastructure.exception.ParamValidationException;
+import org.xhy.infrastructure.mcp_gateway.MCPGatewayService;
+import org.xhy.infrastructure.utils.JsonUtils;
 import org.xhy.interfaces.dto.tool.request.CreateToolRequest;
 import org.xhy.interfaces.dto.tool.request.MarketToolRequest;
 import org.xhy.interfaces.dto.tool.request.QueryToolRequest;
 import org.xhy.interfaces.dto.tool.request.UpdateToolRequest;
 
-/** 工具应用服务 */
 @Service
 public class ToolAppService {
 
     private final ToolDomainService toolDomainService;
-
     private final UserToolDomainService userToolDomainService;
-
     private final ToolVersionDomainService toolVersionDomainService;
-
     private final UserDomainService userDomainService;
+    private final MCPGatewayService mcpGatewayService;
 
     public ToolAppService(ToolDomainService toolDomainService, UserToolDomainService userToolDomainService,
-            ToolVersionDomainService toolVersionDomainService, UserDomainService userDomainService) {
+            ToolVersionDomainService toolVersionDomainService, UserDomainService userDomainService,
+            MCPGatewayService mcpGatewayService) {
         this.toolDomainService = toolDomainService;
         this.userToolDomainService = userToolDomainService;
         this.toolVersionDomainService = toolVersionDomainService;
         this.userDomainService = userDomainService;
+        this.mcpGatewayService = mcpGatewayService;
     }
 
-    /** 上传工具
-     * 
-     * 业务流程： 1. 将请求转换为实体 2. 调用领域服务创建工具 3. 将实体转换为DTO返回
-     *
-     * @param request 创建工具请求
-     * @param userId 用户ID
-     * @return 创建的工具DTO */
     @Transactional
     public ToolDTO uploadTool(CreateToolRequest request, String userId) {
-        // 将请求转换为实体
+        // 先把接口层请求转换成领域实体，后续流程都围绕 ToolEntity 展开
         ToolEntity toolEntity = ToolAssembler.toEntity(request, userId);
 
+        // 新工具统一从“待审核”开始，真正的异步处理链由 ToolStateService 推进
         toolEntity.setStatus(ToolStatus.WAITING_REVIEW);
-        // 调用领域服务创建工具
         ToolEntity createdTool = toolDomainService.createTool(toolEntity);
 
-        // 将实体转换为DTO返回
+        // 返回前再转成 DTO，避免直接把领域实体暴露给接口层
         return ToolAssembler.toDTO(createdTool);
     }
 
     public ToolDTO getToolDetail(String toolId, String userId) {
         ToolEntity toolEntity = toolDomainService.getTool(toolId, userId);
-
-        ToolDTO toolDTO = ToolAssembler.toDTO(toolEntity);
-        return toolDTO;
+        return ToolAssembler.toDTO(toolEntity);
     }
 
     public List<ToolDTO> getUserTools(String userId) {
@@ -92,22 +83,24 @@ public class ToolAppService {
     public void marketTool(MarketToolRequest marketToolRequest, String userId) {
         String toolId = marketToolRequest.getToolId();
         String version = marketToolRequest.getVersion();
+
+        // 只有已经审核通过并完成发布流程的工具，才能创建市场版本
         ToolEntity toolEntity = toolDomainService.getTool(toolId, userId);
-        // 必须是审核通过才能上架
         if (toolEntity.getStatus() != ToolStatus.APPROVED) {
-            throw new BusinessException("工具未审核通过，不能上架");
+            throw new BusinessException("工具尚未审核通过，不能上架到市场");
         }
 
         ToolVersionEntity toolVersionEntity = toolVersionDomainService.findLatestToolVersion(toolId, userId);
         if (toolVersionEntity != null) {
-            // 检查版本号是否大于上一个版本
+            // 市场版本号必须单调递增，避免覆盖历史已发布版本
             if (!marketToolRequest.isVersionGreaterThan(toolVersionEntity.getVersion())) {
                 throw new ParamValidationException("versionNumber",
                         "新版本号(" + version + ")必须大于当前最新版本号(" + toolVersionEntity.getVersion() + ")");
             }
         }
 
-        // 创建工具版本进行上架
+        // ToolVersionEntity 是“对外发布快照”：
+        // 从当前 ToolEntity 复制展示信息和能力定义，再补充版本元数据
         toolVersionEntity = new ToolVersionEntity();
         BeanUtils.copyProperties(toolEntity, toolVersionEntity);
         toolVersionEntity.setVersion(version);
@@ -137,11 +130,9 @@ public class ToolAppService {
     public ToolVersionDTO getToolVersionDetail(String toolId, String version, String userId) {
         ToolVersionEntity toolVersionEntity = toolVersionDomainService.getToolVersion(toolId, version);
         ToolVersionDTO toolVersionDTO = ToolAssembler.toDTO(toolVersionEntity);
-        // 设置创建者昵称
         UserEntity userInfo = userDomainService.getUserInfo(toolVersionDTO.getUserId());
         toolVersionDTO.setUserName(userInfo.getNickname());
 
-        // 设置历史版本
         List<ToolVersionEntity> toolVersionEntities = toolVersionDomainService.getToolVersions(toolId, userId);
         toolVersionDTO.setVersions(toolVersionEntities.stream().map(ToolAssembler::toDTO).toList());
 
@@ -153,17 +144,30 @@ public class ToolAppService {
     public void installTool(String toolId, String version, String userId) {
         UserToolEntity userToolEntity = userToolDomainService.findByToolIdAndUserId(toolId, userId);
         ToolVersionEntity toolVersionEntity = toolVersionDomainService.getToolVersion(toolId, version);
+        String currentUserId = userId;
+
+        Map<String, Object> installCommand = toolDomainService.getTool(toolId).getInstallCommand();
+        if (installCommand == null || installCommand.isEmpty()) {
+            throw new BusinessException("工具安装命令不存在，无法完成部署");
+        }
+        boolean deploySuccess = mcpGatewayService.deployTool(JsonUtils.toJsonString(installCommand));
+        if (!deploySuccess) {
+            throw new BusinessException("MCP Gateway 部署失败，安装未完成");
+        }
 
         if (userToolEntity == null) {
+            userToolDomainService.purgeByToolIdAndUserId(toolId, userId);
             userToolEntity = new UserToolEntity();
-            userToolEntity.setUserId(userId);
+            userToolEntity.setUserId(currentUserId);
             userToolEntity.setToolId(toolVersionEntity.getToolId());
         }
         String userToolId = userToolEntity.getId();
         BeanUtils.copyProperties(toolVersionEntity, userToolEntity);
-        // 使用工具版本实体更新用户工具实体的信息
+        // 安装本质上是把市场版本快照复制到用户空间里，形成独立的用户工具记录
         userToolEntity.setVersion(toolVersionEntity.getVersion());
         userToolEntity.setId(userToolId);
+        userToolEntity.setUserId(currentUserId);
+        userToolEntity.setToolId(toolId);
         if (userToolEntity.getId() == null) {
             userToolDomainService.add(userToolEntity);
         } else {
@@ -172,7 +176,6 @@ public class ToolAppService {
     }
 
     public Page<ToolVersionDTO> getInstalledTools(String userId, QueryToolRequest queryToolRequest) {
-
         Page<UserToolEntity> userToolEntityPage = userToolDomainService.listByUserId(userId, queryToolRequest);
         List<ToolVersionDTO> list = userToolEntityPage.getRecords().stream().map(ToolAssembler::toDTO).toList();
         Page<ToolVersionDTO> tPage = new Page<>(userToolEntityPage.getCurrent(), userToolEntityPage.getSize(),
@@ -207,7 +210,6 @@ public class ToolAppService {
         }).toList();
 
         if (records.size() > 10) {
-            // 使用随机数从所有记录中选取10条不重复的记录
             Random random = new Random();
             toolVersionDTOs = toolVersionDTOs.stream().sorted((a, b) -> random.nextInt(2) - 1).limit(10).toList();
         }
@@ -218,5 +220,4 @@ public class ToolAppService {
     public void updateUserToolVersionStatus(String toolId, String version, Boolean publishStatus, String userId) {
         toolVersionDomainService.updateToolVersionStatus(toolId, version, userId, publishStatus);
     }
-
 }

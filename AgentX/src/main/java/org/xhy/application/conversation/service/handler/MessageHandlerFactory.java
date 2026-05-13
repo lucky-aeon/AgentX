@@ -25,13 +25,13 @@ public class MessageHandlerFactory {
      * @param agent 智能体实体
      * @return 消息处理器 */
     public AbstractMessageHandler getHandler(AgentEntity agent) {
-        if (agent.getAgentType() == 1) {
-            return getHandlerByType(MessageHandlerType.STANDARD);
-
-        } else if (agent.getAgentType() == 2) {
+        if (agent.getAgentType() == 1 || agent.getAgentType() == 2) {
+            // The agent-capable handler is a superset of standard chat:
+            // when no tools are available it behaves like normal chat,
+            // and when tools are installed the model can actually call them.
             return getHandlerByType(MessageHandlerType.AGENT);
         }
-        return getHandlerByType(MessageHandlerType.STANDARD);
+        return getHandlerByType(MessageHandlerType.AGENT);
     }
 
     /** 根据处理器类型获取对应的处理器实例
