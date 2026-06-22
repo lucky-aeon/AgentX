@@ -4,6 +4,22 @@
 
 AgentX 是一个基于大模型 (LLM) 和多能力平台 (MCP) 的智能 Agent 构建平台。它致力于简化 Agent 的创建流程，让用户无需复杂的流程节点或拖拽操作，仅通过自然语言和工具集成即可打造个性化的智能 Agent。
 
+---
+
+<div align="center">
+
+### 💎 推荐：xhyapi · Codex 专线中转
+
+**在 AgentX / Codex CLI 里需要稳定的 Codex API？注册 xhyapi 即享额度，专线直连不掉线**
+
+不掺水 · 不投毒 · 官转不降智 · 隐私不留存 · 只做 Codex 专线
+
+[👉 立即注册体验 xhyapi](https://xhyapi.com) · [敲鸭社区](https://code.xhyovo.cn) · [B站](https://space.bilibili.com/152686439)
+
+</div>
+
+---
+
 ## 🔗 相关链接
 
 ### 📦 子仓库
