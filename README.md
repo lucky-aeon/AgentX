@@ -8,6 +8,8 @@ AgentX 是一个基于大模型 (LLM) 和多能力平台 (MCP) 的智能 Agent �
 
 <div align="center">
 
+<img src="docs/images/xhyapi-logo.png" alt="xhyapi" width="120"/>
+
 ### 💎 推荐：xhyapi · Codex 专线中转
 
 **在 AgentX / Codex CLI 里需要稳定的 Codex API？注册 xhyapi 即享额度，专线直连不掉线**
