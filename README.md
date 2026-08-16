@@ -299,7 +299,7 @@ STRIPE_SECRET_KEY=your_stripe_secret_key
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=lucky-aeon/agentX&type=Date)](https://api.star-history.com/svg?repos=lucky-aeon/agentX&type=Date)
+[![Star History Chart](https://star-history.dera.page/svg?repos=lucky-aeon/agentX&type=Date)](https://star-history.dera.page/#lucky-aeon/agentX&type=Date)
 
 
 ## 联系我们
